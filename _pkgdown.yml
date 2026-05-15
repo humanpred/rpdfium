@@ -1,0 +1,44 @@
+# pdfium pkgdown configuration.
+#
+# Hand-written developer content (ADRs, surveys, architecture
+# notes) lives under `dev/` so that pkgdown can use the
+# conventional `docs/` output directory without colliding with
+# anything tracked in source control. `dev/` is excluded from the
+# package source tarball via .Rbuildignore.
+
+url: https://humanpred.github.io/rpdfium/
+title: pdfium
+
+template:
+  bootstrap: 5
+
+development:
+  mode: auto
+
+home:
+  links:
+    - text: Project plan
+      href: https://github.com/humanpred/rpdfium/blob/main/dev/architecture.md
+    - text: Decision records
+      href: https://github.com/humanpred/rpdfium/tree/main/dev/decisions
+
+reference:
+  - title: Documents
+    contents:
+      - pdf_open
+      - pdf_close
+      - pdf_page_count
+  - title: Pages
+    contents:
+      - pdf_load_page
+      - pdf_close_page
+      - pdf_page_size
+      - pdf_page_rotation
+  - title: Page objects
+    contents:
+      - pdf_page_objects
+      - pdf_obj_type
+      - pdf_obj_bounds
+  - title: Paths
+    contents:
+      - pdf_path_segments

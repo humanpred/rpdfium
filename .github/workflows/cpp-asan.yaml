@@ -24,6 +24,12 @@ jobs:
       UBSAN_OPTIONS: 'print_stacktrace=1:halt_on_error=1'
       CXXFLAGS: '-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer'
       LDFLAGS:  '-fsanitize=address,undefined'
+      # ASan does not compose cleanly with testthat's parallel mode
+      # (each parallel worker is a forked R subprocess, and the
+      # sanitizer state crosses fork boundaries in noisy ways).
+      # Force serial; `Config/testthat/parallel: true` in DESCRIPTION
+      # is overridden by this env var.
+      TESTTHAT_PARALLEL: 'false'
     steps:
       - uses: actions/checkout@v6
       - uses: r-lib/actions/setup-r@v2
@@ -36,4 +42,13 @@ jobs:
       - name: Install package
         run: R CMD INSTALL .
       - name: Run tests with sanitizers
-        run: Rscript -e 'testthat::test_dir("tests/testthat", parallel = FALSE)'
+        # Run from `tests/` so test_check("pdfium") finds the
+        # adjacent `testthat/` directory (mirrors what R CMD check
+        # does internally). tests/testthat.R does `library(pdfium)`
+        # first so the installed DLL loads via the normal
+        # library.dynam path - the RPATH set at install time points
+        # to <pkg>/lib/libpdfium.so. Calling testthat::test_dir
+        # directly would copy the package DLL to a tempdir via
+        # pkgload, where the relative RPATH cannot resolve.
+        working-directory: tests
+        run: Rscript testthat.R

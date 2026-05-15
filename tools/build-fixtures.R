@@ -9,9 +9,12 @@
 #
 #     Rscript tools/build-fixtures.R
 #
-# Phase 0 ships a single fixture: `minimal.pdf`, one blank page produced by
-# the base R Cairo PDF device. Later phases will add path / text / image
-# fixtures.
+# Fixtures:
+#   minimal.pdf   one blank page produced by the base R Cairo device.
+#                 Used by Phase 0 smoke tests.
+#   shapes.pdf    a single page containing a stroked rectangle, two
+#                 line segments, and one text run. Used by
+#                 pdf_page_objects() and the upcoming path/text APIs.
 
 local({
   args <- commandArgs(trailingOnly = FALSE)
@@ -39,5 +42,25 @@ local({
     message("[fixtures] wrote ", out)
   }
 
+  build_shapes <- function() {
+    out <- file.path(out_dir, "shapes.pdf")
+    grDevices::cairo_pdf(out, width = 4, height = 3)
+    on.exit(grDevices::dev.off(), add = TRUE)
+    graphics::par(mar = c(0, 0, 0, 0))
+    graphics::plot.new()
+    graphics::plot.window(c(0, 4), c(0, 3))
+    # One filled, stroked rectangle.
+    graphics::rect(0.5, 0.5, 2.5, 2.5, col = "lightblue", border = "red",
+                   lwd = 2)
+    # Two line segments.
+    graphics::segments(2.0, 0.5, 3.5, 2.5, col = "darkgreen", lwd = 1.5)
+    graphics::segments(0.5, 2.5, 3.5, 0.5, col = "darkgreen", lwd = 1.5,
+                       lty = "dashed")
+    # One text run.
+    graphics::text(2.0, 1.5, "Hello", cex = 1.2)
+    message("[fixtures] wrote ", out)
+  }
+
   build_minimal()
+  build_shapes()
 })

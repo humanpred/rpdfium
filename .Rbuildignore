@@ -12,6 +12,7 @@
 ^tmp$
 ^\.tmp$
 ^_pkgdown\.yml$
+^dev$
 ^CONTRIBUTING\.md$
 ^CLAUDE\.md$
 ^AGENTS\.md$

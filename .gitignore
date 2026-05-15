@@ -19,15 +19,11 @@ src-i386/
 inst/include/
 inst/lib/
 
-# pkgdown build output (deployed from gh-pages branch, never tracked here)
-docs/_pkgdown/
-docs/articles/
-docs/reference/
-docs/news/
-docs/sitemap.xml
-docs/pkgdown.yml
-docs/404.html
-docs/index.html
+# pkgdown build output. pkgdown writes to `docs/`; hand-written
+# developer content lives under `dev/` (tracked) so the two never
+# collide. We never commit the rendered site - it's deployed to the
+# gh-pages branch by .github/workflows/pkgdown.yaml.
+docs/
 
 # Survey scratch (Phase 0)
 tmp/

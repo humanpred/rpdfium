@@ -73,7 +73,7 @@ the feature matrix below.
 ## 2. Feature matrix
 
 Rows are the inspection-side features tracked in
-`docs/upstream-feature-survey.md` (the parallel PDFium-side survey from
+`dev/upstream-feature-survey.md` (the parallel PDFium-side survey from
 Phase 0a). Columns are the seven R packages with a meaningful inspection
 surface: `pdftools`, `Rpoppler`, `qpdf` (and `cpp11qpdf`, which is identical in
 scope), `magick`, `tabulapdf`, `staplr`, `xmpdf`. `pdfsearch` is omitted because

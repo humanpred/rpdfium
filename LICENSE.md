@@ -33,4 +33,4 @@ distribution scripts at bblanchon/pdfium-binaries are licensed under
 
 Neither the PDFium source nor its prebuilt binaries are part of the `pdfium`
 R-package source tarball; both are fetched on demand. See
-`docs/decisions/ADR-003-binary-distribution.md` for the rationale.
+`dev/decisions/ADR-003-binary-distribution.md` for the rationale.

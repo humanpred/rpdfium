@@ -14,7 +14,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 This vignette explains the four-layer model `pdfium` uses, the memory
 contract you rely on as a user, and the most common pitfalls. For
 contributor-facing detail (CI topology, fixture rebuild pipeline,
-PDFium bump procedure), see `docs/architecture.md` in the source tree.
+PDFium bump procedure), see `dev/architecture.md` in the source tree.
 
 ## Four-layer model
 
@@ -125,9 +125,9 @@ If your machine has no internet access at install time, set
 
 ## Further reading
 
-- The decision records under `docs/decisions/` capture every
+- The decision records under `dev/decisions/` capture every
   architectural choice and the alternatives that were considered.
-- `docs/architecture.md` covers contributor-facing topics: CI
+- `dev/architecture.md` covers contributor-facing topics: CI
   topology, the PDFium bump procedure, and the fixture-rebuild
   pipeline.
 - `vignette("getting-started")` walks through a complete inspection

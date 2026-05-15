@@ -27,7 +27,7 @@ matrices — which no other CRAN package surfaces today.
 ## Status
 
 Pre-release. The 0.1.0 CRAN target is documented in
-`docs/decisions/` and the project plan. The current public API is
+`dev/decisions/` and the project plan. The current public API is
 documented at `pkgdown` and exercised at 100% R coverage.
 
 ## Installation
@@ -64,4 +64,4 @@ package = "pdfium")`, etc.) and on the
 `pdfium` is MIT-licensed. The bundled `libpdfium` binary is BSD-3-Clause
 and is *not* distributed in the source tarball — see
 [`LICENSE.md`](LICENSE.md) and
-[`docs/decisions/ADR-003-binary-distribution.md`](docs/decisions/ADR-003-binary-distribution.md).
+[`dev/decisions/ADR-003-binary-distribution.md`](dev/decisions/ADR-003-binary-distribution.md).

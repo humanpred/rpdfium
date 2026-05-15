@@ -54,8 +54,8 @@ Allowed types: `feat`, `fix`, `docs`, `chore`, `test`, `refactor`,
 
 Material decisions (API shape, dependencies, binary distribution,
 memory model) are recorded as Architecture Decision Records under
-`docs/decisions/`. Use the template at
-`docs/decisions/ADR-000-template.md`. ADRs are immutable once accepted
+`dev/decisions/`. Use the template at
+`dev/decisions/ADR-000-template.md`. ADRs are immutable once accepted
 — supersede with a new ADR that references the old.
 
 ## Pre-commit fast / slow stages

@@ -45,7 +45,7 @@ repos:
             (.*/|).*\.pdf|
             tools/.*|
             inst/.*|
-            docs/.*\.md|
+            dev/.*\.md|
             cran-comments\.md|
             LICENSE|
             LICENSE\.md|

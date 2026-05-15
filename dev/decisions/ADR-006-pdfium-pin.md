@@ -26,7 +26,7 @@ release (~weekly). Pinning is mandatory because:
   `LICENSE.md` still reflects the bundled binary's license.
 - Bump cadence: at least once per `pdfium` release cycle, more often
   if upstream ships a security fix relevant to PDF parsing.
-- The bump procedure is documented in `docs/architecture.md` under
+- The bump procedure is documented in `dev/architecture.md` under
   "PDFium bump procedure" so it's actionable by anyone (not just the
   maintainer who's done it before).
 - A bump is its own commit / PR / ADR-amendment if it changes API
