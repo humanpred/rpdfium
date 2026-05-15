@@ -10,6 +10,7 @@ exclusions: list(
     "tests/testthat/setup.R",
     "tests/testthat/helper-fixtures.R",
     "tools/build-fixtures.R",
+    "tools/check-pkgdown-reference.R",
     "tools/download-pdfium.R",
     "vignettes"
   )

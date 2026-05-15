@@ -14,9 +14,9 @@ Description: Read PDF documents at the level of pages, page objects, and path
     metadata, image metadata, and page rendering. Complements 'pdftools' and
     'qpdf' by exposing vector-path information no other R package surfaces.
 License: MIT + file LICENSE
-URL: https://github.com/billdenney/rpdfium,
-    https://billdenney.github.io/rpdfium/
-BugReports: https://github.com/billdenney/rpdfium/issues
+URL: https://github.com/humanpred/rpdfium,
+    https://humanpred.github.io/rpdfium/
+BugReports: https://github.com/humanpred/rpdfium/issues
 Depends:
     R (>= 4.2)
 Imports:
