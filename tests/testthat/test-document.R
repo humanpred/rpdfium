@@ -1,16 +1,16 @@
 test_that("pdf_open() rejects bad inputs before touching PDFium", {
-  expect_error(pdf_open(NULL),       "single, non-NA character")
-  expect_error(pdf_open(character()),"single, non-NA character")
+  expect_error(pdf_open(NULL), "single, non-NA character")
+  expect_error(pdf_open(character()), "single, non-NA character")
   expect_error(pdf_open(NA_character_), "single, non-NA character")
-  expect_error(pdf_open(""),         "must not be the empty string")
+  expect_error(pdf_open(""), "must not be the empty string")
   expect_error(pdf_open("/no/such/file.pdf"), "PDF file not found")
 })
 
 test_that("pdf_open() validates the password argument", {
   pdf <- fixture_path("minimal")
-  expect_error(pdf_open(pdf, password = 1),         "must be NULL or a single")
+  expect_error(pdf_open(pdf, password = 1), "must be NULL or a single")
   expect_error(pdf_open(pdf, password = NA_character_), "must be NULL or a single")
-  expect_error(pdf_open(pdf, password = c("a","b")), "must be NULL or a single")
+  expect_error(pdf_open(pdf, password = c("a", "b")), "must be NULL or a single")
   doc <- pdf_open(pdf, password = NULL)
   expect_s3_class(doc, "pdfium_doc")
   pdf_close(doc)
@@ -58,8 +58,12 @@ test_that("print() and format() reflect open / closed state", {
 
 test_that("auto-finalizer releases handles dropped without explicit close", {
   pdf <- fixture_path("minimal")
+  open_and_drop <- function() {
+    d <- pdf_open(pdf)
+    invisible(pdf_page_count(d))
+  }
   for (i in seq_len(100)) {
-    local({ d <- pdf_open(pdf); invisible(pdf_page_count(d)) })
+    open_and_drop()
   }
   invisible(gc(verbose = FALSE))
   succeed()

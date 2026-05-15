@@ -33,11 +33,15 @@ local({
   detect_platform <- function() {
     sysname <- tolower(Sys.info()[["sysname"]])
     machine <- tolower(Sys.info()[["machine"]])
+    # Different OSes report 64-bit Intel in different ways:
+    #   linux/macOS   -> "x86_64"
+    #   Windows       -> "x86-64" (with hyphen) on recent R
+    #   some toolchains -> "amd64"
     arch <- switch(
       machine,
-      "x86_64" = "x64", "amd64" = "x64",
+      "x86_64" = "x64", "x86-64" = "x64", "amd64" = "x64",
       "arm64" = "arm64", "aarch64" = "arm64",
-      "i686" = "x86", "i386" = "x86",
+      "i686" = "x86", "i386" = "x86", "x86" = "x86",
       stop("Unsupported architecture: ", machine)
     )
     is_musl <- function() {
@@ -48,6 +52,30 @@ local({
     if (sysname == "linux")   return(paste0(if (is_musl()) "linux-musl-" else "linux-", arch))
     if (sysname == "windows") return(paste0("win-", arch))
     stop("Unsupported OS: ", sysname)
+  }
+
+  # bblanchon's macOS libpdfium.dylib ships with LC_ID_DYLIB set to
+  # `./libpdfium.dylib`, which makes the dynamic loader look in the CWD
+  # rather than at our RPATH (@loader_path/../lib). Rewrite the install
+  # name so dlopen() resolves through our RPATH on every macOS install.
+  fix_macos_install_name <- function(libdir) {
+    if (tolower(Sys.info()[["sysname"]]) != "darwin") return(invisible())
+    dylib <- file.path(libdir, "libpdfium.dylib")
+    if (!file.exists(dylib)) return(invisible())
+    if (Sys.which("install_name_tool") == "") {
+      warning("install_name_tool not found; cannot rewrite libpdfium.dylib install name. ",
+              "Loading may fail at runtime.", call. = FALSE)
+      return(invisible())
+    }
+    res <- system2("install_name_tool",
+                   c("-id", "@rpath/libpdfium.dylib", shQuote(dylib)),
+                   stdout = TRUE, stderr = TRUE)
+    if (!is.null(attr(res, "status")) && attr(res, "status") != 0L) {
+      warning("install_name_tool -id failed: ", paste(res, collapse = "\n"),
+              call. = FALSE)
+    } else {
+      message("[pdfium] Rewrote libpdfium.dylib install name to @rpath/libpdfium.dylib")
+    }
   }
 
   platform <- if (is.null(platform_tag)) detect_platform() else platform_tag
@@ -111,6 +139,8 @@ local({
   copy_into("include")
   copy_into("lib")
   copy_into("bin")
+
+  fix_macos_install_name(file.path(extract_root, "lib"))
 
   cat(file.path(extract_root, "include"), "\n",
       file.path(extract_root, "lib"),     "\n",

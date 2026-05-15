@@ -10,6 +10,7 @@ exclusions: list(
     "tests/testthat/setup.R",
     "tests/testthat/helper-fixtures.R",
     "tools/build-fixtures.R",
-    "tools/download-pdfium.R"
+    "tools/download-pdfium.R",
+    "vignettes"
   )
 encoding: "UTF-8"

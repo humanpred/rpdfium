@@ -35,7 +35,7 @@ pdf_open <- function(path, password = NULL) {
     stop("PDF file not found: ", path, call. = FALSE)
   }
   if (!is.null(password) &&
-      (!is.character(password) || length(password) != 1L || is.na(password))) {
+        (!is.character(password) || length(password) != 1L || is.na(password))) {
     stop("`password` must be NULL or a single non-NA character string.",
          call. = FALSE)
   }

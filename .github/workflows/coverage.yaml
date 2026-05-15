@@ -19,7 +19,7 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: r-lib/actions/setup-r@v2
         with:
@@ -39,13 +39,30 @@ jobs:
           )
           covr::to_cobertura(cov, "coverage.xml")
           print(cov)
+          # Hard R-side gate: fail this workflow if R coverage drops below 100%.
+          # codecov.io enforces the same threshold for downstream consumers but
+          # requires CODECOV_TOKEN to do so on protected branches, so we keep
+          # the gate authoritative here regardless of upload status.
+          r_files <- grep("^R/", unique(as.data.frame(cov)$filename), value = TRUE)
+          r_files <- setdiff(r_files, c("R/RcppExports.R", "R/zzz.R", "R/pdfium-package.R"))
+          r_cov  <- cov[as.data.frame(cov)$filename %in% r_files, ]
+          r_pct  <- covr::percent_coverage(r_cov)
+          cat(sprintf("R-only coverage (gated files): %.2f%%\n", r_pct))
+          if (r_pct < 100) {
+            stop(sprintf("R coverage gate: %.2f%% < 100%%", r_pct), call. = FALSE)
+          }
         shell: Rscript {0}
 
-      - uses: codecov/codecov-action@v4
+      - name: Upload to codecov
+        # The R-side gate above is authoritative. codecov upload is best-effort:
+        # protected branches require CODECOV_TOKEN to upload, and we don't want
+        # a missing token to fail a PR. Set CODECOV_TOKEN in repo secrets to
+        # turn the upload into a hard gate again.
+        uses: codecov/codecov-action@v6
         with:
           files: ./coverage.xml
           flags: r
           plugin: noop
-          fail_ci_if_error: true
+          fail_ci_if_error: false
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

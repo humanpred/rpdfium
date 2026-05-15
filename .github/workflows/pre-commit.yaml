@@ -1,8 +1,19 @@
-# pre-commit.yaml — run the full pre-commit configuration on PRs.
+# pre-commit.yaml — run non-R pre-commit hooks on PRs.
 #
-# Defense in depth: catches contributors who didn't install
-# `pre-commit` locally. Re-runs every hook in
-# `.pre-commit-config.yaml` against all files.
+# The R-language hooks (lintr, styler, parsable-R, roxygenize,
+# deps-in-desc, etc.) each spawn their own renv to install R packages
+# from source. On a fresh GitHub Actions runner this is slow and fragile
+# (we have observed package-compile failures in the renv environment).
+#
+# CI coverage of those checks comes from the dedicated lint.yaml workflow
+# (which uses the same lintr config) plus R-CMD-check (which catches
+# roxygen drift, deps-in-desc misses, etc.). This workflow runs only the
+# fast non-R hooks — yaml validity, line endings, trailing whitespace,
+# large-file guard, conventional commit message format — so contributors
+# who skipped `pre-commit install` locally still get caught on those.
+#
+# Local-dev workflow remains unchanged: `pre-commit install` runs the
+# full configuration in .pre-commit-config.yaml.
 
 name: pre-commit
 
@@ -14,28 +25,20 @@ on:
 permissions:
   contents: read
 
+env:
+  # Hook IDs from .pre-commit-config.yaml that use the R language and pull
+  # in renv. Keep this list in sync with the R-backed hooks defined there.
+  # Must be a single comma-separated string with no whitespace.
+  SKIP: parsable-R,no-browser-statement,no-debug-statement,no-print-statement,deps-in-desc,codemeta-description-updated,lintr,style-files,spell-check,readme-rmd-rendered,use-tidy-description,roxygenize
+
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.x'
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          use-public-rspm: true
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          packages: |
-            any::styler
-            any::lintr
-            any::roxygen2
-            any::desc
-            local::.
-          needs: |
-            check
-            coverage
       - uses: pre-commit/action@v3.0.1
         with:
           extra_args: --all-files --show-diff-on-failure
