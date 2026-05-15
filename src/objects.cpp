@@ -17,6 +17,7 @@
 // The R wrapper converts these to human-readable strings.
 
 #include <Rcpp.h>
+#include <vector>
 #include "fpdfview.h"
 #include "fpdf_edit.h"
 
@@ -141,4 +142,57 @@ double cpp_obj_stroke_width(SEXP obj_ptr) {
   FPDF_BOOL ok = FPDFPageObj_GetStrokeWidth(obj, &width);
   if (!ok) return NA_REAL;
   return static_cast<double>(width);
+}
+
+// [[Rcpp::export(name = "cpp_obj_matrix")]]
+Rcpp::NumericVector cpp_obj_matrix(SEXP obj_ptr) {
+  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
+  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
+  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+  FS_MATRIX m;
+  FPDF_BOOL ok = FPDFPageObj_GetMatrix(obj, &m);
+  if (!ok) Rcpp::stop("FPDFPageObj_GetMatrix failed for this object.");
+  return Rcpp::NumericVector::create(
+    Rcpp::_["a"] = static_cast<double>(m.a),
+    Rcpp::_["b"] = static_cast<double>(m.b),
+    Rcpp::_["c"] = static_cast<double>(m.c),
+    Rcpp::_["d"] = static_cast<double>(m.d),
+    Rcpp::_["e"] = static_cast<double>(m.e),
+    Rcpp::_["f"] = static_cast<double>(m.f)
+  );
+}
+
+// [[Rcpp::export(name = "cpp_obj_dash_count")]]
+int cpp_obj_dash_count(SEXP obj_ptr) {
+  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
+  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
+  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+  return FPDFPageObj_GetDashCount(obj);
+}
+
+// [[Rcpp::export(name = "cpp_obj_dash_array")]]
+Rcpp::NumericVector cpp_obj_dash_array(SEXP obj_ptr) {
+  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
+  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
+  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+  int n = FPDFPageObj_GetDashCount(obj);
+  if (n <= 0) return Rcpp::NumericVector(0);
+  std::vector<float> buf(static_cast<size_t>(n), 0.0f);
+  FPDF_BOOL ok = FPDFPageObj_GetDashArray(obj, buf.data(),
+                                          static_cast<size_t>(n));
+  if (!ok) Rcpp::stop("FPDFPageObj_GetDashArray failed for this object.");
+  Rcpp::NumericVector out(n);
+  for (int i = 0; i < n; ++i) out[i] = static_cast<double>(buf[i]);
+  return out;
+}
+
+// [[Rcpp::export(name = "cpp_obj_dash_phase")]]
+double cpp_obj_dash_phase(SEXP obj_ptr) {
+  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
+  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
+  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+  float phase = 0.0f;
+  FPDF_BOOL ok = FPDFPageObj_GetDashPhase(obj, &phase);
+  if (!ok) return NA_REAL;
+  return static_cast<double>(phase);
 }

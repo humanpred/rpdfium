@@ -31,9 +31,9 @@ the first time the package is installed. The pinned version lives in
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/billdenney/rpdfium}
-  \item \url{https://billdenney.github.io/rpdfium/}
-  \item Report bugs at \url{https://github.com/billdenney/rpdfium/issues}
+  \item \url{https://github.com/humanpred/rpdfium}
+  \item \url{https://humanpred.github.io/rpdfium/}
+  \item Report bugs at \url{https://github.com/humanpred/rpdfium/issues}
 }
 
 }
