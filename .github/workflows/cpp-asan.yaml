@@ -42,10 +42,13 @@ jobs:
       - name: Install package
         run: R CMD INSTALL .
       - name: Run tests with sanitizers
-        # Source tests/testthat.R rather than calling testthat::test_dir
-        # directly: tests/testthat.R does `library(pdfium)` first, which
-        # loads the installed DLL via R's normal library.dynam path
-        # (RPATH points at <pkg>/lib/libpdfium.so). testthat::test_dir
-        # alone copies the package DLL to a tempdir where RPATH cannot
-        # resolve the bundled libpdfium.
-        run: Rscript tests/testthat.R
+        # Run from `tests/` so test_check("pdfium") finds the
+        # adjacent `testthat/` directory (mirrors what R CMD check
+        # does internally). tests/testthat.R does `library(pdfium)`
+        # first so the installed DLL loads via the normal
+        # library.dynam path - the RPATH set at install time points
+        # to <pkg>/lib/libpdfium.so. Calling testthat::test_dir
+        # directly would copy the package DLL to a tempdir via
+        # pkgload, where the relative RPATH cannot resolve.
+        working-directory: tests
+        run: Rscript testthat.R

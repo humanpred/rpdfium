@@ -40,9 +40,12 @@ jobs:
 
       - name: Run tests under valgrind
         # Same rationale as cpp-asan.yaml: load the installed package
-        # via library(pdfium) so RPATH resolves to <pkg>/lib/libpdfium.so,
-        # rather than letting testthat::test_dir pkgload-copy the DLL
-        # into a tempdir where the relative RPATH cannot resolve.
+        # via library(pdfium) so RPATH resolves to <pkg>/lib/libpdfium.so
+        # at the normal location, rather than letting testthat::test_dir
+        # pkgload-copy the DLL into a tempdir where the relative RPATH
+        # cannot resolve. Run from `tests/` so test_check finds the
+        # adjacent `testthat/` directory (mirrors R CMD check).
+        working-directory: tests
         run: |
           R -d "valgrind --tool=memcheck --leak-check=full --error-exitcode=1 --errors-for-leak-kinds=definite" \
-            --no-echo --vanilla -f tests/testthat.R
+            --no-echo --vanilla -f testthat.R
