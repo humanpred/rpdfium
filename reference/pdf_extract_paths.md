@@ -101,8 +101,11 @@ if (nzchar(fixture)) {
   attr(paths, "page_size_pt")
   attr(paths, "text_runs")
 }
-#> # A tibble: 1 × 7
+#> # A tibble: 1 × 13
 #>   text_index bounds_left bounds_bottom bounds_right bounds_top font_size text 
 #>        <int>       <dbl>         <dbl>        <dbl>      <dbl>     <dbl> <chr>
 #> 1          5        129.          103.         159.       114.         1 Hello
+#> # ℹ 6 more variables: font_base_name <chr>, font_family <chr>,
+#> #   font_weight <int>, font_italic_angle <int>, font_is_embedded <lgl>,
+#> #   font_flags <int>
 ```
