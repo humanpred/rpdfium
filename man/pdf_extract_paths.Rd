@@ -62,18 +62,16 @@ from \code{\link[=pdf_page_size]{pdf_page_size()}}
 \item \code{page_rotation} - integer in \verb{\{0, 90, 180, 270\}}, from
 \code{\link[=pdf_page_rotation]{pdf_page_rotation()}}
 \item \code{text_runs} - tibble with one row per text object on the page:
-\code{text_index}, bounds, and \code{font_size}. The \code{text} content
-itself is empty (\code{""}) in Phase 1; populated in Phase 3 once
-text-extraction APIs land.
+\code{text_index}, bounds, \code{font_size}, and \code{text} (UTF-8 content
+extracted via \code{\link[=pdf_text_content]{pdf_text_content()}}).
 }
 }
 
 \subsection{Known limitations}{
 \itemize{
-\item Bezier control points are not yet exposed (only segment
-endpoints). See \code{\link[=pdf_path_segments]{pdf_path_segments()}}'s documentation and
-\code{dev/pdfium-api-review.md}.
-\item Text content is empty pending Phase 3.
+\item Bezier control points are not exposed - only segment endpoints.
+PDFium does not expose them through its public C API; see
+\code{dev/decisions/ADR-009-defer-bezier-controls.md}.
 }
 }
 }

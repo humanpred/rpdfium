@@ -34,7 +34,7 @@ test_that("pdf_extract_paths attaches page_size_pt / rotation / text_runs", {
   expect_named(tr, c("text_index", "bounds_left", "bounds_bottom",
                      "bounds_right", "bounds_top", "font_size", "text"))
   expect_equal(nrow(tr), 1L)
-  expect_equal(tr$text[[1]], "")  # Phase 3 will populate
+  expect_identical(tr$text[[1]], "Hello")  # populated by pdf_text_content
   expect_gt(tr$font_size[[1]], 0)
 })
 

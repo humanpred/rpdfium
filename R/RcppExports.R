@@ -97,3 +97,11 @@ cpp_text_font_size <- function(obj_ptr) {
     .Call(`_pdfium_cpp_text_font_size`, obj_ptr)
 }
 
+cpp_text_content <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_text_content`, obj_ptr)
+}
+
+cpp_page_text_runs <- function(page_ptr) {
+    .Call(`_pdfium_cpp_page_text_runs`, page_ptr)
+}
+

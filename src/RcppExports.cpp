@@ -271,6 +271,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_text_content
+SEXP cpp_text_content(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_text_content(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_content(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_page_text_runs
+Rcpp::List cpp_page_text_runs(SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_page_text_runs(SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_page_text_runs(page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_init_library", (DL_FUNC) &_pdfium_cpp_init_library, 0},
@@ -297,6 +319,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_path_segment_count", (DL_FUNC) &_pdfium_cpp_path_segment_count, 1},
     {"_pdfium_cpp_path_segments", (DL_FUNC) &_pdfium_cpp_path_segments, 1},
     {"_pdfium_cpp_text_font_size", (DL_FUNC) &_pdfium_cpp_text_font_size, 1},
+    {"_pdfium_cpp_text_content", (DL_FUNC) &_pdfium_cpp_text_content, 1},
+    {"_pdfium_cpp_page_text_runs", (DL_FUNC) &_pdfium_cpp_page_text_runs, 1},
     {NULL, NULL, 0}
 };
 
