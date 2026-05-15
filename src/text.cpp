@@ -65,6 +65,22 @@ double cpp_text_font_size(SEXP obj_ptr) {
   return static_cast<double>(size);
 }
 
+namespace {
+
+// Read text for a single FPDF_PAGEOBJECT using an already-loaded
+// FPDF_TEXTPAGE. Returns the decoded UTF-8 string. Caller owns the
+// text page and is responsible for closing it.
+std::string read_text_obj(FPDF_PAGEOBJECT obj, FPDF_TEXTPAGE text_page) {
+  unsigned long n_bytes = FPDFTextObj_GetText(obj, text_page, nullptr, 0UL);
+  if (n_bytes < 2) return std::string();
+  size_t n_wchars = n_bytes / 2;
+  std::vector<unsigned short> buf(n_wchars);
+  FPDFTextObj_GetText(obj, text_page, buf.data(), n_bytes);
+  return utf16le_to_utf8(buf.data(), n_wchars - 1);
+}
+
+}  // namespace
+
 // [[Rcpp::export(name = "cpp_text_content")]]
 SEXP cpp_text_content(SEXP obj_ptr) {
   if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
@@ -85,22 +101,7 @@ SEXP cpp_text_content(SEXP obj_ptr) {
     Rcpp::stop("FPDFText_LoadPage returned NULL.");
   }
 
-  // First call with NULL/0 sizes the buffer. PDFium's contract is:
-  // the return value is the number of BYTES (not FPDF_WCHARs)
-  // including the trailing UTF-16 NUL terminator. So a buffer
-  // holding "Hello" returns 12 (5 chars + 1 NUL, each char being
-  // 2 bytes UTF-16LE).
-  unsigned long n_bytes =
-      FPDFTextObj_GetText(obj, text_page, nullptr, 0UL);
-  std::string utf8;
-  if (n_bytes >= 2) {  // at least one FPDF_WCHAR (the NUL)
-    size_t n_wchars = n_bytes / 2;
-    std::vector<unsigned short> buf(n_wchars);
-    FPDFTextObj_GetText(obj, text_page, buf.data(), n_bytes);
-    // Strip the trailing NUL FPDF_WCHAR.
-    size_t n_chars = n_wchars - 1;
-    utf8 = utf16le_to_utf8(buf.data(), n_chars);
-  }
+  std::string utf8 = read_text_obj(obj, text_page);
   FPDFText_ClosePage(text_page);
 
   SEXP r_chr = PROTECT(Rf_mkCharLenCE(
@@ -109,4 +110,71 @@ SEXP cpp_text_content(SEXP obj_ptr) {
   SET_STRING_ELT(r_vec, 0, r_chr);
   UNPROTECT(2);
   return r_vec;
+}
+
+// [[Rcpp::export(name = "cpp_page_text_runs")]]
+Rcpp::List cpp_page_text_runs(SEXP page_ptr) {
+  if (TYPEOF(page_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
+  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
+  if (page == nullptr) Rcpp::stop("Page handle is closed.");
+
+  FPDF_TEXTPAGE text_page = FPDFText_LoadPage(page);
+  if (text_page == nullptr) {
+    Rcpp::stop("FPDFText_LoadPage returned NULL.");
+  }
+
+  int n = FPDFPage_CountObjects(page);
+  // Two-pass: count text objects to size vectors exactly, then fill.
+  std::vector<int> text_indices;
+  for (int i = 0; i < n; ++i) {
+    FPDF_PAGEOBJECT obj = FPDFPage_GetObject(page, i);
+    if (obj != nullptr && FPDFPageObj_GetType(obj) == FPDF_PAGEOBJ_TEXT) {
+      text_indices.push_back(i + 1);  // 1-based for the R-facing index
+    }
+  }
+
+  size_t m = text_indices.size();
+  Rcpp::IntegerVector index(m);
+  Rcpp::NumericVector left(m), bottom(m), right(m), top(m), font_size(m);
+  Rcpp::CharacterVector text(m);
+
+  for (size_t k = 0; k < m; ++k) {
+    int i = text_indices[k] - 1;
+    FPDF_PAGEOBJECT obj = FPDFPage_GetObject(page, i);
+
+    index[k] = text_indices[k];
+
+    float l = 0.0f, b = 0.0f, r = 0.0f, t = 0.0f;
+    if (FPDFPageObj_GetBounds(obj, &l, &b, &r, &t)) {
+      left[k]   = static_cast<double>(l);
+      bottom[k] = static_cast<double>(b);
+      right[k]  = static_cast<double>(r);
+      top[k]    = static_cast<double>(t);
+    } else {
+      left[k] = bottom[k] = right[k] = top[k] = NA_REAL;
+    }
+
+    float fs = 0.0f;
+    if (FPDFTextObj_GetFontSize(obj, &fs)) {
+      font_size[k] = static_cast<double>(fs);
+    } else {
+      font_size[k] = NA_REAL;
+    }
+
+    std::string utf8 = read_text_obj(obj, text_page);
+    text[k] = Rf_mkCharLenCE(utf8.data(), static_cast<int>(utf8.size()),
+                             CE_UTF8);
+  }
+
+  FPDFText_ClosePage(text_page);
+
+  return Rcpp::List::create(
+    Rcpp::_["text_index"]    = index,
+    Rcpp::_["bounds_left"]   = left,
+    Rcpp::_["bounds_bottom"] = bottom,
+    Rcpp::_["bounds_right"]  = right,
+    Rcpp::_["bounds_top"]    = top,
+    Rcpp::_["font_size"]     = font_size,
+    Rcpp::_["text"]          = text
+  );
 }

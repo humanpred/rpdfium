@@ -84,21 +84,20 @@ pdf_extract_paths <- function(path, page = 1L) {
 
   objs <- pdf_page_objects(page_obj)
   paths <- which(vapply(objs, function(o) o$type == "path", logical(1)))
-  texts <- which(vapply(objs, function(o) o$type == "text", logical(1)))
 
-  # An empty-tibble template heads each rbind so the result has the
-  # documented schema even when the page has zero paths or zero text
-  # objects. `lapply` over an empty index vector returns `list()`,
-  # giving `do.call(rbind, list(empty))` -> the empty template, with
-  # no separate code branch to test.
+  # An empty-tibble template heads the rbind so the result has the
+  # documented schema even when the page has zero paths. `lapply`
+  # over an empty index vector returns `list()`, giving
+  # `do.call(rbind, list(empty))` -> the empty template, with no
+  # separate code branch to test.
   out <- do.call(rbind, c(
     list(empty_paths_tibble()),
     lapply(paths, function(i) one_path_rows(objs[[i]], i))
   ))
-  text_runs <- do.call(rbind, c(
-    list(empty_text_runs_tibble()),
-    lapply(texts, function(i) one_text_row(objs[[i]], i))
-  ))
+  # Text runs use the batched cpp_page_text_runs path under
+  # pdf_text_runs(); one FPDFText_LoadPage/ClosePage cycle per page
+  # instead of one per text object.
+  text_runs <- pdf_text_runs(page_obj)
 
   attr(out, "page_size_pt") <- page_size
   attr(out, "page_rotation") <- page_rot
@@ -178,22 +177,7 @@ one_path_rows <- function(obj, path_index) {
   )
 }
 
-# Internal: build the one-row text-run record for one text object.
-# pdf_text_content loads and closes a text-page handle internally;
-# for a page with many text objects we pay that overhead per row.
-# A future slice will share one text-page across the whole page via
-# a batched API.
-one_text_row <- function(obj, text_index) {
-  bnds <- pdf_obj_bounds(obj)
-  size <- pdf_text_font_size(obj)
-  text <- pdf_text_content(obj)
-  tibble::tibble(
-    text_index    = text_index,
-    bounds_left   = bnds[["left"]],
-    bounds_bottom = bnds[["bottom"]],
-    bounds_right  = bnds[["right"]],
-    bounds_top    = bnds[["top"]],
-    font_size     = size,
-    text          = text
-  )
-}
+## one_text_row() removed - pdf_extract_paths() now delegates to the
+## batched pdf_text_runs() implementation, which shares one
+## FPDFText_LoadPage / FPDFText_ClosePage cycle across every text
+## object on the page rather than paying the cost per-object.

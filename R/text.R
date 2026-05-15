@@ -68,6 +68,60 @@ pdf_text_content <- function(obj) {
   cpp_text_content(obj$ptr)
 }
 
+#' Extract every text run on a page
+#'
+#' Returns one row per text page-object on `page`, with the text
+#' content, bounding box, font size, and 1-based page-object index.
+#' Loads PDFium's per-page text-extraction context
+#' (`FPDFText_LoadPage`) once and reuses it across every text
+#' object on the page; this is materially faster than calling
+#' [pdf_text_content()] in a loop, which opens and closes a text
+#' page per object.
+#'
+#' The returned tibble's schema matches the `text_runs` attribute
+#' produced by [pdf_extract_paths()].
+#'
+#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#'   `pdfium_doc` (in which case the first page is loaded and
+#'   closed automatically).
+#' @param page_num One-based page index. Only used when `page` is a
+#'   `pdfium_doc`. Ignored otherwise.
+#' @return A tibble with columns:
+#'   * `text_index` - 1-based page-object index (so this row is the
+#'     `text_index`-th object returned by [pdf_page_objects()])
+#'   * `bounds_left`, `bounds_bottom`, `bounds_right`, `bounds_top`
+#'     - the object's bounding box in PDF points
+#'   * `font_size` - typographic em size; multiply by the text
+#'     object's matrix scale (when available) for rendered size
+#'   * `text` - UTF-8 string
+#'
+#' @seealso [pdf_text_content()], [pdf_extract_paths()]
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "unicode.pdf",
+#'                        package = "pdfium")
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_open(fixture)
+#'   pdf_text_runs(doc, 1)
+#'   pdf_close(doc)
+#' }
+#' @export
+pdf_text_runs <- function(page, page_num = 1L) {
+  page <- as_open_page(page, page_num)
+  if (isTRUE(attr(page, ".close_on_exit"))) {
+    on.exit(pdf_close_page(page), add = TRUE)
+  }
+  raw <- cpp_page_text_runs(page$ptr)
+  tibble::tibble(
+    text_index    = raw$text_index,
+    bounds_left   = raw$bounds_left,
+    bounds_bottom = raw$bounds_bottom,
+    bounds_right  = raw$bounds_right,
+    bounds_top    = raw$bounds_top,
+    font_size     = raw$font_size,
+    text          = raw$text
+  )
+}
+
 # Internal: validate that `obj` is an open pdfium_obj of type "text".
 # Centralised so the input-validation message stays in one place.
 check_text_obj <- function(obj) {
