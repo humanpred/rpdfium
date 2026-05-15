@@ -37,6 +37,8 @@ Tested via FPDFEditEmbedderTest::GetBezierControlPoints, exercising:
     regression-checked).
 
 Bug: see https://groups.google.com/g/pdfium/c/<thread-id>
+
+Change-Id: I2ddaa58d13a615777c3ac146d3f53faf5bad6be1
 ---
  fpdfsdk/fpdf_edit_embeddertest.cpp | 111 +++++++++++++++++++++++++++++
  fpdfsdk/fpdf_editpath.cpp          |  37 ++++++++++
