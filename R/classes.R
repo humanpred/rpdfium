@@ -39,3 +39,39 @@ print.pdfium_doc <- function(x, ...) {
   cat(format(x, ...), "\n", sep = "")
   invisible(x)
 }
+
+#' Construct a `pdfium_page` from an external pointer
+#'
+#' Internal helper. The page's externalptr carries its parent document's
+#' externalptr in its `prot` slot, so the page keeps the doc alive for as
+#' long as the page is reachable.
+#'
+#' @param ptr An `externalptr` to a PDFium `FPDF_PAGE` handle.
+#' @param doc The parent `pdfium_doc` (kept on the R-list for printing
+#'   and so the user can recover it).
+#' @param index One-based page index (for display only).
+#' @return An object of class `c("pdfium_page", "pdfium_handle")`.
+#' @keywords internal
+#' @noRd
+new_pdfium_page <- function(ptr, doc, index) {
+  stopifnot(typeof(ptr) == "externalptr",
+            inherits(doc, "pdfium_doc"),
+            is.numeric(index), length(index) == 1L)
+  structure(
+    list(ptr = ptr, doc = doc, index = as.integer(index)),
+    class = c("pdfium_page", "pdfium_handle")
+  )
+}
+
+#' @export
+format.pdfium_page <- function(x, ...) {
+  state <- if (is_open(x)) "open" else "closed"
+  sprintf("<pdfium_page [%s] page %d of %s>",
+          state, x$index, basename(x$doc$path))
+}
+
+#' @export
+print.pdfium_page <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  invisible(x)
+}

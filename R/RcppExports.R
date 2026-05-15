@@ -25,3 +25,15 @@ cpp_page_count <- function(ptr) {
     .Call(`_pdfium_cpp_page_count`, ptr)
 }
 
+cpp_load_page <- function(doc_ptr, page_index_zero_based) {
+    .Call(`_pdfium_cpp_load_page`, doc_ptr, page_index_zero_based)
+}
+
+cpp_close_page <- function(ptr) {
+    invisible(.Call(`_pdfium_cpp_close_page`, ptr))
+}
+
+cpp_page_size <- function(ptr) {
+    .Call(`_pdfium_cpp_page_size`, ptr)
+}
+

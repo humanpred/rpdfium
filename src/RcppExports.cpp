@@ -72,6 +72,39 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_load_page
+SEXP cpp_load_page(SEXP doc_ptr, int page_index_zero_based);
+RcppExport SEXP _pdfium_cpp_load_page(SEXP doc_ptrSEXP, SEXP page_index_zero_basedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type page_index_zero_based(page_index_zero_basedSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_load_page(doc_ptr, page_index_zero_based));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_close_page
+void cpp_close_page(SEXP ptr);
+RcppExport SEXP _pdfium_cpp_close_page(SEXP ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type ptr(ptrSEXP);
+    cpp_close_page(ptr);
+    return R_NilValue;
+END_RCPP
+}
+// cpp_page_size
+Rcpp::NumericVector cpp_page_size(SEXP ptr);
+RcppExport SEXP _pdfium_cpp_page_size(SEXP ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type ptr(ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_page_size(ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_init_library", (DL_FUNC) &_pdfium_cpp_init_library, 0},
@@ -80,6 +113,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_close_document", (DL_FUNC) &_pdfium_cpp_close_document, 1},
     {"_pdfium_cpp_handle_is_valid", (DL_FUNC) &_pdfium_cpp_handle_is_valid, 1},
     {"_pdfium_cpp_page_count", (DL_FUNC) &_pdfium_cpp_page_count, 1},
+    {"_pdfium_cpp_load_page", (DL_FUNC) &_pdfium_cpp_load_page, 2},
+    {"_pdfium_cpp_close_page", (DL_FUNC) &_pdfium_cpp_close_page, 1},
+    {"_pdfium_cpp_page_size", (DL_FUNC) &_pdfium_cpp_page_size, 1},
     {NULL, NULL, 0}
 };
 
