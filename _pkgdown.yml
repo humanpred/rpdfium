@@ -51,6 +51,7 @@ reference:
       - pdf_text_font_size
       - pdf_text_content
       - pdf_text_runs
+      - pdf_text_font
   - title: One-call extraction
     contents:
       - pdf_extract_paths
