@@ -5,7 +5,36 @@ notes on what the underlying C API itself exposes. Findings here will inform
 ADR-003 (binary distribution), ADR-004 (R-side API style), and ADR-005
 (memory / handle lifetime model), and the Tier 1/2/3 feature prioritization.
 
-The six wrappers covered (in column order in the matrix below):
+## Provenance
+
+This survey was conducted on **2026-05-15**. The six upstream repositories
+were cloned shallow into `/tmp/pdfium-upstream-survey/`; the findings below
+reflect the exact commits in the table. Re-running the survey against a
+more recent state may surface features or patterns added since.
+
+| Repo                          | Branch   | Commit         | Commit date | Latest tag at HEAD       |
+|---|---|---|---|---|
+| `pypdfium2-team/pypdfium2`    | `main`   | `65641ce442a5` | 2026-05-15  | (untagged on main)       |
+| `newinnovations/pdfium-rs`    | `main`   | `4056e0031ec8` | 2026-02-28  | (untagged)               |
+| `ajrcarey/pdfium-render`      | `master` | `b63a034b7ffe` | 2026-05-02  | (untagged)               |
+| `hyzyla/pdfium`               | `main`   | `274cac6e238b` | 2026-05-13  | `v2.1.13`                |
+| `barteksc/PdfiumAndroid`      | `master` | `103d5855f797` | 2018-06-29  | `pdfium-android-1.9.0`   |
+| `pvginkel/PdfiumViewer`       | `master` | `b253afcfa00b` | 2019-08-01  | (untagged; repo archived)|
+
+PdfiumAndroid and PdfiumViewer have not received commits in years and are
+included as historical baselines. The three actively-maintained wrappers
+(pypdfium2, pdfium-rs, pdfium-render) are where post-survey drift is most
+likely; refresh those clones first when revisiting this document.
+
+To refresh this survey:
+
+```sh
+for d in /tmp/pdfium-upstream-survey/*/; do (cd "$d" && git pull); done
+# then re-grep the trees, update the provenance table above, and note any
+# material deltas in NEWS.md or a new ADR if architectural implications follow.
+```
+
+## Wrappers covered (column order in the matrix)
 
 | Short label | Language | Repo |
 | --- | --- | --- |
@@ -16,10 +45,9 @@ The six wrappers covered (in column order in the matrix below):
 | **PdfiumAndroid** | Java / JNI on Android | https://github.com/barteksc/PdfiumAndroid |
 | **PdfiumViewer** | C# / WinForms (archived) | https://github.com/pvginkel/PdfiumViewer |
 
-All six were cloned shallow into `/tmp/pdfium-upstream-survey/` and read locally
-via grep/Read. PDFium itself is treated as the upstream reference for what
-the C API exposes; specific upstream cells say "C-API:" where the table
-column would otherwise be repetitive.
+PDFium itself is treated as the upstream reference for what the C API exposes;
+specific upstream cells say "C-API:" where the table column would otherwise
+be repetitive.
 
 Two repos draw a clear line between a low-level binding layer and a
 "helper" / idiomatic layer. Where that matters for feature coverage, the

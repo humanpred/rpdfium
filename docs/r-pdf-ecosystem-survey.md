@@ -1,14 +1,44 @@
 # R PDF Ecosystem Survey (Phase 0b)
 
-Survey date: 2026-05-15. Source of truth for "last update": CRAN
-`tools::CRAN_package_db()` snapshot taken on the survey date plus targeted
-package-page fetches.
-
 The goal of this document is to map every CRAN package that touches PDF
 inspection so that `pdfium` v0.1.0 can be positioned alongside (rather than on
 top of) what already exists, and so that the v0.1.0 API does not preclude
 post-0.1.0 features that have a precedent in the R ecosystem and a clean PDFium
 backing.
+
+## Provenance
+
+Survey conducted on **2026-05-15** against CRAN
+(`https://cloud.r-project.org`). Sources of truth:
+
+- "Last update (CRAN)" column below — `tools::CRAN_package_db()` snapshot
+  taken on the survey date, plus targeted package-page fetches.
+- CRAN versions captured below — `available.packages()` against
+  `https://cloud.r-project.org` on the survey date.
+
+| Package       | CRAN version on 2026-05-15 |
+|---|---|
+| `pdftools`    | 3.9.0    |
+| `qpdf`        | 1.4.1    |
+| `cpp11qpdf`   | 1.3.5    |
+| `magick`      | 2.9.1    |
+| `Rpoppler`    | 0.1-3    |
+| `tabulapdf`   | 1.0.5-5  |
+| `pdfsearch`   | 0.4.3    |
+| `staplr`      | 3.2.2    |
+| `xmpdf`       | 0.2.1    |
+| `pdftables`   | 0.1      |
+| `pdfminer`    | 1.0      |
+| `rasterpdf`   | 0.1.1    |
+
+To refresh this survey:
+
+```r
+db <- tools::CRAN_package_db()
+ap <- as.data.frame(available.packages(repos = "https://cloud.r-project.org"))
+# Re-fetch versions and "last update" dates; update both this provenance
+# block and the inventory table below.
+```
 
 ## 1. Inventory table
 

@@ -73,6 +73,7 @@ R user → R API (R/) → Rcpp glue (src/*.cpp) → PDFium C ABI → libpdfium.{
 | `tools/pdfium-version.txt` | `NEWS.md`, conformance test suite re-run |
 | Architectural choice | A new ADR under `docs/decisions/`, indexed in `docs/decisions/README.md` |
 | Bundled binary distribution | `LICENSE.md` "Bundled binary distribution" section |
+| Any of `docs/upstream-feature-survey.md`, `docs/r-pdf-ecosystem-survey.md`, `docs/pdfium-api-review.md` | The "Provenance" block at the top of that file — survey date, commit hashes, CRAN versions, refresh-command snippet. Drift in these blocks defeats the purpose of having them. |
 
 ## Git / GitHub workflow
 

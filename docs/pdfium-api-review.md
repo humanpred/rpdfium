@@ -1,16 +1,35 @@
 # PDFium Public C API Review (Phase 0c Deliverable)
 
-This document catalogs the complete public C API of Google's PDFium library
-(`/tmp/pdfium-upstream` cloned from `https://pdfium.googlesource.com/pdfium`,
-HEAD of `main`). The objective is to verify that the planned Tier 1/2/3 feature
-set for the R `pdfium` package maps to real PDFium symbols, to identify
-post-0.1.0 capabilities so the 0.1.0 R API does not paint us into a corner,
-and to provide a definitive reference for implementation.
+This document catalogs the complete public C API of Google's PDFium library.
+The objective is to verify that the planned Tier 1/2/3 feature set for the R
+`pdfium` package maps to real PDFium symbols, to identify post-0.1.0
+capabilities so the 0.1.0 R API does not paint us into a corner, and to
+provide a definitive reference for implementation.
 
-Scope: every header in `public/` except `public/cpp/` (C++ helper headers,
-not the C ABI). The `public/cpp/` directory contains only
-`fpdf_deleters.h` and `fpdf_scopers.h`, which are RAII helpers for C++
-embedders and not relevant to the Rcpp binding.
+## Provenance
+
+Survey conducted on **2026-05-15**. PDFium source cloned from
+`https://pdfium.googlesource.com/pdfium` to `/tmp/pdfium-upstream`:
+
+| Field | Value |
+|---|---|
+| Branch | `main` |
+| Commit | `9095044e26da35f3261df4365f51d6e74a3c8b24` |
+| Commit date | 2026-05-14 |
+| Scope | every file under `public/` except `public/cpp/` (C++ RAII helpers — `fpdf_deleters.h`, `fpdf_scopers.h` — not relevant to the Rcpp C-ABI binding) |
+
+The bblanchon binary pinned in `tools/pdfium-version.txt` (currently
+`chromium/7202`) corresponds to a tagged PDFium release, *not* this `main`
+HEAD. Upstream `main` typically runs days to weeks ahead of any tagged
+release; if a future bump pulls in API surface that wasn't present at this
+survey's commit, regenerate the symbol inventory and capability buckets.
+
+To refresh this survey:
+
+```sh
+cd /tmp/pdfium-upstream && git pull origin main
+# then re-walk public/ and update the symbol inventory + provenance block.
+```
 
 ## 1. Header Summary
 
