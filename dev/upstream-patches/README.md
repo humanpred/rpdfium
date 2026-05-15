@@ -68,13 +68,7 @@ steps 4–10 repeat on each upload.
    `wdenney@humanpredictions.com`). Gerrit blocks tryjobs until
    this is on file. Allow ~15 minutes for it to propagate.
 
-2. **Sign in to Gerrit and seed `.gitcookies`.** Open
-   <https://pdfium-review.googlesource.com/new-password>, sign in
-   with the Google account you'll author CLs from, and copy the
-   shell snippet they generate into your terminal. It writes a
-   line to `~/.gitcookies` that `git cl upload` will use.
-
-3. **Install `depot_tools`** (small, ~50 MB):
+2. **Install `depot_tools`** (small, ~50 MB):
 
    ```sh
    cd ~
@@ -82,6 +76,35 @@ steps 4–10 repeat on each upload.
    echo 'export PATH="$HOME/depot_tools:$PATH"' >> ~/.bashrc
    exec $SHELL -l
    ```
+
+   (Already present in this repo's machine at `~/depot_tools/` —
+   just add it to `PATH` if you haven't.)
+
+3. **Authenticate to Gerrit.** Two options; pick one.
+
+   **3a. New auth stack (recommended on fresh machines).**
+   depot_tools' default auth path runs `git credential-luci login`
+   which opens a browser flow against your Google account and
+   stores tokens under `~/.config/chrome_infra/auth/`. It engages
+   automatically the first time `git cl upload` needs credentials
+   — no separate URL to visit. Skip 3b if you go this route. If
+   you want to verify ahead of time:
+
+   ```sh
+   git credential-luci login
+   git cl creds-check                 # diagnoses any remaining issues
+   ```
+
+   **3b. Legacy `.gitcookies` flow.** Open
+   <https://pdfium.googlesource.com/new-password> (note: no
+   `-review` in the hostname — the password page is hosted on the
+   canonical googlesource domain, not the Gerrit subdomain). Sign
+   in with the Google account you'll author CLs from. The page
+   shows a shell snippet — copy-paste it into your terminal. It
+   appends an auth line to `~/.gitcookies` for
+   `.googlesource.com` that depot_tools picks up. (When this file
+   exists, depot_tools disables the new auth stack and uses
+   `.gitcookies` instead.)
 
 ### Per-upload (or first upload)
 
