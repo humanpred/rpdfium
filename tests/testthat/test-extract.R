@@ -32,7 +32,10 @@ test_that("pdf_extract_paths attaches page_size_pt / rotation / text_runs", {
   tr <- attr(res, "text_runs")
   expect_s3_class(tr, "tbl_df")
   expect_named(tr, c("text_index", "bounds_left", "bounds_bottom",
-                     "bounds_right", "bounds_top", "font_size", "text"))
+                     "bounds_right", "bounds_top", "font_size", "text",
+                     "font_base_name", "font_family", "font_weight",
+                     "font_italic_angle", "font_is_embedded",
+                     "font_flags"))
   expect_equal(nrow(tr), 1L)
   expect_identical(tr$text[[1]], "Hello")  # populated by pdf_text_content
   expect_gt(tr$font_size[[1]], 0)

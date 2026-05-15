@@ -3,8 +3,13 @@
 test_that("pdf_text_runs returns the documented tibble shape", {
   res <- pdf_text_runs(pdf_open(fixture_path("shapes")))
   expect_s3_class(res, "tbl_df")
+  # The font_* columns were added when font metadata extraction
+  # landed; see test-text-font.R for the per-column type checks.
   expect_named(res, c("text_index", "bounds_left", "bounds_bottom",
-                      "bounds_right", "bounds_top", "font_size", "text"))
+                      "bounds_right", "bounds_top", "font_size", "text",
+                      "font_base_name", "font_family", "font_weight",
+                      "font_italic_angle", "font_is_embedded",
+                      "font_flags"))
   expect_type(res$text_index,  "integer")
   expect_type(res$bounds_left, "double")
   expect_type(res$font_size,   "double")

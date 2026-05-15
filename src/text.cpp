@@ -79,6 +79,23 @@ std::string read_text_obj(FPDF_PAGEOBJECT obj, FPDF_TEXTPAGE text_page) {
   return utf16le_to_utf8(buf.data(), n_wchars - 1);
 }
 
+// Read a PDFium font-name field via the standard two-pass pattern.
+// `getter` is FPDFFont_GetBaseFontName or FPDFFont_GetFamilyName -
+// both have the same `(FPDF_FONT, char* buf, size_t len) -> size_t`
+// signature and emit UTF-8 (or ASCII subset) directly. Returns an
+// empty string if the font has no such name.
+std::string read_font_name(
+    FPDF_FONT font,
+    size_t (*getter)(FPDF_FONT, char*, size_t)) {
+  if (font == nullptr) return std::string();
+  size_t n = getter(font, nullptr, 0);
+  if (n <= 1) return std::string();  // 0 on failure; 1 = just the NUL
+  std::vector<char> buf(n);
+  getter(font, buf.data(), n);
+  // n includes the trailing NUL; strip it.
+  return std::string(buf.data(), n - 1);
+}
+
 }  // namespace
 
 // [[Rcpp::export(name = "cpp_text_content")]]
@@ -112,6 +129,43 @@ SEXP cpp_text_content(SEXP obj_ptr) {
   return r_vec;
 }
 
+// [[Rcpp::export(name = "cpp_text_font")]]
+Rcpp::List cpp_text_font(SEXP obj_ptr) {
+  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
+  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
+  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+
+  FPDF_FONT font = FPDFTextObj_GetFont(obj);
+  if (font == nullptr) {
+    return Rcpp::List::create(
+      Rcpp::_["base_name"]    = NA_STRING,
+      Rcpp::_["family"]       = NA_STRING,
+      Rcpp::_["weight"]       = NA_INTEGER,
+      Rcpp::_["italic_angle"] = NA_INTEGER,
+      Rcpp::_["is_embedded"]  = NA_LOGICAL,
+      Rcpp::_["flags"]        = NA_INTEGER
+    );
+  }
+
+  std::string base_name = read_font_name(font, FPDFFont_GetBaseFontName);
+  std::string family    = read_font_name(font, FPDFFont_GetFamilyName);
+  int weight = FPDFFont_GetWeight(font);
+  int italic_angle = NA_INTEGER;
+  int ia = 0;
+  if (FPDFFont_GetItalicAngle(font, &ia)) italic_angle = ia;
+  bool is_embedded = (FPDFFont_GetIsEmbedded(font) != 0);
+  int flags = FPDFFont_GetFlags(font);
+
+  return Rcpp::List::create(
+    Rcpp::_["base_name"]    = base_name,
+    Rcpp::_["family"]       = family,
+    Rcpp::_["weight"]       = weight,
+    Rcpp::_["italic_angle"] = italic_angle,
+    Rcpp::_["is_embedded"]  = is_embedded,
+    Rcpp::_["flags"]        = flags
+  );
+}
+
 // [[Rcpp::export(name = "cpp_page_text_runs")]]
 Rcpp::List cpp_page_text_runs(SEXP page_ptr) {
   if (TYPEOF(page_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
@@ -137,6 +191,9 @@ Rcpp::List cpp_page_text_runs(SEXP page_ptr) {
   Rcpp::IntegerVector index(m);
   Rcpp::NumericVector left(m), bottom(m), right(m), top(m), font_size(m);
   Rcpp::CharacterVector text(m);
+  Rcpp::CharacterVector font_base(m), font_family(m);
+  Rcpp::IntegerVector font_weight(m), font_italic_angle(m), font_flags(m);
+  Rcpp::LogicalVector font_is_embedded(m);
 
   for (size_t k = 0; k < m; ++k) {
     int i = text_indices[k] - 1;
@@ -164,17 +221,46 @@ Rcpp::List cpp_page_text_runs(SEXP page_ptr) {
     std::string utf8 = read_text_obj(obj, text_page);
     text[k] = Rf_mkCharLenCE(utf8.data(), static_cast<int>(utf8.size()),
                              CE_UTF8);
+
+    FPDF_FONT font = FPDFTextObj_GetFont(obj);
+    if (font == nullptr) {
+      font_base[k]         = NA_STRING;
+      font_family[k]       = NA_STRING;
+      font_weight[k]       = NA_INTEGER;
+      font_italic_angle[k] = NA_INTEGER;
+      font_is_embedded[k]  = NA_LOGICAL;
+      font_flags[k]        = NA_INTEGER;
+    } else {
+      std::string bn = read_font_name(font, FPDFFont_GetBaseFontName);
+      std::string fm = read_font_name(font, FPDFFont_GetFamilyName);
+      font_base[k]   = Rf_mkCharLenCE(bn.data(), static_cast<int>(bn.size()),
+                                      CE_UTF8);
+      font_family[k] = Rf_mkCharLenCE(fm.data(), static_cast<int>(fm.size()),
+                                      CE_UTF8);
+      font_weight[k] = FPDFFont_GetWeight(font);
+      int ia = 0;
+      font_italic_angle[k] =
+          FPDFFont_GetItalicAngle(font, &ia) ? ia : NA_INTEGER;
+      font_is_embedded[k] = (FPDFFont_GetIsEmbedded(font) != 0);
+      font_flags[k] = FPDFFont_GetFlags(font);
+    }
   }
 
   FPDFText_ClosePage(text_page);
 
   return Rcpp::List::create(
-    Rcpp::_["text_index"]    = index,
-    Rcpp::_["bounds_left"]   = left,
-    Rcpp::_["bounds_bottom"] = bottom,
-    Rcpp::_["bounds_right"]  = right,
-    Rcpp::_["bounds_top"]    = top,
-    Rcpp::_["font_size"]     = font_size,
-    Rcpp::_["text"]          = text
+    Rcpp::_["text_index"]        = index,
+    Rcpp::_["bounds_left"]       = left,
+    Rcpp::_["bounds_bottom"]     = bottom,
+    Rcpp::_["bounds_right"]      = right,
+    Rcpp::_["bounds_top"]        = top,
+    Rcpp::_["font_size"]         = font_size,
+    Rcpp::_["text"]              = text,
+    Rcpp::_["font_base_name"]    = font_base,
+    Rcpp::_["font_family"]       = font_family,
+    Rcpp::_["font_weight"]       = font_weight,
+    Rcpp::_["font_italic_angle"] = font_italic_angle,
+    Rcpp::_["font_is_embedded"]  = font_is_embedded,
+    Rcpp::_["font_flags"]        = font_flags
   );
 }

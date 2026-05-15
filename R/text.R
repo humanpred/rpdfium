@@ -112,14 +112,62 @@ pdf_text_runs <- function(page, page_num = 1L) {
   }
   raw <- cpp_page_text_runs(page$ptr)
   tibble::tibble(
-    text_index    = raw$text_index,
-    bounds_left   = raw$bounds_left,
-    bounds_bottom = raw$bounds_bottom,
-    bounds_right  = raw$bounds_right,
-    bounds_top    = raw$bounds_top,
-    font_size     = raw$font_size,
-    text          = raw$text
+    text_index        = raw$text_index,
+    bounds_left       = raw$bounds_left,
+    bounds_bottom     = raw$bounds_bottom,
+    bounds_right      = raw$bounds_right,
+    bounds_top        = raw$bounds_top,
+    font_size         = raw$font_size,
+    text              = raw$text,
+    font_base_name    = raw$font_base_name,
+    font_family       = raw$font_family,
+    font_weight       = raw$font_weight,
+    font_italic_angle = raw$font_italic_angle,
+    font_is_embedded  = raw$font_is_embedded,
+    font_flags        = raw$font_flags
   )
+}
+
+#' Font metadata of a text page-object
+#'
+#' Returns the font properties PDFium exposes for `obj`'s text: the
+#' base font name (e.g. "Helvetica-Bold"), the family name (e.g.
+#' "Helvetica"), weight (typographic weight integer, 400 = regular,
+#' 700 = bold), italic angle in degrees (negative for italic
+#' slant), whether the font is embedded in the PDF, and the PDF
+#' font-descriptor flags bitmask (see PDF spec section "Font
+#' Descriptors", Table 123).
+#'
+#' If the text object has no font set (rare; usually only for
+#' malformed PDFs), every field is `NA`.
+#'
+#' @param obj A `pdfium_obj` of type `"text"` (from
+#'   [pdf_page_objects()]).
+#' @return A named list with elements:
+#'   * `base_name` - character scalar, base font name; UTF-8
+#'   * `family` - character scalar, font family name; UTF-8
+#'   * `weight` - integer (e.g. 400, 500, 700)
+#'   * `italic_angle` - integer degrees; 0 for upright
+#'   * `is_embedded` - logical
+#'   * `flags` - integer bitmask
+#'
+#' @seealso [pdf_text_content()], [pdf_text_runs()],
+#'   [pdf_text_font_size()]
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+#'                        package = "pdfium")
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_open(fixture)
+#'   p <- pdf_load_page(doc, 1)
+#'   text_obj <- Filter(\(o) o$type == "text", pdf_page_objects(p))[[1]]
+#'   pdf_text_font(text_obj)
+#'   pdf_close_page(p)
+#'   pdf_close(doc)
+#' }
+#' @export
+pdf_text_font <- function(obj) {
+  check_text_obj(obj)
+  cpp_text_font(obj$ptr)
 }
 
 # Internal: validate that `obj` is an open pdfium_obj of type "text".
