@@ -1,0 +1,125 @@
+# How pdfium is built
+
+This vignette explains the four-layer model `pdfium` uses, the memory
+contract you rely on as a user, and the most common pitfalls. For
+contributor-facing detail (CI topology, fixture rebuild pipeline, PDFium
+bump procedure), see `dev/architecture.md` in the source tree.
+
+## Four-layer model
+
+    R user
+      │
+      ▼
+    R API           pdf_open(), pdf_close(), pdf_page_count(), ...
+      │             S3 classes: pdfium_doc, pdfium_page, pdfium_obj
+      ▼
+    Rcpp glue       internal cpp_* helpers; you should never see them
+      │
+      ▼
+    PDFium C ABI    Google's PDFium engine (BSD-3-Clause)
+      │
+      ▼
+    libpdfium       shared library downloaded at install time
+
+The R API takes user inputs, validates them, calls the Rcpp glue, and
+shapes the result back into idiomatic R (tibbles for tabular outputs, S3
+objects for handles). You only ever interact with the R API.
+
+## Memory: what happens when you forget to close
+
+``` r
+
+inspect <- function(path) {
+  doc <- pdf_open(path)
+  pdf_page_count(doc)
+  # `doc` goes out of scope here.
+  # R's GC will eventually finalize it and call FPDF_CloseDocument.
+}
+inspect("report.pdf")
+```
+
+This is safe. `pdfium` registers a C finalizer on every PDF handle. When
+the R object becomes unreachable, R’s garbage collector reclaims it; the
+finalizer then calls PDFium’s `FPDF_CloseDocument` to release the
+underlying memory.
+
+The caveat is that GC is **eventual**, not deterministic. If you open
+many large documents in a tight loop, you may exhaust process memory
+before the GC catches up. In that case, close explicitly:
+
+``` r
+
+inspect <- function(path) {
+  doc <- pdf_open(path)
+  on.exit(pdf_close(doc), add = TRUE)
+  pdf_page_count(doc)
+}
+```
+
+[`pdf_close()`](https://humanpred.github.io/rpdfium/reference/pdf_close.md)
+is **idempotent**: calling it twice is a no-op. The finalizer notices
+the handle has already been closed and skips its own close call. You can
+safely combine explicit close with the automatic fallback.
+
+## Children outlive their parent
+
+``` r
+
+load_page <- function(path) {
+  doc <- pdf_open(path)
+  page <- pdf_load_page(doc, 1)   # available in Phase 1+
+  pdf_close(doc)                  # this is fine
+  page                            # still usable here
+}
+```
+
+When you call `pdf_load_page(doc, ...)`, the returned `pdfium_page`
+holds an internal reference to its parent `pdfium_doc`. Even if you drop
+your reference to `doc` (or explicitly close it), the page stays valid
+until the page object itself is collected. The underlying PDFium
+document is kept alive in the background until the last page (or object)
+that depends on it goes away.
+
+The order is: **child references the parent**, never the other way
+around.
+
+## How the binary gets loaded
+
+When you [`library(pdfium)`](https://github.com/billdenney/rpdfium),
+this happens:
+
+1.  R loads the package’s compiled `pdfium.so` (or `pdfium.dll` on
+    Windows).
+2.  The dynamic linker follows the RPATH baked in at install time and
+    loads `libpdfium.{so|dylib|dll}` from the package’s `inst/lib/`.
+3.  `.onLoad` calls `FPDF_InitLibraryWithConfig()` exactly once.
+4.  When you call `library.unload("pdfium")` or quit R, `.onUnload` runs
+    `FPDF_DestroyLibrary()`.
+
+The `libpdfium` binary was downloaded the first time you installed
+`pdfium`. The pinned release tag lives in `tools/pdfium-version.txt`. If
+your machine has no internet access at install time, set
+`PDFIUM_OFFLINE=1` and place the matching tarball under
+`inst/pdfium-binaries/` before installing.
+
+## Common gotchas
+
+- **Holding many documents at once.** GC is non-deterministic; close
+  explicitly with
+  [`pdf_close()`](https://humanpred.github.io/rpdfium/reference/pdf_close.md).
+- **Deleting an open PDF on Windows.** Windows blocks deletion of files
+  held by open handles. Close the document first, then delete.
+- **Using a closed handle.** Functions that take a `pdfium_doc` raise an
+  error if the handle has already been closed. Re-open the file if you
+  need it again.
+- **Calling `FPDF_*` directly.** Don’t. The R API exists for a reason —
+  bypassing it bypasses the lifetime tracking and you’ll crash R.
+
+## Further reading
+
+- The decision records under `dev/decisions/` capture every
+  architectural choice and the alternatives that were considered.
+- `dev/architecture.md` covers contributor-facing topics: CI topology,
+  the PDFium bump procedure, and the fixture-rebuild pipeline.
+- `vignette("getting-started")` walks through a complete inspection
+  workflow.

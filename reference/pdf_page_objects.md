@@ -1,0 +1,60 @@
+# Enumerate the objects on a page
+
+Returns a list of `pdfium_obj` handles - one per drawing primitive on
+the page, in PDFium's z-order (back to front). Each element carries its
+type ("path", "text", "image", "form", "shading", "unknown"), a 1-based
+index within the page, and an internal pointer suitable for passing to
+downstream object queries.
+
+## Usage
+
+``` r
+pdf_page_objects(page, page_num = 1L)
+```
+
+## Arguments
+
+- page:
+
+  A `pdfium_page` from
+  [`pdf_load_page()`](https://humanpred.github.io/rpdfium/reference/pdf_load_page.md),
+  or a `pdfium_doc` (in which case the first page is loaded and closed
+  automatically).
+
+- page_num:
+
+  One-based page index. Only used when `page` is a `pdfium_doc`. Ignored
+  otherwise.
+
+## Value
+
+A list (possibly empty) of `pdfium_obj` objects.
+
+## Details
+
+Page objects do not own their own lifetime - they remain valid only as
+long as the parent `pdfium_page` is open. The handle's internal parent
+reference keeps the page (and transitively the document) alive for as
+long as you hold the object, but calling
+[`pdf_close_page()`](https://humanpred.github.io/rpdfium/reference/pdf_close_page.md)
+explicitly invalidates all returned objects.
+
+## See also
+
+[`pdf_obj_type()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_type.md)
+
+## Examples
+
+``` r
+fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+                       package = "pdfium")
+if (nzchar(fixture)) {
+  doc <- pdf_open(fixture)
+  p <- pdf_load_page(doc, 1)
+  objs <- pdf_page_objects(p)
+  length(objs)
+  vapply(objs, pdf_obj_type, character(1))
+  pdf_close_page(p)
+  pdf_close(doc)
+}
+```
