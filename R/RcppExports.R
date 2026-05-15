@@ -105,6 +105,10 @@ cpp_path_segments <- function(obj_ptr) {
     .Call(`_pdfium_cpp_path_segments`, obj_ptr)
 }
 
+cpp_render_page <- function(page_ptr, pixel_width, pixel_height, rotation_code, render_flags, background_argb, fill_background) {
+    .Call(`_pdfium_cpp_render_page`, page_ptr, pixel_width, pixel_height, rotation_code, render_flags, background_argb, fill_background)
+}
+
 cpp_text_font_size <- function(obj_ptr) {
     .Call(`_pdfium_cpp_text_font_size`, obj_ptr)
 }

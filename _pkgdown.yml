@@ -55,6 +55,13 @@ reference:
       - pdf_text_content
       - pdf_text_runs
       - pdf_text_font
+  - title: Rendering
+    contents:
+      - pdf_render_page
+      - pdf_render_to_png
+      - as.raster.pdfium_bitmap
+      - as.array.pdfium_bitmap
+      - as.matrix.pdfium_bitmap
   - title: One-call extraction
     contents:
       - pdf_extract_paths

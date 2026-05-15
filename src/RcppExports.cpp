@@ -294,6 +294,23 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_render_page
+Rcpp::IntegerMatrix cpp_render_page(SEXP page_ptr, int pixel_width, int pixel_height, int rotation_code, int render_flags, int background_argb, bool fill_background);
+RcppExport SEXP _pdfium_cpp_render_page(SEXP page_ptrSEXP, SEXP pixel_widthSEXP, SEXP pixel_heightSEXP, SEXP rotation_codeSEXP, SEXP render_flagsSEXP, SEXP background_argbSEXP, SEXP fill_backgroundSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type pixel_width(pixel_widthSEXP);
+    Rcpp::traits::input_parameter< int >::type pixel_height(pixel_heightSEXP);
+    Rcpp::traits::input_parameter< int >::type rotation_code(rotation_codeSEXP);
+    Rcpp::traits::input_parameter< int >::type render_flags(render_flagsSEXP);
+    Rcpp::traits::input_parameter< int >::type background_argb(background_argbSEXP);
+    Rcpp::traits::input_parameter< bool >::type fill_background(fill_backgroundSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_render_page(page_ptr, pixel_width, pixel_height, rotation_code, render_flags, background_argb, fill_background));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_text_font_size
 double cpp_text_font_size(SEXP obj_ptr);
 RcppExport SEXP _pdfium_cpp_text_font_size(SEXP obj_ptrSEXP) {
@@ -366,6 +383,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_page_rotation", (DL_FUNC) &_pdfium_cpp_page_rotation, 1},
     {"_pdfium_cpp_path_segment_count", (DL_FUNC) &_pdfium_cpp_path_segment_count, 1},
     {"_pdfium_cpp_path_segments", (DL_FUNC) &_pdfium_cpp_path_segments, 1},
+    {"_pdfium_cpp_render_page", (DL_FUNC) &_pdfium_cpp_render_page, 7},
     {"_pdfium_cpp_text_font_size", (DL_FUNC) &_pdfium_cpp_text_font_size, 1},
     {"_pdfium_cpp_text_content", (DL_FUNC) &_pdfium_cpp_text_content, 1},
     {"_pdfium_cpp_text_font", (DL_FUNC) &_pdfium_cpp_text_font, 1},
