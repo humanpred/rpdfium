@@ -1,9 +1,19 @@
 # pdfium R package — Windows Makevars.
 #
-# configure.win extracts the bblanchon archive into `inst/include/` and
-# `inst/lib/` and copies `pdfium.dll` to `inst/bin/` (alongside the
-# package's own DLL once installed). The DLL is loaded via library.dynam
-# from R/zzz.R before the first FPDF_* call.
+# configure.win runs tools/download-pdfium.R, which:
+#   - downloads bblanchon's Windows tarball
+#   - renames bin/pdfium.dll -> bin/libpdfium.dll so the bundled DLL
+#     does not collide with the package's own pdfium.dll (R names the
+#     package's compiled DLL after the package)
+#   - regenerates the import library as inst/lib/libpdfium.dll.a so
+#     Mingw GCC's `-lpdfium` search resolves
+#
+# src/install.libs.R then copies libpdfium.dll into <pkg>/libs/x64/
+# (next to the package's own pdfium.dll). R's library.dynam loads
+# pdfium.dll via LoadLibraryEx with LOAD_WITH_ALTERED_SEARCH_PATH,
+# which puts the loaded DLL's directory first on the Windows search
+# path - so pdfium.dll's DT_NEEDED on libpdfium.dll resolves
+# automatically.
 
 PKG_CPPFLAGS = -I../inst/include -DR_NO_REMAP
 PKG_LIBS    = -L../inst/lib -lpdfium
