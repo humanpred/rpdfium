@@ -12,6 +12,7 @@
 
 #include <Rcpp.h>
 #include "fpdfview.h"
+#include "fpdf_edit.h"  // for FPDFPage_GetRotation
 
 namespace {
 
@@ -72,4 +73,25 @@ Rcpp::NumericVector cpp_page_size(SEXP ptr) {
   double h = FPDF_GetPageHeightF(page);
   return Rcpp::NumericVector::create(Rcpp::_["width"] = w,
                                      Rcpp::_["height"] = h);
+}
+
+// [[Rcpp::export(name = "cpp_page_rotation")]]
+int cpp_page_rotation(SEXP ptr) {
+  if (TYPEOF(ptr) != EXTPTRSXP) {
+    Rcpp::stop("Expected an external pointer.");
+  }
+  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(ptr));
+  if (page == nullptr) {
+    Rcpp::stop("Page handle is closed.");
+  }
+  // FPDFPage_GetRotation returns 0, 1, 2, 3 for 0°, 90°, 180°, 270°.
+  // Convert to degrees so the R-facing value reads naturally.
+  int code = FPDFPage_GetRotation(page);
+  switch (code) {
+    case 0: return 0;
+    case 1: return 90;
+    case 2: return 180;
+    case 3: return 270;
+    default: Rcpp::stop("Unexpected FPDFPage_GetRotation result: %d", code);
+  }
 }

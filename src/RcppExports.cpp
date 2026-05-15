@@ -105,6 +105,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_page_rotation
+int cpp_page_rotation(SEXP ptr);
+RcppExport SEXP _pdfium_cpp_page_rotation(SEXP ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type ptr(ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_page_rotation(ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_init_library", (DL_FUNC) &_pdfium_cpp_init_library, 0},
@@ -116,6 +127,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_load_page", (DL_FUNC) &_pdfium_cpp_load_page, 2},
     {"_pdfium_cpp_close_page", (DL_FUNC) &_pdfium_cpp_close_page, 1},
     {"_pdfium_cpp_page_size", (DL_FUNC) &_pdfium_cpp_page_size, 1},
+    {"_pdfium_cpp_page_rotation", (DL_FUNC) &_pdfium_cpp_page_rotation, 1},
     {NULL, NULL, 0}
 };
 

@@ -20,6 +20,14 @@ Returns the width and height of \code{page} in PDF points (1 point = 1/72 inch).
 Accepts either a \code{pdfium_page} (preferred when you already have one) or
 a \verb{(doc, page)} pair (convenience for one-shot inspection).
 }
+\details{
+The returned dimensions are \strong{media-box} dimensions in the page's
+default (un-rotated) orientation. If the page has a non-zero
+rotation (via the PDF \verb{/Rotate} attribute or PDFium's runtime
+rotation), \code{pdf_page_size()} does not swap width and height. Query
+the rotation separately with \code{\link[=pdf_page_rotation]{pdf_page_rotation()}} if you need to
+know the on-screen orientation.
+}
 \examples{
 fixture <- system.file("extdata", "fixtures", "minimal.pdf",
                        package = "pdfium")
@@ -28,4 +36,7 @@ if (nzchar(fixture)) {
   pdf_page_size(doc, 1)
   pdf_close(doc)
 }
+}
+\seealso{
+\code{\link[=pdf_page_rotation]{pdf_page_rotation()}} for the rotation angle in degrees.
 }

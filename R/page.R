@@ -66,11 +66,19 @@ pdf_close_page <- function(page) {
 #' Accepts either a `pdfium_page` (preferred when you already have one) or
 #' a `(doc, page)` pair (convenience for one-shot inspection).
 #'
+#' The returned dimensions are **media-box** dimensions in the page's
+#' default (un-rotated) orientation. If the page has a non-zero
+#' rotation (via the PDF `/Rotate` attribute or PDFium's runtime
+#' rotation), `pdf_page_size()` does not swap width and height. Query
+#' the rotation separately with [pdf_page_rotation()] if you need to
+#' know the on-screen orientation.
+#'
 #' @param x A `pdfium_page` from [pdf_load_page()], or a `pdfium_doc`.
 #' @param page One-based page index. Only used when `x` is a `pdfium_doc`.
 #'   Ignored otherwise.
 #' @return A named numeric vector with elements `width` and `height`.
 #'
+#' @seealso [pdf_page_rotation()] for the rotation angle in degrees.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "minimal.pdf",
 #'                        package = "pdfium")
@@ -89,6 +97,45 @@ pdf_page_size <- function(x, page = 1L) {
     p <- pdf_load_page(x, page)
     on.exit(pdf_close_page(p), add = TRUE)
     return(cpp_page_size(p$ptr))
+  }
+  stop("`x` must be a `pdfium_page` or `pdfium_doc`.", call. = FALSE)
+}
+
+#' Page rotation in degrees
+#'
+#' Returns the page's rotation as `0`, `90`, `180`, or `270` degrees.
+#' PDFium reports the rotation stored in the page's `/Rotate` entry
+#' combined with any runtime rotation applied via the editing API.
+#'
+#' A non-zero rotation means [pdf_page_size()]'s `width` and `height`
+#' refer to the page's pre-rotation media box, not the on-screen
+#' dimensions a viewer would display. For an "as-displayed" size, swap
+#' `width` and `height` when rotation is `90` or `270`.
+#'
+#' @param x A `pdfium_page` from [pdf_load_page()], or a `pdfium_doc`.
+#' @param page One-based page index. Only used when `x` is a `pdfium_doc`.
+#'   Ignored otherwise.
+#' @return An integer in `{0, 90, 180, 270}`.
+#'
+#' @seealso [pdf_page_size()] for the un-rotated dimensions.
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "minimal.pdf",
+#'                        package = "pdfium")
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_open(fixture)
+#'   pdf_page_rotation(doc, 1)
+#'   pdf_close(doc)
+#' }
+#' @export
+pdf_page_rotation <- function(x, page = 1L) {
+  if (inherits(x, "pdfium_page")) {
+    if (!is_open(x)) stop("Page has been closed.", call. = FALSE)
+    return(cpp_page_rotation(x$ptr))
+  }
+  if (inherits(x, "pdfium_doc")) {
+    p <- pdf_load_page(x, page)
+    on.exit(pdf_close_page(p), add = TRUE)
+    return(cpp_page_rotation(p$ptr))
   }
   stop("`x` must be a `pdfium_page` or `pdfium_doc`.", call. = FALSE)
 }

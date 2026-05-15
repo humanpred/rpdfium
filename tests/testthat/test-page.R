@@ -92,6 +92,32 @@ test_that("pdf_page_size refuses closed handles and bad inputs", {
   expect_error(pdf_page_size(42),   "must be a `pdfium_page` or `pdfium_doc`")
 })
 
+test_that("pdf_page_rotation returns 0/90/180/270 from a page or a doc", {
+  pdf <- fixture_path("minimal")
+  doc <- pdf_open(pdf)
+  on.exit(pdf_close(doc), add = TRUE)
+
+  # The Cairo-built fixture is un-rotated.
+  expect_identical(pdf_page_rotation(doc, 1), 0L)
+
+  page <- pdf_load_page(doc, 1)
+  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  rot <- pdf_page_rotation(page)
+  expect_identical(rot, 0L)
+  expect_true(rot %in% c(0L, 90L, 180L, 270L))
+})
+
+test_that("pdf_page_rotation refuses closed handles and bad inputs", {
+  pdf <- fixture_path("minimal")
+  doc <- pdf_open(pdf)
+  on.exit(try(pdf_close(doc), silent = TRUE), add = TRUE)
+
+  page <- pdf_load_page(doc, 1)
+  pdf_close_page(page)
+  expect_error(pdf_page_rotation(page), "Page has been closed")
+  expect_error(pdf_page_rotation(42),   "must be a `pdfium_page` or `pdfium_doc`")
+})
+
 test_that("auto-finalizer releases pages dropped without explicit close", {
   pdf <- fixture_path("minimal")
   doc <- pdf_open(pdf)

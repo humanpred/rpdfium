@@ -37,3 +37,7 @@ cpp_page_size <- function(ptr) {
     .Call(`_pdfium_cpp_page_size`, ptr)
 }
 
+cpp_page_rotation <- function(ptr) {
+    .Call(`_pdfium_cpp_page_rotation`, ptr)
+}
+
