@@ -86,6 +86,14 @@ Re-evaluate when one of the following becomes true:
 
 ## Potential upstream resolution
 
+**Update 2026-05-15: patch submitted to Gerrit as
+[pdfium-review CL 147810](https://pdfium-review.googlesource.com/c/pdfium/+/147810).**
+Awaiting reviewer assignment and trybot results. Once merged into
+PDFium `main` and picked up by a bblanchon `chromium/####` release,
+bump `tools/pdfium-version.txt`, retire this ADR, and add
+`cx1/cy1/cx2/cy2` columns to `pdf_extract_paths()`. Track the CL
+status through the link above.
+
 If a future maintainer wants to push for control-point readout, the
 groundwork is in place. The cross-language demand is documented and
 the PDFium maintainers have not (as of 2026-05-15) opened or rejected
@@ -182,6 +190,11 @@ Happy to draft the patch via Gerrit if there's interest.
 
 ## References
 
+- [pdfium-review CL 147810](https://pdfium-review.googlesource.com/c/pdfium/+/147810) —
+  Gerrit change implementing
+  `FPDFPathSegment_GetBezierControlPoints`. Patch source-of-truth
+  lives at
+  `dev/upstream-patches/pdfium-FPDFPathSegment_GetBezierControlPoints.patch`.
 - `dev/pdfium-api-review.md` — original survey, including the
   `FPDFPage_GetRawContents` note that did not pan out.
 - `dev/upstream-feature-survey.md` — cross-wrapper feature matrix

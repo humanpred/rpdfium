@@ -20,6 +20,10 @@ their own machine.
 
 ### `pdfium-FPDFPathSegment_GetBezierControlPoints.patch`
 
+**Status:** Submitted to Gerrit as
+[pdfium-review CL 147810](https://pdfium-review.googlesource.com/c/pdfium/+/147810)
+on 2026-05-15. Awaiting reviewer assignment and trybot results.
+
 Adds the public symbol
 
 ```c
