@@ -95,6 +95,20 @@ and is *not* distributed in the source tarball — see
 
 - [`pdf_path_segments()`](https://humanpred.github.io/rpdfium/reference/pdf_path_segments.md)
   : Path segments of a path page-object
+- [`pdf_path_stroke()`](https://humanpred.github.io/rpdfium/reference/pdf_path_stroke.md)
+  : Stroke style of a path page-object
+- [`pdf_path_fill()`](https://humanpred.github.io/rpdfium/reference/pdf_path_fill.md)
+  : Fill color of a path page-object
+
+## Text
+
+- [`pdf_text_font_size()`](https://humanpred.github.io/rpdfium/reference/pdf_text_font_size.md)
+  : Font size of a text page-object
+
+## One-call extraction
+
+- [`pdf_extract_paths()`](https://humanpred.github.io/rpdfium/reference/pdf_extract_paths.md)
+  : Extract all path geometry on a page into a single tibble
 
 # Articles
 

@@ -1,0 +1,111 @@
+# Extract all path geometry on a page into a single tibble
+
+One-call helper that opens a document (or accepts an already-open one),
+enumerates every path object on the requested page, and returns a tibble
+with one row per path segment carrying both the geometry and the
+containing path's stroke / fill style and bounding box. This is the
+function `kmextract` consumes via the `pdfium_native` backend.
+
+## Usage
+
+``` r
+pdf_extract_paths(path, page = 1L)
+```
+
+## Arguments
+
+- path:
+
+  Either a character scalar path to a PDF file, or an already-open
+  `pdfium_doc` returned by
+  [`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md).
+  When `path` is a character path the document is opened and closed
+  internally.
+
+- page:
+
+  One-based page index (default `1`).
+
+## Value
+
+A tibble with the schema described above.
+
+## Details
+
+### Returned tibble
+
+Each row describes one path-segment operator (a `moveto`, `lineto`, or
+`bezierto`), in the order PDFium emits them:
+
+Path identity & segment geometry:
+
+- `path_index` - 1-based index of the parent path object on the page
+
+- `segment_index` - 1-based segment index within the path
+
+- `type` - `"moveto"`, `"lineto"`, `"bezierto"`, or `"unknown"`
+
+- `x`, `y` - the segment's anchor / endpoint in PDF points
+
+- `close` - logical, segment closes the current subpath
+
+Style (constant across all rows of one path):
+
+- `stroke_red`, `stroke_green`, `stroke_blue`, `stroke_alpha` - 0-255
+  channels; `NA` if no stroke
+
+- `stroke_width` - PDF points; `NA` if no stroke
+
+- `fill_red`, `fill_green`, `fill_blue`, `fill_alpha` - 0-255 channels;
+  `NA` if no fill
+
+Path bounding box (constant across rows of one path):
+
+- `bounds_left`, `bounds_bottom`, `bounds_right`, `bounds_top` - PDF
+  points
+
+### Attributes
+
+- `page_size_pt` - named numeric `c(width, height)` of the page, from
+  [`pdf_page_size()`](https://humanpred.github.io/rpdfium/reference/pdf_page_size.md)
+
+- `page_rotation` - integer in `{0, 90, 180, 270}`, from
+  [`pdf_page_rotation()`](https://humanpred.github.io/rpdfium/reference/pdf_page_rotation.md)
+
+- `text_runs` - tibble with one row per text object on the page:
+  `text_index`, bounds, and `font_size`. The `text` content itself is
+  empty (`""`) in Phase 1; populated in Phase 3 once text-extraction
+  APIs land.
+
+### Known limitations
+
+- Bezier control points are not yet exposed (only segment endpoints).
+  See
+  [`pdf_path_segments()`](https://humanpred.github.io/rpdfium/reference/pdf_path_segments.md)'s
+  documentation and `dev/pdfium-api-review.md`.
+
+- Text content is empty pending Phase 3.
+
+## See also
+
+[`pdf_path_segments()`](https://humanpred.github.io/rpdfium/reference/pdf_path_segments.md),
+[`pdf_path_stroke()`](https://humanpred.github.io/rpdfium/reference/pdf_path_stroke.md),
+[`pdf_path_fill()`](https://humanpred.github.io/rpdfium/reference/pdf_path_fill.md),
+[`pdf_obj_bounds()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_bounds.md)
+
+## Examples
+
+``` r
+fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+                       package = "pdfium")
+if (nzchar(fixture)) {
+  paths <- pdf_extract_paths(fixture, page = 1)
+  head(paths)
+  attr(paths, "page_size_pt")
+  attr(paths, "text_runs")
+}
+#> # A tibble: 1 × 7
+#>   text_index bounds_left bounds_bottom bounds_right bounds_top font_size text 
+#>        <int>       <dbl>         <dbl>        <dbl>      <dbl>     <dbl> <chr>
+#> 1          5        129.          103.         159.       114.         1 ""   
+```

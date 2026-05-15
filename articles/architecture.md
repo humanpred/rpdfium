@@ -85,8 +85,8 @@ around.
 
 ## How the binary gets loaded
 
-When you [`library(pdfium)`](https://github.com/billdenney/rpdfium),
-this happens:
+When you [`library(pdfium)`](https://github.com/humanpred/rpdfium), this
+happens:
 
 1.  R loads the package’s compiled `pdfium.so` (or `pdfium.dll` on
     Windows).

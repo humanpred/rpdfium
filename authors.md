@@ -11,16 +11,16 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/billdenney/rpdfium/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/humanpred/rpdfium/blob/main/DESCRIPTION)
 
 Denney B (2026). *pdfium: Idiomatic R Bindings to the PDFium PDF
 Engine*. R package version 0.0.0.9000,
-<https://github.com/billdenney/rpdfium>.
+<https://github.com/humanpred/rpdfium>.
 
     @Manual{,
       title = {pdfium: Idiomatic R Bindings to the PDFium PDF Engine},
       author = {Bill Denney},
       year = {2026},
       note = {R package version 0.0.0.9000},
-      url = {https://github.com/billdenney/rpdfium},
+      url = {https://github.com/humanpred/rpdfium},
     }

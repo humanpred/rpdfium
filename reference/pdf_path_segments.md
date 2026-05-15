@@ -40,7 +40,7 @@ Each row carries:
 endpoint of a `bezierto` segment, not its two control points. Recovering
 control points requires content-stream parsing and is deferred. For now,
 `bezierto` rows show the curve's endpoint; the control-point information
-is lost. See `docs/pdfium-api-review.md` for the full discussion.
+is lost. See `dev/pdfium-api-review.md` for the full discussion.
 
 ## See also
 
