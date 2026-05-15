@@ -42,3 +42,11 @@ reference:
   - title: Paths
     contents:
       - pdf_path_segments
+      - pdf_path_stroke
+      - pdf_path_fill
+  - title: Text
+    contents:
+      - pdf_text_font_size
+  - title: One-call extraction
+    contents:
+      - pdf_extract_paths
