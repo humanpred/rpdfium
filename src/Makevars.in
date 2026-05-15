@@ -1,0 +1,12 @@
+# pdfium R package — POSIX Makevars (template).
+#
+# `configure` populates @PDFIUM_INCLUDE@ and @PDFIUM_LIB@ with the absolute
+# paths to the downloaded headers and shared library. We embed an RPATH so
+# the installed `pdfium.so` finds `libpdfium.so` inside the package's
+# `inst/lib/` directory at load time.
+
+PKG_CPPFLAGS = -I@PDFIUM_INCLUDE@ -DR_NO_REMAP
+PKG_CXXFLAGS = $(CXX_VISIBILITY) @PDFIUM_EXTRA_CXXFLAGS@
+PKG_LIBS    = -L@PDFIUM_LIB@ -lpdfium @PDFIUM_RPATH@ @PDFIUM_EXTRA_LIBS@
+
+CXX_STD = CXX17

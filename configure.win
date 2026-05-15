@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+# pdfium R package — Windows configure script.
+#
+# Run by R CMD INSTALL on Windows. Downloads the pinned bblanchon PDFium
+# Windows binary, deposits headers/lib/dll into inst/, and lets
+# src/Makevars.win handle the linker flags (no templating needed on
+# Windows because we use the package-relative `inst/include` / `inst/lib`
+# paths directly).
+
+set -eu
+PKG_ROOT="$(cd "$(dirname "$0")" && pwd)"
+RSCRIPT="${R_HOME}/bin/Rscript.exe"
+
+echo "[pdfium configure.win] Resolving binary for Windows"
+"$RSCRIPT" --vanilla "$PKG_ROOT/tools/download-pdfium.R" "$PKG_ROOT"
+echo "[pdfium configure.win] inst/{include,lib,bin} populated."

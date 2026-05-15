@@ -1,0 +1,44 @@
+# valgrind.yaml — weekly leak / memory-error check on Linux.
+#
+# Reminder: testthat parallelism does NOT compose with valgrind. We run
+# tests serially here by overriding Config/testthat/parallel via the
+# `TESTTHAT_PARALLEL` env var. Definite leaks fail the run.
+
+name: valgrind
+
+on:
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  valgrind:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      TESTTHAT_PARALLEL: 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install valgrind
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends valgrind
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::testthat, any::rcmdcheck, local::.
+          needs: check
+
+      - name: Install package
+        run: R CMD INSTALL .
+
+      - name: Run tests under valgrind
+        run: |
+          R -d "valgrind --tool=memcheck --leak-check=full --error-exitcode=1 --errors-for-leak-kinds=definite" \
+            -e 'testthat::test_dir("tests/testthat", reporter = "summary", parallel = FALSE)'

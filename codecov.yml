@@ -1,0 +1,31 @@
+comment: false
+
+coverage:
+  precision: 2
+  round: down
+  status:
+    project:
+      default:
+        target: 100%
+        threshold: 0%
+        if_not_found: success
+        if_ci_failed: error
+    patch:
+      default:
+        target: 100%
+        threshold: 0%
+
+ignore:
+  - "src/**"                   # C++ tracked best-effort, not gated
+  - "R/zzz.R"                  # .onLoad / .onUnload exercised by package load
+  - "R/RcppExports.R"          # auto-generated
+  - "R/pdfium-package.R"       # roxygen-only file
+  - "tools/**"
+  - "tests/**"
+  - "vignettes/**"
+
+flags:
+  r:
+    paths:
+      - R/
+    carryforward: true

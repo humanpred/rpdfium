@@ -1,0 +1,11 @@
+# pdfium R package — Windows Makevars.
+#
+# configure.win extracts the bblanchon archive into `inst/include/` and
+# `inst/lib/` and copies `pdfium.dll` to `inst/bin/` (alongside the
+# package's own DLL once installed). The DLL is loaded via library.dynam
+# from R/zzz.R before the first FPDF_* call.
+
+PKG_CPPFLAGS = -I../inst/include -DR_NO_REMAP
+PKG_LIBS    = -L../inst/lib -lpdfium
+
+CXX_STD = CXX17

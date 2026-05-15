@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# pdfium R package — POSIX cleanup. Removes generated artifacts so a fresh
+# configure re-runs the binary download cleanly.
+set -eu
+PKG_ROOT="$(cd "$(dirname "$0")" && pwd)"
+rm -f  "$PKG_ROOT/src/Makevars"
+rm -f  "$PKG_ROOT/src/symbols.rds" "$PKG_ROOT/src/"*.o "$PKG_ROOT/src/"*.so
+rm -rf "$PKG_ROOT/inst/include" "$PKG_ROOT/inst/lib" "$PKG_ROOT/inst/bin"

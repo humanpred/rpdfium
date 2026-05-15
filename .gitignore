@@ -1,0 +1,48 @@
+# R / package build artifacts
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+*.Rproj
+*.Rcheck/
+*.tar.gz
+src/*.o
+src/*.so
+src/*.dll
+src/*.rds
+src/symbols.rds
+src/Makevars
+src-x64/
+src-i386/
+
+# Downloaded binaries (configure populates these; never commit)
+inst/include/
+inst/lib/
+
+# pkgdown build output (deployed from gh-pages branch, never tracked here)
+docs/_pkgdown/
+docs/articles/
+docs/reference/
+docs/news/
+docs/sitemap.xml
+docs/pkgdown.yml
+docs/404.html
+docs/index.html
+
+# Survey scratch (Phase 0)
+tmp/
+.tmp/
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Coverage artifacts
+.coverage
+coverage.xml
+*.gcno
+*.gcda
+*.gcov

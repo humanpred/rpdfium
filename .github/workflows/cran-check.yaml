@@ -1,0 +1,34 @@
+# cran-check.yaml — weekly rhub-based CRAN-policy check.
+#
+# Catches CRAN-only issues (compiler matrices, valgrind notes, sanitizer
+# findings) before submission. Runs on schedule plus manual dispatch.
+
+name: cran-check
+
+on:
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rhub:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rhub, any::rcmdcheck
+      - name: rhub check
+        run: |
+          res <- rhub::check_for_cran(show_status = TRUE)
+          status <- res$cran_summary()
+          cat("rhub summary:\n", paste(status, collapse = "\n"), "\n")
+        shell: Rscript {0}

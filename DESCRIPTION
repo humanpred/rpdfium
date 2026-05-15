@@ -1,0 +1,45 @@
+Package: pdfium
+Title: Idiomatic R Bindings to the PDFium PDF Engine
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Bill", "Denney", , "wdenney@humanpredictions.com",
+           role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-5759-428X")),
+    person("The PDFium Authors", role = "cph",
+           comment = "Authors of bundled PDFium binaries (BSD-3-Clause)")
+  )
+Description: Read PDF documents at the level of pages, page objects, and path
+    geometry using Google's PDFium engine. Surfaces path segments, stroke and
+    fill style, transformation matrices, text positions and content, font
+    metadata, image metadata, and page rendering. Complements 'pdftools' and
+    'qpdf' by exposing vector-path information no other R package surfaces.
+License: MIT + file LICENSE
+URL: https://github.com/billdenney/rpdfium,
+    https://billdenney.github.io/rpdfium/
+BugReports: https://github.com/billdenney/rpdfium/issues
+Depends:
+    R (>= 4.2)
+Imports:
+    Rcpp
+LinkingTo:
+    Rcpp
+Suggests:
+    covr,
+    knitr,
+    lintr,
+    rmarkdown,
+    spelling,
+    styler,
+    testthat (>= 3.2.0),
+    withr
+SystemRequirements: C++17, libpdfium (downloaded automatically at install time)
+Encoding: UTF-8
+Language: en-US
+LazyData: false
+Roxygen: list(markdown = TRUE)
+Config/testthat/edition: 3
+Config/testthat/parallel: true
+Config/Needs/website: pkgdown
+Config/Needs/coverage: covr
+VignetteBuilder: knitr
+Config/roxygen2/version: 8.0.0
