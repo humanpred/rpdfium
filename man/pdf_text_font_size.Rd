@@ -15,9 +15,13 @@ Numeric scalar in PDF points, or \code{NA_real_} if PDFium
 reports no font size (rare; usually only for malformed PDFs).
 }
 \description{
-Returns the font size, in PDF points, of \code{obj}. PDFium's API
-reports the post-CTM rendering size - i.e. the value a viewer
-would draw with after applying the page's transformation matrix.
+Returns the typographic ("em") font size, in PDF points, set on
+the text object. This is the raw size stored in the PDF; it is
+NOT scaled by the object's transformation matrix. PDF producers
+often emit text at em-size \code{1} and let the CTM do the scaling
+(Cairo's PDF backend works that way). To recover the on-page
+rendered size, multiply this value by the y-scale of the
+object's matrix (the matrix accessor lands in a later phase).
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
