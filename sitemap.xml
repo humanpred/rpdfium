@@ -17,12 +17,14 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_extract_paths.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_load_page.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_bounds.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_matrix.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_type.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_open.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_count.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_objects.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_rotation.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_size.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_dash.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_fill.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_segments.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_stroke.html</loc></url>

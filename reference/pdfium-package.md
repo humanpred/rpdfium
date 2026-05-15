@@ -25,11 +25,11 @@ the first time the package is installed. The pinned version lives in
 
 Useful links:
 
-- <https://github.com/billdenney/rpdfium>
+- <https://github.com/humanpred/rpdfium>
 
-- <https://billdenney.github.io/rpdfium/>
+- <https://humanpred.github.io/rpdfium/>
 
-- Report bugs at <https://github.com/billdenney/rpdfium/issues>
+- Report bugs at <https://github.com/humanpred/rpdfium/issues>
 
 ## Author
 

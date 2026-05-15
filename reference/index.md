@@ -28,6 +28,8 @@
   : Report the type of a page object
 - [`pdf_obj_bounds()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_bounds.md)
   : Axis-aligned bounding box of a page object
+- [`pdf_obj_matrix()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_matrix.md)
+  : Transformation matrix of a page object
 
 ## Paths
 
@@ -37,6 +39,8 @@
   : Stroke style of a path page-object
 - [`pdf_path_fill()`](https://humanpred.github.io/rpdfium/reference/pdf_path_fill.md)
   : Fill color of a path page-object
+- [`pdf_path_dash()`](https://humanpred.github.io/rpdfium/reference/pdf_path_dash.md)
+  : Dash pattern of a path page-object
 
 ## Text
 
