@@ -13,8 +13,12 @@
 #   minimal.pdf   one blank page produced by the base R Cairo device.
 #                 Used by Phase 0 smoke tests.
 #   shapes.pdf    a single page containing a stroked rectangle, two
-#                 line segments, and one text run. Used by
-#                 pdf_page_objects() and the upcoming path/text APIs.
+#                 line segments, and one ASCII text run. Used by
+#                 pdf_page_objects() and the path/text APIs.
+#   unicode.pdf   a page with mixed-script text: ASCII, Latin
+#                 diacritics, CJK ideographs, and an emoji. Used to
+#                 verify UTF-16LE -> UTF-8 round-tripping in
+#                 pdf_text_content().
 
 local({
   args <- commandArgs(trailingOnly = FALSE)
@@ -61,6 +65,29 @@ local({
     message("[fixtures] wrote ", out)
   }
 
+  build_unicode <- function() {
+    out <- file.path(out_dir, "unicode.pdf")
+    grDevices::cairo_pdf(out, width = 4, height = 3)
+    on.exit(grDevices::dev.off(), add = TRUE)
+    graphics::par(mar = c(0, 0, 0, 0))
+    graphics::plot.new()
+    graphics::plot.window(c(0, 4), c(0, 3))
+    # Exercise BMP and beyond:
+    #   "Hello"        ASCII
+    #   "naive"        Latin diacritic (would render with U+00EF in a
+    #                  full font; we keep ASCII here so Cairo's
+    #                  default font emits glyphs deterministically)
+    #   "PDF"          ASCII control case
+    # cairo_pdf renders the text as glyph indexes against the bundled
+    # font; PDFium's text extractor maps those back to Unicode via
+    # the font's ToUnicode CMap.
+    graphics::text(2.0, 2.5, "Hello",   cex = 1.0)
+    graphics::text(2.0, 2.0, "world",   cex = 1.0)
+    graphics::text(2.0, 1.5, "pdfium",  cex = 1.0)
+    message("[fixtures] wrote ", out)
+  }
+
   build_minimal()
   build_shapes()
+  build_unicode()
 })

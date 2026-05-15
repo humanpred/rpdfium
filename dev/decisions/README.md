@@ -16,6 +16,7 @@ Markdown ADR following the
 | [006](ADR-006-pdfium-pin.md)     | Accepted | PDFium version pinning policy |
 | [007](ADR-007-ci-and-coverage.md) | Accepted | CI: GitHub Actions matrix, 100% R coverage gate, valgrind, ASan |
 | [008](ADR-008-cran-targeting.md) | Accepted | CRAN-from-v0.1.0 hardening |
+| [009](ADR-009-defer-bezier-controls.md) | Accepted | Defer Bezier control points to a post-0.1.0 release (no public PDFium API) |
 
 ## Policy
 

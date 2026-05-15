@@ -40,16 +40,14 @@
 #' * `page_rotation` - integer in `{0, 90, 180, 270}`, from
 #'   [pdf_page_rotation()]
 #' * `text_runs` - tibble with one row per text object on the page:
-#'   `text_index`, bounds, and `font_size`. The `text` content
-#'   itself is empty (`""`) in Phase 1; populated in Phase 3 once
-#'   text-extraction APIs land.
+#'   `text_index`, bounds, `font_size`, and `text` (UTF-8 content
+#'   extracted via [pdf_text_content()]).
 #'
 #' ## Known limitations
 #'
-#' * Bezier control points are not yet exposed (only segment
-#'   endpoints). See [pdf_path_segments()]'s documentation and
-#'   `dev/pdfium-api-review.md`.
-#' * Text content is empty pending Phase 3.
+#' * Bezier control points are not exposed - only segment endpoints.
+#'   PDFium does not expose them through its public C API; see
+#'   `dev/decisions/ADR-009-defer-bezier-controls.md`.
 #'
 #' @param path Either a character scalar path to a PDF file, or an
 #'   already-open `pdfium_doc` returned by [pdf_open()]. When `path`
@@ -181,9 +179,14 @@ one_path_rows <- function(obj, path_index) {
 }
 
 # Internal: build the one-row text-run record for one text object.
+# pdf_text_content loads and closes a text-page handle internally;
+# for a page with many text objects we pay that overhead per row.
+# A future slice will share one text-page across the whole page via
+# a batched API.
 one_text_row <- function(obj, text_index) {
   bnds <- pdf_obj_bounds(obj)
   size <- pdf_text_font_size(obj)
+  text <- pdf_text_content(obj)
   tibble::tibble(
     text_index    = text_index,
     bounds_left   = bnds[["left"]],
@@ -191,6 +194,6 @@ one_text_row <- function(obj, text_index) {
     bounds_right  = bnds[["right"]],
     bounds_top    = bnds[["top"]],
     font_size     = size,
-    text          = ""  # Phase 3 will populate via FPDFTextObj_GetText.
+    text          = text
   )
 }
