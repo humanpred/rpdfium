@@ -36,7 +36,7 @@ endpoint of a \code{bezierto} segment, not its two control points.
 Recovering control points requires content-stream parsing and is
 deferred. For now, \code{bezierto} rows show the curve's endpoint; the
 control-point information is lost. See
-\code{docs/pdfium-api-review.md} for the full discussion.
+\code{dev/pdfium-api-review.md} for the full discussion.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",

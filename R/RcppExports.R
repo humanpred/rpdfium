@@ -41,6 +41,18 @@ cpp_obj_bounds <- function(obj_ptr) {
     .Call(`_pdfium_cpp_obj_bounds`, obj_ptr)
 }
 
+cpp_obj_stroke_color <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_stroke_color`, obj_ptr)
+}
+
+cpp_obj_fill_color <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_fill_color`, obj_ptr)
+}
+
+cpp_obj_stroke_width <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_stroke_width`, obj_ptr)
+}
+
 cpp_load_page <- function(doc_ptr, page_index_zero_based) {
     .Call(`_pdfium_cpp_load_page`, doc_ptr, page_index_zero_based)
 }
@@ -63,5 +75,9 @@ cpp_path_segment_count <- function(obj_ptr) {
 
 cpp_path_segments <- function(obj_ptr) {
     .Call(`_pdfium_cpp_path_segments`, obj_ptr)
+}
+
+cpp_text_font_size <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_text_font_size`, obj_ptr)
 }
 

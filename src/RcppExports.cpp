@@ -117,6 +117,39 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_obj_stroke_color
+Rcpp::NumericVector cpp_obj_stroke_color(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_stroke_color(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_stroke_color(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_obj_fill_color
+Rcpp::NumericVector cpp_obj_fill_color(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_fill_color(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_fill_color(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_obj_stroke_width
+double cpp_obj_stroke_width(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_stroke_width(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_stroke_width(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_load_page
 SEXP cpp_load_page(SEXP doc_ptr, int page_index_zero_based);
 RcppExport SEXP _pdfium_cpp_load_page(SEXP doc_ptrSEXP, SEXP page_index_zero_basedSEXP) {
@@ -183,6 +216,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_text_font_size
+double cpp_text_font_size(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_text_font_size(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_font_size(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_init_library", (DL_FUNC) &_pdfium_cpp_init_library, 0},
@@ -195,12 +239,16 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_page_get_object", (DL_FUNC) &_pdfium_cpp_page_get_object, 2},
     {"_pdfium_cpp_obj_type", (DL_FUNC) &_pdfium_cpp_obj_type, 1},
     {"_pdfium_cpp_obj_bounds", (DL_FUNC) &_pdfium_cpp_obj_bounds, 1},
+    {"_pdfium_cpp_obj_stroke_color", (DL_FUNC) &_pdfium_cpp_obj_stroke_color, 1},
+    {"_pdfium_cpp_obj_fill_color", (DL_FUNC) &_pdfium_cpp_obj_fill_color, 1},
+    {"_pdfium_cpp_obj_stroke_width", (DL_FUNC) &_pdfium_cpp_obj_stroke_width, 1},
     {"_pdfium_cpp_load_page", (DL_FUNC) &_pdfium_cpp_load_page, 2},
     {"_pdfium_cpp_close_page", (DL_FUNC) &_pdfium_cpp_close_page, 1},
     {"_pdfium_cpp_page_size", (DL_FUNC) &_pdfium_cpp_page_size, 1},
     {"_pdfium_cpp_page_rotation", (DL_FUNC) &_pdfium_cpp_page_rotation, 1},
     {"_pdfium_cpp_path_segment_count", (DL_FUNC) &_pdfium_cpp_path_segment_count, 1},
     {"_pdfium_cpp_path_segments", (DL_FUNC) &_pdfium_cpp_path_segments, 1},
+    {"_pdfium_cpp_text_font_size", (DL_FUNC) &_pdfium_cpp_text_font_size, 1},
     {NULL, NULL, 0}
 };
 

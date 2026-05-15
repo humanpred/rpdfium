@@ -83,3 +83,62 @@ Rcpp::NumericVector cpp_obj_bounds(SEXP obj_ptr) {
     Rcpp::_["top"]    = static_cast<double>(top)
   );
 }
+
+namespace {
+// Common helper for the four-channel color getters. Returns a length-4
+// NumericVector (red, green, blue, alpha) of integers 0-255 stored as
+// doubles. Returns a 4-NA vector when the getter reports no color set.
+Rcpp::NumericVector pageobj_color(
+    FPDF_PAGEOBJECT obj,
+    FPDF_BOOL (*getter)(FPDF_PAGEOBJECT, unsigned int*, unsigned int*,
+                        unsigned int*, unsigned int*),
+    const char* getter_name) {
+  unsigned int r = 0, g = 0, b = 0, a = 0;
+  FPDF_BOOL ok = getter(obj, &r, &g, &b, &a);
+  if (!ok) {
+    return Rcpp::NumericVector::create(
+      Rcpp::_["red"]   = NA_REAL,
+      Rcpp::_["green"] = NA_REAL,
+      Rcpp::_["blue"]  = NA_REAL,
+      Rcpp::_["alpha"] = NA_REAL
+    );
+  }
+  // Suppress unused-parameter warning if Rcpp::stop is optimised away.
+  (void) getter_name;
+  return Rcpp::NumericVector::create(
+    Rcpp::_["red"]   = static_cast<double>(r),
+    Rcpp::_["green"] = static_cast<double>(g),
+    Rcpp::_["blue"]  = static_cast<double>(b),
+    Rcpp::_["alpha"] = static_cast<double>(a)
+  );
+}
+}  // namespace
+
+// [[Rcpp::export(name = "cpp_obj_stroke_color")]]
+Rcpp::NumericVector cpp_obj_stroke_color(SEXP obj_ptr) {
+  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
+  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
+  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+  return pageobj_color(obj, FPDFPageObj_GetStrokeColor,
+                       "FPDFPageObj_GetStrokeColor");
+}
+
+// [[Rcpp::export(name = "cpp_obj_fill_color")]]
+Rcpp::NumericVector cpp_obj_fill_color(SEXP obj_ptr) {
+  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
+  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
+  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+  return pageobj_color(obj, FPDFPageObj_GetFillColor,
+                       "FPDFPageObj_GetFillColor");
+}
+
+// [[Rcpp::export(name = "cpp_obj_stroke_width")]]
+double cpp_obj_stroke_width(SEXP obj_ptr) {
+  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
+  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
+  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+  float width = 0.0f;
+  FPDF_BOOL ok = FPDFPageObj_GetStrokeWidth(obj, &width);
+  if (!ok) return NA_REAL;
+  return static_cast<double>(width);
+}
