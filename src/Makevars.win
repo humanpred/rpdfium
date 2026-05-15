@@ -1,11 +1,26 @@
 # pdfium R package — Windows Makevars.
 #
-# configure.win extracts the bblanchon archive into `inst/include/` and
-# `inst/lib/` and copies `pdfium.dll` to `inst/bin/` (alongside the
-# package's own DLL once installed). The DLL is loaded via library.dynam
-# from R/zzz.R before the first FPDF_* call.
+# configure.win runs tools/download-pdfium.R, which:
+#   - downloads bblanchon's Windows tarball
+#   - renames bin/pdfium.dll -> bin/libpdfium.dll so the bundled DLL
+#     does not collide with the package's own pdfium.dll (R names the
+#     package's compiled DLL after the package)
+#   - regenerates the import library as inst/lib/libpdfium.dll.a so
+#     Mingw GCC's `-lpdfium` search resolves
+#
+# We additionally pass `--delayload,libpdfium.dll` to the linker so the
+# delayed-import descriptor is used: pdfium.dll loads without resolving
+# libpdfium.dll at LoadLibrary time. R/zzz.R then preloads
+# libpdfium.dll from <pkg>/bin/ via dyn.load before the first FPDF_*
+# call; the delay-load helper finds the already-loaded module by name.
+#
+# Without delay loading, useDynLib(pdfium) would trigger Windows to
+# resolve pdfium.dll's normal DT_NEEDED on libpdfium.dll at the moment
+# the package DLL is loaded, before any R code (including .onLoad)
+# runs - and Windows would not find libpdfium.dll because <pkg>/bin/
+# is not on the standard DLL search path.
 
 PKG_CPPFLAGS = -I../inst/include -DR_NO_REMAP
-PKG_LIBS    = -L../inst/lib -lpdfium
+PKG_LIBS    = -L../inst/lib -lpdfium -Wl,--delayload,libpdfium.dll
 
 CXX_STD = CXX17

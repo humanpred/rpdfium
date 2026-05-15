@@ -42,6 +42,10 @@ if [ -z "$PDFIUM_INCLUDE" ] || [ -z "$PDFIUM_LIB" ]; then
 fi
 
 # RPATH so the installed pdfium.so finds libpdfium relative to itself.
+# After install, libpdfium.{so,dylib} sits in <pkg>/lib/ (from inst/lib)
+# and pdfium.so sits in <pkg>/libs/<R_ARCH>/, so RPATH points one level
+# up plus into lib/.
+#
 # The dollar sign survives Make (which sees $$ORIGIN and produces $ORIGIN)
 # and the recipe shell (which receives a single-quoted token from the
 # heredoc, so $ORIGIN is not parameter-expanded).
