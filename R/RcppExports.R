@@ -37,6 +37,10 @@ cpp_obj_type <- function(obj_ptr) {
     .Call(`_pdfium_cpp_obj_type`, obj_ptr)
 }
 
+cpp_obj_bounds <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_bounds`, obj_ptr)
+}
+
 cpp_load_page <- function(doc_ptr, page_index_zero_based) {
     .Call(`_pdfium_cpp_load_page`, doc_ptr, page_index_zero_based)
 }
@@ -51,5 +55,13 @@ cpp_page_size <- function(ptr) {
 
 cpp_page_rotation <- function(ptr) {
     .Call(`_pdfium_cpp_page_rotation`, ptr)
+}
+
+cpp_path_segment_count <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_path_segment_count`, obj_ptr)
+}
+
+cpp_path_segments <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_path_segments`, obj_ptr)
 }
 

@@ -63,3 +63,23 @@ int cpp_obj_type(SEXP obj_ptr) {
   }
   return FPDFPageObj_GetType(obj);
 }
+
+// [[Rcpp::export(name = "cpp_obj_bounds")]]
+Rcpp::NumericVector cpp_obj_bounds(SEXP obj_ptr) {
+  if (TYPEOF(obj_ptr) != EXTPTRSXP) {
+    Rcpp::stop("Expected an external pointer.");
+  }
+  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
+  if (obj == nullptr) {
+    Rcpp::stop("Page-object handle is closed.");
+  }
+  float left = 0.0f, bottom = 0.0f, right = 0.0f, top = 0.0f;
+  FPDF_BOOL ok = FPDFPageObj_GetBounds(obj, &left, &bottom, &right, &top);
+  if (!ok) Rcpp::stop("FPDFPageObj_GetBounds failed for this object.");
+  return Rcpp::NumericVector::create(
+    Rcpp::_["left"]   = static_cast<double>(left),
+    Rcpp::_["bottom"] = static_cast<double>(bottom),
+    Rcpp::_["right"]  = static_cast<double>(right),
+    Rcpp::_["top"]    = static_cast<double>(top)
+  );
+}

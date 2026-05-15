@@ -68,6 +68,44 @@ pdf_obj_type <- function(obj) {
   pdfium_obj_type_name(cpp_obj_type(obj$ptr))
 }
 
+#' Axis-aligned bounding box of a page object
+#'
+#' Returns the smallest rectangle, in PDF point coordinates, that
+#' contains all visible parts of `obj`. The bounds are in the page's
+#' own coordinate system, i.e. origin at the bottom-left of the
+#' un-rotated media box (matching `pdf_page_size()`). Note that the
+#' bounds are not adjusted for the page's rotation; consult
+#' [pdf_page_rotation()] when comparing positions across rotated
+#' pages.
+#'
+#' @param obj A `pdfium_obj` from [pdf_page_objects()].
+#' @return A named numeric vector with elements `left`, `bottom`,
+#'   `right`, `top`. Width is `right - left`, height is `top - bottom`.
+#'
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+#'                        package = "pdfium")
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_open(fixture)
+#'   p <- pdf_load_page(doc, 1)
+#'   objs <- pdf_page_objects(p)
+#'   pdf_obj_bounds(objs[[1]])
+#'   pdf_close_page(p)
+#'   pdf_close(doc)
+#' }
+#' @export
+pdf_obj_bounds <- function(obj) {
+  if (!inherits(obj, "pdfium_obj")) {
+    stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
+         call. = FALSE)
+  }
+  if (!is_open(obj)) {
+    stop("Parent page has been closed; object handle is no longer valid.",
+         call. = FALSE)
+  }
+  cpp_obj_bounds(obj$ptr)
+}
+
 # Internal: convert a PDFium FPDF_PAGEOBJ_* code (int) to its short
 # character name. Unknown codes return "unknown" to keep the public
 # API stable against future PDFium enum additions.

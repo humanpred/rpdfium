@@ -120,3 +120,46 @@ test_that("unknown type codes map to 'unknown' safely", {
   expect_identical(pdfium:::pdfium_obj_type_name(0L),   "unknown")
   expect_identical(pdfium:::pdfium_obj_type_name(2L),   "path")
 })
+
+test_that("pdf_obj_bounds returns a 4-element named numeric vector", {
+  pdf <- fixture_path("shapes")
+  doc <- pdf_open(pdf)
+  on.exit(pdf_close(doc), add = TRUE)
+
+  page <- pdf_load_page(doc, 1)
+  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+
+  objs <- pdf_page_objects(page)
+  for (o in objs) {
+    b <- pdf_obj_bounds(o)
+    expect_named(b, c("left", "bottom", "right", "top"))
+    expect_type(b, "double")
+    expect_true(b[["right"]] >= b[["left"]])
+    expect_true(b[["top"]]   >= b[["bottom"]])
+  }
+
+  # The Cairo-built rectangle in shapes.pdf is the second path object;
+  # it covers ~(44, 41) - (177, 175) in points. Assert the right-left
+  # width and top-bottom height roughly match the user-space size
+  # passed to graphics::rect (2.0 x 2.0 in user coords = 144 x 144 in
+  # points within a 288x216-point page).
+  rect_obj <- objs[[2]]
+  rect_bounds <- pdf_obj_bounds(rect_obj)
+  expect_equal(rect_bounds[["right"]] - rect_bounds[["left"]],
+               144, tolerance = 1)
+  expect_equal(rect_bounds[["top"]] - rect_bounds[["bottom"]],
+               144, tolerance = 1)
+})
+
+test_that("pdf_obj_bounds validates inputs and closed-page state", {
+  expect_error(pdf_obj_bounds("not an obj"), "must be a `pdfium_obj`")
+
+  pdf <- fixture_path("shapes")
+  doc <- pdf_open(pdf)
+  on.exit(pdf_close(doc), add = TRUE)
+  page <- pdf_load_page(doc, 1)
+  objs <- pdf_page_objects(page)
+  pdf_close_page(page)
+  expect_error(pdf_obj_bounds(objs[[1]]),
+               "Parent page has been closed")
+})

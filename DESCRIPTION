@@ -20,7 +20,8 @@ BugReports: https://github.com/billdenney/rpdfium/issues
 Depends:
     R (>= 4.2)
 Imports:
-    Rcpp
+    Rcpp,
+    tibble
 LinkingTo:
     Rcpp
 Suggests:
