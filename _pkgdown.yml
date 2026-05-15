@@ -28,6 +28,9 @@ reference:
       - pdf_open
       - pdf_close
       - pdf_page_count
+      - pdf_doc_info
+      - pdf_doc_meta
+      - pdf_parse_date
   - title: Pages
     contents:
       - pdf_load_page
