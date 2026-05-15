@@ -57,7 +57,11 @@ SEXP cpp_open_document(std::string path, std::string password) {
     Rcpp::stop("Failed to load PDF (FPDF error %lu): %s", err, path);
   }
   SEXP ptr = PROTECT(R_MakeExternalPtr(doc, R_NilValue, R_NilValue));
-  R_RegisterCFinalizerEx(ptr, finalize_document, TRUE);
+  // Explicit Rboolean cast: PDFium's public headers transitively include
+  // <windows.h> on Windows, which defines TRUE as the integer macro 1.
+  // Under -Werror=permissive that conversion to Rboolean fails to compile;
+  // the cast keeps the source portable across Linux / macOS / Windows.
+  R_RegisterCFinalizerEx(ptr, finalize_document, static_cast<Rboolean>(TRUE));
   UNPROTECT(1);
   return ptr;
 }
