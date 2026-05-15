@@ -154,3 +154,42 @@ pdf_path_fill <- function(obj) {
   obj <- check_path_obj(obj)
   cpp_obj_fill_color(obj$ptr)
 }
+
+#' Dash pattern of a path page-object
+#'
+#' Returns the dash array (in PDF points) and dash phase (offset
+#' into the pattern, in points) attached to `obj`'s stroke. A solid
+#' (un-dashed) path returns an empty `array` and phase `0`.
+#'
+#' A dash array of `c(3, 2)` for example means: draw 3 points, skip
+#' 2 points, repeat. The phase shifts where in the pattern the
+#' first segment starts.
+#'
+#' @param obj A `pdfium_obj` of type `"path"` (from
+#'   [pdf_page_objects()]).
+#' @return A named list with two elements:
+#'   * `array` - numeric vector of dash lengths in PDF points;
+#'     length-zero for solid lines.
+#'   * `phase` - numeric scalar, the dash-pattern phase in points
+#'     (typically `0`).
+#'
+#' @seealso [pdf_path_stroke()] for the stroke color and width.
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+#'                        package = "pdfium")
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_open(fixture)
+#'   p <- pdf_load_page(doc, 1)
+#'   path_obj <- Filter(\(o) o$type == "path", pdf_page_objects(p))[[1]]
+#'   pdf_path_dash(path_obj)
+#'   pdf_close_page(p)
+#'   pdf_close(doc)
+#' }
+#' @export
+pdf_path_dash <- function(obj) {
+  obj <- check_path_obj(obj)
+  list(
+    array = cpp_obj_dash_array(obj$ptr),
+    phase = cpp_obj_dash_phase(obj$ptr)
+  )
+}

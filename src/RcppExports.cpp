@@ -150,6 +150,50 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_obj_matrix
+Rcpp::NumericVector cpp_obj_matrix(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_matrix(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_matrix(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_obj_dash_count
+int cpp_obj_dash_count(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_dash_count(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_dash_count(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_obj_dash_array
+Rcpp::NumericVector cpp_obj_dash_array(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_dash_array(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_dash_array(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_obj_dash_phase
+double cpp_obj_dash_phase(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_dash_phase(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_dash_phase(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_load_page
 SEXP cpp_load_page(SEXP doc_ptr, int page_index_zero_based);
 RcppExport SEXP _pdfium_cpp_load_page(SEXP doc_ptrSEXP, SEXP page_index_zero_basedSEXP) {
@@ -242,6 +286,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_obj_stroke_color", (DL_FUNC) &_pdfium_cpp_obj_stroke_color, 1},
     {"_pdfium_cpp_obj_fill_color", (DL_FUNC) &_pdfium_cpp_obj_fill_color, 1},
     {"_pdfium_cpp_obj_stroke_width", (DL_FUNC) &_pdfium_cpp_obj_stroke_width, 1},
+    {"_pdfium_cpp_obj_matrix", (DL_FUNC) &_pdfium_cpp_obj_matrix, 1},
+    {"_pdfium_cpp_obj_dash_count", (DL_FUNC) &_pdfium_cpp_obj_dash_count, 1},
+    {"_pdfium_cpp_obj_dash_array", (DL_FUNC) &_pdfium_cpp_obj_dash_array, 1},
+    {"_pdfium_cpp_obj_dash_phase", (DL_FUNC) &_pdfium_cpp_obj_dash_phase, 1},
     {"_pdfium_cpp_load_page", (DL_FUNC) &_pdfium_cpp_load_page, 2},
     {"_pdfium_cpp_close_page", (DL_FUNC) &_pdfium_cpp_close_page, 1},
     {"_pdfium_cpp_page_size", (DL_FUNC) &_pdfium_cpp_page_size, 1},

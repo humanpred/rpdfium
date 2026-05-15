@@ -39,11 +39,13 @@ reference:
       - pdf_page_objects
       - pdf_obj_type
       - pdf_obj_bounds
+      - pdf_obj_matrix
   - title: Paths
     contents:
       - pdf_path_segments
       - pdf_path_stroke
       - pdf_path_fill
+      - pdf_path_dash
   - title: Text
     contents:
       - pdf_text_font_size

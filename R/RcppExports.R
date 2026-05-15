@@ -53,6 +53,22 @@ cpp_obj_stroke_width <- function(obj_ptr) {
     .Call(`_pdfium_cpp_obj_stroke_width`, obj_ptr)
 }
 
+cpp_obj_matrix <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_matrix`, obj_ptr)
+}
+
+cpp_obj_dash_count <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_dash_count`, obj_ptr)
+}
+
+cpp_obj_dash_array <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_dash_array`, obj_ptr)
+}
+
+cpp_obj_dash_phase <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_dash_phase`, obj_ptr)
+}
+
 cpp_load_page <- function(doc_ptr, page_index_zero_based) {
     .Call(`_pdfium_cpp_load_page`, doc_ptr, page_index_zero_based)
 }
