@@ -20,9 +20,10 @@ their own machine.
 
 ### `pdfium-FPDFPath_GetBezierControlPoints.patch`
 
-**Status:** Patchset 2 ready for upload to
+**Status:** Patchset 2 uploaded to
 [pdfium-review CL 147810](https://pdfium-review.googlesource.com/c/pdfium/+/147810)
-(originally uploaded 2026-05-15; revised after first reviewer pass).
+on 2026-05-15, revising the original patchset after the first
+reviewer pass.
 
 Adds the public symbol
 
