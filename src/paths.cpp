@@ -5,7 +5,7 @@
 // Critically, the readout API does NOT expose the two Bezier control
 // points of a FPDF_SEGMENT_BEZIERTO segment - only the endpoint.
 // Recovering control points requires content-stream parsing and is
-// deferred to a later phase (see docs/pdfium-api-review.md).
+// deferred to a later phase (see dev/pdfium-api-review.md).
 //
 // To minimize Rcpp call overhead for paths with many segments, the
 // per-segment readout is batched: cpp_path_segments() returns a

@@ -136,7 +136,8 @@ test_that("page outlives parent doc when doc reference is dropped", {
   pdf <- fixture_path("minimal")
   doc <- pdf_open(pdf)
   page <- pdf_load_page(doc, 1)
-  rm(doc); invisible(gc(verbose = FALSE))
+  rm(doc)
+  invisible(gc(verbose = FALSE))
   # The doc handle is referenced by page via externalptr prot slot, so
   # FPDF_CloseDocument has not run. cpp_page_size should still work.
   size <- cpp_page_size(page$ptr)

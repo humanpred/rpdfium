@@ -7,7 +7,7 @@
 
 The operator's preference is for `pdfium` to ship to CRAN at its
 first release (v0.1.0), not after an internal-only stabilization
-period. The R PDF ecosystem survey (`docs/r-pdf-ecosystem-survey.md`)
+period. The R PDF ecosystem survey (`dev/r-pdf-ecosystem-survey.md`)
 confirmed there's a clean naming slot on CRAN. Targeting CRAN from
 day one shapes several decisions:
 

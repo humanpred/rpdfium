@@ -1,14 +1,11 @@
-# PDFium's FPDFPathSegment_GetType return values, by code:
-#   FPDF_SEGMENT_UNKNOWN  = -1
-#   FPDF_SEGMENT_LINETO   =  0
-#   FPDF_SEGMENT_BEZIERTO =  1
-#   FPDF_SEGMENT_MOVETO   =  2
-# We keep the lookup data-driven so future PDFium additions can be
-# added by extending the table rather than touching the loop.
+# PDFium FPDFPathSegment_GetType codes: UNKNOWN is -1, LINETO is 0,
+# BEZIERTO is 1, MOVETO is 2. The lookup vector below is indexed by
+# code + 1; future additions extend the vector without touching the
+# segment loop.
 .pdfium_segment_type_names <- c(
-  "lineto",   # 0  FPDF_SEGMENT_LINETO
-  "bezierto", # 1  FPDF_SEGMENT_BEZIERTO
-  "moveto"    # 2  FPDF_SEGMENT_MOVETO
+  "lineto",
+  "bezierto",
+  "moveto"
 )
 
 # Internal: convert a FPDF_SEGMENT_* integer code to its short name.
@@ -43,7 +40,7 @@ pdfium_segment_type_name <- function(codes) {
 #' Recovering control points requires content-stream parsing and is
 #' deferred. For now, `bezierto` rows show the curve's endpoint; the
 #' control-point information is lost. See
-#' `docs/pdfium-api-review.md` for the full discussion.
+#' `dev/pdfium-api-review.md` for the full discussion.
 #'
 #' @param obj A `pdfium_obj` of type `"path"` (from
 #'   [pdf_page_objects()]).

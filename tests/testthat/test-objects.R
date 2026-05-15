@@ -108,7 +108,8 @@ test_that("object back-reference keeps parent page alive after rm(page)", {
 
   page <- pdf_load_page(doc, 1)
   obj <- pdf_page_objects(page)[[1]]
-  rm(page); invisible(gc(verbose = FALSE))
+  rm(page)
+  invisible(gc(verbose = FALSE))
   # Page externalptr is held alive via obj$ptr's prot slot, so the
   # type query must still work on the obj.
   expect_match(pdf_obj_type(obj), "^(path|text|image|form|shading|unknown)$")

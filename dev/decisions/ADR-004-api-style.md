@@ -13,8 +13,8 @@ We need a public R API surface that:
 3. Reserves the right signatures now so post-0.1.0 features
    (encryption, annotations, AcroForms, signatures) can be added
    without breaking changes — informed by the R PDF ecosystem survey
-   (`docs/r-pdf-ecosystem-survey.md`) and the upstream wrapper survey
-   (`docs/upstream-feature-survey.md`).
+   (`dev/r-pdf-ecosystem-survey.md`) and the upstream wrapper survey
+   (`dev/upstream-feature-survey.md`).
 
 The upstream survey shows two API shapes work in practice:
 **type-safe-and-idiomatic** (pdfium-render's enum-per-object-type +
@@ -85,7 +85,7 @@ expectations: `pdf_text()`, `pdf_data()`, `pdf_info()`, etc., with
 
 ## References
 
-- `docs/upstream-feature-survey.md`
-- `docs/r-pdf-ecosystem-survey.md`
+- `dev/upstream-feature-survey.md`
+- `dev/r-pdf-ecosystem-survey.md`
 - [`pdftools` reference](https://docs.ropensci.org/pdftools/reference/index.html)
 - [Tidyverse naming conventions](https://style.tidyverse.org/syntax.html#object-names)

@@ -11,7 +11,7 @@ PDFium handles (`FPDF_DOCUMENT`, `FPDF_PAGE`, `FPDF_PAGEOBJECT`,
 use-after-free, leak — produces hard crashes that surface as the user's
 fault even when our wrapper is at fault.
 
-The upstream wrapper survey (`docs/upstream-feature-survey.md`) found
+The upstream wrapper survey (`dev/upstream-feature-survey.md`) found
 three viable models:
 
 1. **Explicit close + finalizer fallback** (pypdfium2): every wrapper
@@ -85,7 +85,7 @@ R has no compile-time lifetime checking; option 3 is unavailable.
 
 ## References
 
-- `docs/upstream-feature-survey.md` (memory-management table)
+- `dev/upstream-feature-survey.md` (memory-management table)
 - [Writing R Extensions §5.13 External pointers and weak references](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#External-pointers-and-weak-references)
 - [`R_RegisterCFinalizerEx` documentation](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Garbage-Collection)
 - pypdfium2's `_helpers/_internal.py` parent-tracking implementation

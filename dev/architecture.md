@@ -143,14 +143,14 @@ four are gates (`R-CMD-check`, `coverage`, `lint`, `pre-commit`).
 
 | Topic | Source of truth |
 |---|---|
-| Why we picked Rcpp + C++17 + S3 | `docs/decisions/ADR-001-language-stack.md` |
-| License composition | `docs/decisions/ADR-002-license.md` + `LICENSE.md` |
-| How the binary gets onto user machines | `docs/decisions/ADR-003-binary-distribution.md` |
-| API naming and reserved signatures | `docs/decisions/ADR-004-api-style.md` |
-| `pdfium_doc` lifetime semantics | `docs/decisions/ADR-005-memory-model.md` |
-| When and how to bump PDFium | `docs/decisions/ADR-006-pdfium-pin.md` |
-| Why coverage is gated at 100% R | `docs/decisions/ADR-007-ci-and-coverage.md` |
-| CRAN-targeting choices | `docs/decisions/ADR-008-cran-targeting.md` |
+| Why we picked Rcpp + C++17 + S3 | `dev/decisions/ADR-001-language-stack.md` |
+| License composition | `dev/decisions/ADR-002-license.md` + `LICENSE.md` |
+| How the binary gets onto user machines | `dev/decisions/ADR-003-binary-distribution.md` |
+| API naming and reserved signatures | `dev/decisions/ADR-004-api-style.md` |
+| `pdfium_doc` lifetime semantics | `dev/decisions/ADR-005-memory-model.md` |
+| When and how to bump PDFium | `dev/decisions/ADR-006-pdfium-pin.md` |
+| Why coverage is gated at 100% R | `dev/decisions/ADR-007-ci-and-coverage.md` |
+| CRAN-targeting choices | `dev/decisions/ADR-008-cran-targeting.md` |
 
 Material new decisions get their own ADR. See
-`docs/decisions/README.md` for the policy.
+`dev/decisions/README.md` for the policy.
