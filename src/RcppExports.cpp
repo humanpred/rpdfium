@@ -44,6 +44,76 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_image_metadata
+Rcpp::List cpp_image_metadata(SEXP obj_ptr, SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_image_metadata(SEXP obj_ptrSEXP, SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_image_metadata(obj_ptr, page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_image_pixel_size
+Rcpp::IntegerVector cpp_image_pixel_size(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_image_pixel_size(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_image_pixel_size(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_image_get_bitmap
+Rcpp::IntegerMatrix cpp_image_get_bitmap(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_image_get_bitmap(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_image_get_bitmap(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_image_get_rendered_bitmap
+Rcpp::IntegerMatrix cpp_image_get_rendered_bitmap(SEXP doc_ptr, SEXP page_ptr, SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_image_get_rendered_bitmap(SEXP doc_ptrSEXP, SEXP page_ptrSEXP, SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_image_get_rendered_bitmap(doc_ptr, page_ptr, obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_image_data
+Rcpp::RawVector cpp_image_data(SEXP obj_ptr, bool decoded);
+RcppExport SEXP _pdfium_cpp_image_data(SEXP obj_ptrSEXP, SEXP decodedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    Rcpp::traits::input_parameter< bool >::type decoded(decodedSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_image_data(obj_ptr, decoded));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_image_filters
+Rcpp::CharacterVector cpp_image_filters(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_image_filters(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_image_filters(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_init_library
 void cpp_init_library();
 RcppExport SEXP _pdfium_cpp_init_library() {
@@ -360,6 +430,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_doc_meta_text", (DL_FUNC) &_pdfium_cpp_doc_meta_text, 2},
     {"_pdfium_cpp_doc_info", (DL_FUNC) &_pdfium_cpp_doc_info, 1},
     {"_pdfium_cpp_doc_file_version", (DL_FUNC) &_pdfium_cpp_doc_file_version, 1},
+    {"_pdfium_cpp_image_metadata", (DL_FUNC) &_pdfium_cpp_image_metadata, 2},
+    {"_pdfium_cpp_image_pixel_size", (DL_FUNC) &_pdfium_cpp_image_pixel_size, 1},
+    {"_pdfium_cpp_image_get_bitmap", (DL_FUNC) &_pdfium_cpp_image_get_bitmap, 1},
+    {"_pdfium_cpp_image_get_rendered_bitmap", (DL_FUNC) &_pdfium_cpp_image_get_rendered_bitmap, 3},
+    {"_pdfium_cpp_image_data", (DL_FUNC) &_pdfium_cpp_image_data, 2},
+    {"_pdfium_cpp_image_filters", (DL_FUNC) &_pdfium_cpp_image_filters, 1},
     {"_pdfium_cpp_init_library", (DL_FUNC) &_pdfium_cpp_init_library, 0},
     {"_pdfium_cpp_destroy_library", (DL_FUNC) &_pdfium_cpp_destroy_library, 0},
     {"_pdfium_cpp_open_document", (DL_FUNC) &_pdfium_cpp_open_document, 2},

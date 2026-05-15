@@ -62,6 +62,14 @@ reference:
       - as.raster.pdfium_bitmap
       - as.array.pdfium_bitmap
       - as.matrix.pdfium_bitmap
+  - title: Images
+    contents:
+      - pdf_image_info
+      - pdf_image_size
+      - pdf_image_bitmap
+      - pdf_image_rendered
+      - pdf_image_data
+      - pdf_image_filters
   - title: One-call extraction
     contents:
       - pdf_extract_paths

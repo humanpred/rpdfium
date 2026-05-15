@@ -87,7 +87,33 @@ local({
     message("[fixtures] wrote ", out)
   }
 
+  build_image <- function() {
+    # 16x16 RGB raster with four solid colored quadrants:
+    #   top-left red, top-right green, bottom-left blue, bottom-right black.
+    # Cairo embeds this as a raster image object inside the PDF so the
+    # image-extraction tests have a fixture with known dimensions and
+    # known pixel colors at known positions.
+    raster <- array(0, dim = c(16L, 16L, 3L))
+    raster[1L:8L,  1L:8L,  1L] <- 1   # top-left red
+    raster[1L:8L,  9L:16L, 2L] <- 1   # top-right green
+    raster[9L:16L, 1L:8L,  3L] <- 1   # bottom-left blue
+    # bottom-right stays all zeros = black.
+
+    out <- file.path(out_dir, "image.pdf")
+    grDevices::cairo_pdf(out, width = 4, height = 3)
+    on.exit(grDevices::dev.off(), add = TRUE)
+    graphics::par(mar = c(0, 0, 0, 0))
+    graphics::plot.new()
+    graphics::plot.window(c(0, 4), c(0, 3))
+    # Plot the raster filling a 2-by-2-inch box centered on the page.
+    graphics::rasterImage(raster, xleft = 1, ybottom = 0.5,
+                          xright = 3,  ytop    = 2.5,
+                          interpolate = FALSE)
+    message("[fixtures] wrote ", out)
+  }
+
   build_minimal()
   build_shapes()
   build_unicode()
+  build_image()
 })

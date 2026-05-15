@@ -13,6 +13,30 @@ cpp_doc_file_version <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_file_version`, doc_ptr)
 }
 
+cpp_image_metadata <- function(obj_ptr, page_ptr) {
+    .Call(`_pdfium_cpp_image_metadata`, obj_ptr, page_ptr)
+}
+
+cpp_image_pixel_size <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_image_pixel_size`, obj_ptr)
+}
+
+cpp_image_get_bitmap <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_image_get_bitmap`, obj_ptr)
+}
+
+cpp_image_get_rendered_bitmap <- function(doc_ptr, page_ptr, obj_ptr) {
+    .Call(`_pdfium_cpp_image_get_rendered_bitmap`, doc_ptr, page_ptr, obj_ptr)
+}
+
+cpp_image_data <- function(obj_ptr, decoded) {
+    .Call(`_pdfium_cpp_image_data`, obj_ptr, decoded)
+}
+
+cpp_image_filters <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_image_filters`, obj_ptr)
+}
+
 cpp_init_library <- function() {
     invisible(.Call(`_pdfium_cpp_init_library`))
 }
