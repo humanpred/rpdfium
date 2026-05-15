@@ -101,21 +101,34 @@ print.pdfium_page <- function(x, ...) {
 #' while any object reference is live, but there is no finalizer on
 #' the object itself.
 #'
+#' Nested objects (those inside a Form XObject, returned by
+#' [pdf_form_objects()]) additionally carry a `parent_form` field
+#' pointing back at the form's `pdfium_obj`. The form's own lifetime
+#' is still bound to the page externalptr, so the lifetime model is
+#' unchanged; `parent_form` is informational, used by
+#' [format.pdfium_obj()] to render the containment chain.
+#'
 #' @param ptr An `externalptr` to a PDFium `FPDF_PAGEOBJECT`.
 #' @param page The parent `pdfium_page`.
-#' @param index One-based index within the page.
+#' @param index One-based index within its container (page for
+#'   top-level objects, form for nested objects).
 #' @param type Character scalar - the object type (one of
 #'   `.pdfium_obj_type_names`).
+#' @param parent_form Optional `pdfium_obj` of type `"form"` - the
+#'   form XObject this object is nested inside. `NULL` for top-level
+#'   page objects.
 #' @return An object of class `c("pdfium_obj", "pdfium_handle")`.
 #' @keywords internal
 #' @noRd
-new_pdfium_obj <- function(ptr, page, index, type) {
+new_pdfium_obj <- function(ptr, page, index, type, parent_form = NULL) {
   stopifnot(typeof(ptr) == "externalptr",
             inherits(page, "pdfium_page"),
             is.numeric(index), length(index) == 1L,
-            is.character(type), length(type) == 1L)
+            is.character(type), length(type) == 1L,
+            is.null(parent_form) || inherits(parent_form, "pdfium_obj"))
   structure(
-    list(ptr = ptr, page = page, index = as.integer(index), type = type),
+    list(ptr = ptr, page = page, index = as.integer(index), type = type,
+         parent_form = parent_form),
     class = c("pdfium_obj", "pdfium_handle")
   )
 }
@@ -123,8 +136,13 @@ new_pdfium_obj <- function(ptr, page, index, type) {
 #' @export
 format.pdfium_obj <- function(x, ...) {
   state <- if (is_open(x)) "open" else "closed"
-  sprintf("<pdfium_obj [%s] %s, obj %d on page %d>",
-          state, x$type, x$index, x$page$index)
+  if (is.null(x$parent_form)) {
+    sprintf("<pdfium_obj [%s] %s, obj %d on page %d>",
+            state, x$type, x$index, x$page$index)
+  } else {
+    sprintf("<pdfium_obj [%s] %s, obj %d of form %d on page %d>",
+            state, x$type, x$index, x$parent_form$index, x$page$index)
+  }
 }
 
 #' @export

@@ -13,6 +13,14 @@ cpp_doc_file_version <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_file_version`, doc_ptr)
 }
 
+cpp_form_object_count <- function(form_ptr) {
+    .Call(`_pdfium_cpp_form_object_count`, form_ptr)
+}
+
+cpp_form_get_object <- function(form_ptr, page_ptr, index_zero_based) {
+    .Call(`_pdfium_cpp_form_get_object`, form_ptr, page_ptr, index_zero_based)
+}
+
 cpp_image_metadata <- function(obj_ptr, page_ptr) {
     .Call(`_pdfium_cpp_image_metadata`, obj_ptr, page_ptr)
 }

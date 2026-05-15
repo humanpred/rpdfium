@@ -44,6 +44,30 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_form_object_count
+int cpp_form_object_count(SEXP form_ptr);
+RcppExport SEXP _pdfium_cpp_form_object_count(SEXP form_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type form_ptr(form_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_form_object_count(form_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_form_get_object
+SEXP cpp_form_get_object(SEXP form_ptr, SEXP page_ptr, int index_zero_based);
+RcppExport SEXP _pdfium_cpp_form_get_object(SEXP form_ptrSEXP, SEXP page_ptrSEXP, SEXP index_zero_basedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type form_ptr(form_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type index_zero_based(index_zero_basedSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_form_get_object(form_ptr, page_ptr, index_zero_based));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_image_metadata
 Rcpp::List cpp_image_metadata(SEXP obj_ptr, SEXP page_ptr);
 RcppExport SEXP _pdfium_cpp_image_metadata(SEXP obj_ptrSEXP, SEXP page_ptrSEXP) {
@@ -430,6 +454,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_doc_meta_text", (DL_FUNC) &_pdfium_cpp_doc_meta_text, 2},
     {"_pdfium_cpp_doc_info", (DL_FUNC) &_pdfium_cpp_doc_info, 1},
     {"_pdfium_cpp_doc_file_version", (DL_FUNC) &_pdfium_cpp_doc_file_version, 1},
+    {"_pdfium_cpp_form_object_count", (DL_FUNC) &_pdfium_cpp_form_object_count, 1},
+    {"_pdfium_cpp_form_get_object", (DL_FUNC) &_pdfium_cpp_form_get_object, 3},
     {"_pdfium_cpp_image_metadata", (DL_FUNC) &_pdfium_cpp_image_metadata, 2},
     {"_pdfium_cpp_image_pixel_size", (DL_FUNC) &_pdfium_cpp_image_pixel_size, 1},
     {"_pdfium_cpp_image_get_bitmap", (DL_FUNC) &_pdfium_cpp_image_get_bitmap, 1},

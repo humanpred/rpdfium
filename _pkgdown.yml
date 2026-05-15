@@ -70,6 +70,9 @@ reference:
       - pdf_image_rendered
       - pdf_image_data
       - pdf_image_filters
+  - title: Form XObjects
+    contents:
+      - pdf_form_objects
   - title: One-call extraction
     contents:
       - pdf_extract_paths
