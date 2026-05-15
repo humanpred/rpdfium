@@ -108,6 +108,10 @@ and is *not* distributed in the source tarball — see
 
 - [`pdf_text_font_size()`](https://humanpred.github.io/rpdfium/reference/pdf_text_font_size.md)
   : Font size of a text page-object
+- [`pdf_text_content()`](https://humanpred.github.io/rpdfium/reference/pdf_text_content.md)
+  : Text content of a text page-object
+- [`pdf_text_runs()`](https://humanpred.github.io/rpdfium/reference/pdf_text_runs.md)
+  : Extract every text run on a page
 
 ## One-call extraction
 

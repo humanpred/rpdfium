@@ -37,10 +37,12 @@ Each row carries:
   `h` operator equivalent)
 
 **Known limitation:** PDFium's segment readout API exposes only the
-endpoint of a `bezierto` segment, not its two control points. Recovering
-control points requires content-stream parsing and is deferred. For now,
-`bezierto` rows show the curve's endpoint; the control-point information
-is lost. See `dev/pdfium-api-review.md` for the full discussion.
+endpoint of a `bezierto` segment, not its two control points. The public
+C API offers no way to recover them; the limitation is shared by
+pypdfium2, pdfium-rs, and pdfium-render. For now, `bezierto` rows show
+the curve's endpoint; control-point information is lost. See
+`dev/decisions/ADR-009-defer-bezier-controls.md` for the decision
+record.
 
 ## See also
 

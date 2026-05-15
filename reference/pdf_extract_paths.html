@@ -110,18 +110,16 @@ from <code><a href="pdf_page_size.html">pdf_page_size()</a></code></p></li>
 <li><p><code>page_rotation</code> - integer in <code>{0, 90, 180, 270}</code>, from
 <code><a href="pdf_page_rotation.html">pdf_page_rotation()</a></code></p></li>
 <li><p><code>text_runs</code> - tibble with one row per text object on the page:
-<code>text_index</code>, bounds, and <code>font_size</code>. The <code>text</code> content
-itself is empty (<code>""</code>) in Phase 1; populated in Phase 3 once
-text-extraction APIs land.</p></li>
+<code>text_index</code>, bounds, <code>font_size</code>, and <code>text</code> (UTF-8 content
+extracted via <code><a href="pdf_text_content.html">pdf_text_content()</a></code>).</p></li>
 </ul></div>
 
 <div class="section">
 <h3 id="known-limitations">Known limitations<a class="anchor" aria-label="anchor" href="#known-limitations"></a></h3>
 
-<ul><li><p>Bezier control points are not yet exposed (only segment
-endpoints). See <code><a href="pdf_path_segments.html">pdf_path_segments()</a></code>'s documentation and
-<code>dev/pdfium-api-review.md</code>.</p></li>
-<li><p>Text content is empty pending Phase 3.</p></li>
+<ul><li><p>Bezier control points are not exposed - only segment endpoints.
+PDFium does not expose them through its public C API; see
+<code>dev/decisions/ADR-009-defer-bezier-controls.md</code>.</p></li>
 </ul></div>
 
     </div>
@@ -144,7 +142,7 @@ endpoints). See <code><a href="pdf_path_segments.html">pdf_path_segments()</a></
 <span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 7</span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   text_index bounds_left bounds_bottom bounds_right bounds_top font_size text </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>          5        129.          103.         159.       114.         1 <span style="color: #949494;">""</span>   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span>          5        129.          103.         159.       114.         1 Hello</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

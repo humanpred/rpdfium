@@ -73,18 +73,15 @@ Path bounding box (constant across rows of one path):
   [`pdf_page_rotation()`](https://humanpred.github.io/rpdfium/reference/pdf_page_rotation.md)
 
 - `text_runs` - tibble with one row per text object on the page:
-  `text_index`, bounds, and `font_size`. The `text` content itself is
-  empty (`""`) in Phase 1; populated in Phase 3 once text-extraction
-  APIs land.
+  `text_index`, bounds, `font_size`, and `text` (UTF-8 content extracted
+  via
+  [`pdf_text_content()`](https://humanpred.github.io/rpdfium/reference/pdf_text_content.md)).
 
 ### Known limitations
 
-- Bezier control points are not yet exposed (only segment endpoints).
-  See
-  [`pdf_path_segments()`](https://humanpred.github.io/rpdfium/reference/pdf_path_segments.md)'s
-  documentation and `dev/pdfium-api-review.md`.
-
-- Text content is empty pending Phase 3.
+- Bezier control points are not exposed - only segment endpoints. PDFium
+  does not expose them through its public C API; see
+  `dev/decisions/ADR-009-defer-bezier-controls.md`.
 
 ## See also
 
@@ -107,5 +104,5 @@ if (nzchar(fixture)) {
 #> # A tibble: 1 × 7
 #>   text_index bounds_left bounds_bottom bounds_right bounds_top font_size text 
 #>        <int>       <dbl>         <dbl>        <dbl>      <dbl>     <dbl> <chr>
-#> 1          5        129.          103.         159.       114.         1 ""   
+#> 1          5        129.          103.         159.       114.         1 Hello
 ```
