@@ -18,19 +18,20 @@ their own machine.
 
 ## Active patches
 
-### `pdfium-FPDFPathSegment_GetBezierControlPoints.patch`
+### `pdfium-FPDFPath_GetBezierControlPoints.patch`
 
-**Status:** Submitted to Gerrit as
+**Status:** Patchset 2 ready for upload to
 [pdfium-review CL 147810](https://pdfium-review.googlesource.com/c/pdfium/+/147810)
-on 2026-05-15. Awaiting reviewer assignment and trybot results.
+(originally uploaded 2026-05-15; revised after first reviewer pass).
 
 Adds the public symbol
 
 ```c
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
-FPDFPathSegment_GetBezierControlPoints(FPDF_PATHSEGMENT segment,
-                                       float* cp1_x, float* cp1_y,
-                                       float* cp2_x, float* cp2_y);
+FPDFPath_GetBezierControlPoints(FPDF_PAGEOBJECT path,
+                                int index,
+                                float* cp1_x, float* cp1_y,
+                                float* cp2_x, float* cp2_y);
 ```
 
 so embedders can read back the two control points of a cubic Bezier
@@ -41,22 +42,53 @@ side was asymmetric. See
 cross-language demand record and the upstream-issue discussion that
 produced the positive-response signal.
 
+Patchset 2 changes from patchset 1, per reviewer feedback:
+
+* Function moved from `FPDFPathSegment_*` to `FPDFPath_*` namespace
+  and takes the path + endpoint index instead of a bare
+  `FPDF_PATHSEGMENT`. PDFium's build system rejected the original
+  pattern (pointer arithmetic on the underlying `std::vector<Point>`
+  storage) as unsafe-buffer-usage. The new implementation uses the
+  same `pdfium::span` + `fxcrt::IndexInBounds` pattern that
+  `FPDFPath_GetPathSegment` already uses next door.
+* Back-to-back-curve disambiguation is now in the implementation
+  rather than documented as a caller-must-handle caveat: the
+  function walks back counting consecutive `kBezier` predecessors
+  and requires the count mod 3 to equal 2, so indices that look
+  like endpoints locally but are actually the first/second control
+  point of a following curve correctly return `false`.
+* New-code variable naming follows Google C++ style (`path_obj`,
+  `cp1_point`, `cp2_point`); the existing `pPathPoint` naming in
+  surrounding functions is left alone.
+* Embedder test no longer calls `FPDFPage_InsertObject` /
+  `FPDFPage_GenerateContent` (the test reads from the path
+  directly; insertion was leftover boilerplate). The path is freed
+  with `FPDFPageObj_Destroy(path)`.
+* Commit-message footer reordered so `Change-Id` comes last
+  (Gerrit convention).
+* Commit-message `Bug:` line points at the real Chromium issue:
+  <https://issues.chromium.org/issues/513613479>.
+
 Files touched (against upstream HEAD `9f6089d4d`):
 
 * `public/fpdf_edit.h` — declaration with full doc comment.
-* `fpdfsdk/fpdf_editpath.cpp` — implementation reading two
-  predecessor points via `std::vector<Point>` pointer arithmetic.
+* `fpdfsdk/fpdf_editpath.cpp` — implementation using
+  `pdfium::span<const CFX_Path::Point>` and `fxcrt::IndexInBounds`,
+  with a walk-back loop that establishes the segment's position
+  within its Bezier triplet.
 * `fpdfsdk/fpdf_view_c_api_test.c` — `CHK()` entry so the C API
   surface smoke-test covers the new symbol.
 * `fpdfsdk/fpdf_edit_embeddertest.cpp` — new
   `FPDFEditEmbedderTest::GetBezierControlPoints` exercising every
-  documented behavior, including the back-to-back-curve caveat as
-  a contract test.
+  documented behavior: each valid endpoint, every control-point
+  index (with the back-to-back case asserted to return false), every
+  non-Bezier segment, out-of-range indices, NULL path, and every
+  NULL-out-param permutation.
 
 The commit message in the patch carries the deterministic
-`Change-Id: I2ddaa58d13a615777c3ac146d3f53faf5bad6be1` so the
-upload lands on a single Gerrit CL even across `git commit
---amend` cycles.
+`Change-Id: I2ddaa58d13a615777c3ac146d3f53faf5bad6be1` so re-uploads
+(after rebases or reviewer-requested amends) all land on the same
+Gerrit CL.
 
 ## Submission walk-through
 
@@ -155,7 +187,7 @@ steps 4–10 repeat on each upload.
    ```sh
    git checkout -b bezier-control-points origin/main
    git am /path/to/rpdfium/dev/upstream-patches/\
-   pdfium-FPDFPathSegment_GetBezierControlPoints.patch
+   pdfium-FPDFPath_GetBezierControlPoints.patch
    ```
 
    The patch already includes the `Change-Id` footer; the hook
@@ -205,7 +237,7 @@ git fetch origin main && git rebase origin/main
 git format-patch -1 HEAD \
     --output-directory=../../../dev/upstream-patches/
 mv ../../../dev/upstream-patches/0001-Expose-cubic-Bezier-control-points-on-read.patch \
-   ../../../dev/upstream-patches/pdfium-FPDFPathSegment_GetBezierControlPoints.patch
+   ../../../dev/upstream-patches/pdfium-FPDFPath_GetBezierControlPoints.patch
 ```
 
 Preserve the `Change-Id` line — if it changes, Gerrit will treat
