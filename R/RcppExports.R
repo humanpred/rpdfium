@@ -25,6 +25,18 @@ cpp_page_count <- function(ptr) {
     .Call(`_pdfium_cpp_page_count`, ptr)
 }
 
+cpp_page_object_count <- function(page_ptr) {
+    .Call(`_pdfium_cpp_page_object_count`, page_ptr)
+}
+
+cpp_page_get_object <- function(page_ptr, index_zero_based) {
+    .Call(`_pdfium_cpp_page_get_object`, page_ptr, index_zero_based)
+}
+
+cpp_obj_type <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_type`, obj_ptr)
+}
+
 cpp_load_page <- function(doc_ptr, page_index_zero_based) {
     .Call(`_pdfium_cpp_load_page`, doc_ptr, page_index_zero_based)
 }
