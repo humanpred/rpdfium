@@ -79,6 +79,40 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_bookmarks
+Rcpp::List cpp_bookmarks(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_bookmarks(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_bookmarks(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_page_label
+std::string cpp_page_label(SEXP doc_ptr, int page_index_zero);
+RcppExport SEXP _pdfium_cpp_page_label(SEXP doc_ptrSEXP, SEXP page_index_zeroSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type page_index_zero(page_index_zeroSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_page_label(doc_ptr, page_index_zero));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_doc_permissions
+double cpp_doc_permissions(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_doc_permissions(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_doc_permissions(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_doc_meta_text
 SEXP cpp_doc_meta_text(SEXP doc_ptr, std::string tag);
 RcppExport SEXP _pdfium_cpp_doc_meta_text(SEXP doc_ptrSEXP, SEXP tagSEXP) {
@@ -573,6 +607,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_clip_path_segments_df", (DL_FUNC) &_pdfium_cpp_clip_path_segments_df, 1},
     {"_pdfium_cpp_doc_file_id", (DL_FUNC) &_pdfium_cpp_doc_file_id, 2},
     {"_pdfium_cpp_doc_page_mode", (DL_FUNC) &_pdfium_cpp_doc_page_mode, 1},
+    {"_pdfium_cpp_bookmarks", (DL_FUNC) &_pdfium_cpp_bookmarks, 1},
+    {"_pdfium_cpp_page_label", (DL_FUNC) &_pdfium_cpp_page_label, 2},
+    {"_pdfium_cpp_doc_permissions", (DL_FUNC) &_pdfium_cpp_doc_permissions, 1},
     {"_pdfium_cpp_doc_meta_text", (DL_FUNC) &_pdfium_cpp_doc_meta_text, 2},
     {"_pdfium_cpp_doc_info", (DL_FUNC) &_pdfium_cpp_doc_info, 1},
     {"_pdfium_cpp_doc_file_version", (DL_FUNC) &_pdfium_cpp_doc_file_version, 1},
