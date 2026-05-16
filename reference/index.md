@@ -50,6 +50,13 @@
 - [`pdf_page_rotation()`](https://humanpred.github.io/rpdfium/reference/pdf_page_rotation.md)
   : Page rotation in degrees
 
+## Annotations and form fields
+
+- [`pdf_annotations()`](https://humanpred.github.io/rpdfium/reference/pdf_annotations.md)
+  : List the annotations on a PDF page
+- [`pdf_form_fields()`](https://humanpred.github.io/rpdfium/reference/pdf_form_fields.md)
+  : Enumerate AcroForm fields across the whole document
+
 ## Page objects
 
 - [`pdf_page_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_page_objects.md)
