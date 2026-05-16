@@ -121,5 +121,5 @@ your machine has no internet access at install time, set
   architectural choice and the alternatives that were considered.
 - `dev/architecture.md` covers contributor-facing topics: CI topology,
   the PDFium bump procedure, and the fixture-rebuild pipeline.
-- `vignette("getting-started")` walks through a complete inspection
-  workflow.
+- [`vignette("getting-started")`](https://humanpred.github.io/rpdfium/articles/getting-started.md)
+  walks through a complete inspection workflow.

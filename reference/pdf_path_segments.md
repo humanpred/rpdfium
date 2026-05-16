@@ -27,14 +27,14 @@ tibble of the same shape.
 
 Each row carries:
 
-- `index` - 1-based segment index within this path
+- `segment_index` - 1-based segment index within this path
 
-- `type` - `"moveto"`, `"lineto"`, `"bezierto"`, or `"unknown"`
+- `segment_type` - `"moveto"`, `"lineto"`, `"bezierto"`, or `"unknown"`
 
 - `x`, `y` - the segment's anchor point in PDF points
 
-- `close` - `TRUE` if this segment closes the current subpath (PDFium's
-  `h` operator equivalent)
+- `close_figure` - `TRUE` if this segment closes the current subpath
+  (PDFium's `h` operator equivalent)
 
 **Known limitation:** PDFium's segment readout API exposes only the
 endpoint of a `bezierto` segment, not its two control points. The public

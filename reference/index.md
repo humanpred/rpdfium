@@ -67,6 +67,9 @@
 - [`pdf_render_to_png()`](https://humanpred.github.io/rpdfium/reference/pdf_render_to_png.md)
   : Render a PDF page directly to a PNG file
 
+- [`plot(`*`<pdfium_bitmap>`*`)`](https://humanpred.github.io/rpdfium/reference/plot.pdfium_bitmap.md)
+  : Plot a pdfium_bitmap
+
 - [`as.raster(`*`<pdfium_bitmap>`*`)`](https://humanpred.github.io/rpdfium/reference/as.raster.pdfium_bitmap.md)
   :
 
@@ -97,6 +100,15 @@
 
 - [`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md)
   : List the page objects nested inside a Form XObject
+
+## Clip paths
+
+- [`pdf_obj_clip_path()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_clip_path.md)
+  : Get the clip path attached to a page object
+- [`pdf_clip_path_count()`](https://humanpred.github.io/rpdfium/reference/pdf_clip_path_count.md)
+  : Count sub-paths in a clip path
+- [`pdf_clip_path_segments()`](https://humanpred.github.io/rpdfium/reference/pdf_clip_path_segments.md)
+  : Read all segments of a clip path as a tibble
 
 ## One-call extraction
 

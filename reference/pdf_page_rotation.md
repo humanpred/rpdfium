@@ -7,20 +7,20 @@ combined with any runtime rotation applied via the editing API.
 ## Usage
 
 ``` r
-pdf_page_rotation(x, page = 1L)
+pdf_page_rotation(page, page_num = 1L)
 ```
 
 ## Arguments
 
-- x:
+- page:
 
   A `pdfium_page` from
   [`pdf_load_page()`](https://humanpred.github.io/rpdfium/reference/pdf_load_page.md),
   or a `pdfium_doc`.
 
-- page:
+- page_num:
 
-  One-based page index. Only used when `x` is a `pdfium_doc`. Ignored
+  One-based page index. Only used when `page` is a `pdfium_doc`. Ignored
   otherwise.
 
 ## Value

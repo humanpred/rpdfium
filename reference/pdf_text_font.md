@@ -22,19 +22,22 @@ pdf_text_font(obj)
 
 ## Value
 
-A named list with elements:
+A named list with elements (matching the `font_*` columns that
+[`pdf_text_runs()`](https://humanpred.github.io/rpdfium/reference/pdf_text_runs.md)
+returns for the same text object, so either shape can feed directly into
+a row of the other):
 
-- `base_name` - character scalar, base font name; UTF-8
+- `font_base_name` - character scalar, base font name; UTF-8
 
-- `family` - character scalar, font family name; UTF-8
+- `font_family` - character scalar, font family name; UTF-8
 
-- `weight` - integer (e.g. 400, 500, 700)
+- `font_weight` - integer (e.g. 400, 500, 700)
 
-- `italic_angle` - integer degrees; 0 for upright
+- `font_italic_angle` - integer degrees; 0 for upright
 
-- `is_embedded` - logical
+- `font_is_embedded` - logical
 
-- `flags` - integer bitmask
+- `font_flags` - integer bitmask
 
 ## Details
 

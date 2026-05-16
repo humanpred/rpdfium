@@ -50,8 +50,8 @@ pdf_close(doc)
 ```
 
 More examples ship in the vignettes
-(`vignette("getting-started", package = "pdfium")`, etc.) and on the
-[pkgdown site](https://billdenney.github.io/rpdfium/).
+([`vignette("getting-started", package = "pdfium")`](https://humanpred.github.io/rpdfium/articles/getting-started.md),
+etc.) and on the [pkgdown site](https://billdenney.github.io/rpdfium/).
 
 ## License
 

@@ -10,7 +10,7 @@ safe to drop your reference to `doc` while still holding a page.
 ## Usage
 
 ``` r
-pdf_load_page(doc, page = 1L)
+pdf_load_page(doc, page_num = 1L)
 ```
 
 ## Arguments
@@ -20,9 +20,10 @@ pdf_load_page(doc, page = 1L)
   A `pdfium_doc` from
   [`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md).
 
-- page:
+- page_num:
 
-  One-based page index. Must satisfy `1 <= page <= pdf_page_count(doc)`.
+  One-based page index. Must satisfy
+  `1 <= page_num <= pdf_page_count(doc)`.
 
 ## Value
 

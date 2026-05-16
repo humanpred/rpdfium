@@ -7,20 +7,20 @@ one) or a `(doc, page)` pair (convenience for one-shot inspection).
 ## Usage
 
 ``` r
-pdf_page_size(x, page = 1L)
+pdf_page_size(page, page_num = 1L)
 ```
 
 ## Arguments
 
-- x:
+- page:
 
   A `pdfium_page` from
   [`pdf_load_page()`](https://humanpred.github.io/rpdfium/reference/pdf_load_page.md),
   or a `pdfium_doc`.
 
-- page:
+- page_num:
 
-  One-based page index. Only used when `x` is a `pdfium_doc`. Ignored
+  One-based page index. Only used when `page` is a `pdfium_doc`. Ignored
   otherwise.
 
 ## Value

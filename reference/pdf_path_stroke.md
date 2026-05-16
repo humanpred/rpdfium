@@ -1,9 +1,9 @@
 # Stroke style of a path page-object
 
-Returns the RGBA stroke color and stroke width of `obj`. Color channels
-are integers in `[0, 255]`; width is in PDF points. When PDFium reports
-that the object has no stroke set, color channels are `NA` and width is
-`NA`.
+Returns the RGBA stroke color and stroke width of `obj` as a flat named
+numeric vector. Color channels are integers in `[0, 255]`; width is in
+PDF points. When PDFium reports that the object has no stroke set, every
+value is `NA`.
 
 ## Usage
 
@@ -20,13 +20,18 @@ pdf_path_stroke(obj)
 
 ## Value
 
-A named list with two elements:
+A named numeric vector with elements `red`, `green`, `blue`, `alpha`
+(0-255 channels) and `width` (PDF points). All-`NA` when no stroke is
+set.
 
-- `color` - a named numeric vector `c(red, green, blue, alpha)` of 0-255
-  channel values, or all-`NA` when no stroke is set.
+## Details
 
-- `width` - the stroke width in PDF points, or `NA` when no stroke is
-  set.
+The returned shape mirrors
+[`pdf_path_fill()`](https://humanpred.github.io/rpdfium/reference/pdf_path_fill.md)
+(a flat named vector). The downstream tibble columns in
+[`pdf_extract_paths()`](https://humanpred.github.io/rpdfium/reference/pdf_extract_paths.md)
+(`stroke_red`, `stroke_green`, `stroke_blue`, `stroke_alpha`,
+`stroke_width`) are built by prefixing the names of this vector.
 
 ## See also
 

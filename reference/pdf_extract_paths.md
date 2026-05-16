@@ -9,20 +9,20 @@ function `kmextract` consumes via the `pdfium_native` backend.
 ## Usage
 
 ``` r
-pdf_extract_paths(path, page = 1L)
+pdf_extract_paths(doc, page_num = 1L)
 ```
 
 ## Arguments
 
-- path:
+- doc:
 
   Either a character scalar path to a PDF file, or an already-open
   `pdfium_doc` returned by
   [`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md).
-  When `path` is a character path the document is opened and closed
+  When `doc` is a character path the document is opened and closed
   internally.
 
-- page:
+- page_num:
 
   One-based page index (default `1`).
 
@@ -43,11 +43,11 @@ Path identity & segment geometry:
 
 - `segment_index` - 1-based segment index within the path
 
-- `type` - `"moveto"`, `"lineto"`, `"bezierto"`, or `"unknown"`
+- `segment_type` - `"moveto"`, `"lineto"`, `"bezierto"`, or `"unknown"`
 
 - `x`, `y` - the segment's anchor / endpoint in PDF points
 
-- `close` - logical, segment closes the current subpath
+- `close_figure` - logical, segment closes the current subpath
 
 Style (constant across all rows of one path):
 
@@ -66,16 +66,16 @@ Path bounding box (constant across rows of one path):
 
 ### Attributes
 
-- `page_size_pt` - named numeric `c(width, height)` of the page, from
+- `page_size` - named numeric `c(width, height)` of the page in PDF
+  points, from
   [`pdf_page_size()`](https://humanpred.github.io/rpdfium/reference/pdf_page_size.md)
 
 - `page_rotation` - integer in `{0, 90, 180, 270}`, from
   [`pdf_page_rotation()`](https://humanpred.github.io/rpdfium/reference/pdf_page_rotation.md)
 
-- `text_runs` - tibble with one row per text object on the page:
-  `text_index`, bounds, `font_size`, and `text` (UTF-8 content extracted
-  via
-  [`pdf_text_content()`](https://humanpred.github.io/rpdfium/reference/pdf_text_content.md)).
+- `text_runs` - tibble with one row per text object on the page, the
+  output of
+  [`pdf_text_runs()`](https://humanpred.github.io/rpdfium/reference/pdf_text_runs.md).
 
 ### Known limitations
 
@@ -96,9 +96,9 @@ Path bounding box (constant across rows of one path):
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
                        package = "pdfium")
 if (nzchar(fixture)) {
-  paths <- pdf_extract_paths(fixture, page = 1)
+  paths <- pdf_extract_paths(fixture, page_num = 1)
   head(paths)
-  attr(paths, "page_size_pt")
+  attr(paths, "page_size")
   attr(paths, "text_runs")
 }
 #> # A tibble: 1 × 13
