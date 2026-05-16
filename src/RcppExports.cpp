@@ -10,6 +10,52 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// cpp_obj_get_clip_path
+SEXP cpp_obj_get_clip_path(SEXP obj_ptr, SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_obj_get_clip_path(SEXP obj_ptrSEXP, SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_get_clip_path(obj_ptr, page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_clip_path_count_paths
+int cpp_clip_path_count_paths(SEXP clip_ptr);
+RcppExport SEXP _pdfium_cpp_clip_path_count_paths(SEXP clip_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type clip_ptr(clip_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_clip_path_count_paths(clip_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_clip_path_count_segments
+int cpp_clip_path_count_segments(SEXP clip_ptr, int path_index_zero);
+RcppExport SEXP _pdfium_cpp_clip_path_count_segments(SEXP clip_ptrSEXP, SEXP path_index_zeroSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type clip_ptr(clip_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type path_index_zero(path_index_zeroSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_clip_path_count_segments(clip_ptr, path_index_zero));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_clip_path_segments_df
+Rcpp::List cpp_clip_path_segments_df(SEXP clip_ptr);
+RcppExport SEXP _pdfium_cpp_clip_path_segments_df(SEXP clip_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type clip_ptr(clip_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_clip_path_segments_df(clip_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_doc_meta_text
 SEXP cpp_doc_meta_text(SEXP doc_ptr, std::string tag);
 RcppExport SEXP _pdfium_cpp_doc_meta_text(SEXP doc_ptrSEXP, SEXP tagSEXP) {
@@ -451,6 +497,10 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_pdfium_cpp_obj_get_clip_path", (DL_FUNC) &_pdfium_cpp_obj_get_clip_path, 2},
+    {"_pdfium_cpp_clip_path_count_paths", (DL_FUNC) &_pdfium_cpp_clip_path_count_paths, 1},
+    {"_pdfium_cpp_clip_path_count_segments", (DL_FUNC) &_pdfium_cpp_clip_path_count_segments, 2},
+    {"_pdfium_cpp_clip_path_segments_df", (DL_FUNC) &_pdfium_cpp_clip_path_segments_df, 1},
     {"_pdfium_cpp_doc_meta_text", (DL_FUNC) &_pdfium_cpp_doc_meta_text, 2},
     {"_pdfium_cpp_doc_info", (DL_FUNC) &_pdfium_cpp_doc_info, 1},
     {"_pdfium_cpp_doc_file_version", (DL_FUNC) &_pdfium_cpp_doc_file_version, 1},

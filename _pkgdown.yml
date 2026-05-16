@@ -73,6 +73,11 @@ reference:
   - title: Form XObjects
     contents:
       - pdf_form_objects
+  - title: Clip paths
+    contents:
+      - pdf_obj_clip_path
+      - pdf_clip_path_count
+      - pdf_clip_path_segments
   - title: One-call extraction
     contents:
       - pdf_extract_paths

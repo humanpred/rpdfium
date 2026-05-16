@@ -245,9 +245,29 @@ local({
     message("[fixtures] wrote ", out)
   }
 
+  build_clip <- function() {
+    # 4x3in Cairo PDF with a clip rectangle at plot coords
+    # (1, 0.5)-(3, 2.5), then a full-page blue polygon drawn after
+    # the clip is active. Cairo emits the clip via `q ... W n ...
+    # Q` save/restore on the polygon, so PDFium attaches a
+    # clip-path with one closed rectangular sub-path to the
+    # polygon's page object.
+    out <- file.path(out_dir, "clip.pdf")
+    grDevices::cairo_pdf(out, width = 4, height = 3)
+    on.exit(grDevices::dev.off(), add = TRUE)
+    graphics::par(mar = c(0, 0, 0, 0))
+    graphics::plot.new()
+    graphics::plot.window(c(0, 4), c(0, 3))
+    graphics::clip(1, 3, 0.5, 2.5)
+    graphics::polygon(c(0, 4, 4, 0), c(0, 0, 3, 3),
+                      col = "blue", border = NA)
+    message("[fixtures] wrote ", out)
+  }
+
   build_minimal()
   build_shapes()
   build_unicode()
   build_image()
   build_form_xobject()
+  build_clip()
 })
