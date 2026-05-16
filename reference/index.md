@@ -14,6 +14,14 @@
   : Read one entry from a PDF's Info dictionary
 - [`pdf_parse_date()`](https://humanpred.github.io/rpdfium/reference/pdf_parse_date.md)
   : Parse a PDF date string into POSIXct
+- [`pdf_doc_permissions()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_permissions.md)
+  : Permission flags from a PDF's encryption dictionary
+- [`pdf_bookmarks()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmarks.md)
+  : Read the bookmark outline (table of contents) of a PDF
+- [`pdf_page_label()`](https://humanpred.github.io/rpdfium/reference/pdf_page_label.md)
+  : Read the logical page label of a PDF page
+- [`pdf_page_labels()`](https://humanpred.github.io/rpdfium/reference/pdf_page_labels.md)
+  : Read every page's logical label in one call
 
 ## Pages
 

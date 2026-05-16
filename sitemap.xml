@@ -19,12 +19,14 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/as.matrix.pdfium_bitmap.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/as.raster.pdfium_bitmap.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/index.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_bookmarks.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_clip_path_count.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_clip_path_segments.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_close.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_close_page.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_doc_info.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_doc_meta.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_doc_permissions.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_extract_paths.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_objects.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_image_bitmap.html</loc></url>
@@ -40,6 +42,8 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_type.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_open.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_count.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_label.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_labels.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_objects.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_rotation.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_size.html</loc></url>
