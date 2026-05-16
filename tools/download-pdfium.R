@@ -103,59 +103,138 @@ local({
   # itself.
   #
   # Generating the import library needs the export name list:
-  #   - `gendef` is the usual tool but ships only with MSYS2's
+  #   - `gendef` is the usual MSYS2 tool, but ships only with
   #     `mingw-w64-tools` — not Rtools 4.5.
-  #   - `objdump -p` (binutils) ships with Rtools and prints the same
-  #     name table, so we parse its output instead. `dlltool` (also
-  #     binutils, also in Rtools) then assembles the import library
-  #     from the `.def` we write.
+  #   - `objdump -p` output format varies across binutils versions
+  #     and Rtools 4.5's build does not print the
+  #     `[Ordinal/Name Pointer] Table` block we'd otherwise scrape.
+  # So we parse the PE export directory directly from the bytes of
+  # the DLL using `readBin()`. The format is stable (Microsoft PE/COFF
+  # spec) and needs no external tool. `dlltool` (binutils, in Rtools)
+  # then assembles the `.dll.a` from the `.def` we write.
 
-  # Locate a binutils tool by name from PATH or under Rtools.
-  find_binutil <- function(exe) {
-    path <- Sys.which(exe)
+  # Parse export-table function names from a PE/COFF DLL.
+  # Returns a character vector of named exports (ordinal-only exports
+  # without a name are skipped). Implements the minimum slice of
+  # Microsoft PE/COFF needed to walk the AddressOfNames array of the
+  # export directory; no external tooling involved.
+  parse_pe_exports <- function(dll_path) {
+    con <- file(dll_path, "rb")
+    on.exit(close(con))
+    read_u16 <- function() {
+      readBin(con, integer(), n = 1L, size = 2L,
+              signed = FALSE, endian = "little")
+    }
+    read_u32 <- function() {
+      # `readBin` ignores `signed` for size 4, so for values that
+      # might exceed INT_MAX we'd need to compose by bytes. PE RVAs
+      # are bounded by the 4GB image size so signed interpretation
+      # is safe in practice for everything we need here.
+      readBin(con, integer(), n = 1L, size = 4L, endian = "little")
+    }
+
+    seek(con, 0x3c)
+    pe_offset <- read_u32()
+    seek(con, pe_offset)
+    sig <- readBin(con, raw(), n = 4L)
+    if (!identical(sig[1L:2L], charToRaw("PE")) ||
+        sig[3L] != as.raw(0L) || sig[4L] != as.raw(0L)) {
+      stop("Not a PE file: ", dll_path, call. = FALSE)
+    }
+    # COFF header: machine(2) num_sections(2) timestamp(4)
+    # ptrsymtab(4) numsyms(4) size_opt_header(2) characteristics(2).
+    seek(con, pe_offset + 4L + 2L)
+    num_sections <- read_u16()
+    seek(con, pe_offset + 4L + 16L)
+    size_opt_header <- read_u16()
+    read_u16()  # characteristics
+
+    opt_header_offset <- pe_offset + 4L + 20L
+    seek(con, opt_header_offset)
+    magic <- read_u16()  # 0x10b = PE32, 0x20b = PE32+
+    is_pe32_plus <- magic == 0x20bL
+    data_dir_offset <- opt_header_offset +
+      if (is_pe32_plus) 112L else 96L
+
+    seek(con, data_dir_offset)
+    export_rva <- read_u32()
+    read_u32()  # export size
+    if (export_rva == 0L) {
+      stop("DLL has no export directory: ", dll_path, call. = FALSE)
+    }
+
+    # Section table immediately follows the optional header.
+    section_table_offset <- opt_header_offset + size_opt_header
+    sections <- vector("list", num_sections)
+    for (i in seq_len(num_sections)) {
+      seek(con, section_table_offset + (i - 1L) * 40L)
+      readBin(con, raw(), n = 8L)  # section name
+      virtual_size <- read_u32()
+      virtual_addr <- read_u32()
+      raw_size <- read_u32()
+      raw_ptr <- read_u32()
+      sections[[i]] <- list(vaddr = virtual_addr,
+                            vsize = max(virtual_size, raw_size),
+                            raddr = raw_ptr)
+    }
+    rva_to_offset <- function(rva) {
+      for (s in sections) {
+        if (rva >= s$vaddr && rva < s$vaddr + s$vsize) {
+          return(s$raddr + (rva - s$vaddr))
+        }
+      }
+      stop(sprintf("RVA 0x%x not in any PE section", rva),
+           call. = FALSE)
+    }
+
+    # IMAGE_EXPORT_DIRECTORY:
+    #   Characteristics(4), TimeDateStamp(4), Major(2), Minor(2),
+    #   Name(4), Base(4), NumFuncs(4), NumNames(4),
+    #   AddressOfFunctions(4), AddressOfNames(4),
+    #   AddressOfNameOrdinals(4).
+    seek(con, rva_to_offset(export_rva))
+    read_u32(); read_u32(); read_u16(); read_u16()
+    read_u32(); read_u32()              # Name (rva), Base
+    read_u32()                          # NumberOfFunctions
+    num_names <- read_u32()
+    read_u32()                          # AddressOfFunctions
+    names_rva <- read_u32()
+    if (num_names <= 0L) {
+      stop("DLL has no named exports: ", dll_path, call. = FALSE)
+    }
+    seek(con, rva_to_offset(names_rva))
+    name_rvas <- readBin(con, integer(), n = num_names,
+                         size = 4L, endian = "little")
+
+    read_cstring <- function(file_offset) {
+      seek(con, file_offset)
+      bytes <- readBin(con, raw(), n = 1024L)  # exported names are short
+      nul <- which(bytes == as.raw(0L))
+      if (length(nul) == 0L) {
+        stop("Unterminated export-name string at offset ",
+             file_offset, call. = FALSE)
+      }
+      rawToChar(bytes[seq_len(nul[[1L]] - 1L)])
+    }
+    vapply(name_rvas,
+           function(rva) read_cstring(rva_to_offset(rva)),
+           character(1L))
+  }
+
+  # Locate dlltool from PATH or under Rtools.
+  find_dlltool <- function() {
+    path <- Sys.which("dlltool")
     if (nzchar(path)) return(path)
     rtools <- Sys.getenv("RTOOLS45_HOME",
                          Sys.getenv("RTOOLS_HOME", "C:/rtools45"))
     cand <- c(
-      file.path(rtools, "x86_64-w64-mingw32.static.posix/bin",
-                paste0(exe, ".exe")),
-      file.path(rtools, "mingw64/bin", paste0(exe, ".exe")),
-      file.path(rtools, "usr/bin", paste0(exe, ".exe"))
+      file.path(rtools, "x86_64-w64-mingw32.static.posix/bin/dlltool.exe"),
+      file.path(rtools, "mingw64/bin/dlltool.exe"),
+      file.path(rtools, "usr/bin/dlltool.exe")
     )
     hit <- cand[file.exists(cand)]
     if (length(hit) >= 1L) return(hit[[1L]])
     ""
-  }
-
-  # Run `objdump -p` and extract the function names from the
-  # `[Ordinal/Name Pointer] Table` section. Returns a character vector
-  # of exported symbol names.
-  read_dll_exports <- function(dll_path, objdump_exe) {
-    out <- system2(objdump_exe, c("-p", shQuote(dll_path)),
-                   stdout = TRUE, stderr = TRUE)
-    status <- attr(out, "status")
-    if (!is.null(status) && status != 0L) {
-      stop("objdump failed on ", dll_path, ": ",
-           paste(out, collapse = "\n"), call. = FALSE)
-    }
-    # The name table block looks like:
-    #   [Ordinal/Name Pointer] Table
-    #     [   0] FPDF_AddInstalledFont
-    #     [   1] FPDF_CloseDocument
-    #     ...
-    # Some exports may have no name (export-by-ordinal only) and
-    # appear as `[ord]` with no trailing identifier; we skip those.
-    pat <- "^\\s*\\[\\s*[0-9]+\\]\\s+([A-Za-z_][A-Za-z0-9_@]*)\\s*$"
-    m <- regmatches(out, regexec(pat, out))
-    names <- vapply(m,
-                    function(x) if (length(x) >= 2L) x[[2L]] else NA_character_,
-                    character(1L))
-    names <- unique(names[!is.na(names)])
-    if (length(names) == 0L) {
-      stop("Could not extract any export names from ", dll_path,
-           " via objdump.", call. = FALSE)
-    }
-    names
   }
 
   # Write a Mingw .def file for `dlltool -d`.
@@ -179,12 +258,10 @@ local({
       return(invisible())
     }
 
-    objdump <- find_binutil("objdump")
-    dlltool <- find_binutil("dlltool")
-    if (!nzchar(objdump) || !nzchar(dlltool)) {
-      stop("objdump or dlltool not found on PATH or under Rtools; ",
-           "cannot regenerate the Mingw import library for pdfium.dll. ",
-           "(objdump=\"", objdump, "\", dlltool=\"", dlltool, "\")",
+    dlltool <- find_dlltool()
+    if (!nzchar(dlltool)) {
+      stop("dlltool not found on PATH or under Rtools; cannot ",
+           "regenerate the Mingw import library for pdfium.dll.",
            call. = FALSE)
     }
 
@@ -198,7 +275,7 @@ local({
 
     # Parse exports from the renamed DLL and write a .def file whose
     # LIBRARY directive matches the new filename.
-    exports <- read_dll_exports(dst_dll, objdump)
+    exports <- parse_pe_exports(dst_dll)
     defpath <- tempfile("libpdfium-", fileext = ".def")
     on.exit(unlink(defpath), add = TRUE)
     write_def_file(defpath, "libpdfium.dll", exports)
