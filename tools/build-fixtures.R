@@ -264,6 +264,207 @@ local({
     message("[fixtures] wrote ", out)
   }
 
+  build_annotated <- function() {
+    # Single-page PDF with four annotations:
+    #   * text (sticky note)  /Contents="Hello"   /T="Alice"
+    #   * highlight           (no /Contents)
+    #   * link to a URI
+    #   * widget text field   /T="name" /TU="Full name" /V="Bob"
+    # Plus a top-level /AcroForm with the widget as its only field.
+    # Used by test-annotations.R and test-form-fields.R. Cairo's R
+    # driver doesn't emit annotations or widgets, so the file is
+    # constructed from raw PDF syntax.
+    out <- file.path(out_dir, "annotated.pdf")
+
+    obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
+
+    obj1 <- obj(1,
+                paste0("<< /Type /Catalog /Pages 2 0 R ",
+                       "/AcroForm << /Fields [7 0 R] >> >>"))
+    obj2 <- obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+    obj3 <- obj(3,
+                paste0("<< /Type /Page /Parent 2 0 R ",
+                       "/MediaBox [0 0 300 300] /Resources <<>> ",
+                       "/Annots [4 0 R 5 0 R 6 0 R 7 0 R] >>"))
+    obj4 <- obj(4,
+                paste0("<< /Type /Annot /Subtype /Text ",
+                       "/Rect [20 250 40 270] ",
+                       "/Contents (Hello) /T (Alice) >>"))
+    obj5 <- obj(5,
+                paste0("<< /Type /Annot /Subtype /Highlight ",
+                       "/Rect [50 200 200 220] ",
+                       "/QuadPoints [50 220 200 220 50 200 200 200] >>"))
+    obj6 <- obj(6,
+                paste0("<< /Type /Annot /Subtype /Link ",
+                       "/Rect [50 150 200 170] ",
+                       "/A << /S /URI ",
+                       "/URI (https://example.com) >> >>"))
+    obj7 <- obj(7,
+                paste0("<< /Type /Annot /Subtype /Widget /FT /Tx ",
+                       "/T (name) /TU (Full name) /V (Bob) ",
+                       "/Rect [50 100 200 120] /P 3 0 R >>"))
+
+    header <- charToRaw("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    parts <- list(
+      header,
+      charToRaw(obj1),
+      charToRaw(obj2),
+      charToRaw(obj3),
+      charToRaw(obj4),
+      charToRaw(obj5),
+      charToRaw(obj6),
+      charToRaw(obj7)
+    )
+    cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
+    offs <- cum[seq_len(7L) + 1L]
+    xref_offset <- cum[[length(cum)]]
+    fmt10 <- function(n) sprintf("%010d", n)
+    xref <- paste(
+      c("xref",
+        "0 8",
+        "0000000000 65535 f ",
+        paste0(fmt10(offs), " 00000 n ")),
+      collapse = "\n"
+    )
+    trailer <- paste0(
+      "\ntrailer\n<< /Size 8 /Root 1 0 R >>\nstartxref\n",
+      xref_offset, "\n%%EOF\n"
+    )
+    full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))
+    writeBin(full, out)
+    message("[fixtures] wrote ", out)
+  }
+
+  build_attachments <- function() {
+    # Single-page PDF whose catalog declares one /EmbeddedFiles
+    # name-tree entry pointing at a small text/plain attachment.
+    # Cairo doesn't emit embedded-file objects so this is built
+    # from raw PDF syntax. Used by test-attachments.R.
+    out <- file.path(out_dir, "attachments.pdf")
+
+    embedded_bytes <- charToRaw("hello world\n")
+    obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
+
+    obj1 <- obj(1, "<< /Type /Catalog /Pages 2 0 R /Names 3 0 R >>")
+    obj2 <- obj(2, "<< /Type /Pages /Kids [4 0 R] /Count 1 >>")
+    # The /Names dictionary points the /EmbeddedFiles name tree at
+    # one entry: a UTF-16BE-encoded key "hello.txt" mapped to the
+    # filespec dictionary at object 5.
+    obj3 <- obj(3,
+                paste0("<< /EmbeddedFiles ",
+                       "<< /Names [(hello.txt) 5 0 R] >> >>"))
+    obj4 <- obj(4,
+                paste0("<< /Type /Page /Parent 2 0 R ",
+                       "/MediaBox [0 0 300 300] /Resources <<>> >>"))
+    # Filespec dict naming the embedded file and pointing at the
+    # stream object.
+    obj5 <- obj(5,
+                paste0("<< /Type /Filespec /F (hello.txt) ",
+                       "/EF << /F 6 0 R >> >>"))
+    # The actual embedded file stream. The /Subtype name uses the
+    # PDF name-escape `#2F` for the `/` byte in "text/plain".
+    obj6_head <- paste0("6 0 obj\n",
+                        "<< /Type /EmbeddedFile /Subtype /text#2Fplain ",
+                        "/Length ", length(embedded_bytes),
+                        " >>\nstream\n")
+    obj6_bytes <- c(charToRaw(obj6_head),
+                    embedded_bytes,
+                    charToRaw("\nendstream\nendobj\n"))
+
+    header <- charToRaw("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    parts <- list(
+      header,
+      charToRaw(obj1),
+      charToRaw(obj2),
+      charToRaw(obj3),
+      charToRaw(obj4),
+      charToRaw(obj5),
+      obj6_bytes
+    )
+    cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
+    offs <- cum[seq_len(6L) + 1L]
+    xref_offset <- cum[[length(cum)]]
+    fmt10 <- function(n) sprintf("%010d", n)
+    xref <- paste(
+      c("xref",
+        "0 7",
+        "0000000000 65535 f ",
+        paste0(fmt10(offs), " 00000 n ")),
+      collapse = "\n"
+    )
+    trailer <- paste0(
+      "\ntrailer\n<< /Size 7 /Root 1 0 R >>\nstartxref\n",
+      xref_offset, "\n%%EOF\n"
+    )
+    full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))
+    writeBin(full, out)
+    message("[fixtures] wrote ", out)
+  }
+
+  build_signed <- function() {
+    # Single-page PDF carrying one signature widget annotation.
+    # The /Contents and /ByteRange values are placeholders - they
+    # are NOT a real PKCS#7 signature, just enough structure for
+    # PDFium to discover the signature object and surface its
+    # metadata to FPDFSignatureObj_*. Used by test-signatures.R.
+    out <- file.path(out_dir, "signed.pdf")
+
+    obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
+
+    obj1 <- obj(1,
+                paste0("<< /Type /Catalog /Pages 2 0 R ",
+                       "/AcroForm << /Fields [3 0 R] /SigFlags 3 >> >>"))
+    obj2 <- obj(2, "<< /Type /Pages /Kids [4 0 R] /Count 1 >>")
+    # Signature form-field, also acting as the widget annotation.
+    obj3 <- obj(3,
+                paste0("<< /Type /Annot /Subtype /Widget /FT /Sig ",
+                       "/T (Signature1) /P 4 0 R ",
+                       "/Rect [50 50 200 100] /V 5 0 R >>"))
+    obj4 <- obj(4,
+                paste0("<< /Type /Page /Parent 2 0 R ",
+                       "/MediaBox [0 0 300 300] /Resources <<>> ",
+                       "/Annots [3 0 R] >>"))
+    # Signature dict. /Contents is a hex string placeholder; this
+    # would normally be a DER-encoded PKCS#7. /ByteRange describes
+    # two contiguous spans excluding /Contents. /Reason is
+    # UTF-16BE with a BOM. /M is the signing time.
+    obj5 <- obj(5,
+                paste0("<< /Type /Sig /Filter /Adobe.PPKLite ",
+                       "/SubFilter /adbe.pkcs7.detached ",
+                       "/Contents <DEADBEEF> ",
+                       "/ByteRange [0 100 200 300] ",
+                       "/Reason <FEFF0054006500730074> ",
+                       "/M (D:20260516000000+00'00') >>"))
+
+    header <- charToRaw("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    parts <- list(
+      header,
+      charToRaw(obj1),
+      charToRaw(obj2),
+      charToRaw(obj3),
+      charToRaw(obj4),
+      charToRaw(obj5)
+    )
+    cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
+    offs <- cum[seq_len(5L) + 1L]
+    xref_offset <- cum[[length(cum)]]
+    fmt10 <- function(n) sprintf("%010d", n)
+    xref <- paste(
+      c("xref",
+        "0 6",
+        "0000000000 65535 f ",
+        paste0(fmt10(offs), " 00000 n ")),
+      collapse = "\n"
+    )
+    trailer <- paste0(
+      "\ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n",
+      xref_offset, "\n%%EOF\n"
+    )
+    full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))
+    writeBin(full, out)
+    message("[fixtures] wrote ", out)
+  }
+
   build_outline <- function() {
     # Hand-built two-page PDF with a bookmark outline and a
     # PageLabels number tree. Outline is one chapter with two
@@ -352,5 +553,8 @@ local({
   build_image()
   build_form_xobject()
   build_clip()
+  build_annotated()
+  build_attachments()
+  build_signed()
   build_outline()
 })
