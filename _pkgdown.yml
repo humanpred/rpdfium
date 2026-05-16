@@ -28,6 +28,9 @@ reference:
       - pdf_open
       - pdf_close
       - pdf_page_count
+      - pdf_doc_info
+      - pdf_doc_meta
+      - pdf_parse_date
   - title: Pages
     contents:
       - pdf_load_page
@@ -52,6 +55,24 @@ reference:
       - pdf_text_content
       - pdf_text_runs
       - pdf_text_font
+  - title: Rendering
+    contents:
+      - pdf_render_page
+      - pdf_render_to_png
+      - as.raster.pdfium_bitmap
+      - as.array.pdfium_bitmap
+      - as.matrix.pdfium_bitmap
+  - title: Images
+    contents:
+      - pdf_image_info
+      - pdf_image_size
+      - pdf_image_bitmap
+      - pdf_image_rendered
+      - pdf_image_data
+      - pdf_image_filters
+  - title: Form XObjects
+    contents:
+      - pdf_form_objects
   - title: One-call extraction
     contents:
       - pdf_extract_paths

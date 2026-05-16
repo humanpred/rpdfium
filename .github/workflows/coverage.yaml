@@ -43,10 +43,21 @@ jobs:
           # codecov.io enforces the same threshold for downstream consumers but
           # requires CODECOV_TOKEN to do so on protected branches, so we keep
           # the gate authoritative here regardless of upload status.
-          r_files <- grep("^R/", unique(as.data.frame(cov)$filename), value = TRUE)
+          #
+          # Compute the gate from `as.data.frame(cov)` rather than via
+          # `cov[boolean, ]`: as.data.frame.coverage expands each trace
+          # entry to one row per source line, so the data-frame row count
+          # exceeds the underlying entry count and the boolean misaligns
+          # when used as a `[` subscript against the coverage object - it
+          # pulls in non-R entries and silently inflates the denominator.
+          # The data-frame aggregation below is what
+          # `covr::percent_coverage(cov)` does internally, narrowed to R
+          # files we own.
+          df <- as.data.frame(cov)
+          r_files <- grep("^R/", unique(df$filename), value = TRUE)
           r_files <- setdiff(r_files, c("R/RcppExports.R", "R/zzz.R", "R/pdfium-package.R"))
-          r_cov  <- cov[as.data.frame(cov)$filename %in% r_files, ]
-          r_pct  <- covr::percent_coverage(r_cov)
+          r_rows <- df[df$filename %in% r_files, ]
+          r_pct  <- 100 * sum(r_rows$value > 0) / nrow(r_rows)
           cat(sprintf("R-only coverage (gated files): %.2f%%\n", r_pct))
           if (r_pct < 100) {
             stop(sprintf("R coverage gate: %.2f%% < 100%%", r_pct), call. = FALSE)

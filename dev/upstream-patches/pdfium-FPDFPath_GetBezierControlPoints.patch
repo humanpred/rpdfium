@@ -1,0 +1,305 @@
+From 6253aa099e72b855c2efb09a79146393c32b2d95 Mon Sep 17 00:00:00 2001
+From: Bill Denney <wdenney@humanpredictions.com>
+Date: Fri, 15 May 2026 23:15:15 +0000
+Subject: [PATCH] Expose cubic Bezier control points on read
+
+Add a new public C API:
+
+  FPDFPath_GetBezierControlPoints(FPDF_PAGEOBJECT path,
+                                  int index,
+                                  float* cp1_x, float* cp1_y,
+                                  float* cp2_x, float* cp2_y);
+
+The constructor side already accepts all six floats per curve via
+FPDFPath_BezierTo(); only the readout side was asymmetric, returning
+only the endpoint via FPDFPathSegment_GetPoint() and silently
+dropping the control points. Without them, embedders cannot
+reconstruct cubic curves from existing PDFs.
+
+A cubic Bezier curve is stored in CFX_Path as three consecutive
+points of type kBezier (the two control points followed by the
+endpoint). The caller passes the path and the endpoint segment's
+index; the implementation reads the two preceding points from the
+path's pdfium::span<Point> directly, with fxcrt::IndexInBounds()
+guarding the index. The earlier draft of this change exposed the
+function on FPDF_PATHSEGMENT and reached the predecessors via
+pointer arithmetic on the underlying vector; PDFium's build system
+rejected that pattern as unsafe-buffer-usage.
+
+To disambiguate "real endpoint" from "first/second control point of
+a back-to-back curve that happens to be preceded by kBezier
+points", the function walks predecessors counting consecutive
+kBezier segments until it hits a non-kBezier (or the path's start).
+The current segment is an endpoint exactly when that count modulo 3
+is 2 (its position within its curve triplet is the third). Without
+this check, calling the function on, say, index 5 in a path with
+two back-to-back curves would silently return the previous curve's
+last two points.
+
+Tested via FPDFEditEmbedderTest::GetBezierControlPoints, which
+builds a path with two cubic curves separated by a LineTo and
+asserts:
+  * successful readout on each endpoint (indices 4 and 7);
+  * FALSE on every control-point index (3, 5, 6), with index 5
+    specifically exercising the back-to-back disambiguation that
+    motivated the walk-back;
+  * FALSE on every non-Bezier index (0=Move, 1=Line, 8=closing
+    Line);
+  * FALSE on out-of-range indices (-1, 9);
+  * FALSE on NULL path and each NULL out-param permutation.
+
+Bug: https://issues.chromium.org/issues/513613479
+Change-Id: I2ddaa58d13a615777c3ac146d3f53faf5bad6be1
+---
+ fpdfsdk/fpdf_edit_embeddertest.cpp | 107 +++++++++++++++++++++++++++++
+ fpdfsdk/fpdf_editpath.cpp          |  51 ++++++++++++++
+ fpdfsdk/fpdf_view_c_api_test.c     |   1 +
+ public/fpdf_edit.h                 |  40 +++++++++++
+ 4 files changed, 199 insertions(+)
+
+diff --git a/fpdfsdk/fpdf_edit_embeddertest.cpp b/fpdfsdk/fpdf_edit_embeddertest.cpp
+index ae7c9fd..e3d063b 100644
+--- a/fpdfsdk/fpdf_edit_embeddertest.cpp
++++ b/fpdfsdk/fpdf_edit_embeddertest.cpp
+@@ -583,6 +583,113 @@ TEST_F(FPDFEditEmbedderTest, AddPaths) {
+   VerifySavedDocumentWithExpectationSuffix("blue_path");
+ }
+ 
++TEST_F(FPDFEditEmbedderTest, GetBezierControlPoints) {
++  // Construct a path with two cubic Bezier curves separated by a
++  // LineTo, then read each curve back via FPDFPathSegment_GetPoint()
++  // and FPDFPath_GetBezierControlPoints().
++  FPDF_PAGEOBJECT path = FPDFPageObj_CreateNewPath(100, 100);
++  ASSERT_TRUE(path);
++  EXPECT_TRUE(FPDFPath_LineTo(path, 150, 150));
++  EXPECT_TRUE(FPDFPath_BezierTo(path, 200, 200, 250, 200, 300, 150));
++  EXPECT_TRUE(FPDFPath_BezierTo(path, 350, 100, 400, 100, 450, 150));
++  EXPECT_TRUE(FPDFPath_Close(path));
++
++  // The underlying path stores one Move + one Line + 3+3 Bezier
++  // points + one closing Line = 9 segments. See CFX_Path::Point.
++  ASSERT_EQ(9, FPDFPath_CountSegments(path));
++
++  // First Bezier curve endpoint is at segment index 4. The two
++  // preceding kBezier points (indices 2 and 3) are its control
++  // points.
++  float x;
++  float y;
++  float cp1_x;
++  float cp1_y;
++  float cp2_x;
++  float cp2_y;
++  FPDF_PATHSEGMENT segment = FPDFPath_GetPathSegment(path, 4);
++  ASSERT_TRUE(segment);
++  EXPECT_EQ(FPDF_SEGMENT_BEZIERTO, FPDFPathSegment_GetType(segment));
++  EXPECT_TRUE(FPDFPathSegment_GetPoint(segment, &x, &y));
++  EXPECT_FLOAT_EQ(300.0f, x);
++  EXPECT_FLOAT_EQ(150.0f, y);
++  EXPECT_TRUE(FPDFPath_GetBezierControlPoints(path, 4, &cp1_x, &cp1_y,
++                                              &cp2_x, &cp2_y));
++  EXPECT_FLOAT_EQ(200.0f, cp1_x);
++  EXPECT_FLOAT_EQ(200.0f, cp1_y);
++  EXPECT_FLOAT_EQ(250.0f, cp2_x);
++  EXPECT_FLOAT_EQ(200.0f, cp2_y);
++
++  // Second Bezier curve endpoint is at segment index 7. Note that
++  // index 5 (the first control point of this curve) is preceded by
++  // two kBezier segments belonging to the first curve, so a
++  // back-stepping heuristic that only looked at the two immediate
++  // predecessors would falsely accept index 5 as an endpoint;
++  // FPDFPath_GetBezierControlPoints() guards against this by
++  // counting consecutive kBezier predecessors and requiring the
++  // count mod 3 to equal 2.
++  segment = FPDFPath_GetPathSegment(path, 7);
++  ASSERT_TRUE(segment);
++  EXPECT_EQ(FPDF_SEGMENT_BEZIERTO, FPDFPathSegment_GetType(segment));
++  EXPECT_TRUE(FPDFPathSegment_GetPoint(segment, &x, &y));
++  EXPECT_FLOAT_EQ(450.0f, x);
++  EXPECT_FLOAT_EQ(150.0f, y);
++  EXPECT_TRUE(FPDFPath_GetBezierControlPoints(path, 7, &cp1_x, &cp1_y,
++                                              &cp2_x, &cp2_y));
++  EXPECT_FLOAT_EQ(350.0f, cp1_x);
++  EXPECT_FLOAT_EQ(100.0f, cp1_y);
++  EXPECT_FLOAT_EQ(400.0f, cp2_x);
++  EXPECT_FLOAT_EQ(100.0f, cp2_y);
++
++  // Calling on a control-point segment (index 3, second control of
++  // the first curve) returns FALSE: the count of consecutive
++  // kBezier predecessors is 1, not 2 mod 3.
++  EXPECT_FALSE(FPDFPath_GetBezierControlPoints(path, 3, &cp1_x, &cp1_y,
++                                               &cp2_x, &cp2_y));
++
++  // Likewise for index 5 (first control of the second curve), the
++  // case where a naive two-step-back heuristic would mis-report
++  // success - the walk-back disambiguates this correctly. Count of
++  // consecutive kBezier predecessors is 3, which is 0 mod 3.
++  EXPECT_FALSE(FPDFPath_GetBezierControlPoints(path, 5, &cp1_x, &cp1_y,
++                                               &cp2_x, &cp2_y));
++
++  // Index 6 (second control of the second curve) - count is 4, 1
++  // mod 3.
++  EXPECT_FALSE(FPDFPath_GetBezierControlPoints(path, 6, &cp1_x, &cp1_y,
++                                               &cp2_x, &cp2_y));
++
++  // Non-Bezier segments return FALSE.
++  EXPECT_FALSE(FPDFPath_GetBezierControlPoints(path, 0, &cp1_x, &cp1_y,
++                                               &cp2_x, &cp2_y));
++  EXPECT_FALSE(FPDFPath_GetBezierControlPoints(path, 1, &cp1_x, &cp1_y,
++                                               &cp2_x, &cp2_y));
++  EXPECT_FALSE(FPDFPath_GetBezierControlPoints(path, 8, &cp1_x, &cp1_y,
++                                               &cp2_x, &cp2_y));
++
++  // Out-of-range indices return FALSE.
++  EXPECT_FALSE(FPDFPath_GetBezierControlPoints(path, -1, &cp1_x, &cp1_y,
++                                               &cp2_x, &cp2_y));
++  EXPECT_FALSE(FPDFPath_GetBezierControlPoints(path, 9, &cp1_x, &cp1_y,
++                                               &cp2_x, &cp2_y));
++
++  // NULL path returns FALSE.
++  EXPECT_FALSE(FPDFPath_GetBezierControlPoints(nullptr, 4, &cp1_x, &cp1_y,
++                                               &cp2_x, &cp2_y));
++
++  // NULL out-params return FALSE.
++  EXPECT_FALSE(FPDFPath_GetBezierControlPoints(path, 4, nullptr, &cp1_y,
++                                               &cp2_x, &cp2_y));
++  EXPECT_FALSE(FPDFPath_GetBezierControlPoints(path, 4, &cp1_x, nullptr,
++                                               &cp2_x, &cp2_y));
++  EXPECT_FALSE(FPDFPath_GetBezierControlPoints(path, 4, &cp1_x, &cp1_y,
++                                               nullptr, &cp2_y));
++  EXPECT_FALSE(FPDFPath_GetBezierControlPoints(path, 4, &cp1_x, &cp1_y,
++                                               &cp2_x, nullptr));
++
++  FPDFPageObj_Destroy(path);
++}
++
+ TEST_F(FPDFEditEmbedderTest, ClipPath) {
+   // Load document with a clipped rectangle.
+   ASSERT_TRUE(OpenDocument("clip_path.pdf"));
+diff --git a/fpdfsdk/fpdf_editpath.cpp b/fpdfsdk/fpdf_editpath.cpp
+index 067ef2b..545ccd0 100644
+--- a/fpdfsdk/fpdf_editpath.cpp
++++ b/fpdfsdk/fpdf_editpath.cpp
+@@ -99,6 +99,57 @@ FPDFPath_GetPathSegment(FPDF_PAGEOBJECT path, int index) {
+   return FPDFPathSegmentFromFXPathPoint(&points[index]);
+ }
+ 
++FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
++FPDFPath_GetBezierControlPoints(FPDF_PAGEOBJECT path,
++                                int index,
++                                float* cp1_x,
++                                float* cp1_y,
++                                float* cp2_x,
++                                float* cp2_y) {
++  auto* path_obj = CPDFPathObjectFromFPDFPageObject(path);
++  if (!path_obj || !cp1_x || !cp1_y || !cp2_x || !cp2_y) {
++    return false;
++  }
++
++  pdfium::span<const CFX_Path::Point> points = path_obj->path().GetPoints();
++  if (!fxcrt::IndexInBounds(points, index) || index < 2) {
++    return false;
++  }
++
++  // A cubic Bezier curve is stored as three consecutive Type::kBezier
++  // points: cp1, cp2, endpoint. The caller passes the endpoint's index,
++  // and the two control points are at index - 2 and index - 1.
++  //
++  // Disambiguating "real endpoint" from "first control point of a
++  // back-to-back curve that happens to be preceded by two kBezier
++  // points": count the consecutive Type::kBezier segments strictly
++  // before |index|, stopping at the path's start or the first
++  // non-kBezier predecessor. The current segment is an endpoint
++  // exactly when that count modulo 3 equals 2 (its position within
++  // its curve triplet is the third).
++  if (points[index].type_ != CFX_Path::Point::Type::kBezier) {
++    return false;
++  }
++  int kbezier_before = 0;
++  for (int i = index - 1; i >= 0; --i) {
++    if (points[i].type_ != CFX_Path::Point::Type::kBezier) {
++      break;
++    }
++    ++kbezier_before;
++  }
++  if (kbezier_before % 3 != 2) {
++    return false;
++  }
++
++  const CFX_Path::Point& cp1_point = points[index - 2];
++  const CFX_Path::Point& cp2_point = points[index - 1];
++  *cp1_x = cp1_point.point_.x;
++  *cp1_y = cp1_point.point_.y;
++  *cp2_x = cp2_point.point_.x;
++  *cp2_y = cp2_point.point_.y;
++  return true;
++}
++
+ FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV FPDFPath_MoveTo(FPDF_PAGEOBJECT path,
+                                                     float x,
+                                                     float y) {
+diff --git a/fpdfsdk/fpdf_view_c_api_test.c b/fpdfsdk/fpdf_view_c_api_test.c
+index 282512d..3cc4c08 100644
+--- a/fpdfsdk/fpdf_view_c_api_test.c
++++ b/fpdfsdk/fpdf_view_c_api_test.c
+@@ -264,6 +264,7 @@ int CheckPDFiumCApi() {
+     CHK(FPDFPath_BezierTo);
+     CHK(FPDFPath_Close);
+     CHK(FPDFPath_CountSegments);
++    CHK(FPDFPath_GetBezierControlPoints);
+     CHK(FPDFPath_GetDrawMode);
+     CHK(FPDFPath_GetPathSegment);
+     CHK(FPDFPath_LineTo);
+diff --git a/public/fpdf_edit.h b/public/fpdf_edit.h
+index d723b81..9d232db 100644
+--- a/public/fpdf_edit.h
++++ b/public/fpdf_edit.h
+@@ -1193,6 +1193,46 @@ FPDF_EXPORT int FPDF_CALLCONV FPDFPath_CountSegments(FPDF_PAGEOBJECT path);
+ FPDF_EXPORT FPDF_PATHSEGMENT FPDF_CALLCONV
+ FPDFPath_GetPathSegment(FPDF_PAGEOBJECT path, int index);
+ 
++// Experimental API.
++// Get the two cubic Bezier control points for the curve whose endpoint
++// is the segment at |index| in |path|.
++//
++// A cubic Bezier curve is stored as three consecutive
++// FPDF_SEGMENT_BEZIERTO segments: the two control points followed by
++// the curve's endpoint. The caller passes the index of the endpoint
++// segment; this function reads the two preceding segments in |path|
++// and returns their points as the control points. The endpoint
++// position itself is available via FPDFPathSegment_GetPoint() on the
++// segment at |index|.
++//
++// To enumerate every cubic Bezier curve in a path, walk
++// FPDFPath_CountSegments() / FPDFPath_GetPathSegment() while
++// resetting a counter at each non-FPDF_SEGMENT_BEZIERTO segment;
++// every third consecutive FPDF_SEGMENT_BEZIERTO segment is an
++// endpoint, and this function will succeed when called on those
++// indices.
++//
++//   path    - handle to a path.
++//   index   - the index of the curve's endpoint segment in |path|.
++//   cp1_x   - output; the horizontal position of the first control point.
++//   cp1_y   - output; the vertical position of the first control point.
++//   cp2_x   - output; the horizontal position of the second control point.
++//   cp2_y   - output; the vertical position of the second control point.
++//
++// Returns TRUE on success. Returns FALSE without writing the
++// out-params when |path| is not a path, |index| is out of range,
++// any out-param is NULL, or the segments at |index|, |index - 1|,
++// and |index - 2| are not a valid cubic Bezier triplet (i.e. they
++// are not all FPDF_SEGMENT_BEZIERTO with |index| positioned as the
++// third in a run of FPDF_SEGMENT_BEZIERTO points).
++FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
++FPDFPath_GetBezierControlPoints(FPDF_PAGEOBJECT path,
++                                int index,
++                                float* cp1_x,
++                                float* cp1_y,
++                                float* cp2_x,
++                                float* cp2_y);
++
+ // Get coordinates of |segment|.
+ //
+ //   segment  - handle to a segment.
+-- 
+2.43.0
+

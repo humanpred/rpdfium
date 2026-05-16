@@ -45,9 +45,16 @@ local({
   # for the typical case where pdfium's exports are all `export(name)`.
   exports <- sub("^export\\(([^)]+)\\)$", "\\1",
                  grep("^export\\(", ns_lines, value = TRUE))
+  # S3 methods registered via `@exportS3Method` appear in NAMESPACE
+  # as `S3method(generic, class)`. pkgdown can reference them in the
+  # reference index as `generic.class`. Treat those names as valid
+  # topics for the validator.
+  s3 <- sub("^S3method\\(([^,]+),\\s*([^)]+)\\)$", "\\1.\\2",
+            grep("^S3method\\(", ns_lines, value = TRUE))
+  topics <- unique(c(exports, s3))
 
   missing_in_yaml  <- setdiff(exports, yaml_topics)
-  unknown_in_yaml  <- setdiff(yaml_topics, exports)
+  unknown_in_yaml  <- setdiff(yaml_topics, topics)
 
   problems <- character()
   if (length(missing_in_yaml) > 0L) {

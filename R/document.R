@@ -93,3 +93,162 @@ pdf_page_count <- function(doc) {
   }
   cpp_page_count(doc$ptr)
 }
+
+#' Read one entry from a PDF's Info dictionary
+#'
+#' Wraps `FPDF_GetMetaText`. Returns the requested standard or
+#' custom Info-dictionary tag value as a UTF-8 string, or `""`
+#' when the tag is absent. Standard tags are `"Title"`, `"Author"`,
+#' `"Subject"`, `"Keywords"`, `"Creator"`, `"Producer"`,
+#' `"CreationDate"`, `"ModDate"`, `"Trapped"`. Custom tags from a
+#' particular producer's Info dictionary are also accepted.
+#'
+#' @param doc A `pdfium_doc` from [pdf_open()].
+#' @param tag Character scalar - the Info-dictionary key.
+#' @return Character scalar, UTF-8 encoded. `""` if the tag is not
+#'   present.
+#' @seealso [pdf_doc_info()] for a single call that returns every
+#'   standard tag plus the page count and file version.
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+#'                        package = "pdfium")
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_open(fixture)
+#'   pdf_doc_meta(doc, "Producer")
+#'   pdf_close(doc)
+#' }
+#' @export
+pdf_doc_meta <- function(doc, tag) {
+  if (!inherits(doc, "pdfium_doc")) {
+    stop("`doc` must be a `pdfium_doc` (from `pdf_open()`).",
+         call. = FALSE)
+  }
+  if (!is_open(doc)) stop("Document has been closed.", call. = FALSE)
+  if (!is.character(tag) || length(tag) != 1L || is.na(tag) ||
+        !nzchar(tag)) {
+    stop("`tag` must be a single non-empty character string.",
+         call. = FALSE)
+  }
+  cpp_doc_meta_text(doc$ptr, tag)
+}
+
+#' Document-level metadata for a PDF
+#'
+#' Returns the page count, the PDF file version, every standard
+#' Info-dictionary entry, and POSIXct parses of the two date
+#' fields. The shape mirrors `pdftools::pdf_info()` to ease
+#' porting.
+#'
+#' Standard Info-dictionary entries are UTF-8 strings; missing
+#' entries appear as `""`. Date strings come back in the PDF format
+#' `"D:YYYYMMDDHHmmSS+HH'mm'"` and are also parsed into POSIXct
+#' (UTC) in the `creation_date_parsed` and `mod_date_parsed`
+#' slots; parses that fail return `NA`.
+#'
+#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @return A list with elements:
+#'   * `page_count` - integer
+#'   * `file_version` - integer; PDFium reports `10 * major + minor`
+#'     (e.g. `17` for PDF 1.7)
+#'   * `title`, `author`, `subject`, `keywords`, `creator`,
+#'     `producer`, `creation_date`, `mod_date`, `trapped` - character
+#'   * `creation_date_parsed`, `mod_date_parsed` - POSIXct (UTC),
+#'     `NA` when the source date is empty or unparseable
+#'
+#' @seealso [pdf_doc_meta()] for arbitrary tag access,
+#'   [pdf_parse_date()] for the date-parser used internally.
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+#'                        package = "pdfium")
+#' if (nzchar(fixture)) {
+#'   info <- pdf_doc_info(fixture)
+#'   info$page_count
+#'   info$producer
+#'   info$creation_date_parsed
+#' }
+#' @export
+pdf_doc_info <- function(doc) {
+  if (is.character(doc)) {
+    handle <- pdf_open(doc)
+    on.exit(pdf_close(handle), add = TRUE)
+    return(pdf_doc_info(handle))
+  }
+  if (!inherits(doc, "pdfium_doc")) {
+    stop("`doc` must be a `pdfium_doc` or a path to a PDF file.",
+         call. = FALSE)
+  }
+  if (!is_open(doc)) stop("Document has been closed.", call. = FALSE)
+
+  raw <- cpp_doc_info(doc$ptr)
+  meta <- raw$meta
+  c(
+    list(
+      page_count   = as.integer(raw$page_count),
+      file_version = cpp_doc_file_version(doc$ptr)
+    ),
+    as.list(meta),
+    list(
+      creation_date_parsed = pdf_parse_date(meta[["creation_date"]]),
+      mod_date_parsed      = pdf_parse_date(meta[["mod_date"]])
+    )
+  )
+}
+
+#' Parse a PDF date string into POSIXct
+#'
+#' PDF Info-dictionary dates use the format
+#' `"D:YYYYMMDDHHmmSS+HH'mm'"` (PDF spec, section 7.9.4 - a
+#' superset of ISO 8601). This helper extracts the date and time
+#' fields and returns UTC `POSIXct`; the timezone offset suffix is
+#' currently ignored (the date is treated as UTC). Truncated
+#' strings (e.g. `"D:2024"`) parse to the longest valid prefix.
+#'
+#' @param s Character vector of PDF date strings.
+#' @return `POSIXct` vector (UTC), same length as `s`. `NA` for
+#'   empty or unparseable entries.
+#' @export
+pdf_parse_date <- function(s) {
+  if (length(s) == 0L) return(as.POSIXct(character(0), tz = "UTC"))
+  if (!is.character(s)) {
+    stop("`s` must be a character vector.", call. = FALSE)
+  }
+  body <- sub("^D:", "", s, perl = TRUE)
+  # Default suffix for fields the PDF date omits: Jan 1 00:00:00.
+  # Aligned to the YYYY-only case, so the substring we splice in
+  # must START at the position that corresponds to the first
+  # missing field. E.g. for YYYYMM input the first missing field is
+  # the day, so we splice from offset 3 of defaults ("01000000"),
+  # not from offset 1 ("01010000" - which would set day=01 from a
+  # source intended to default the *month*).
+  # We build the POSIXct with ISOdatetime() rather than
+  # strptime()+as.POSIXct() because the latter does not reliably
+  # preserve the `tz = "UTC"` attribute through the POSIXlt -> POSIXct
+  # conversion on some R configurations (the result silently reads
+  # back in local time).
+  defaults <- "0101000000"  # MMDDHHMMSS suffix for a YYYY-only input
+  parse_one <- function(x) {
+    if (is.na(x) || !nzchar(x)) return(as.POSIXct(NA, tz = "UTC"))
+    digits <- regmatches(x, regexpr("^\\d{1,14}", x))
+    if (length(digits) == 0L || !nzchar(digits) || nchar(digits) < 4L) {
+      return(as.POSIXct(NA, tz = "UTC"))
+    }
+    needed <- 14L - nchar(digits)
+    padded <- if (needed == 0L) {
+      digits
+    } else {
+      start <- nchar(defaults) - needed + 1L
+      paste0(digits, substr(defaults, start, nchar(defaults)))
+    }
+    ISOdatetime(
+      year  = as.integer(substr(padded,  1L,  4L)),
+      month = as.integer(substr(padded,  5L,  6L)),
+      day   = as.integer(substr(padded,  7L,  8L)),
+      hour  = as.integer(substr(padded,  9L, 10L)),
+      min   = as.integer(substr(padded, 11L, 12L)),
+      sec   = as.integer(substr(padded, 13L, 14L)),
+      tz    = "UTC"
+    )
+  }
+  do.call(c, c(list(as.POSIXct(character(0), tz = "UTC")),
+               lapply(body, parse_one)))
+}

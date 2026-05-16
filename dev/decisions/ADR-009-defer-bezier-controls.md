@@ -86,6 +86,14 @@ Re-evaluate when one of the following becomes true:
 
 ## Potential upstream resolution
 
+**Update 2026-05-15: patch submitted to Gerrit as
+[pdfium-review CL 147810](https://pdfium-review.googlesource.com/c/pdfium/+/147810).**
+Awaiting reviewer assignment and trybot results. Once merged into
+PDFium `main` and picked up by a bblanchon `chromium/####` release,
+bump `tools/pdfium-version.txt`, retire this ADR, and add
+`cx1/cy1/cx2/cy2` columns to `pdf_extract_paths()`. Track the CL
+status through the link above.
+
 If a future maintainer wants to push for control-point readout, the
 groundwork is in place. The cross-language demand is documented and
 the PDFium maintainers have not (as of 2026-05-15) opened or rejected
@@ -168,11 +176,17 @@ Happy to draft the patch via Gerrit if there's interest.
 
 **Triggers to revisit this ADR:**
 
-- A new `FPDFPathSegment_GetBezierControlPoints` (or equivalent)
-  symbol appears in PDFium upstream `public/`. Watch via
-  bblanchon release notes; the bump procedure in
-  `dev/architecture.md` already covers re-running the API survey
-  on each pin bump.
+- The `FPDFPath_GetBezierControlPoints` symbol (or equivalent) lands
+  in PDFium upstream `public/`. Watch via bblanchon release notes;
+  the bump procedure in `dev/architecture.md` already covers
+  re-running the API survey on each pin bump. The first uploaded
+  patchset on Gerrit CL 147810 (2026-05-15) used the name
+  `FPDFPathSegment_GetBezierControlPoints` taking a bare
+  `FPDF_PATHSEGMENT`; reviewer feedback renamed it to the
+  path-level form and moved disambiguation logic into the
+  implementation. The "Suggested title" / "Suggested body" blocks
+  above are preserved as historical record of the original
+  proposal, not as the as-uploaded name.
 - A new public PDFium API exposing raw page content streams
   (`FPDFPage_GetRawContents` or similar) lands. Either unblocks
   the same capability via parsing.
@@ -182,6 +196,12 @@ Happy to draft the patch via Gerrit if there's interest.
 
 ## References
 
+- [pdfium-review CL 147810](https://pdfium-review.googlesource.com/c/pdfium/+/147810) —
+  Gerrit change implementing `FPDFPath_GetBezierControlPoints`
+  (initial patchset used the path-segment-level form
+  `FPDFPathSegment_GetBezierControlPoints`; renamed during review
+  for build-system safety). Patch source-of-truth lives at
+  `dev/upstream-patches/pdfium-FPDFPath_GetBezierControlPoints.patch`.
 - `dev/pdfium-api-review.md` — original survey, including the
   `FPDFPage_GetRawContents` note that did not pan out.
 - `dev/upstream-feature-survey.md` — cross-wrapper feature matrix

@@ -22,4 +22,5 @@
 #' @name pdfium-package
 #' @useDynLib pdfium, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
+#' @importFrom grDevices as.raster
 "_PACKAGE"
