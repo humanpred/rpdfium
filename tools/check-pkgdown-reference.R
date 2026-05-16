@@ -46,11 +46,15 @@ local({
   exports <- sub("^export\\(([^)]+)\\)$", "\\1",
                  grep("^export\\(", ns_lines, value = TRUE))
   # S3 methods registered via `@exportS3Method` appear in NAMESPACE
-  # as `S3method(generic, class)`. pkgdown can reference them in the
-  # reference index as `generic.class`. Treat those names as valid
-  # topics for the validator.
+  # as `S3method(generic, class)` or `S3method(pkg::generic, class)`
+  # when the generic lives in another package (e.g.
+  # `S3method(graphics::plot, pdfium_bitmap)`). pkgdown writes the
+  # method's Rd topic as the bare `generic.class` in either case,
+  # so strip any `pkg::` prefix on the generic before forming the
+  # topic name.
   s3 <- sub("^S3method\\(([^,]+),\\s*([^)]+)\\)$", "\\1.\\2",
             grep("^S3method\\(", ns_lines, value = TRUE))
+  s3 <- sub("^[^.]+::", "", s3)
   topics <- unique(c(exports, s3))
 
   missing_in_yaml  <- setdiff(exports, yaml_topics)
