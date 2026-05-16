@@ -1,0 +1,108 @@
+# AcroForm field readout. PDF interactive form fields are
+# implemented as FPDF_ANNOT_WIDGET-subtype annotations. They
+# carry field-specific metadata (name, type, value, choice
+# options) that PDFium only exposes through the FPDF_FORMHANDLE
+# returned by FPDFDOC_InitFormFillEnvironment. This module wraps
+# the init / enumerate / teardown lifecycle in a single call so
+# users see a flat tibble per document.
+
+# Internal: PDFium FPDF_FORMFIELD_* code -> human-readable name.
+# See fpdf_formfill.h for the codes.
+.pdfium_form_field_types <- c(
+  "unknown",        #  0 FPDF_FORMFIELD_UNKNOWN
+  "pushbutton",     #  1
+  "checkbox",       #  2
+  "radiobutton",    #  3
+  "combobox",       #  4
+  "listbox",        #  5
+  "textfield",      #  6
+  "signature",      #  7
+  "xfa",            #  8 (XFA-only flavours below; rare)
+  "xfa_checkbox",   #  9
+  "xfa_combobox",   # 10
+  "xfa_imagefield", # 11
+  "xfa_listbox",    # 12
+  "xfa_pushbutton", # 13
+  "xfa_signature",  # 14
+  "xfa_textfield"   # 15
+)
+
+#' Enumerate AcroForm fields across the whole document
+#'
+#' Returns one tibble row per form widget across every page of
+#' the document. Walks each page's annotations, filters to those
+#' of subtype `widget`, and reads PDFium's form-field metadata
+#' through a transient `FPDF_FORMHANDLE` (init / enumerate /
+#' teardown happens inside one call - the handle is not exposed
+#' to R).
+#'
+#' Wraps `FPDFDOC_InitFormFillEnvironment`,
+#' `FPDFDOC_ExitFormFillEnvironment`, the
+#' `FPDFAnnot_GetFormField*` family, and `FPDFAnnot_GetOption*`
+#' for choice-list options.
+#'
+#' @param doc A `pdfium_doc` from [pdf_open()], or a character
+#'   path.
+#' @return A tibble with columns:
+#'   * `field_index` integer - 1-based, document-wide ordering
+#'     (page-major, then in-page annotation order).
+#'   * `page_num` integer - 1-based page the widget lives on.
+#'   * `field_type` character - one of `"pushbutton"`,
+#'     `"checkbox"`, `"radiobutton"`, `"combobox"`,
+#'     `"listbox"`, `"textfield"`, `"signature"`, or one of the
+#'     XFA variants (`"xfa_*"`); `"unknown"` for non-AcroForm
+#'     widgets PDFium can't classify.
+#'   * `field_flags` integer - PDF form-field flags bitmask
+#'     (bit 1 = ReadOnly, bit 2 = Required, bit 3 = NoExport,
+#'     bit 13 = Password for textfields, bit 16 = MultiLine for
+#'     textfields, etc.; see PDF spec Table 226).
+#'   * `name` character - fully qualified field name, the
+#'     period-joined dotted path PDFium reports (e.g.
+#'     `"address.city"`).
+#'   * `alternate_name` character - the field's user-facing
+#'     label (the `/TU` entry), shown by viewers as a tooltip.
+#'   * `value` character - the field's current value as a
+#'     string (text fields), the selected option label
+#'     (combo/listbox), or the export value (check / radio).
+#'   * `bounds_left`, `bounds_bottom`, `bounds_right`,
+#'     `bounds_top` - widget rectangle in PDF user space.
+#'   * `options` list-column of character vectors - the choice
+#'     labels for `combobox` and `listbox` fields; empty
+#'     character vector for other types.
+#'
+#' Returns a 0-row tibble of the same schema when the document
+#' has no AcroForm dictionary.
+#'
+#' @seealso [pdf_annotations()] for the page-level annotation
+#'   surface that includes widget annotations alongside text,
+#'   highlights, ink, etc.
+#' @export
+pdf_form_fields <- function(doc) {
+  h <- as_doc_handle(doc, "doc")
+  on.exit(h$on_exit(), add = TRUE)
+  raw <- cpp_form_fields_list(h$doc$ptr)
+  type_name <- form_field_type_name(raw$field_type)
+  tibble::tibble(
+    field_index    = seq_along(type_name),
+    page_num       = as.integer(raw$page_num),
+    field_type     = type_name,
+    field_flags    = as.integer(raw$field_flags),
+    name           = raw$name,
+    alternate_name = raw$alternate_name,
+    value          = raw$value,
+    bounds_left    = raw$bounds_left,
+    bounds_bottom  = raw$bounds_bottom,
+    bounds_right   = raw$bounds_right,
+    bounds_top     = raw$bounds_top,
+    options        = raw$options
+  )
+}
+
+# Internal: PDFium field-type code -> name, vectorized.
+form_field_type_name <- function(codes) {
+  out <- rep("unknown", length(codes))
+  ok <- !is.na(codes) & codes >= 0L &
+    codes < length(.pdfium_form_field_types)
+  out[ok] <- .pdfium_form_field_types[codes[ok] + 1L]
+  out
+}
