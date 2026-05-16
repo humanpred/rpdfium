@@ -29,11 +29,12 @@ pdfium_segment_type_name <- function(codes) {
 #'
 #' Each row carries:
 #'
-#' * `index` - 1-based segment index within this path
-#' * `type` - `"moveto"`, `"lineto"`, `"bezierto"`, or `"unknown"`
+#' * `segment_index` - 1-based segment index within this path
+#' * `segment_type` - `"moveto"`, `"lineto"`, `"bezierto"`, or
+#'   `"unknown"`
 #' * `x`, `y` - the segment's anchor point in PDF points
-#' * `close` - `TRUE` if this segment closes the current subpath
-#'   (PDFium's `h` operator equivalent)
+#' * `close_figure` - `TRUE` if this segment closes the current
+#'   subpath (PDFium's `h` operator equivalent)
 #'
 #' **Known limitation:** PDFium's segment readout API exposes only the
 #' endpoint of a `bezierto` segment, not its two control points. The
@@ -66,11 +67,11 @@ pdf_path_segments <- function(obj) {
   obj <- check_path_obj(obj)
   raw <- cpp_path_segments(obj$ptr)
   tibble::tibble(
-    index = seq_along(raw$type),
-    type  = pdfium_segment_type_name(raw$type),
-    x     = raw$x,
-    y     = raw$y,
-    close = raw$close
+    segment_index = seq_along(raw$type),
+    segment_type  = pdfium_segment_type_name(raw$type),
+    x             = raw$x,
+    y             = raw$y,
+    close_figure  = raw$close
   )
 }
 
@@ -94,18 +95,21 @@ check_path_obj <- function(obj) {
 
 #' Stroke style of a path page-object
 #'
-#' Returns the RGBA stroke color and stroke width of `obj`. Color
-#' channels are integers in `[0, 255]`; width is in PDF points. When
-#' PDFium reports that the object has no stroke set, color channels
-#' are `NA` and width is `NA`.
+#' Returns the RGBA stroke color and stroke width of `obj` as a flat
+#' named numeric vector. Color channels are integers in `[0, 255]`;
+#' width is in PDF points. When PDFium reports that the object has
+#' no stroke set, every value is `NA`.
+#'
+#' The returned shape mirrors [pdf_path_fill()] (a flat named
+#' vector). The downstream tibble columns in [pdf_extract_paths()]
+#' (`stroke_red`, `stroke_green`, `stroke_blue`, `stroke_alpha`,
+#' `stroke_width`) are built by prefixing the names of this vector.
 #'
 #' @param obj A `pdfium_obj` of type `"path"` (from
 #'   [pdf_page_objects()]).
-#' @return A named list with two elements:
-#'   * `color` - a named numeric vector `c(red, green, blue, alpha)`
-#'     of 0-255 channel values, or all-`NA` when no stroke is set.
-#'   * `width` - the stroke width in PDF points, or `NA` when no
-#'     stroke is set.
+#' @return A named numeric vector with elements `red`, `green`,
+#'   `blue`, `alpha` (0-255 channels) and `width` (PDF points).
+#'   All-`NA` when no stroke is set.
 #'
 #' @seealso [pdf_path_fill()], [pdf_path_segments()]
 #' @examples
@@ -122,10 +126,8 @@ check_path_obj <- function(obj) {
 #' @export
 pdf_path_stroke <- function(obj) {
   obj <- check_path_obj(obj)
-  list(
-    color = cpp_obj_stroke_color(obj$ptr),
-    width = cpp_obj_stroke_width(obj$ptr)
-  )
+  col <- cpp_obj_stroke_color(obj$ptr)
+  c(col, width = cpp_obj_stroke_width(obj$ptr))
 }
 
 #' Fill color of a path page-object

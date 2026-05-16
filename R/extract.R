@@ -14,11 +14,13 @@
 #'
 #' Path identity & segment geometry:
 #'
-#' * `path_index` - 1-based index of the parent path object on the page
+#' * `path_index` - 1-based index of the parent path object on the
+#'   page
 #' * `segment_index` - 1-based segment index within the path
-#' * `type` - `"moveto"`, `"lineto"`, `"bezierto"`, or `"unknown"`
+#' * `segment_type` - `"moveto"`, `"lineto"`, `"bezierto"`, or
+#'   `"unknown"`
 #' * `x`, `y` - the segment's anchor / endpoint in PDF points
-#' * `close` - logical, segment closes the current subpath
+#' * `close_figure` - logical, segment closes the current subpath
 #'
 #' Style (constant across all rows of one path):
 #'
@@ -35,13 +37,12 @@
 #'
 #' ## Attributes
 #'
-#' * `page_size_pt` - named numeric `c(width, height)` of the page,
-#'   from [pdf_page_size()]
+#' * `page_size` - named numeric `c(width, height)` of the page in
+#'   PDF points, from [pdf_page_size()]
 #' * `page_rotation` - integer in `{0, 90, 180, 270}`, from
 #'   [pdf_page_rotation()]
-#' * `text_runs` - tibble with one row per text object on the page:
-#'   `text_index`, bounds, `font_size`, and `text` (UTF-8 content
-#'   extracted via [pdf_text_content()]).
+#' * `text_runs` - tibble with one row per text object on the page,
+#'   the output of [pdf_text_runs()].
 #'
 #' ## Known limitations
 #'
@@ -49,10 +50,11 @@
 #'   PDFium does not expose them through its public C API; see
 #'   `dev/decisions/ADR-009-defer-bezier-controls.md`.
 #'
-#' @param path Either a character scalar path to a PDF file, or an
-#'   already-open `pdfium_doc` returned by [pdf_open()]. When `path`
-#'   is a character path the document is opened and closed internally.
-#' @param page One-based page index (default `1`).
+#' @param doc Either a character scalar path to a PDF file, or an
+#'   already-open `pdfium_doc` returned by [pdf_open()]. When `doc`
+#'   is a character path the document is opened and closed
+#'   internally.
+#' @param page_num One-based page index (default `1`).
 #' @return A tibble with the schema described above.
 #'
 #' @seealso [pdf_path_segments()], [pdf_path_stroke()],
@@ -61,22 +63,21 @@
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
 #'                        package = "pdfium")
 #' if (nzchar(fixture)) {
-#'   paths <- pdf_extract_paths(fixture, page = 1)
+#'   paths <- pdf_extract_paths(fixture, page_num = 1)
 #'   head(paths)
-#'   attr(paths, "page_size_pt")
+#'   attr(paths, "page_size")
 #'   attr(paths, "text_runs")
 #' }
 #' @export
-pdf_extract_paths <- function(path, page = 1L) {
-  if (inherits(path, "pdfium_doc")) {
-    doc <- path
+pdf_extract_paths <- function(doc, page_num = 1L) {
+  if (inherits(doc, "pdfium_doc")) {
     if (!is_open(doc)) stop("Document has been closed.", call. = FALSE)
   } else {
-    doc <- pdf_open(path)
+    doc <- pdf_open(doc)
     on.exit(pdf_close(doc), add = TRUE)
   }
 
-  page_obj <- pdf_load_page(doc, page)
+  page_obj <- pdf_load_page(doc, page_num)
   on.exit(pdf_close_page(page_obj), add = TRUE, after = FALSE)
 
   page_size <- pdf_page_size(page_obj)
@@ -99,7 +100,7 @@ pdf_extract_paths <- function(path, page = 1L) {
   # instead of one per text object.
   text_runs <- pdf_text_runs(page_obj)
 
-  attr(out, "page_size_pt") <- page_size
+  attr(out, "page_size") <- page_size
   attr(out, "page_rotation") <- page_rot
   attr(out, "text_runs") <- text_runs
   out
@@ -111,10 +112,10 @@ empty_paths_tibble <- function() {
   tibble::tibble(
     path_index    = integer(),
     segment_index = integer(),
-    type          = character(),
+    segment_type  = character(),
     x             = double(),
     y             = double(),
-    close         = logical(),
+    close_figure  = logical(),
     stroke_red    = double(),
     stroke_green  = double(),
     stroke_blue   = double(),
@@ -156,24 +157,24 @@ one_path_rows <- function(obj, path_index) {
   n <- nrow(segs)
   tibble::tibble(
     path_index    = rep(path_index, n),
-    segment_index = segs$index,
-    type          = segs$type,
+    segment_index = segs$segment_index,
+    segment_type  = segs$segment_type,
     x             = segs$x,
     y             = segs$y,
-    close         = segs$close,
-    stroke_red    = rep(stroke$color[["red"]],   n),
-    stroke_green  = rep(stroke$color[["green"]], n),
-    stroke_blue   = rep(stroke$color[["blue"]],  n),
-    stroke_alpha  = rep(stroke$color[["alpha"]], n),
-    stroke_width  = rep(stroke$width,             n),
-    fill_red      = rep(fill[["red"]],   n),
-    fill_green    = rep(fill[["green"]], n),
-    fill_blue     = rep(fill[["blue"]],  n),
-    fill_alpha    = rep(fill[["alpha"]], n),
-    bounds_left   = rep(bnds[["left"]],   n),
-    bounds_bottom = rep(bnds[["bottom"]], n),
-    bounds_right  = rep(bnds[["right"]],  n),
-    bounds_top    = rep(bnds[["top"]],    n)
+    close_figure  = segs$close_figure,
+    stroke_red    = rep(stroke[["red"]],   n),
+    stroke_green  = rep(stroke[["green"]], n),
+    stroke_blue   = rep(stroke[["blue"]],  n),
+    stroke_alpha  = rep(stroke[["alpha"]], n),
+    stroke_width  = rep(stroke[["width"]], n),
+    fill_red      = rep(fill[["red"]],     n),
+    fill_green    = rep(fill[["green"]],   n),
+    fill_blue     = rep(fill[["blue"]],    n),
+    fill_alpha    = rep(fill[["alpha"]],   n),
+    bounds_left   = rep(bnds[["left"]],    n),
+    bounds_bottom = rep(bnds[["bottom"]],  n),
+    bounds_right  = rep(bnds[["right"]],   n),
+    bounds_top    = rep(bnds[["top"]],     n)
   )
 }
 

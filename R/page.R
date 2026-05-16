@@ -8,8 +8,8 @@
 #' still holding a page.
 #'
 #' @param doc A `pdfium_doc` from [pdf_open()].
-#' @param page One-based page index. Must satisfy
-#'   `1 <= page <= pdf_page_count(doc)`.
+#' @param page_num One-based page index. Must satisfy
+#'   `1 <= page_num <= pdf_page_count(doc)`.
 #' @return A `pdfium_page` object.
 #'
 #' @examples
@@ -22,25 +22,26 @@
 #'   pdf_close(doc)
 #' }
 #' @export
-pdf_load_page <- function(doc, page = 1L) {
+pdf_load_page <- function(doc, page_num = 1L) {
   if (!inherits(doc, "pdfium_doc")) {
     stop("`doc` must be a `pdfium_doc` (from `pdf_open()`).", call. = FALSE)
   }
   if (!is_open(doc)) {
     stop("Document has been closed.", call. = FALSE)
   }
-  if (!is.numeric(page) || length(page) != 1L || is.na(page) ||
-        page != as.integer(page) || page < 1L) {
-    stop("`page` must be a single positive integer (1-based).", call. = FALSE)
+  if (!is.numeric(page_num) || length(page_num) != 1L || is.na(page_num) ||
+        page_num != as.integer(page_num) || page_num < 1L) {
+    stop("`page_num` must be a single positive integer (1-based).",
+         call. = FALSE)
   }
-  page <- as.integer(page)
+  page_num <- as.integer(page_num)
   n <- cpp_page_count(doc$ptr)
-  if (page > n) {
-    stop(sprintf("`page` (%d) exceeds the document's page count (%d).",
-                 page, n), call. = FALSE)
+  if (page_num > n) {
+    stop(sprintf("`page_num` (%d) exceeds the document's page count (%d).",
+                 page_num, n), call. = FALSE)
   }
-  ptr <- cpp_load_page(doc$ptr, page - 1L)
-  new_pdfium_page(ptr, doc, page)
+  ptr <- cpp_load_page(doc$ptr, page_num - 1L)
+  new_pdfium_page(ptr, doc, page_num)
 }
 
 #' Close a page handle
@@ -73,10 +74,12 @@ pdf_close_page <- function(page) {
 #' the rotation separately with [pdf_page_rotation()] if you need to
 #' know the on-screen orientation.
 #'
-#' @param x A `pdfium_page` from [pdf_load_page()], or a `pdfium_doc`.
-#' @param page One-based page index. Only used when `x` is a `pdfium_doc`.
-#'   Ignored otherwise.
-#' @return A named numeric vector with elements `width` and `height`.
+#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#'   `pdfium_doc`.
+#' @param page_num One-based page index. Only used when `page` is a
+#'   `pdfium_doc`. Ignored otherwise.
+#' @return A named numeric vector with elements `width` and
+#'   `height`.
 #'
 #' @seealso [pdf_page_rotation()] for the rotation angle in degrees.
 #' @examples
@@ -88,17 +91,17 @@ pdf_close_page <- function(page) {
 #'   pdf_close(doc)
 #' }
 #' @export
-pdf_page_size <- function(x, page = 1L) {
-  if (inherits(x, "pdfium_page")) {
-    if (!is_open(x)) stop("Page has been closed.", call. = FALSE)
-    return(cpp_page_size(x$ptr))
+pdf_page_size <- function(page, page_num = 1L) {
+  if (inherits(page, "pdfium_page")) {
+    if (!is_open(page)) stop("Page has been closed.", call. = FALSE)
+    return(cpp_page_size(page$ptr))
   }
-  if (inherits(x, "pdfium_doc")) {
-    p <- pdf_load_page(x, page)
+  if (inherits(page, "pdfium_doc")) {
+    p <- pdf_load_page(page, page_num)
     on.exit(pdf_close_page(p), add = TRUE)
     return(cpp_page_size(p$ptr))
   }
-  stop("`x` must be a `pdfium_page` or `pdfium_doc`.", call. = FALSE)
+  stop("`page` must be a `pdfium_page` or `pdfium_doc`.", call. = FALSE)
 }
 
 #' Page rotation in degrees
@@ -112,9 +115,10 @@ pdf_page_size <- function(x, page = 1L) {
 #' dimensions a viewer would display. For an "as-displayed" size, swap
 #' `width` and `height` when rotation is `90` or `270`.
 #'
-#' @param x A `pdfium_page` from [pdf_load_page()], or a `pdfium_doc`.
-#' @param page One-based page index. Only used when `x` is a `pdfium_doc`.
-#'   Ignored otherwise.
+#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#'   `pdfium_doc`.
+#' @param page_num One-based page index. Only used when `page` is a
+#'   `pdfium_doc`. Ignored otherwise.
 #' @return An integer in `{0, 90, 180, 270}`.
 #'
 #' @seealso [pdf_page_size()] for the un-rotated dimensions.
@@ -127,15 +131,15 @@ pdf_page_size <- function(x, page = 1L) {
 #'   pdf_close(doc)
 #' }
 #' @export
-pdf_page_rotation <- function(x, page = 1L) {
-  if (inherits(x, "pdfium_page")) {
-    if (!is_open(x)) stop("Page has been closed.", call. = FALSE)
-    return(cpp_page_rotation(x$ptr))
+pdf_page_rotation <- function(page, page_num = 1L) {
+  if (inherits(page, "pdfium_page")) {
+    if (!is_open(page)) stop("Page has been closed.", call. = FALSE)
+    return(cpp_page_rotation(page$ptr))
   }
-  if (inherits(x, "pdfium_doc")) {
-    p <- pdf_load_page(x, page)
+  if (inherits(page, "pdfium_doc")) {
+    p <- pdf_load_page(page, page_num)
     on.exit(pdf_close_page(p), add = TRUE)
     return(cpp_page_rotation(p$ptr))
   }
-  stop("`x` must be a `pdfium_page` or `pdfium_doc`.", call. = FALSE)
+  stop("`page` must be a `pdfium_page` or `pdfium_doc`.", call. = FALSE)
 }

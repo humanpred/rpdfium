@@ -4,13 +4,14 @@
 \alias{pdf_page_rotation}
 \title{Page rotation in degrees}
 \usage{
-pdf_page_rotation(x, page = 1L)
+pdf_page_rotation(page, page_num = 1L)
 }
 \arguments{
-\item{x}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a \code{pdfium_doc}.}
+\item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a
+\code{pdfium_doc}.}
 
-\item{page}{One-based page index. Only used when \code{x} is a \code{pdfium_doc}.
-Ignored otherwise.}
+\item{page_num}{One-based page index. Only used when \code{page} is a
+\code{pdfium_doc}. Ignored otherwise.}
 }
 \value{
 An integer in \verb{\{0, 90, 180, 270\}}.

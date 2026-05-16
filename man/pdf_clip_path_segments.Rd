@@ -13,9 +13,10 @@ pdf_clip_path_segments(clip_path)
 A tibble with columns:
 \itemize{
 \item \code{path_index} integer - 1-based sub-path index within the clip
-\item \code{seg_index} integer - 1-based segment index within its sub-path
-\item \code{seg_type} character - \code{"moveto"}, \code{"lineto"}, \code{"bezierto"},
-or \code{"unknown"}
+\item \code{segment_index} integer - 1-based segment index within its
+sub-path
+\item \code{segment_type} character - \code{"moveto"}, \code{"lineto"},
+\code{"bezierto"}, or \code{"unknown"}
 \item \code{x}, \code{y} numeric - segment coordinates in PDF user space
 \item \code{close_figure} logical - whether this segment closes its
 sub-path

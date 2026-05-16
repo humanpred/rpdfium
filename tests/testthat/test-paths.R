@@ -40,14 +40,15 @@ test_that("pdf_path_segments returns a tibble with the documented schema", {
 
   segs <- pdf_path_segments(paths[[1]])
   expect_s3_class(segs, "tbl_df")
-  expect_named(segs, c("index", "type", "x", "y", "close"))
-  expect_type(segs$index, "integer")
-  expect_type(segs$type,  "character")
-  expect_type(segs$x,     "double")
-  expect_type(segs$y,     "double")
-  expect_type(segs$close, "logical")
-  expect_identical(segs$index, seq_len(nrow(segs)))
-  expect_true(all(segs$type %in%
+  expect_named(segs, c("segment_index", "segment_type", "x", "y",
+                       "close_figure"))
+  expect_type(segs$segment_index, "integer")
+  expect_type(segs$segment_type,  "character")
+  expect_type(segs$x,             "double")
+  expect_type(segs$y,             "double")
+  expect_type(segs$close_figure,  "logical")
+  expect_identical(segs$segment_index, seq_len(nrow(segs)))
+  expect_true(all(segs$segment_type %in%
                     c("moveto", "lineto", "bezierto", "unknown")))
 })
 
@@ -66,10 +67,10 @@ test_that("rectangle path matches expected M / L / L / L / L+close pattern", {
   rect <- paths[[2]]
   segs <- pdf_path_segments(rect)
   expect_equal(nrow(segs), 5L)
-  expect_identical(segs$type[[1]], "moveto")
-  expect_true(all(segs$type[-1] == "lineto"))
-  expect_true(segs$close[nrow(segs)])
-  expect_false(any(segs$close[-nrow(segs)]))
+  expect_identical(segs$segment_type[[1]], "moveto")
+  expect_true(all(segs$segment_type[-1] == "lineto"))
+  expect_true(segs$close_figure[nrow(segs)])
+  expect_false(any(segs$close_figure[-nrow(segs)]))
 
   # The rectangle should close at the same point it started.
   expect_equal(segs$x[[1]], segs$x[[nrow(segs)]], tolerance = 1e-6)
@@ -88,8 +89,8 @@ test_that("simple line segment path is M + L (no close)", {
   line <- paths[[3]]  # first diagonal line segment
   segs <- pdf_path_segments(line)
   expect_equal(nrow(segs), 2L)
-  expect_identical(segs$type, c("moveto", "lineto"))
-  expect_false(any(segs$close))
+  expect_identical(segs$segment_type, c("moveto", "lineto"))
+  expect_false(any(segs$close_figure))
 })
 
 test_that("unknown segment type codes map to 'unknown' safely", {

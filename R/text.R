@@ -143,13 +143,15 @@ pdf_text_runs <- function(page, page_num = 1L) {
 #'
 #' @param obj A `pdfium_obj` of type `"text"` (from
 #'   [pdf_page_objects()]).
-#' @return A named list with elements:
-#'   * `base_name` - character scalar, base font name; UTF-8
-#'   * `family` - character scalar, font family name; UTF-8
-#'   * `weight` - integer (e.g. 400, 500, 700)
-#'   * `italic_angle` - integer degrees; 0 for upright
-#'   * `is_embedded` - logical
-#'   * `flags` - integer bitmask
+#' @return A named list with elements (matching the `font_*` columns
+#'   that [pdf_text_runs()] returns for the same text object, so
+#'   either shape can feed directly into a row of the other):
+#'   * `font_base_name` - character scalar, base font name; UTF-8
+#'   * `font_family` - character scalar, font family name; UTF-8
+#'   * `font_weight` - integer (e.g. 400, 500, 700)
+#'   * `font_italic_angle` - integer degrees; 0 for upright
+#'   * `font_is_embedded` - logical
+#'   * `font_flags` - integer bitmask
 #'
 #' @seealso [pdf_text_content()], [pdf_text_runs()],
 #'   [pdf_text_font_size()]
@@ -167,7 +169,15 @@ pdf_text_runs <- function(page, page_num = 1L) {
 #' @export
 pdf_text_font <- function(obj) {
   check_text_obj(obj)
-  cpp_text_font(obj$ptr)
+  raw <- cpp_text_font(obj$ptr)
+  list(
+    font_base_name    = raw$base_name,
+    font_family       = raw$family,
+    font_weight       = raw$weight,
+    font_italic_angle = raw$italic_angle,
+    font_is_embedded  = raw$is_embedded,
+    font_flags        = raw$flags
+  )
 }
 
 # Internal: validate that `obj` is an open pdfium_obj of type "text".

@@ -203,6 +203,49 @@ print.pdfium_bitmap <- function(x, ...) {
   invisible(x)
 }
 
+#' Plot a pdfium_bitmap
+#'
+#' Draws the bitmap into the active graphics device at its source
+#' pixel resolution, with `asp = 1` and zero margins so the image
+#' fills the device without distortion. Internally a fresh plot
+#' window is opened (`plot.new()` + `plot.window()`) and the bitmap
+#' is drawn with [graphics::rasterImage()], which natively accepts
+#' R's `nativeRaster` integer encoding.
+#'
+#' Base R does not ship a `plot()` method for the `nativeRaster`
+#' class, so calling `plot()` on a bare `nativeRaster` integer
+#' matrix fails with "need finite 'xlim' values". This S3 method
+#' fixes that for `pdfium_bitmap` objects specifically.
+#'
+#' @param x A `pdfium_bitmap` from [pdf_render_page()] or
+#'   [pdf_image_bitmap()] / [pdf_image_rendered()].
+#' @param interpolate Passed through to [graphics::rasterImage()].
+#'   Default `TRUE`; set `FALSE` for pixel-exact (nearest-neighbour)
+#'   display of small bitmaps.
+#' @param ... Further arguments passed to [graphics::rasterImage()].
+#' @return Invisibly returns `x`. Called for the plotting side
+#'   effect.
+#' @exportS3Method graphics::plot pdfium_bitmap
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+#'                        package = "pdfium")
+#' if (nzchar(fixture) && interactive()) {
+#'   bmp <- pdf_render_page(pdf_open(fixture), dpi = 96)
+#'   plot(bmp)
+#' }
+plot.pdfium_bitmap <- function(x, interpolate = TRUE, ...) {
+  d <- dim(x)              # (height, width)
+  op <- graphics::par(mar = c(0, 0, 0, 0))
+  on.exit(graphics::par(op), add = TRUE)
+  graphics::plot.new()
+  graphics::plot.window(xlim = c(0, d[2L]),
+                        ylim = c(0, d[1L]),
+                        asp  = 1)
+  graphics::rasterImage(x, 0, 0, d[2L], d[1L],
+                        interpolate = interpolate, ...)
+  invisible(x)
+}
+
 # Internal default-or-fallback helper (NULL-coalescing operator).
 `%||%` <- function(a, b) if (is.null(a)) b else a
 

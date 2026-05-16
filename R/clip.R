@@ -121,9 +121,10 @@ pdf_clip_path_count <- function(clip_path) {
 #' @param clip_path A `pdfium_clip_path` from [pdf_obj_clip_path()].
 #' @return A tibble with columns:
 #'   * `path_index` integer - 1-based sub-path index within the clip
-#'   * `seg_index` integer - 1-based segment index within its sub-path
-#'   * `seg_type` character - `"moveto"`, `"lineto"`, `"bezierto"`,
-#'     or `"unknown"`
+#'   * `segment_index` integer - 1-based segment index within its
+#'     sub-path
+#'   * `segment_type` character - `"moveto"`, `"lineto"`,
+#'     `"bezierto"`, or `"unknown"`
 #'   * `x`, `y` numeric - segment coordinates in PDF user space
 #'   * `close_figure` logical - whether this segment closes its
 #'     sub-path
@@ -150,11 +151,11 @@ pdf_clip_path_segments <- function(clip_path) {
     type_map[raw$seg_type + 1L]
   )
   tibble::tibble(
-    path_index   = raw$path_index,
-    seg_index    = raw$seg_index,
-    seg_type     = type_chr,
-    x            = raw$x,
-    y            = raw$y,
-    close_figure = raw$close_figure
+    path_index    = raw$path_index,
+    segment_index = raw$seg_index,
+    segment_type  = type_chr,
+    x             = raw$x,
+    y             = raw$y,
+    close_figure  = raw$close_figure
   )
 }

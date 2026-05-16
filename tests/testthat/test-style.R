@@ -41,11 +41,10 @@ test_that("pdf_path_stroke returns the expected shape", {
 
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   s <- pdf_path_stroke(paths[[2]])  # the user-drawn rectangle
-  expect_named(s, c("color", "width"))
-  expect_named(s$color, c("red", "green", "blue", "alpha"))
-  expect_type(s$color, "double")
-  expect_type(s$width, "double")
-  expect_true(all(s$color >= 0 & s$color <= 255, na.rm = TRUE))
+  expect_named(s, c("red", "green", "blue", "alpha", "width"))
+  expect_type(s, "double")
+  channels <- s[c("red", "green", "blue", "alpha")]
+  expect_true(all(channels >= 0 & channels <= 255, na.rm = TRUE))
 })
 
 test_that("rectangle stroke is red (border = 'red'), fill is lightblue", {
@@ -59,9 +58,10 @@ test_that("rectangle stroke is red (border = 'red'), fill is lightblue", {
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   rect <- paths[[2]]
   stroke <- pdf_path_stroke(rect)
-  expect_equal(unname(stroke$color),
+  expect_named(stroke, c("red", "green", "blue", "alpha", "width"))
+  expect_equal(unname(stroke[c("red", "green", "blue", "alpha")]),
                c(255, 0, 0, 255), tolerance = 0)
-  expect_gt(stroke$width, 0)
+  expect_gt(stroke[["width"]], 0)
 
   fill <- pdf_path_fill(rect)
   # R's "lightblue" -> hex #ADD8E6 -> (173, 216, 230)
@@ -81,9 +81,9 @@ test_that("diagonal line stroke is darkgreen, no fill set or fill carries defaul
   line <- paths[[3]]  # first diagonal line segment
   stroke <- pdf_path_stroke(line)
   # R's "darkgreen" -> #006400 -> (0, 100, 0)
-  expect_equal(unname(stroke$color),
+  expect_equal(unname(stroke[c("red", "green", "blue", "alpha")]),
                c(0, 100, 0, 255), tolerance = 0)
-  expect_gt(stroke$width, 0)
+  expect_gt(stroke[["width"]], 0)
 })
 
 test_that("pdf_text_font_size returns a numeric scalar for text objs", {

@@ -67,16 +67,16 @@ test_that("pdf_clip_path_segments returns the rectangular clip geometry", {
   cp <- pdf_obj_clip_path(b$obj)
   segs <- pdf_clip_path_segments(cp)
   expect_s3_class(segs, "tbl_df")
-  expect_named(segs, c("path_index", "seg_index", "seg_type",
+  expect_named(segs, c("path_index", "segment_index", "segment_type",
                        "x", "y", "close_figure"))
   expect_identical(nrow(segs), 5L)
   # All five segments belong to the single sub-path.
   expect_identical(unique(segs$path_index), 1L)
-  expect_identical(segs$seg_index, 1L:5L)
+  expect_identical(segs$segment_index, 1L:5L)
   # First is a moveto, the rest are linetos, the final closes the
   # figure.
-  expect_identical(segs$seg_type[[1L]], "moveto")
-  expect_setequal(segs$seg_type[2L:5L], "lineto")
+  expect_identical(segs$segment_type[[1L]], "moveto")
+  expect_setequal(segs$segment_type[2L:5L], "lineto")
   expect_identical(segs$close_figure[[5L]], TRUE)
   # Geometry: the clip is a rectangle at plot (1, 0.5)-(3, 2.5);
   # at 72 dpi that maps to roughly (72-216, 36-180) PDF points.

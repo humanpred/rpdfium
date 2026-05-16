@@ -32,15 +32,14 @@ bmp <- pdf_render_page(doc, dpi = 96)
 bmp                                   # a one-line summary
 dim(bmp)                              # height, width in pixels
 
-# nativeRaster bitmaps are drawn with grid or with rasterImage() inside
-# a manually-opened plot. The simplest path:
-op <- graphics::par(mar = c(0, 0, 0, 0))
-plot.new()
-plot.window(xlim = c(0, ncol(bmp)), ylim = c(0, nrow(bmp)),
-            asp = 1)
-graphics::rasterImage(bmp, 0, 0, ncol(bmp), nrow(bmp))
-graphics::par(op)
+plot(bmp)                             # uses plot.pdfium_bitmap()
 ```
+
+The `plot()` call dispatches to `plot.pdfium_bitmap()`, which opens
+a fresh plot window with `asp = 1` and zero margins and draws the
+bitmap with [graphics::rasterImage()]. Pass `interpolate = FALSE`
+when you want pixel-exact (nearest-neighbour) display of a small
+bitmap — useful for embedded raster fixtures.
 
 The bitmap's dimensions scale linearly with `dpi`. At the default
 `dpi = 72`, one pixel per PDF point: a 4 × 3 inch page becomes 288 × 216

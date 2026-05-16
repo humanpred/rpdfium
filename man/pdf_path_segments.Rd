@@ -24,11 +24,12 @@ analysis.
 \details{
 Each row carries:
 \itemize{
-\item \code{index} - 1-based segment index within this path
-\item \code{type} - \code{"moveto"}, \code{"lineto"}, \code{"bezierto"}, or \code{"unknown"}
+\item \code{segment_index} - 1-based segment index within this path
+\item \code{segment_type} - \code{"moveto"}, \code{"lineto"}, \code{"bezierto"}, or
+\code{"unknown"}
 \item \code{x}, \code{y} - the segment's anchor point in PDF points
-\item \code{close} - \code{TRUE} if this segment closes the current subpath
-(PDFium's \code{h} operator equivalent)
+\item \code{close_figure} - \code{TRUE} if this segment closes the current
+subpath (PDFium's \code{h} operator equivalent)
 }
 
 \strong{Known limitation:} PDFium's segment readout API exposes only the

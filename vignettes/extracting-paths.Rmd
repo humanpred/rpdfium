@@ -38,8 +38,9 @@ pdf_path_segments(paths[[1L]])
 
 Columns:
 
-* `seg_index` — 1-based segment index within this path.
-* `seg_type` — one of `"moveto"`, `"lineto"`, `"bezierto"`, or `"unknown"`.
+* `segment_index` — 1-based segment index within this path.
+* `segment_type` — one of `"moveto"`, `"lineto"`, `"bezierto"`, or
+  `"unknown"`.
 * `x`, `y` — segment coordinates in PDF user space (points, origin
   bottom-left).
 * `close_figure` — `TRUE` on the final segment of a closed sub-path.
@@ -92,13 +93,11 @@ The result is a tibble. Schema:
 
 * `path_index` — 1-based path-object index within the page (paths
   only; non-path objects don't appear).
-* `segment_index` — 1-based segment index within its path.
-* `type`, `x`, `y`, `close` — segment kind, coordinates, and
-  close-figure flag. Same content as the `seg_type`/`x`/`y`/`close_figure`
-  columns from `pdf_path_segments()`, named more compactly for
-  downstream consumers.
-* `stroke_red/green/blue/alpha`, `fill_red/green/blue/alpha` — stroke
-  and fill colours, 0..255. `NA` for paths with no stroke / no fill.
+* `segment_index`, `segment_type`, `x`, `y`, `close_figure` —
+  same content as `pdf_path_segments()`.
+* `stroke_red/green/blue/alpha`, `fill_red/green/blue/alpha` —
+  stroke and fill colours, 0..255. `NA` for paths with no stroke /
+  no fill.
 * `stroke_width` — stroke width in user space; `NA` for unstroked
   paths.
 * `bounds_left/bottom/right/top` — path's bounding box in PDF user
@@ -107,12 +106,12 @@ The result is a tibble. Schema:
 Three attributes carry per-page context:
 
 ```{r}
-attr(all_paths, "page_size_pt")
+attr(all_paths, "page_size")
 attr(all_paths, "page_rotation")
 nrow(attr(all_paths, "text_runs"))
 ```
 
-* `page_size_pt` — named numeric vector of `width` and `height` in
+* `page_size` — named numeric vector of `width` and `height` in
   PDF points.
 * `page_rotation` — integer 0/90/180/270 (the page's own
   `/Rotate` attribute).

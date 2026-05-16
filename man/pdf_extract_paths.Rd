@@ -4,14 +4,15 @@
 \alias{pdf_extract_paths}
 \title{Extract all path geometry on a page into a single tibble}
 \usage{
-pdf_extract_paths(path, page = 1L)
+pdf_extract_paths(doc, page_num = 1L)
 }
 \arguments{
-\item{path}{Either a character scalar path to a PDF file, or an
-already-open \code{pdfium_doc} returned by \code{\link[=pdf_open]{pdf_open()}}. When \code{path}
-is a character path the document is opened and closed internally.}
+\item{doc}{Either a character scalar path to a PDF file, or an
+already-open \code{pdfium_doc} returned by \code{\link[=pdf_open]{pdf_open()}}. When \code{doc}
+is a character path the document is opened and closed
+internally.}
 
-\item{page}{One-based page index (default \code{1}).}
+\item{page_num}{One-based page index (default \code{1}).}
 }
 \value{
 A tibble with the schema described above.
@@ -32,11 +33,13 @@ Each row describes one path-segment operator (a \code{moveto},
 
 Path identity & segment geometry:
 \itemize{
-\item \code{path_index} - 1-based index of the parent path object on the page
+\item \code{path_index} - 1-based index of the parent path object on the
+page
 \item \code{segment_index} - 1-based segment index within the path
-\item \code{type} - \code{"moveto"}, \code{"lineto"}, \code{"bezierto"}, or \code{"unknown"}
+\item \code{segment_type} - \code{"moveto"}, \code{"lineto"}, \code{"bezierto"}, or
+\code{"unknown"}
 \item \code{x}, \code{y} - the segment's anchor / endpoint in PDF points
-\item \code{close} - logical, segment closes the current subpath
+\item \code{close_figure} - logical, segment closes the current subpath
 }
 
 Style (constant across all rows of one path):
@@ -57,13 +60,12 @@ PDF points
 
 \subsection{Attributes}{
 \itemize{
-\item \code{page_size_pt} - named numeric \code{c(width, height)} of the page,
-from \code{\link[=pdf_page_size]{pdf_page_size()}}
+\item \code{page_size} - named numeric \code{c(width, height)} of the page in
+PDF points, from \code{\link[=pdf_page_size]{pdf_page_size()}}
 \item \code{page_rotation} - integer in \verb{\{0, 90, 180, 270\}}, from
 \code{\link[=pdf_page_rotation]{pdf_page_rotation()}}
-\item \code{text_runs} - tibble with one row per text object on the page:
-\code{text_index}, bounds, \code{font_size}, and \code{text} (UTF-8 content
-extracted via \code{\link[=pdf_text_content]{pdf_text_content()}}).
+\item \code{text_runs} - tibble with one row per text object on the page,
+the output of \code{\link[=pdf_text_runs]{pdf_text_runs()}}.
 }
 }
 
@@ -79,9 +81,9 @@ PDFium does not expose them through its public C API; see
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
                        package = "pdfium")
 if (nzchar(fixture)) {
-  paths <- pdf_extract_paths(fixture, page = 1)
+  paths <- pdf_extract_paths(fixture, page_num = 1)
   head(paths)
-  attr(paths, "page_size_pt")
+  attr(paths, "page_size")
   attr(paths, "text_runs")
 }
 }

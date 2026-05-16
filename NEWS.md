@@ -42,10 +42,12 @@ children, and every clip region's geometry.
 
 ## Paths
 
-* `pdf_path_segments(obj)` — tibble of segment kind / coordinates /
-  close-figure flag.
-* `pdf_path_stroke(obj)` / `pdf_path_fill(obj)` — 4-element RGBA
-  (0..255).
+* `pdf_path_segments(obj)` — tibble with columns `segment_index`,
+  `segment_type`, `x`, `y`, `close_figure`.
+* `pdf_path_stroke(obj)` — flat named numeric vector with elements
+  `red`, `green`, `blue`, `alpha`, `width`.
+* `pdf_path_fill(obj)` — flat named numeric vector with elements
+  `red`, `green`, `blue`, `alpha`.
 * `pdf_path_dash(obj)` — dash pattern + phase.
 
 ## Text
@@ -53,24 +55,33 @@ children, and every clip region's geometry.
 * `pdf_text_content(obj)` — Unicode content of a text object,
   UTF-8 encoded.
 * `pdf_text_font_size(obj)` — font size in user-space points.
-* `pdf_text_font(obj)` — named list with `base_name`, `family`,
-  `weight`, `italic_angle`, `is_embedded`, `flags`.
+* `pdf_text_font(obj)` — named list with `font_base_name`,
+  `font_family`, `font_weight`, `font_italic_angle`,
+  `font_is_embedded`, `font_flags`. Field names match the
+  `font_*` columns of `pdf_text_runs()` so the two shapes
+  interoperate.
 * `pdf_text_runs(page)` — page-level tibble of every text run with
   bounding box, content, and font metadata.
 
 ## One-call extraction
 
-* `pdf_extract_paths(path_or_doc)` — one tibble row per path
-  segment with stroke / fill / bounds folded in, plus
-  `page_size_pt`, `page_rotation`, and `text_runs` attributes for
+* `pdf_extract_paths(doc, page_num)` — one tibble row per path
+  segment with stroke / fill / bounds folded in. Columns are
+  `path_index`, `segment_index`, `segment_type`, `x`, `y`,
+  `close_figure`, then the per-path style and bounds. Carries
+  `page_size`, `page_rotation`, and `text_runs` attributes for
   context.
 
 ## Rendering
 
 * `pdf_render_page(page_or_doc, dpi, background, annotations,
   rotation)` returns a `pdfium_bitmap` S3 object inheriting from
-  base R's `nativeRaster`. Directly usable by `graphics::plot()`,
-  `graphics::rasterImage()`, `grid::rasterGrob()` with no
+  base R's `nativeRaster`.
+* `plot.pdfium_bitmap()` draws the bitmap into the active device
+  via [graphics::rasterImage()] with `asp = 1`; pass
+  `interpolate = FALSE` for pixel-exact display of small bitmaps.
+* Same bitmap shape can be drawn directly by
+  `graphics::rasterImage()` or `grid::rasterGrob()` without
   conversion.
 * Converters: `as.array.pdfium_bitmap()` → 3D `[H, W, 4]` doubles
   0..1 (matches `png::writePNG()`); `as.raster.pdfium_bitmap()`

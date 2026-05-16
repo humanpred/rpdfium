@@ -59,6 +59,7 @@ reference:
     contents:
       - pdf_render_page
       - pdf_render_to_png
+      - plot.pdfium_bitmap
       - as.raster.pdfium_bitmap
       - as.array.pdfium_bitmap
       - as.matrix.pdfium_bitmap
