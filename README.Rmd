@@ -16,8 +16,8 @@ knitr::opts_chunk$set(
 # pdfium
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/billdenney/rpdfium/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/billdenney/rpdfium/actions/workflows/R-CMD-check.yaml)
-[![Codecov test coverage](https://codecov.io/gh/billdenney/rpdfium/branch/main/graph/badge.svg)](https://codecov.io/gh/billdenney/rpdfium)
+[![R-CMD-check](https://github.com/humanpred/rpdfium/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/humanpred/rpdfium/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/humanpred/rpdfium/branch/main/graph/badge.svg)](https://app.codecov.io/gh/humanpred/rpdfium)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![CRAN status](https://www.r-pkg.org/badges/version/pdfium)](https://CRAN.R-project.org/package=pdfium)
 <!-- badges: end -->
@@ -39,9 +39,10 @@ matrices — which no other CRAN package surfaces today.
 
 ## Status
 
-Pre-release. The 0.1.0 CRAN target is documented in
-`dev/decisions/` and the project plan. The current public API is
-documented at `pkgdown` and exercised at 100% R coverage.
+First CRAN release (`0.1.0`). The public API is documented on the
+[pkgdown site](https://humanpred.github.io/rpdfium/) and exercised at
+100% R coverage; architectural decisions for the release are recorded
+under `dev/decisions/`.
 
 ## Installation
 
@@ -53,8 +54,11 @@ access, set `PDFIUM_OFFLINE=1` and place the matching tarball under
 `inst/pdfium-binaries/` before installing.
 
 ```r
-# Development version
-remotes::install_github("billdenney/rpdfium")
+# Release version (once on CRAN):
+install.packages("pdfium")
+
+# Development version:
+remotes::install_github("humanpred/rpdfium")
 ```
 
 ## Example
@@ -70,7 +74,7 @@ pdf_close(doc)
 
 More examples ship in the vignettes (`vignette("getting-started",
 package = "pdfium")`, etc.) and on the
-[pkgdown site](https://billdenney.github.io/rpdfium/).
+[pkgdown site](https://humanpred.github.io/rpdfium/).
 
 ## License
 
