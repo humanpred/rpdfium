@@ -20,6 +20,7 @@ knitr::opts_chunk$set(
 [![Codecov test coverage](https://codecov.io/gh/humanpred/rpdfium/branch/main/graph/badge.svg)](https://app.codecov.io/gh/humanpred/rpdfium)
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![CRAN status](https://www.r-pkg.org/badges/version/pdfium)](https://CRAN.R-project.org/package=pdfium)
+[![Codecov test coverage](https://codecov.io/gh/humanpred/rpdfium/graph/badge.svg)](https://app.codecov.io/gh/humanpred/rpdfium)
 <!-- badges: end -->
 
 `pdfium` provides idiomatic R bindings to
