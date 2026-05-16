@@ -81,85 +81,50 @@ local({
 
   # bblanchon's Windows tarball ships:
   #   - bin/pdfium.dll       (the runtime DLL)
-  #   - lib/pdfium.dll.lib   (MSVC-style import lib)
+  #   - lib/pdfium.dll.lib   (MSVC-style import lib; unused — see below)
   #
-  # Two problems compound on Windows:
+  # Our R package is named `pdfium`, so R builds its own `pdfium.dll`
+  # into <pkg>/libs/<arch>/. If we placed bblanchon's `pdfium.dll`
+  # in the same directory it would collide with our package's DLL on
+  # disk, and Windows can't load two DLLs with the same name from
+  # the same process anyway. We rename bblanchon's DLL to
+  # `libpdfium.dll` (kept in inst/bin/ until src/install.libs.R
+  # relocates it to <pkg>/libs/<arch>/).
   #
-  #   1. Mingw GCC's `-lpdfium` search pattern doesn't match the
-  #      `.dll.lib` filename, so linking fails.
-  #   2. Our R package is named `pdfium`, so R builds its own
-  #      `pdfium.dll` into <pkg>/libs/<arch>/. If we placed bblanchon's
-  #      `pdfium.dll` anywhere in the same directory it would collide
-  #      with our package's DLL on disk, and Windows can't load two
-  #      DLLs with the same name from the same process anyway.
-  #
-  # We rename bblanchon's DLL to `libpdfium.dll` (keeping it in
-  # inst/bin/ for now; src/install.libs.R relocates it to
-  # <pkg>/libs/<arch>/ after src/ compiles) and regenerate the import
-  # library with the new filename baked in.
+  # bblanchon's `pdfium.dll.lib` is in MSVC import-library format and
+  # references the original DLL filename internally, so it can't be
+  # reused after the rename. Rather than regenerate a Mingw `.dll.a`
+  # (which requires `gendef`, not shipped with Rtools 4.5),
+  # src/Makevars.win links against `libpdfium.dll` directly via GNU
+  # ld's `-l:filename` syntax — ld reads the DLL's export table to
+  # build the import table at link time, so no separate import
+  # library is needed. We drop the stale `.dll.lib` to keep the
+  # installed package tidy.
   fix_windows_dll <- function(extract_root) {
     if (tolower(Sys.info()[["sysname"]]) != "windows") return(invisible())
 
     src_dll <- file.path(extract_root, "bin", "pdfium.dll")
     src_lib <- file.path(extract_root, "lib", "pdfium.dll.lib")
-    if (!file.exists(src_dll) || !file.exists(src_lib)) {
-      warning("Expected bblanchon pdfium.dll and pdfium.dll.lib not found; ",
-              "Windows install will likely fail.", call. = FALSE)
+    if (!file.exists(src_dll)) {
+      warning("Expected bblanchon pdfium.dll not found at ", src_dll,
+              "; Windows install will likely fail.", call. = FALSE)
       return(invisible())
     }
 
-    gendef  <- Sys.which("gendef")
-    dlltool <- Sys.which("dlltool")
-    if (!nzchar(gendef) || !nzchar(dlltool)) {
-      rtools <- Sys.getenv("RTOOLS45_HOME", Sys.getenv("RTOOLS_HOME", "C:/rtools45"))
-      cand <- list(
-        gendef  = c(file.path(rtools, "usr/bin/gendef.exe"),
-                    file.path(rtools, "mingw64/bin/gendef.exe")),
-        dlltool = c(file.path(rtools, "x86_64-w64-mingw32.static.posix/bin/dlltool.exe"),
-                    file.path(rtools, "mingw64/bin/dlltool.exe"),
-                    file.path(rtools, "usr/bin/dlltool.exe"))
-      )
-      if (!nzchar(gendef))  for (p in cand$gendef)  if (file.exists(p)) { gendef <- p;  break }
-      if (!nzchar(dlltool)) for (p in cand$dlltool) if (file.exists(p)) { dlltool <- p; break }
-    }
-    if (!nzchar(gendef) || !nzchar(dlltool)) {
-      stop("gendef or dlltool not found on PATH or under Rtools; ",
-           "cannot regenerate the Mingw import library for pdfium.dll. ",
-           "(gendef=\"", gendef, "\", dlltool=\"", dlltool, "\")", call. = FALSE)
-    }
-
-    # Rename pdfium.dll -> libpdfium.dll, kept in inst/bin/ until
-    # src/install.libs.R relocates it.
+    # Rename pdfium.dll -> libpdfium.dll. Kept in inst/bin/ until
+    # src/install.libs.R relocates it to <pkg>/libs/<arch>/.
     dst_dll <- file.path(extract_root, "bin", "libpdfium.dll")
     if (!file.copy(src_dll, dst_dll, overwrite = TRUE)) {
       stop("Failed to rename pdfium.dll to libpdfium.dll", call. = FALSE)
     }
     file.remove(src_dll)
 
-    # Regenerate the import library with the new DLL filename baked in.
-    defpath <- tempfile("libpdfium-", fileext = ".def")
-    on.exit(unlink(defpath), add = TRUE)
-    res <- system2(gendef, c("-", shQuote(dst_dll)), stdout = defpath, stderr = TRUE)
-    if (!is.null(attr(res, "status")) && attr(res, "status") != 0L) {
-      stop("gendef failed: ", paste(res, collapse = "\n"), call. = FALSE)
-    }
-    deflines <- readLines(defpath, warn = FALSE)
-    deflines <- sub("^(LIBRARY\\s+).*$", "\\1\"libpdfium.dll\"", deflines)
-    if (!any(grepl("^LIBRARY", deflines))) {
-      deflines <- c("LIBRARY \"libpdfium.dll\"", deflines)
-    }
-    writeLines(deflines, defpath)
+    # Drop bblanchon's MSVC import library — Makevars.win links the
+    # DLL directly so we don't ship it.
+    if (file.exists(src_lib)) file.remove(src_lib)
 
-    out_lib <- file.path(extract_root, "lib", "libpdfium.dll.a")
-    res <- system2(dlltool,
-                   c("-d", shQuote(defpath), "-l", shQuote(out_lib),
-                     "-D", "libpdfium.dll"),
-                   stdout = TRUE, stderr = TRUE)
-    if (!is.null(attr(res, "status")) && attr(res, "status") != 0L) {
-      stop("dlltool failed: ", paste(res, collapse = "\n"), call. = FALSE)
-    }
-    file.remove(src_lib)
-    message("[pdfium] Renamed pdfium.dll -> libpdfium.dll and regenerated import library")
+    message("[pdfium] Renamed pdfium.dll -> libpdfium.dll ",
+            "(Makevars.win links against the DLL directly).")
   }
 
   platform <- if (is.null(platform_tag)) detect_platform() else platform_tag

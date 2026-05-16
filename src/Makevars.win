@@ -5,8 +5,11 @@
 #   - renames bin/pdfium.dll -> bin/libpdfium.dll so the bundled DLL
 #     does not collide with the package's own pdfium.dll (R names the
 #     package's compiled DLL after the package)
-#   - regenerates the import library as inst/lib/libpdfium.dll.a so
-#     Mingw GCC's `-lpdfium` search resolves
+#
+# We link directly against the bundled libpdfium.dll using GNU ld's
+# `-l:filename` syntax. ld reads the DLL's export table to build the
+# import table — no separate `.dll.a` import library is required.
+# That avoids needing `gendef`, which is not shipped with Rtools 4.5.
 #
 # src/install.libs.R then copies libpdfium.dll into <pkg>/libs/x64/
 # (next to the package's own pdfium.dll). R's library.dynam loads
@@ -16,6 +19,6 @@
 # automatically.
 
 PKG_CPPFLAGS = -I../inst/include -DR_NO_REMAP
-PKG_LIBS    = -L../inst/lib -lpdfium
+PKG_LIBS    = -L../inst/bin -l:libpdfium.dll
 
 CXX_STD = CXX17
