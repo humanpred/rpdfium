@@ -1,6 +1,6 @@
 # Tests for pdf_obj_matrix and pdf_path_dash.
 
-test_that("pdf_obj_matrix returns the documented length-6 named vector", {
+test_that("pdf_obj_matrix returns a 3x3 homogeneous transform matrix", {
   pdf <- fixture_path("shapes")
   doc <- pdf_open(pdf)
   on.exit(pdf_close(doc), add = TRUE)
@@ -9,10 +9,13 @@ test_that("pdf_obj_matrix returns the documented length-6 named vector", {
   on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
 
   for (o in pdf_page_objects(page)) {
-    m <- pdf_obj_matrix(o)
-    expect_type(m, "double")
-    expect_named(m, c("a", "b", "c", "d", "e", "f"))
-    expect_false(any(is.na(m)))
+    M <- pdf_obj_matrix(o)
+    expect_true(is.matrix(M))
+    expect_equal(dim(M), c(3L, 3L))
+    expect_type(M, "double")
+    # Bottom row of the homogeneous form is always (0, 0, 1).
+    expect_equal(M[3L, ], c(0, 0, 1))
+    expect_false(any(is.na(M)))
   }
 })
 
@@ -28,13 +31,37 @@ test_that("Cairo's y-flip matrix is consistent across paths in shapes.pdf", {
   # Cairo emits PDF paths with a y-flip CTM that maps top-left-origin
   # user space to PDF's bottom-left-origin: a=1, b=0, c=0, d=-1,
   # e=0, f=page_height. Page height for shapes.pdf is 3 in = 216 pt.
+  # In the 3x3 homogeneous form this is:
+  #   | 1  0  0 |
+  #   | 0 -1 216|
+  #   | 0  0  1 |
+  expected <- matrix(c(1, 0, 0,
+                       0, -1, 216,
+                       0,  0,   1),
+                     nrow = 3, byrow = TRUE)
   for (p in paths) {
-    m <- pdf_obj_matrix(p)
-    expect_equal(unname(m), c(1, 0, 0, -1, 0, 216), tolerance = 1e-3)
+    expect_equal(pdf_obj_matrix(p), expected, tolerance = 1e-3)
   }
 })
 
-test_that("text object matrix encodes the rendered font size in (a, d)", {
+test_that("pdf_obj_matrix transforms points via M %*% c(x, y, 1)", {
+  pdf <- fixture_path("shapes")
+  doc <- pdf_open(pdf)
+  on.exit(pdf_close(doc), add = TRUE)
+  page <- pdf_load_page(doc, 1)
+  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+
+  paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
+  # Y-flip with translation 216: (10, 50) in local coords maps to
+  # (10, 216 - 50) = (10, 166) on the page.
+  M <- pdf_obj_matrix(paths[[1L]])
+  pt <- M %*% c(10, 50, 1)
+  expect_equal(pt[1L, 1L],  10, tolerance = 1e-3)
+  expect_equal(pt[2L, 1L], 166, tolerance = 1e-3)
+  expect_equal(pt[3L, 1L],   1, tolerance = 1e-6)
+})
+
+test_that("text object matrix encodes the rendered font size on the diagonal", {
   pdf <- fixture_path("shapes")
   doc <- pdf_open(pdf)
   on.exit(pdf_close(doc), add = TRUE)
@@ -44,20 +71,19 @@ test_that("text object matrix encodes the rendered font size in (a, d)", {
 
   text_obj <- Filter(function(o) o$type == "text",
                      pdf_page_objects(page))[[1]]
-  m <- pdf_obj_matrix(text_obj)
+  M <- pdf_obj_matrix(text_obj)
 
   # cex = 1.2 in the fixture; Cairo applies 1.2 * default 12pt =
-  # 14.4 to both x- and y-scale and encodes it in the matrix. The
-  # raw font size from pdf_text_font_size() is 1; the visible size
-  # is matrix$a (== matrix$d).
-  expect_equal(m[["a"]], 14.4, tolerance = 1e-2)
-  expect_equal(m[["d"]], 14.4, tolerance = 1e-2)
-  # No rotation or skew on the text.
-  expect_equal(m[["b"]], 0, tolerance = 1e-6)
-  expect_equal(m[["c"]], 0, tolerance = 1e-6)
-  # Translation = position of the text on the page.
-  expect_gt(m[["e"]], 0)
-  expect_gt(m[["f"]], 0)
+  # 14.4 to both x- and y-scale and stores it on the matrix
+  # diagonal. In the 3x3 homogeneous form, M[1,1] = a, M[2,2] = d.
+  expect_equal(M[1L, 1L], 14.4, tolerance = 1e-2)
+  expect_equal(M[2L, 2L], 14.4, tolerance = 1e-2)
+  # No rotation or skew: M[2,1] = b, M[1,2] = c (both 0).
+  expect_equal(M[2L, 1L], 0, tolerance = 1e-6)
+  expect_equal(M[1L, 2L], 0, tolerance = 1e-6)
+  # Translation column: M[1,3] = e, M[2,3] = f.
+  expect_gt(M[1L, 3L], 0)
+  expect_gt(M[2L, 3L], 0)
 })
 
 test_that("pdf_obj_matrix validates inputs and closed-page state", {

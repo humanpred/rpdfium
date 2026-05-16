@@ -1,5 +1,6 @@
 test_that("pdf_open() rejects bad inputs before touching PDFium", {
-  expect_error(pdf_open(NULL), "single, non-NA character")
+  expect_error(pdf_open(NULL),
+               "One of `path` or `source` must be provided")
   expect_error(pdf_open(character()), "single, non-NA character")
   expect_error(pdf_open(NA_character_), "single, non-NA character")
   expect_error(pdf_open(""), "must not be the empty string")

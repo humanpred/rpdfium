@@ -4,7 +4,7 @@
 \alias{pdf_extract_paths}
 \title{Extract all path geometry on a page into a single tibble}
 \usage{
-pdf_extract_paths(doc, page_num = 1L)
+pdf_extract_paths(doc, page_num = 1L, password = NULL)
 }
 \arguments{
 \item{doc}{Either a character scalar path to a PDF file, or an
@@ -13,6 +13,9 @@ is a character path the document is opened and closed
 internally.}
 
 \item{page_num}{One-based page index (default \code{1}).}
+
+\item{password}{Optional password for encrypted PDFs when \code{doc}
+is a path. Ignored when \code{doc} is already an open \code{pdfium_doc}.}
 }
 \value{
 A tibble with the schema described above.

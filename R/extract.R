@@ -59,6 +59,8 @@
 #'
 #' @seealso [pdf_path_segments()], [pdf_path_stroke()],
 #'   [pdf_path_fill()], [pdf_obj_bounds()]
+#' @param password Optional password for encrypted PDFs when `doc`
+#'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
 #'                        package = "pdfium")
@@ -69,11 +71,11 @@
 #'   attr(paths, "text_runs")
 #' }
 #' @export
-pdf_extract_paths <- function(doc, page_num = 1L) {
+pdf_extract_paths <- function(doc, page_num = 1L, password = NULL) {
   if (inherits(doc, "pdfium_doc")) {
     if (!is_open(doc)) stop("Document has been closed.", call. = FALSE)
   } else {
-    doc <- pdf_open(doc)
+    doc <- pdf_open(doc, password = password)
     on.exit(pdf_close(doc), add = TRUE)
   }
 

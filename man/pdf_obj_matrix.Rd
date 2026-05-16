@@ -10,29 +10,30 @@ pdf_obj_matrix(obj)
 \item{obj}{A \code{pdfium_obj} from \code{\link[=pdf_page_objects]{pdf_page_objects()}} (any type).}
 }
 \value{
-A named numeric vector with elements \code{a}, \code{b}, \code{c}, \code{d},
-\code{e}, \code{f}.
+A 3-by-3 numeric matrix. Use \code{M \%*\% c(x, y, 1)} to
+transform a point; the first two elements of the result are
+the transformed coordinates.
 }
 \description{
-Returns the 2D affine transformation matrix attached to \code{obj},
-as a length-6 named numeric vector \code{c(a, b, c, d, e, f)}. The
-matrix follows the PDF convention: a point \verb{(x, y)} in the
-object's local space maps to page-space coordinates
-\verb{(a*x + c*y + e, b*x + d*y + f)}. For paths drawn directly on a
+Returns the 2D affine transformation matrix attached to \code{obj}
+as a 3-by-3 numeric matrix \code{M} in homogeneous form, so that a
+point \verb{(x, y)} in the object's local space maps to page-space
+coordinates via \code{M \%*\% c(x, y, 1)}. The PDF convention stores
+the six scalars \code{a}, \code{b}, \code{c}, \code{d}, \code{e}, \code{f}; this function
+lifts them into the homogeneous-coordinate matrix
+}
+\details{
+\if{html}{\out{<div class="sourceCode">}}\preformatted{        | a c e |
+  M  =  | b d f |
+        | 0 0 1 |
+}\if{html}{\out{</div>}}
+
+so multiplication composes the way users expect (\code{M2 \%*\% M1}
+applies \code{M1} first then \code{M2}). For paths drawn directly on a
 page the matrix is usually the identity; text objects typically
 carry a non-trivial matrix (Cairo for example places text at
 font-size 1 and uses the matrix to scale and position the
 glyphs).
-}
-\details{
-Composing into a 3x3 matrix:
-
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{m <- pdf_obj_matrix(obj)
-mat <- matrix(c(m["a"], m["b"], 0,
-                m["c"], m["d"], 0,
-                m["e"], m["f"], 1),
-              nrow = 3, byrow = FALSE)
-}\if{html}{\out{</div>}}
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
@@ -40,7 +41,8 @@ fixture <- system.file("extdata", "fixtures", "shapes.pdf",
 if (nzchar(fixture)) {
   doc <- pdf_open(fixture)
   p <- pdf_load_page(doc, 1)
-  pdf_obj_matrix(pdf_page_objects(p)[[1]])
+  M <- pdf_obj_matrix(pdf_page_objects(p)[[1]])
+  M \%*\% c(10, 20, 1)
   pdf_close_page(p)
   pdf_close(doc)
 }

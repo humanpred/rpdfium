@@ -1,18 +1,29 @@
 #' Open a PDF document
 #'
-#' Loads a PDF file from disk. The returned `pdfium_doc` carries an external
-#' pointer to a PDFium `FPDF_DOCUMENT` handle along with a finalizer that
-#' calls `FPDF_CloseDocument()` when the R object is garbage-collected. Call
-#' [pdf_close()] explicitly when you need deterministic release.
+#' Loads a PDF from disk or from an in-memory byte buffer. The
+#' returned `pdfium_doc` carries an external pointer to a PDFium
+#' `FPDF_DOCUMENT` handle along with a finalizer that calls
+#' `FPDF_CloseDocument()` when the R object is garbage-collected.
+#' Call [pdf_close()] explicitly when you need deterministic
+#' release.
 #'
-#' @param path Character scalar. Path to a PDF file. The file must exist and be
-#'   readable.
-#' @param password Optional password for encrypted PDFs. `NULL` (the default)
-#'   passes no password to PDFium, which works for both unencrypted documents
-#'   and the rare case of empty-string-password encryption. Provide a string
-#'   when the document requires it. Future minor releases will broaden support
-#'   for password-protected PDFs; the parameter is present in v0.1.0 to
-#'   reserve the signature.
+#' Two input forms are supported. Pass `path` to load from disk
+#' (via PDFium's `FPDF_LoadDocument`), or pass `source` for an
+#' in-memory raw vector (via `FPDF_LoadMemDocument64`). The
+#' in-memory path is useful for documents downloaded via
+#' `httr2::resp_body_raw()`, `curl::curl_fetch_memory()`, or read
+#' with `readBin()` straight into RAM. Exactly one of `path` or
+#' `source` must be provided.
+#'
+#' @param path Character scalar. Path to a PDF file. The file must
+#'   exist and be readable. Mutually exclusive with `source`.
+#' @param source Raw vector containing the PDF byte stream. PDFium
+#'   keeps an internal reference to the bytes for the document's
+#'   lifetime, so the wrapper makes its own copy on the C++ side
+#'   and releases it when the `pdfium_doc` is garbage-collected.
+#'   Mutually exclusive with `path`.
+#' @param password Optional password for encrypted PDFs. `NULL`
+#'   (the default) passes no password to PDFium.
 #' @return A `pdfium_doc` object.
 #'
 #' @examples
@@ -23,10 +34,72 @@
 #'   pdf_page_count(doc)
 #'   pdf_close(doc)
 #' }
+#'
+#' # Round-trip via raw bytes - useful for downloaded PDFs.
+#' if (nzchar(fixture)) {
+#'   bytes <- readBin(fixture, "raw", file.info(fixture)$size)
+#'   doc <- pdf_open(source = bytes)
+#'   pdf_page_count(doc)
+#'   pdf_close(doc)
+#' }
 #' @export
-pdf_open <- function(path, password = NULL) {
+pdf_open <- function(path = NULL, source = NULL, password = NULL) {
+  validate_pdf_open_args(path, source, password)
+  pwd <- if (is.null(password)) "" else password
+  if (!is.null(source)) {
+    ptr <- cpp_open_document_from_memory(source, pwd)
+    return(new_pdfium_doc(ptr, "<raw bytes>"))
+  }
+  ptr <- cpp_open_document(path.expand(path), pwd)
+  new_pdfium_doc(ptr, normalizePath(path, winslash = "/", mustWork = FALSE))
+}
+
+# Internal: validate the three pdf_open() arguments. Split into
+# per-concern helpers so each stays under lintr's cyclocomp limit.
+validate_pdf_open_args <- function(path, source, password) {
+  validate_pdf_open_exclusivity(path, source)
+  validate_pdf_open_password(password)
+  if (!is.null(source)) {
+    validate_pdf_open_source(source)
+  } else {
+    validate_pdf_open_path(path)
+  }
+  invisible()
+}
+
+validate_pdf_open_exclusivity <- function(path, source) {
+  if (is.null(path) && is.null(source)) {
+    stop("One of `path` or `source` must be provided.", call. = FALSE)
+  }
+  if (!is.null(path) && !is.null(source)) {
+    stop("Pass exactly one of `path` or `source`, not both.",
+         call. = FALSE)
+  }
+}
+
+validate_pdf_open_password <- function(password) {
+  ok <- is.null(password) ||
+    (is.character(password) && length(password) == 1L &&
+       !is.na(password))
+  if (!ok) {
+    stop("`password` must be NULL or a single non-NA character string.",
+         call. = FALSE)
+  }
+}
+
+validate_pdf_open_source <- function(source) {
+  if (!is.raw(source)) {
+    stop("`source` must be a raw vector.", call. = FALSE)
+  }
+  if (length(source) == 0L) {
+    stop("`source` must be non-empty.", call. = FALSE)
+  }
+}
+
+validate_pdf_open_path <- function(path) {
   if (!is.character(path) || length(path) != 1L || is.na(path)) {
-    stop("`path` must be a single, non-NA character string.", call. = FALSE)
+    stop("`path` must be a single, non-NA character string.",
+         call. = FALSE)
   }
   if (!nzchar(path)) {
     stop("`path` must not be the empty string.", call. = FALSE)
@@ -34,14 +107,6 @@ pdf_open <- function(path, password = NULL) {
   if (!file.exists(path)) {
     stop("PDF file not found: ", path, call. = FALSE)
   }
-  if (!is.null(password) &&
-        (!is.character(password) || length(password) != 1L || is.na(password))) {
-    stop("`password` must be NULL or a single non-NA character string.",
-         call. = FALSE)
-  }
-  ptr <- cpp_open_document(path.expand(path),
-                           if (is.null(password)) "" else password)
-  new_pdfium_doc(ptr, normalizePath(path, winslash = "/", mustWork = FALSE))
 }
 
 #' Close a PDF document
@@ -70,6 +135,8 @@ pdf_close <- function(doc) {
 #' internally — convenient for one-shot inspection).
 #'
 #' @param doc A `pdfium_doc` from [pdf_open()], or a character scalar path.
+#' @param password Optional password for encrypted PDFs when `doc` is
+#'   a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return An integer scalar — the page count.
 #'
 #' @examples
@@ -79,9 +146,9 @@ pdf_close <- function(doc) {
 #'   pdf_page_count(fixture)
 #' }
 #' @export
-pdf_page_count <- function(doc) {
+pdf_page_count <- function(doc, password = NULL) {
   if (is.character(doc)) {
-    handle <- pdf_open(doc)
+    handle <- pdf_open(doc, password = password)
     on.exit(pdf_close(handle), add = TRUE)
     return(cpp_page_count(handle$ptr))
   }
@@ -146,6 +213,8 @@ pdf_doc_meta <- function(doc, tag) {
 #' slots; parses that fail return `NA`.
 #'
 #' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param password Optional password for encrypted PDFs when `doc`
+#'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return A list with elements:
 #'   * `page_count` - integer
 #'   * `file_version` - integer; PDFium reports `10 * major + minor`
@@ -167,9 +236,9 @@ pdf_doc_meta <- function(doc, tag) {
 #'   info$creation_date_parsed
 #' }
 #' @export
-pdf_doc_info <- function(doc) {
+pdf_doc_info <- function(doc, password = NULL) {
   if (is.character(doc)) {
-    handle <- pdf_open(doc)
+    handle <- pdf_open(doc, password = password)
     on.exit(pdf_close(handle), add = TRUE)
     return(pdf_doc_info(handle))
   }

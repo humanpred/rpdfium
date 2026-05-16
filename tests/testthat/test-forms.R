@@ -108,15 +108,18 @@ test_that("the form's own matrix exposes its placement on the page", {
   bundle <- form_obj(doc)
   on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
 
-  m <- pdf_obj_matrix(bundle$form)
+  M <- pdf_obj_matrix(bundle$form)
   # The fixture's page content stream uses `1 0 0 1 50 50 cm` before
-  # drawing the form: a pure translation by (50, 50).
-  expect_equal(m[["a"]], 1)
-  expect_equal(m[["b"]], 0)
-  expect_equal(m[["c"]], 0)
-  expect_equal(m[["d"]], 1)
-  expect_equal(m[["e"]], 50)
-  expect_equal(m[["f"]], 50)
+  # drawing the form: a pure translation by (50, 50). In 3x3
+  # homogeneous form that's:
+  #   | 1 0 50 |
+  #   | 0 1 50 |
+  #   | 0 0  1 |
+  expected <- matrix(c(1, 0, 50,
+                       0, 1, 50,
+                       0, 0,  1),
+                     nrow = 3, byrow = TRUE)
+  expect_equal(M, expected)
 })
 
 test_that("pdf_form_objects rejects non-form objects", {

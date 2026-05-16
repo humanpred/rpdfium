@@ -4,10 +4,13 @@
 \alias{pdf_page_count}
 \title{Count pages in a PDF document}
 \usage{
-pdf_page_count(doc)
+pdf_page_count(doc, password = NULL)
 }
 \arguments{
 \item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}}, or a character scalar path.}
+
+\item{password}{Optional password for encrypted PDFs when \code{doc} is
+a path. Ignored when \code{doc} is already an open \code{pdfium_doc}.}
 }
 \value{
 An integer scalar — the page count.

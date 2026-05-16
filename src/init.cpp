@@ -7,6 +7,7 @@
 // plumbing here.
 
 #include <Rcpp.h>
+#include <cstring>
 #include "fpdfview.h"
 
 namespace {
@@ -64,6 +65,51 @@ SEXP cpp_open_document(std::string path, std::string password) {
   R_RegisterCFinalizerEx(ptr, finalize_document, static_cast<Rboolean>(TRUE));
   UNPROTECT(1);
   return ptr;
+}
+
+// [[Rcpp::export(name = "cpp_open_document_from_memory")]]
+SEXP cpp_open_document_from_memory(Rcpp::RawVector bytes,
+                                   std::string password) {
+  if (!g_library_initialised) cpp_init_library();
+  const char* pwd = password.empty() ? nullptr : password.c_str();
+  // FPDF_LoadMemDocument64 takes a 64-bit size so R xlen_t values
+  // beyond INT_MAX are safe. The buffer must remain valid for the
+  // lifetime of the FPDF_DOCUMENT (PDFium does not copy it), so we
+  // copy the R RAW vector into a heap buffer owned by the document
+  // and free it in the finalizer via the externalptr's `tag` slot.
+  size_t n = static_cast<size_t>(bytes.size());
+  unsigned char* buf = new unsigned char[n];
+  std::memcpy(buf, bytes.begin(), n);
+  FPDF_DOCUMENT doc =
+      FPDF_LoadMemDocument64(buf, n, pwd);
+  if (doc == nullptr) {
+    delete[] buf;
+    unsigned long err = FPDF_GetLastError();
+    Rcpp::stop("Failed to load PDF from memory (FPDF error %lu).",
+               err);
+  }
+  // Wrap the heap buffer in an externalptr so R reclaims it when
+  // the document externalptr is GC'd. The buffer-finalizer cannot
+  // run while the doc is live because we keep the buffer-ptr in
+  // the doc-ptr's protected slot.
+  SEXP buf_ptr = PROTECT(
+      R_MakeExternalPtr(buf, R_NilValue, R_NilValue));
+  R_RegisterCFinalizerEx(buf_ptr,
+                          [](SEXP p) {
+                            void* b = R_ExternalPtrAddr(p);
+                            if (b != nullptr) {
+                              delete[] static_cast<unsigned char*>(b);
+                              R_ClearExternalPtr(p);
+                            }
+                          },
+                          static_cast<Rboolean>(TRUE));
+  // doc_ptr's prot slot pins buf_ptr (so the buffer outlives the
+  // doc); doc_ptr's tag slot is unused.
+  SEXP doc_ptr = PROTECT(R_MakeExternalPtr(doc, R_NilValue, buf_ptr));
+  R_RegisterCFinalizerEx(doc_ptr, finalize_document,
+                          static_cast<Rboolean>(TRUE));
+  UNPROTECT(2);
+  return doc_ptr;
 }
 
 // [[Rcpp::export(name = "cpp_close_document")]]

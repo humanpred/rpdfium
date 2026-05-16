@@ -31,12 +31,18 @@ reference:
       - pdf_doc_info
       - pdf_doc_meta
       - pdf_parse_date
+      - pdf_text
+      - pdf_fonts
+      - pdf_file_id
+      - pdf_doc_page_mode
   - title: Pages
     contents:
       - pdf_load_page
       - pdf_close_page
       - pdf_page_size
       - pdf_page_rotation
+      - pdf_page_box
+      - pdf_page_links
   - title: Page objects
     contents:
       - pdf_page_objects
@@ -55,6 +61,7 @@ reference:
       - pdf_text_content
       - pdf_text_runs
       - pdf_text_font
+      - pdf_text_chars
   - title: Rendering
     contents:
       - pdf_render_page
