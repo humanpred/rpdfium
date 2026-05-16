@@ -35,6 +35,15 @@ reference:
       - pdf_bookmarks
       - pdf_page_label
       - pdf_page_labels
+  - title: Attachments
+    contents:
+      - pdf_attachments
+      - pdf_attachment_data
+  - title: Signatures
+    contents:
+      - pdf_signatures
+      - pdf_signature_contents
+      - pdf_signature_byte_range
   - title: Pages
     contents:
       - pdf_load_page

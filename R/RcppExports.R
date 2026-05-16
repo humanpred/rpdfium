@@ -9,6 +9,18 @@ cpp_annots_list <- function(page_ptr) {
     .Call(`_pdfium_cpp_annots_list`, page_ptr)
 }
 
+cpp_attachment_count <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_attachment_count`, doc_ptr)
+}
+
+cpp_attachments_list <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_attachments_list`, doc_ptr)
+}
+
+cpp_attachment_data <- function(doc_ptr, index_zero) {
+    .Call(`_pdfium_cpp_attachment_data`, doc_ptr, index_zero)
+}
+
 cpp_obj_get_clip_path <- function(obj_ptr, page_ptr) {
     .Call(`_pdfium_cpp_obj_get_clip_path`, obj_ptr, page_ptr)
 }
@@ -179,6 +191,22 @@ cpp_path_segments <- function(obj_ptr) {
 
 cpp_render_page <- function(page_ptr, pixel_width, pixel_height, rotation_code, render_flags, background_argb, fill_background) {
     .Call(`_pdfium_cpp_render_page`, page_ptr, pixel_width, pixel_height, rotation_code, render_flags, background_argb, fill_background)
+}
+
+cpp_signature_count <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_signature_count`, doc_ptr)
+}
+
+cpp_signatures_list <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_signatures_list`, doc_ptr)
+}
+
+cpp_signature_contents <- function(doc_ptr, index_zero) {
+    .Call(`_pdfium_cpp_signature_contents`, doc_ptr, index_zero)
+}
+
+cpp_signature_byte_range <- function(doc_ptr, index_zero) {
+    .Call(`_pdfium_cpp_signature_byte_range`, doc_ptr, index_zero)
 }
 
 cpp_text_font_size <- function(obj_ptr) {
