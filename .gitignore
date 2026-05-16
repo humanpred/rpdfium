@@ -42,3 +42,5 @@ coverage.xml
 *.gcno
 *.gcda
 *.gcov
+docs
+*.dll
