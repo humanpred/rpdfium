@@ -70,6 +70,12 @@ and is *not* distributed in the source tarball — see
   : Close a PDF document
 - [`pdf_page_count()`](https://humanpred.github.io/rpdfium/reference/pdf_page_count.md)
   : Count pages in a PDF document
+- [`pdf_doc_info()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_info.md)
+  : Document-level metadata for a PDF
+- [`pdf_doc_meta()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_meta.md)
+  : Read one entry from a PDF's Info dictionary
+- [`pdf_parse_date()`](https://humanpred.github.io/rpdfium/reference/pdf_parse_date.md)
+  : Parse a PDF date string into POSIXct
 
 ## Pages
 
@@ -114,6 +120,45 @@ and is *not* distributed in the source tarball — see
   : Extract every text run on a page
 - [`pdf_text_font()`](https://humanpred.github.io/rpdfium/reference/pdf_text_font.md)
   : Font metadata of a text page-object
+
+## Rendering
+
+- [`pdf_render_page()`](https://humanpred.github.io/rpdfium/reference/pdf_render_page.md)
+  : Render a PDF page to a bitmap
+
+- [`pdf_render_to_png()`](https://humanpred.github.io/rpdfium/reference/pdf_render_to_png.md)
+  : Render a PDF page directly to a PNG file
+
+- [`as.raster(`*`<pdfium_bitmap>`*`)`](https://humanpred.github.io/rpdfium/reference/as.raster.pdfium_bitmap.md)
+  :
+
+  Convert a pdfium_bitmap to base R's `"raster"` (character hex)
+
+- [`as.array(`*`<pdfium_bitmap>`*`)`](https://humanpred.github.io/rpdfium/reference/as.array.pdfium_bitmap.md)
+  : Convert a pdfium_bitmap to a 3D RGBA array of doubles in 0..1
+
+- [`as.matrix(`*`<pdfium_bitmap>`*`)`](https://humanpred.github.io/rpdfium/reference/as.matrix.pdfium_bitmap.md)
+  : Convert a pdfium_bitmap to a hex-color matrix
+
+## Images
+
+- [`pdf_image_info()`](https://humanpred.github.io/rpdfium/reference/pdf_image_info.md)
+  : Inspect metadata for an embedded image
+- [`pdf_image_size()`](https://humanpred.github.io/rpdfium/reference/pdf_image_size.md)
+  : Pixel size of an embedded image
+- [`pdf_image_bitmap()`](https://humanpred.github.io/rpdfium/reference/pdf_image_bitmap.md)
+  : Decoded image bitmap
+- [`pdf_image_rendered()`](https://humanpred.github.io/rpdfium/reference/pdf_image_rendered.md)
+  : Rendered image bitmap (page CTM applied)
+- [`pdf_image_data()`](https://humanpred.github.io/rpdfium/reference/pdf_image_data.md)
+  : Raw bytes of an embedded image stream
+- [`pdf_image_filters()`](https://humanpred.github.io/rpdfium/reference/pdf_image_filters.md)
+  : Filter chain for an embedded image stream
+
+## Form XObjects
+
+- [`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md)
+  : List the page objects nested inside a Form XObject
 
 ## One-call extraction
 

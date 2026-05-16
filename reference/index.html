@@ -65,6 +65,27 @@
 
         </dt>
         <dd>Count pages in a PDF document</dd>
+
+        <dt>
+
+          <code><a href="pdf_doc_info.html">pdf_doc_info()</a></code>
+
+        </dt>
+        <dd>Document-level metadata for a PDF</dd>
+
+        <dt>
+
+          <code><a href="pdf_doc_meta.html">pdf_doc_meta()</a></code>
+
+        </dt>
+        <dd>Read one entry from a PDF's Info dictionary</dd>
+
+        <dt>
+
+          <code><a href="pdf_parse_date.html">pdf_parse_date()</a></code>
+
+        </dt>
+        <dd>Parse a PDF date string into POSIXct</dd>
       </dl></div><div class="section level2">
       <h2 id="pages">Pages<a class="anchor" aria-label="anchor" href="#pages"></a></h2>
 
@@ -213,6 +234,117 @@
 
         </dt>
         <dd>Font metadata of a text page-object</dd>
+      </dl></div><div class="section level2">
+      <h2 id="rendering">Rendering<a class="anchor" aria-label="anchor" href="#rendering"></a></h2>
+
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pdf_render_page.html">pdf_render_page()</a></code>
+
+        </dt>
+        <dd>Render a PDF page to a bitmap</dd>
+
+        <dt>
+
+          <code><a href="pdf_render_to_png.html">pdf_render_to_png()</a></code>
+
+        </dt>
+        <dd>Render a PDF page directly to a PNG file</dd>
+
+        <dt>
+
+          <code><a href="as.raster.pdfium_bitmap.html">as.raster(<i>&lt;pdfium_bitmap&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Convert a pdfium_bitmap to base R's <code>"raster"</code> (character hex)</dd>
+
+        <dt>
+
+          <code><a href="as.array.pdfium_bitmap.html">as.array(<i>&lt;pdfium_bitmap&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Convert a pdfium_bitmap to a 3D RGBA array of doubles in 0..1</dd>
+
+        <dt>
+
+          <code><a href="as.matrix.pdfium_bitmap.html">as.matrix(<i>&lt;pdfium_bitmap&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Convert a pdfium_bitmap to a hex-color matrix</dd>
+      </dl></div><div class="section level2">
+      <h2 id="images">Images<a class="anchor" aria-label="anchor" href="#images"></a></h2>
+
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pdf_image_info.html">pdf_image_info()</a></code>
+
+        </dt>
+        <dd>Inspect metadata for an embedded image</dd>
+
+        <dt>
+
+          <code><a href="pdf_image_size.html">pdf_image_size()</a></code>
+
+        </dt>
+        <dd>Pixel size of an embedded image</dd>
+
+        <dt>
+
+          <code><a href="pdf_image_bitmap.html">pdf_image_bitmap()</a></code>
+
+        </dt>
+        <dd>Decoded image bitmap</dd>
+
+        <dt>
+
+          <code><a href="pdf_image_rendered.html">pdf_image_rendered()</a></code>
+
+        </dt>
+        <dd>Rendered image bitmap (page CTM applied)</dd>
+
+        <dt>
+
+          <code><a href="pdf_image_data.html">pdf_image_data()</a></code>
+
+        </dt>
+        <dd>Raw bytes of an embedded image stream</dd>
+
+        <dt>
+
+          <code><a href="pdf_image_filters.html">pdf_image_filters()</a></code>
+
+        </dt>
+        <dd>Filter chain for an embedded image stream</dd>
+      </dl></div><div class="section level2">
+      <h2 id="form-xobjects">Form XObjects<a class="anchor" aria-label="anchor" href="#form-xobjects"></a></h2>
+
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pdf_form_objects.html">pdf_form_objects()</a></code>
+
+        </dt>
+        <dd>List the page objects nested inside a Form XObject</dd>
       </dl></div><div class="section level2">
       <h2 id="one-call-extraction">One-call extraction<a class="anchor" aria-label="anchor" href="#one-call-extraction"></a></h2>
 
