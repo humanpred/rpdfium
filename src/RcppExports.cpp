@@ -10,6 +10,28 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// cpp_annot_count
+int cpp_annot_count(SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_annot_count(SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_count(page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_annots_list
+Rcpp::List cpp_annots_list(SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_annots_list(SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_annots_list(page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_obj_get_clip_path
 SEXP cpp_obj_get_clip_path(SEXP obj_ptr, SEXP page_ptr);
 RcppExport SEXP _pdfium_cpp_obj_get_clip_path(SEXP obj_ptrSEXP, SEXP page_ptrSEXP) {
@@ -87,6 +109,17 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_doc_file_version(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_form_fields_list
+Rcpp::List cpp_form_fields_list(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_form_fields_list(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_form_fields_list(doc_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -497,6 +530,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_pdfium_cpp_annot_count", (DL_FUNC) &_pdfium_cpp_annot_count, 1},
+    {"_pdfium_cpp_annots_list", (DL_FUNC) &_pdfium_cpp_annots_list, 1},
     {"_pdfium_cpp_obj_get_clip_path", (DL_FUNC) &_pdfium_cpp_obj_get_clip_path, 2},
     {"_pdfium_cpp_clip_path_count_paths", (DL_FUNC) &_pdfium_cpp_clip_path_count_paths, 1},
     {"_pdfium_cpp_clip_path_count_segments", (DL_FUNC) &_pdfium_cpp_clip_path_count_segments, 2},
@@ -504,6 +539,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_doc_meta_text", (DL_FUNC) &_pdfium_cpp_doc_meta_text, 2},
     {"_pdfium_cpp_doc_info", (DL_FUNC) &_pdfium_cpp_doc_info, 1},
     {"_pdfium_cpp_doc_file_version", (DL_FUNC) &_pdfium_cpp_doc_file_version, 1},
+    {"_pdfium_cpp_form_fields_list", (DL_FUNC) &_pdfium_cpp_form_fields_list, 1},
     {"_pdfium_cpp_form_object_count", (DL_FUNC) &_pdfium_cpp_form_object_count, 1},
     {"_pdfium_cpp_form_get_object", (DL_FUNC) &_pdfium_cpp_form_get_object, 3},
     {"_pdfium_cpp_image_metadata", (DL_FUNC) &_pdfium_cpp_image_metadata, 2},

@@ -37,6 +37,10 @@ reference:
       - pdf_close_page
       - pdf_page_size
       - pdf_page_rotation
+  - title: Annotations and form fields
+    contents:
+      - pdf_annotations
+      - pdf_form_fields
   - title: Page objects
     contents:
       - pdf_page_objects

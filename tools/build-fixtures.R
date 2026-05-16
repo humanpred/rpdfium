@@ -264,10 +264,82 @@ local({
     message("[fixtures] wrote ", out)
   }
 
+  build_annotated <- function() {
+    # Single-page PDF with four annotations:
+    #   * text (sticky note)  /Contents="Hello"   /T="Alice"
+    #   * highlight           (no /Contents)
+    #   * link to a URI
+    #   * widget text field   /T="name" /TU="Full name" /V="Bob"
+    # Plus a top-level /AcroForm with the widget as its only field.
+    # Used by test-annotations.R and test-form-fields.R. Cairo's R
+    # driver doesn't emit annotations or widgets, so the file is
+    # constructed from raw PDF syntax.
+    out <- file.path(out_dir, "annotated.pdf")
+
+    obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
+
+    obj1 <- obj(1,
+                paste0("<< /Type /Catalog /Pages 2 0 R ",
+                       "/AcroForm << /Fields [7 0 R] >> >>"))
+    obj2 <- obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+    obj3 <- obj(3,
+                paste0("<< /Type /Page /Parent 2 0 R ",
+                       "/MediaBox [0 0 300 300] /Resources <<>> ",
+                       "/Annots [4 0 R 5 0 R 6 0 R 7 0 R] >>"))
+    obj4 <- obj(4,
+                paste0("<< /Type /Annot /Subtype /Text ",
+                       "/Rect [20 250 40 270] ",
+                       "/Contents (Hello) /T (Alice) >>"))
+    obj5 <- obj(5,
+                paste0("<< /Type /Annot /Subtype /Highlight ",
+                       "/Rect [50 200 200 220] ",
+                       "/QuadPoints [50 220 200 220 50 200 200 200] >>"))
+    obj6 <- obj(6,
+                paste0("<< /Type /Annot /Subtype /Link ",
+                       "/Rect [50 150 200 170] ",
+                       "/A << /S /URI ",
+                       "/URI (https://example.com) >> >>"))
+    obj7 <- obj(7,
+                paste0("<< /Type /Annot /Subtype /Widget /FT /Tx ",
+                       "/T (name) /TU (Full name) /V (Bob) ",
+                       "/Rect [50 100 200 120] /P 3 0 R >>"))
+
+    header <- charToRaw("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    parts <- list(
+      header,
+      charToRaw(obj1),
+      charToRaw(obj2),
+      charToRaw(obj3),
+      charToRaw(obj4),
+      charToRaw(obj5),
+      charToRaw(obj6),
+      charToRaw(obj7)
+    )
+    cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
+    offs <- cum[seq_len(7L) + 1L]
+    xref_offset <- cum[[length(cum)]]
+    fmt10 <- function(n) sprintf("%010d", n)
+    xref <- paste(
+      c("xref",
+        "0 8",
+        "0000000000 65535 f ",
+        paste0(fmt10(offs), " 00000 n ")),
+      collapse = "\n"
+    )
+    trailer <- paste0(
+      "\ntrailer\n<< /Size 8 /Root 1 0 R >>\nstartxref\n",
+      xref_offset, "\n%%EOF\n"
+    )
+    full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))
+    writeBin(full, out)
+    message("[fixtures] wrote ", out)
+  }
+
   build_minimal()
   build_shapes()
   build_unicode()
   build_image()
   build_form_xobject()
   build_clip()
+  build_annotated()
 })
