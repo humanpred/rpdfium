@@ -85,6 +85,22 @@ and is *not* distributed in the source tarball — see
 - [`pdf_page_labels()`](https://humanpred.github.io/rpdfium/reference/pdf_page_labels.md)
   : Read every page's logical label in one call
 
+## Attachments
+
+- [`pdf_attachments()`](https://humanpred.github.io/rpdfium/reference/pdf_attachments.md)
+  : List the files attached to a PDF document
+- [`pdf_attachment_data()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_data.md)
+  : Read the raw bytes of an embedded file attachment
+
+## Signatures
+
+- [`pdf_signatures()`](https://humanpred.github.io/rpdfium/reference/pdf_signatures.md)
+  : List the digital signatures attached to a PDF document
+- [`pdf_signature_contents()`](https://humanpred.github.io/rpdfium/reference/pdf_signature_contents.md)
+  : Read the raw bytes of a PDF signature's contents blob
+- [`pdf_signature_byte_range()`](https://humanpred.github.io/rpdfium/reference/pdf_signature_byte_range.md)
+  : Read the signed byte ranges of a PDF signature
+
 ## Pages
 
 - [`pdf_load_page()`](https://humanpred.github.io/rpdfium/reference/pdf_load_page.md)

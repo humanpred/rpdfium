@@ -19,6 +19,8 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/as.matrix.pdfium_bitmap.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/as.raster.pdfium_bitmap.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/index.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_attachment_data.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_attachments.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_bookmarks.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_clip_path_count.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_clip_path_segments.html</loc></url>
@@ -54,6 +56,9 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_stroke.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_render_page.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_render_to_png.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_signature_byte_range.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_signature_contents.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_signatures.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_content.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_font.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_font_size.html</loc></url>
