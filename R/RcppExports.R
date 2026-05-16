@@ -17,6 +17,18 @@ cpp_clip_path_segments_df <- function(clip_ptr) {
     .Call(`_pdfium_cpp_clip_path_segments_df`, clip_ptr)
 }
 
+cpp_bookmarks <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_bookmarks`, doc_ptr)
+}
+
+cpp_page_label <- function(doc_ptr, page_index_zero) {
+    .Call(`_pdfium_cpp_page_label`, doc_ptr, page_index_zero)
+}
+
+cpp_doc_permissions <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_doc_permissions`, doc_ptr)
+}
+
 cpp_doc_meta_text <- function(doc_ptr, tag) {
     .Call(`_pdfium_cpp_doc_meta_text`, doc_ptr, tag)
 }
