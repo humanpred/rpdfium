@@ -335,6 +335,88 @@ local({
     message("[fixtures] wrote ", out)
   }
 
+  build_outline <- function() {
+    # Hand-built two-page PDF with a bookmark outline and a
+    # PageLabels number tree. Outline is one chapter with two
+    # sub-sections:
+    #
+    #   Chapter 1     (level 1, page 1)
+    #     Section 1.1 (level 2, page 1)
+    #     Section 1.2 (level 2, page 2)
+    #
+    # PageLabels: page 1 = "i", page 2 = "1". Used by
+    # test-bookmarks-labels.R to exercise both the populated and
+    # the empty / numeric / roman branches.
+    out <- file.path(out_dir, "outline.pdf")
+
+    obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
+    obj1 <- obj(1,
+                paste0("<< /Type /Catalog /Pages 2 0 R ",
+                       "/Outlines 3 0 R /PageLabels 4 0 R >>"))
+    obj2 <- obj(2,
+                paste0("<< /Type /Pages /Kids [5 0 R 6 0 R] ",
+                       "/Count 2 >>"))
+    # Outlines dictionary: one top-level entry (Chapter 1).
+    obj3 <- obj(3,
+                paste0("<< /Type /Outlines /First 7 0 R ",
+                       "/Last 7 0 R /Count 1 >>"))
+    # PageLabels number tree: page-index 0 -> lowercase roman,
+    # page-index 1 -> decimal starting at 1.
+    obj4 <- obj(4,
+                paste0("<< /Nums [0 << /S /r >> 1 << /S /D >>] >>"))
+    obj5 <- obj(5,
+                paste0("<< /Type /Page /Parent 2 0 R ",
+                       "/MediaBox [0 0 300 300] /Resources <<>> >>"))
+    obj6 <- obj(6,
+                paste0("<< /Type /Page /Parent 2 0 R ",
+                       "/MediaBox [0 0 300 300] /Resources <<>> >>"))
+    # Chapter 1 bookmark with two nested children.
+    obj7 <- obj(7,
+                paste0("<< /Title (Chapter 1) /Parent 3 0 R ",
+                       "/First 8 0 R /Last 9 0 R /Count 2 ",
+                       "/Dest [5 0 R /Fit] >>"))
+    obj8 <- obj(8,
+                paste0("<< /Title (Section 1.1) /Parent 7 0 R ",
+                       "/Next 9 0 R /Dest [5 0 R /Fit] >>"))
+    obj9 <- obj(9,
+                paste0("<< /Title (Section 1.2) /Parent 7 0 R ",
+                       "/Prev 8 0 R /Dest [6 0 R /Fit] >>"))
+
+    header <- charToRaw("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    parts <- list(
+      header,
+      charToRaw(obj1),
+      charToRaw(obj2),
+      charToRaw(obj3),
+      charToRaw(obj4),
+      charToRaw(obj5),
+      charToRaw(obj6),
+      charToRaw(obj7),
+      charToRaw(obj8),
+      charToRaw(obj9)
+    )
+    cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
+    offs <- cum[seq_len(9L) + 1L]
+    xref_offset <- cum[[length(cum)]]
+
+    fmt10 <- function(n) sprintf("%010d", n)
+    xref <- paste(
+      c("xref",
+        "0 10",
+        "0000000000 65535 f ",
+        paste0(fmt10(offs), " 00000 n ")),
+      collapse = "\n"
+    )
+    trailer <- paste0(
+      "\ntrailer\n<< /Size 10 /Root 1 0 R >>\nstartxref\n",
+      xref_offset, "\n%%EOF\n"
+    )
+
+    full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))
+    writeBin(full, out)
+    message("[fixtures] wrote ", out)
+  }
+
   build_minimal()
   build_shapes()
   build_unicode()
@@ -342,4 +424,5 @@ local({
   build_form_xobject()
   build_clip()
   build_annotated()
+  build_outline()
 })

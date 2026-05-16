@@ -31,6 +31,10 @@ reference:
       - pdf_doc_info
       - pdf_doc_meta
       - pdf_parse_date
+      - pdf_doc_permissions
+      - pdf_bookmarks
+      - pdf_page_label
+      - pdf_page_labels
   - title: Pages
     contents:
       - pdf_load_page
