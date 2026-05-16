@@ -37,6 +37,14 @@ cpp_clip_path_segments_df <- function(clip_ptr) {
     .Call(`_pdfium_cpp_clip_path_segments_df`, clip_ptr)
 }
 
+cpp_doc_file_id <- function(doc_ptr, id_type) {
+    .Call(`_pdfium_cpp_doc_file_id`, doc_ptr, id_type)
+}
+
+cpp_doc_page_mode <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_doc_page_mode`, doc_ptr)
+}
+
 cpp_bookmarks <- function(doc_ptr) {
     .Call(`_pdfium_cpp_bookmarks`, doc_ptr)
 }
@@ -109,6 +117,10 @@ cpp_open_document <- function(path, password) {
     .Call(`_pdfium_cpp_open_document`, path, password)
 }
 
+cpp_open_document_from_memory <- function(bytes, password) {
+    .Call(`_pdfium_cpp_open_document_from_memory`, bytes, password)
+}
+
 cpp_close_document <- function(ptr) {
     invisible(.Call(`_pdfium_cpp_close_document`, ptr))
 }
@@ -179,6 +191,18 @@ cpp_page_size <- function(ptr) {
 
 cpp_page_rotation <- function(ptr) {
     .Call(`_pdfium_cpp_page_rotation`, ptr)
+}
+
+cpp_page_box <- function(page_ptr, box) {
+    .Call(`_pdfium_cpp_page_box`, page_ptr, box)
+}
+
+cpp_page_links <- function(doc_ptr, page_ptr) {
+    .Call(`_pdfium_cpp_page_links`, doc_ptr, page_ptr)
+}
+
+cpp_page_text_chars <- function(page_ptr) {
+    .Call(`_pdfium_cpp_page_text_chars`, page_ptr)
 }
 
 cpp_path_segment_count <- function(obj_ptr) {

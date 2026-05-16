@@ -4,33 +4,54 @@
 \alias{pdf_open}
 \title{Open a PDF document}
 \usage{
-pdf_open(path, password = NULL)
+pdf_open(path = NULL, source = NULL, password = NULL)
 }
 \arguments{
-\item{path}{Character scalar. Path to a PDF file. The file must exist and be
-readable.}
+\item{path}{Character scalar. Path to a PDF file. The file must
+exist and be readable. Mutually exclusive with \code{source}.}
 
-\item{password}{Optional password for encrypted PDFs. \code{NULL} (the default)
-passes no password to PDFium, which works for both unencrypted documents
-and the rare case of empty-string-password encryption. Provide a string
-when the document requires it. Future minor releases will broaden support
-for password-protected PDFs; the parameter is present in v0.1.0 to
-reserve the signature.}
+\item{source}{Raw vector containing the PDF byte stream. PDFium
+keeps an internal reference to the bytes for the document's
+lifetime, so the wrapper makes its own copy on the C++ side
+and releases it when the \code{pdfium_doc} is garbage-collected.
+Mutually exclusive with \code{path}.}
+
+\item{password}{Optional password for encrypted PDFs. \code{NULL}
+(the default) passes no password to PDFium.}
 }
 \value{
 A \code{pdfium_doc} object.
 }
 \description{
-Loads a PDF file from disk. The returned \code{pdfium_doc} carries an external
-pointer to a PDFium \code{FPDF_DOCUMENT} handle along with a finalizer that
-calls \code{FPDF_CloseDocument()} when the R object is garbage-collected. Call
-\code{\link[=pdf_close]{pdf_close()}} explicitly when you need deterministic release.
+Loads a PDF from disk or from an in-memory byte buffer. The
+returned \code{pdfium_doc} carries an external pointer to a PDFium
+\code{FPDF_DOCUMENT} handle along with a finalizer that calls
+\code{FPDF_CloseDocument()} when the R object is garbage-collected.
+Call \code{\link[=pdf_close]{pdf_close()}} explicitly when you need deterministic
+release.
+}
+\details{
+Two input forms are supported. Pass \code{path} to load from disk
+(via PDFium's \code{FPDF_LoadDocument}), or pass \code{source} for an
+in-memory raw vector (via \code{FPDF_LoadMemDocument64}). The
+in-memory path is useful for documents downloaded via
+\code{httr2::resp_body_raw()}, \code{curl::curl_fetch_memory()}, or read
+with \code{readBin()} straight into RAM. Exactly one of \code{path} or
+\code{source} must be provided.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "minimal.pdf",
                        package = "pdfium")
 if (nzchar(fixture)) {
   doc <- pdf_open(fixture)
+  pdf_page_count(doc)
+  pdf_close(doc)
+}
+
+# Round-trip via raw bytes - useful for downloaded PDFs.
+if (nzchar(fixture)) {
+  bytes <- readBin(fixture, "raw", file.info(fixture)$size)
+  doc <- pdf_open(source = bytes)
   pdf_page_count(doc)
   pdf_close(doc)
 }

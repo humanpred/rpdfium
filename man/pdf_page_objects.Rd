@@ -4,7 +4,7 @@
 \alias{pdf_page_objects}
 \title{Enumerate the objects on a page}
 \usage{
-pdf_page_objects(page, page_num = 1L)
+pdf_page_objects(page, page_num = 1L, recursive = FALSE)
 }
 \arguments{
 \item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a \code{pdfium_doc}
@@ -12,6 +12,15 @@ pdf_page_objects(page, page_num = 1L)
 
 \item{page_num}{One-based page index. Only used when \code{page} is a
 \code{pdfium_doc}. Ignored otherwise.}
+
+\item{recursive}{Logical. When \code{TRUE}, descend into every
+\code{"form"} page object via \code{\link[=pdf_form_objects]{pdf_form_objects()}} and return the
+flattened depth-first traversal: top-level objects first,
+then each form's nested objects immediately after the form,
+then any forms nested inside those, and so on. Nested
+objects carry the same \code{parent_form} slot that
+\code{pdf_form_objects()} would set, so callers can reconstruct
+the tree from the flat list. Default \code{FALSE}.}
 }
 \value{
 A list (possibly empty) of \code{pdfium_obj} objects.
@@ -44,5 +53,5 @@ if (nzchar(fixture)) {
 }
 }
 \seealso{
-\code{\link[=pdf_obj_type]{pdf_obj_type()}}
+\code{\link[=pdf_obj_type]{pdf_obj_type()}}, \code{\link[=pdf_form_objects]{pdf_form_objects()}}
 }

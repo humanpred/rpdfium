@@ -4,10 +4,13 @@
 \alias{pdf_doc_info}
 \title{Document-level metadata for a PDF}
 \usage{
-pdf_doc_info(doc)
+pdf_doc_info(doc, password = NULL)
 }
 \arguments{
 \item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}}, or a character path.}
+
+\item{password}{Optional password for encrypted PDFs when \code{doc}
+is a path. Ignored when \code{doc} is already an open \code{pdfium_doc}.}
 }
 \value{
 A list with elements:

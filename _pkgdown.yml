@@ -31,6 +31,10 @@ reference:
       - pdf_doc_info
       - pdf_doc_meta
       - pdf_parse_date
+      - pdf_text
+      - pdf_fonts
+      - pdf_file_id
+      - pdf_doc_page_mode
       - pdf_doc_permissions
       - pdf_bookmarks
       - pdf_page_label
@@ -50,6 +54,8 @@ reference:
       - pdf_close_page
       - pdf_page_size
       - pdf_page_rotation
+      - pdf_page_box
+      - pdf_page_links
   - title: Annotations and form fields
     contents:
       - pdf_annotations
@@ -72,6 +78,7 @@ reference:
       - pdf_text_content
       - pdf_text_runs
       - pdf_text_font
+      - pdf_text_chars
   - title: Rendering
     contents:
       - pdf_render_page

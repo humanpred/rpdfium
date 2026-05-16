@@ -16,9 +16,17 @@
 #'   (in which case the first page is loaded and closed automatically).
 #' @param page_num One-based page index. Only used when `page` is a
 #'   `pdfium_doc`. Ignored otherwise.
+#' @param recursive Logical. When `TRUE`, descend into every
+#'   `"form"` page object via [pdf_form_objects()] and return the
+#'   flattened depth-first traversal: top-level objects first,
+#'   then each form's nested objects immediately after the form,
+#'   then any forms nested inside those, and so on. Nested
+#'   objects carry the same `parent_form` slot that
+#'   `pdf_form_objects()` would set, so callers can reconstruct
+#'   the tree from the flat list. Default `FALSE`.
 #' @return A list (possibly empty) of `pdfium_obj` objects.
 #'
-#' @seealso [pdf_obj_type()]
+#' @seealso [pdf_obj_type()], [pdf_form_objects()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
 #'                        package = "pdfium")
@@ -32,7 +40,11 @@
 #'   pdf_close(doc)
 #' }
 #' @export
-pdf_page_objects <- function(page, page_num = 1L) {
+pdf_page_objects <- function(page, page_num = 1L, recursive = FALSE) {
+  if (!is.logical(recursive) || length(recursive) != 1L ||
+        is.na(recursive)) {
+    stop("`recursive` must be a single TRUE or FALSE.", call. = FALSE)
+  }
   page <- as_open_page(page, page_num)
   on_exit_close <- attr(page, ".close_on_exit")
   if (isTRUE(on_exit_close)) on.exit(pdf_close_page(page), add = TRUE)
@@ -44,6 +56,25 @@ pdf_page_objects <- function(page, page_num = 1L) {
     type_code <- cpp_obj_type(obj_ptr)
     type_name <- pdfium_obj_type_name(type_code)
     out[[i]] <- new_pdfium_obj(obj_ptr, page, i, type_name)
+  }
+  if (!recursive) return(out)
+  flatten_page_objs_recursive(out)
+}
+
+# Internal: depth-first flatten that descends into form objects.
+# Each visited form's children are inserted immediately after the
+# form itself; the form remains in the output so callers can still
+# query its matrix / bounds.
+flatten_page_objs_recursive <- function(objs) {
+  out <- list()
+  for (o in objs) {
+    out[[length(out) + 1L]] <- o
+    if (identical(o$type, "form")) {
+      nested <- pdf_form_objects(o)
+      if (length(nested) > 0L) {
+        out <- c(out, flatten_page_objs_recursive(nested))
+      }
+    }
   }
   out
 }
@@ -108,29 +139,30 @@ pdf_obj_bounds <- function(obj) {
 
 #' Transformation matrix of a page object
 #'
-#' Returns the 2D affine transformation matrix attached to `obj`,
-#' as a length-6 named numeric vector `c(a, b, c, d, e, f)`. The
-#' matrix follows the PDF convention: a point `(x, y)` in the
-#' object's local space maps to page-space coordinates
-#' `(a*x + c*y + e, b*x + d*y + f)`. For paths drawn directly on a
+#' Returns the 2D affine transformation matrix attached to `obj`
+#' as a 3-by-3 numeric matrix `M` in homogeneous form, so that a
+#' point `(x, y)` in the object's local space maps to page-space
+#' coordinates via `M %*% c(x, y, 1)`. The PDF convention stores
+#' the six scalars `a`, `b`, `c`, `d`, `e`, `f`; this function
+#' lifts them into the homogeneous-coordinate matrix
+#'
+#' ```
+#'         | a c e |
+#'   M  =  | b d f |
+#'         | 0 0 1 |
+#' ```
+#'
+#' so multiplication composes the way users expect (`M2 %*% M1`
+#' applies `M1` first then `M2`). For paths drawn directly on a
 #' page the matrix is usually the identity; text objects typically
 #' carry a non-trivial matrix (Cairo for example places text at
 #' font-size 1 and uses the matrix to scale and position the
 #' glyphs).
 #'
-#' Composing into a 3x3 matrix:
-#'
-#' ```r
-#' m <- pdf_obj_matrix(obj)
-#' mat <- matrix(c(m["a"], m["b"], 0,
-#'                 m["c"], m["d"], 0,
-#'                 m["e"], m["f"], 1),
-#'               nrow = 3, byrow = FALSE)
-#' ```
-#'
 #' @param obj A `pdfium_obj` from [pdf_page_objects()] (any type).
-#' @return A named numeric vector with elements `a`, `b`, `c`, `d`,
-#'   `e`, `f`.
+#' @return A 3-by-3 numeric matrix. Use `M %*% c(x, y, 1)` to
+#'   transform a point; the first two elements of the result are
+#'   the transformed coordinates.
 #'
 #' @seealso [pdf_obj_bounds()], [pdf_path_segments()]
 #' @examples
@@ -139,7 +171,8 @@ pdf_obj_bounds <- function(obj) {
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
-#'   pdf_obj_matrix(pdf_page_objects(p)[[1]])
+#'   M <- pdf_obj_matrix(pdf_page_objects(p)[[1]])
+#'   M %*% c(10, 20, 1)
 #'   pdf_close_page(p)
 #'   pdf_close(doc)
 #' }
@@ -153,7 +186,13 @@ pdf_obj_matrix <- function(obj) {
     stop("Parent page has been closed; object handle is no longer valid.",
          call. = FALSE)
   }
-  cpp_obj_matrix(obj$ptr)
+  m <- cpp_obj_matrix(obj$ptr)
+  matrix(
+    c(m[["a"]], m[["b"]], 0,
+      m[["c"]], m[["d"]], 0,
+      m[["e"]], m[["f"]], 1),
+    nrow = 3, ncol = 3, byrow = FALSE
+  )
 }
 
 # Internal: convert a PDFium FPDF_PAGEOBJ_* code (int) to its short
