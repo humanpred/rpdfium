@@ -18,9 +18,10 @@ matrices — which no other CRAN package surfaces today.
 
 ## Status
 
-Pre-release. The 0.1.0 CRAN target is documented in `dev/decisions/` and
-the project plan. The current public API is documented at `pkgdown` and
-exercised at 100% R coverage.
+First CRAN release (`0.1.0`). The public API is documented on the
+[pkgdown site](https://humanpred.github.io/rpdfium/) and exercised at
+100% R coverage; architectural decisions for the release are recorded
+under `dev/decisions/`.
 
 ## Installation
 
@@ -33,8 +34,11 @@ installing.
 
 ``` r
 
-# Development version
-remotes::install_github("billdenney/rpdfium")
+# Release version (once on CRAN):
+install.packages("pdfium")
+
+# Development version:
+remotes::install_github("humanpred/rpdfium")
 ```
 
 ## Example
@@ -51,7 +55,7 @@ pdf_close(doc)
 
 More examples ship in the vignettes
 ([`vignette("getting-started", package = "pdfium")`](https://humanpred.github.io/rpdfium/articles/getting-started.md),
-etc.) and on the [pkgdown site](https://billdenney.github.io/rpdfium/).
+etc.) and on the [pkgdown site](https://humanpred.github.io/rpdfium/).
 
 ## License
 

@@ -14,13 +14,13 @@ Source:
 [`DESCRIPTION`](https://github.com/humanpred/rpdfium/blob/main/DESCRIPTION)
 
 Denney B (2026). *pdfium: Idiomatic R Bindings to the PDFium PDF
-Engine*. R package version 0.0.0.9000,
+Engine*. R package version 0.1.0,
 <https://github.com/humanpred/rpdfium>.
 
     @Manual{,
       title = {pdfium: Idiomatic R Bindings to the PDFium PDF Engine},
       author = {Bill Denney},
       year = {2026},
-      note = {R package version 0.0.0.9000},
+      note = {R package version 0.1.0},
       url = {https://github.com/humanpred/rpdfium},
     }

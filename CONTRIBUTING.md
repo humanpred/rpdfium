@@ -5,7 +5,7 @@ Thanks for your interest in contributing.
 ## Quick start
 
 ``` sh
-git clone https://github.com/billdenney/rpdfium
+git clone https://github.com/humanpred/rpdfium
 cd rpdfium
 
 # Install Python pre-commit (one-time, per clone)
