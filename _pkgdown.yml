@@ -59,6 +59,7 @@ reference:
     contents:
       - pdf_render_page
       - pdf_render_to_png
+      - plot.pdfium_bitmap
       - as.raster.pdfium_bitmap
       - as.array.pdfium_bitmap
       - as.matrix.pdfium_bitmap
@@ -73,6 +74,11 @@ reference:
   - title: Form XObjects
     contents:
       - pdf_form_objects
+  - title: Clip paths
+    contents:
+      - pdf_obj_clip_path
+      - pdf_clip_path_count
+      - pdf_clip_path_segments
   - title: One-call extraction
     contents:
       - pdf_extract_paths

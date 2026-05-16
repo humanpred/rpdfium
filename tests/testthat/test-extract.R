@@ -5,7 +5,8 @@ test_that("pdf_extract_paths returns the documented tibble shape", {
   expect_s3_class(res, "tbl_df")
 
   expected_cols <- c(
-    "path_index", "segment_index", "type", "x", "y", "close",
+    "path_index", "segment_index", "segment_type", "x", "y",
+    "close_figure",
     "stroke_red", "stroke_green", "stroke_blue", "stroke_alpha",
     "stroke_width",
     "fill_red", "fill_green", "fill_blue", "fill_alpha",
@@ -14,14 +15,14 @@ test_that("pdf_extract_paths returns the documented tibble shape", {
   expect_named(res, expected_cols)
   expect_type(res$path_index,    "integer")
   expect_type(res$segment_index, "integer")
-  expect_type(res$type,          "character")
-  expect_type(res$close,         "logical")
+  expect_type(res$segment_type,  "character")
+  expect_type(res$close_figure,  "logical")
 })
 
-test_that("pdf_extract_paths attaches page_size_pt / rotation / text_runs", {
+test_that("pdf_extract_paths attaches page_size / rotation / text_runs", {
   res <- pdf_extract_paths(fixture_path("shapes"))
 
-  ps <- attr(res, "page_size_pt")
+  ps <- attr(res, "page_size")
   expect_type(ps, "double")
   expect_named(ps, c("width", "height"))
   expect_equal(ps[["width"]],  4 * 72, tolerance = 1e-3)
@@ -48,10 +49,10 @@ test_that("rectangle path's rows carry the expected style + bbox", {
   # bounds path at index 1).
   rect <- res[res$path_index == 2, ]
   expect_equal(nrow(rect), 5L)
-  expect_identical(rect$type[[1]], "moveto")
-  expect_true(all(rect$type[-1] == "lineto"))
-  expect_true(rect$close[nrow(rect)])
-  expect_false(any(rect$close[-nrow(rect)]))
+  expect_identical(rect$segment_type[[1]], "moveto")
+  expect_true(all(rect$segment_type[-1] == "lineto"))
+  expect_true(rect$close_figure[nrow(rect)])
+  expect_false(any(rect$close_figure[-nrow(rect)]))
 
   # Style: red border, lightblue fill (from build-fixtures.R).
   expect_true(all(rect$stroke_red   == 255))
@@ -74,7 +75,7 @@ test_that("pdf_extract_paths accepts an already-open pdfium_doc", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)
 
-  res <- pdf_extract_paths(doc, page = 1)
+  res <- pdf_extract_paths(doc, page_num = 1)
   expect_gt(nrow(res), 0L)
   expect_true(is_open(doc))  # caller still owns the doc
 })

@@ -1,0 +1,156 @@
+---
+title: "Rendering pages to bitmaps"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Rendering pages to bitmaps}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+`pdf_render_page()` rasterises a PDF page through PDFium's renderer.
+The result is a `pdfium_bitmap` S3 object that inherits from base R's
+`nativeRaster`, so it plugs into `graphics::plot()`,
+`graphics::rasterImage()`, and `grid::rasterGrob()` with no conversion.
+Three converters cover the other common shapes downstream packages
+expect.
+
+```{r}
+library(pdfium)
+fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+                       package = "pdfium")
+```
+
+## A first render
+
+```{r, fig.width = 5, fig.height = 4}
+doc <- pdf_open(fixture)
+bmp <- pdf_render_page(doc, dpi = 96)
+bmp                                   # a one-line summary
+dim(bmp)                              # height, width in pixels
+
+plot(bmp)                             # uses plot.pdfium_bitmap()
+```
+
+The `plot()` call dispatches to `plot.pdfium_bitmap()`, which opens
+a fresh plot window with `asp = 1` and zero margins and draws the
+bitmap with [graphics::rasterImage()]. Pass `interpolate = FALSE`
+when you want pixel-exact (nearest-neighbour) display of a small
+bitmap — useful for embedded raster fixtures.
+
+The bitmap's dimensions scale linearly with `dpi`. At the default
+`dpi = 72`, one pixel per PDF point: a 4 × 3 inch page becomes 288 × 216
+pixels. At `dpi = 144`, the same page is 576 × 432.
+
+```{r}
+dim(pdf_render_page(doc, dpi =  72))
+dim(pdf_render_page(doc, dpi = 144))
+```
+
+## Background and transparency
+
+The default background is white. Pass any colour string
+`grDevices::col2rgb()` understands, or `NA` for transparent:
+
+```{r}
+bmp_red   <- pdf_render_page(doc, dpi = 72, background = "red")
+bmp_trans <- pdf_render_page(doc, dpi = 72, background = NA)
+
+bmp_red[1L,  1L]                      # top-left pixel
+bmp_trans[1L, 1L]                     # depends on whether page content covers
+```
+
+## Rotation
+
+Rotation in degrees, applied on top of the page's own `/Rotate`
+attribute. Rotating 90 or 270 swaps the bitmap's width and height:
+
+```{r}
+dim(pdf_render_page(doc, dpi = 72, rotation =   0))
+dim(pdf_render_page(doc, dpi = 72, rotation =  90))
+dim(pdf_render_page(doc, dpi = 72, rotation = 180))
+dim(pdf_render_page(doc, dpi = 72, rotation = 270))
+```
+
+## Converting to other shapes
+
+```{r}
+# A 3D numeric array [H, W, 4] with values in 0..1 - matches the
+# format png::writePNG() and pdftools::pdf_render_page() both produce.
+arr <- as.array(bmp)
+dim(arr)
+range(arr)
+
+# Base R "raster" object - character matrix of "#RRGGBBAA" hex colors.
+ras <- as.raster(bmp)
+ras[1L, 1L]
+
+# A plain character matrix (drops the "raster" class).
+mat <- as.matrix(bmp)
+class(mat)
+```
+
+## Saving to PNG
+
+For a one-call save, `pdf_render_to_png()` writes the rendered bitmap
+to a PNG file. It needs the `png` package (a Suggests dependency):
+
+```{r, eval = requireNamespace("png", quietly = TRUE)}
+out <- tempfile(fileext = ".png")
+pdf_render_to_png(doc, file = out, dpi = 96)
+file.exists(out)
+file.size(out)
+```
+
+## Annotations
+
+`pdf_render_page(annotations = TRUE)` paints annotation appearance
+streams on top of the page. shapes.pdf has no annotations so the flag
+is a no-op here; on annotated PDFs the rendered bitmap visibly changes.
+
+## Working with embedded images
+
+For each `"image"`-typed page object, three accessors return rendered or
+raw image data with the same `pdfium_bitmap` shape:
+
+```{r}
+img_fixture <- system.file("extdata", "fixtures", "image.pdf",
+                           package = "pdfium")
+img_doc <- pdf_open(img_fixture)
+img_page <- pdf_load_page(img_doc, 1L)
+imgs <- Filter(function(o) o$type == "image", pdf_page_objects(img_page))
+
+# Decoded source-pixel bitmap (no CTM applied).
+src <- pdf_image_bitmap(imgs[[1L]])
+dim(src)
+
+# CTM-applied rendering (what a viewer would actually draw).
+viewer <- pdf_image_rendered(imgs[[1L]])
+dim(viewer)
+```
+
+For saving the original embedded asset without re-encoding, the raw-bytes
+path is useful:
+
+```{r}
+filters <- pdf_image_filters(imgs[[1L]])
+filters
+raw_bytes <- pdf_image_data(imgs[[1L]], decoded = FALSE)
+length(raw_bytes)
+```
+
+When `filters` contains `"DCTDecode"`, the raw bytes are the original
+JPEG; when it contains `"JPXDecode"`, they're JPEG 2000; for
+`"FlateDecode"` they're Deflate-compressed pixels. See
+[`pdf_image_filters()`](../reference/pdf_image_filters.html) for the
+full enumeration of common decoders.
+
+## Cleanup
+
+```{r}
+pdf_close_page(img_page); pdf_close(img_doc)
+pdf_close(doc)
+```

@@ -11,19 +11,21 @@ pdf_path_stroke(obj)
 \code{\link[=pdf_page_objects]{pdf_page_objects()}}).}
 }
 \value{
-A named list with two elements:
-\itemize{
-\item \code{color} - a named numeric vector \code{c(red, green, blue, alpha)}
-of 0-255 channel values, or all-\code{NA} when no stroke is set.
-\item \code{width} - the stroke width in PDF points, or \code{NA} when no
-stroke is set.
-}
+A named numeric vector with elements \code{red}, \code{green},
+\code{blue}, \code{alpha} (0-255 channels) and \code{width} (PDF points).
+All-\code{NA} when no stroke is set.
 }
 \description{
-Returns the RGBA stroke color and stroke width of \code{obj}. Color
-channels are integers in \verb{[0, 255]}; width is in PDF points. When
-PDFium reports that the object has no stroke set, color channels
-are \code{NA} and width is \code{NA}.
+Returns the RGBA stroke color and stroke width of \code{obj} as a flat
+named numeric vector. Color channels are integers in \verb{[0, 255]};
+width is in PDF points. When PDFium reports that the object has
+no stroke set, every value is \code{NA}.
+}
+\details{
+The returned shape mirrors \code{\link[=pdf_path_fill]{pdf_path_fill()}} (a flat named
+vector). The downstream tibble columns in \code{\link[=pdf_extract_paths]{pdf_extract_paths()}}
+(\code{stroke_red}, \code{stroke_green}, \code{stroke_blue}, \code{stroke_alpha},
+\code{stroke_width}) are built by prefixing the names of this vector.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",

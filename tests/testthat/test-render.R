@@ -259,3 +259,22 @@ test_that("annotations flag is plumbed through (smoke)", {
   bmp_yes <- pdf_render_page(doc, annotations = TRUE)
   expect_equal(dim(bmp_no), dim(bmp_yes))
 })
+
+test_that("plot(bmp) draws into a PDF device without erroring", {
+  doc <- pdf_open(fixture_path("shapes"))
+  on.exit(pdf_close(doc), add = TRUE)
+  bmp <- pdf_render_page(doc, dpi = 72)
+
+  out <- withr::local_tempfile(fileext = ".pdf")
+  grDevices::pdf(out, width = 5, height = 4)
+  expect_silent(plot(bmp))
+  grDevices::dev.off()
+  expect_true(file.exists(out))
+  expect_gt(file.size(out), 0)
+
+  # interpolate = FALSE path
+  grDevices::pdf(out, width = 5, height = 4)
+  expect_silent(plot(bmp, interpolate = FALSE))
+  grDevices::dev.off()
+  expect_true(file.exists(out))
+})

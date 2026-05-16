@@ -11,14 +11,16 @@ pdf_text_font(obj)
 \code{\link[=pdf_page_objects]{pdf_page_objects()}}).}
 }
 \value{
-A named list with elements:
+A named list with elements (matching the \verb{font_*} columns
+that \code{\link[=pdf_text_runs]{pdf_text_runs()}} returns for the same text object, so
+either shape can feed directly into a row of the other):
 \itemize{
-\item \code{base_name} - character scalar, base font name; UTF-8
-\item \code{family} - character scalar, font family name; UTF-8
-\item \code{weight} - integer (e.g. 400, 500, 700)
-\item \code{italic_angle} - integer degrees; 0 for upright
-\item \code{is_embedded} - logical
-\item \code{flags} - integer bitmask
+\item \code{font_base_name} - character scalar, base font name; UTF-8
+\item \code{font_family} - character scalar, font family name; UTF-8
+\item \code{font_weight} - integer (e.g. 400, 500, 700)
+\item \code{font_italic_angle} - integer degrees; 0 for upright
+\item \code{font_is_embedded} - logical
+\item \code{font_flags} - integer bitmask
 }
 }
 \description{

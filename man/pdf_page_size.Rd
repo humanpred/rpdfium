@@ -4,16 +4,18 @@
 \alias{pdf_page_size}
 \title{Page dimensions in PDF points}
 \usage{
-pdf_page_size(x, page = 1L)
+pdf_page_size(page, page_num = 1L)
 }
 \arguments{
-\item{x}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a \code{pdfium_doc}.}
+\item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a
+\code{pdfium_doc}.}
 
-\item{page}{One-based page index. Only used when \code{x} is a \code{pdfium_doc}.
-Ignored otherwise.}
+\item{page_num}{One-based page index. Only used when \code{page} is a
+\code{pdfium_doc}. Ignored otherwise.}
 }
 \value{
-A named numeric vector with elements \code{width} and \code{height}.
+A named numeric vector with elements \code{width} and
+\code{height}.
 }
 \description{
 Returns the width and height of \code{page} in PDF points (1 point = 1/72 inch).

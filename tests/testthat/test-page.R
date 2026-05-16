@@ -4,13 +4,20 @@ test_that("pdf_load_page() validates its inputs", {
   on.exit(pdf_close(doc), add = TRUE)
 
   expect_error(pdf_load_page("not a doc"), "must be a `pdfium_doc`")
-  expect_error(pdf_load_page(doc, page = 0),    "must be a single positive integer")
-  expect_error(pdf_load_page(doc, page = -1),   "must be a single positive integer")
-  expect_error(pdf_load_page(doc, page = 1.5),  "must be a single positive integer")
-  expect_error(pdf_load_page(doc, page = c(1, 2)), "must be a single positive integer")
-  expect_error(pdf_load_page(doc, page = NA_integer_), "must be a single positive integer")
-  expect_error(pdf_load_page(doc, page = "1"),  "must be a single positive integer")
-  expect_error(pdf_load_page(doc, page = 99L),  "exceeds the document's page count")
+  expect_error(pdf_load_page(doc, page_num = 0),
+               "must be a single positive integer")
+  expect_error(pdf_load_page(doc, page_num = -1),
+               "must be a single positive integer")
+  expect_error(pdf_load_page(doc, page_num = 1.5),
+               "must be a single positive integer")
+  expect_error(pdf_load_page(doc, page_num = c(1, 2)),
+               "must be a single positive integer")
+  expect_error(pdf_load_page(doc, page_num = NA_integer_),
+               "must be a single positive integer")
+  expect_error(pdf_load_page(doc, page_num = "1"),
+               "must be a single positive integer")
+  expect_error(pdf_load_page(doc, page_num = 99L),
+               "exceeds the document's page count")
 })
 
 test_that("pdf_load_page() returns a working pdfium_page", {

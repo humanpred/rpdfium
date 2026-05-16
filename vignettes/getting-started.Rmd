@@ -1,0 +1,231 @@
+---
+title: "Getting started with pdfium"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with pdfium}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+`pdfium` exposes Google's [PDFium](https://pdfium.googlesource.com/pdfium/)
+engine to R. Where `pdftools` (Poppler-based) gives you the text content
+and a rasterised page, `pdfium` adds vector-level structure: every path
+object's segments and style, every text run's font and bounding box, every
+embedded image's source bytes and metadata, every form XObject's
+nested children, and every clip region's geometry. It complements rather
+than replaces `pdftools` — the two cover different parts of the PDF inspection
+surface.
+
+This vignette walks through opening a document, inspecting its structure,
+and pulling out a few common things. Three later vignettes go deeper into
+[paths](extracting-paths.html), [text](text-extraction.html), and
+[rendering](rendering.html).
+
+```{r}
+library(pdfium)
+```
+
+## Opening and closing a document
+
+```{r}
+fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+                       package = "pdfium")
+doc <- pdf_open(fixture)
+doc
+```
+
+The returned object is an S3 handle wrapping a PDFium `FPDF_DOCUMENT`. R's
+garbage collector calls `FPDF_CloseDocument` when the handle becomes
+unreachable, so you don't *have* to close it explicitly — but for large
+documents or when you need to delete the source file afterward (Windows
+blocks deletion of open files), close it yourself with `pdf_close()`:
+
+```{r}
+pdf_count <- pdf_page_count(doc)
+pdf_count
+```
+
+Both `pdf_page_count()` and `pdf_doc_info()` also accept a path directly
+when you want a one-shot inspection. The package opens and closes the
+document for you in that case:
+
+```{r}
+pdf_page_count(fixture)
+```
+
+## Document metadata
+
+`pdf_doc_info()` returns the page count, file version, every standard
+Info-dictionary entry, and POSIXct parses of the two date fields. The
+shape mirrors `pdftools::pdf_info()` for easy porting:
+
+```{r}
+info <- pdf_doc_info(doc)
+info$page_count
+info$file_version       # PDFium reports 10 * major + minor (17 = PDF 1.7)
+info$producer
+info$creation_date_parsed
+```
+
+For a single tag use `pdf_doc_meta(doc, "Producer")`. The standard tags
+PDFium recognises are `"Title"`, `"Author"`, `"Subject"`, `"Keywords"`,
+`"Creator"`, `"Producer"`, `"CreationDate"`, `"ModDate"`, and
+`"Trapped"`. Missing tags return the empty string.
+
+If you have a date string in PDF format (`"D:YYYYMMDDHHmmSS+HH'mm'"`),
+`pdf_parse_date()` parses it into UTC POSIXct. It's vectorised and
+accepts truncated forms:
+
+```{r}
+pdf_parse_date(c("D:20240115123045Z", "D:2024"))
+```
+
+## Pages and page objects
+
+A page is loaded with `pdf_load_page(doc, page_num)`. The returned handle
+carries a reference to its parent doc so GC ordering is safe:
+
+```{r}
+page <- pdf_load_page(doc, 1L)
+pdf_page_size(doc, 1L)        # width and height in PDF points
+pdf_page_rotation(doc, 1L)    # 0, 90, 180, or 270 degrees
+```
+
+Every drawable element on a page is a *page object*. `pdf_page_objects()`
+returns them as a list of typed `pdfium_obj` handles:
+
+```{r}
+objs <- pdf_page_objects(page)
+length(objs)
+vapply(objs, function(o) o$type, character(1))
+```
+
+Each object's type is one of `"path"` (vector path with line/curve
+segments), `"text"` (a text run), `"image"` (embedded raster), `"form"`
+(a Form XObject - a reusable sub-page; see the section below), or
+`"shading"` (a smooth-shading object).
+
+You can read each object's bounding box on the page in PDF user space
+(points, origin at the page's bottom-left):
+
+```{r}
+pdf_obj_bounds(objs[[1L]])
+```
+
+And its transformation matrix (the CTM applied when the object is drawn):
+
+```{r}
+pdf_obj_matrix(objs[[1L]])
+```
+
+The accessors that work on every page object are `pdf_obj_type()`,
+`pdf_obj_bounds()`, `pdf_obj_matrix()`. Type-specific accessors
+follow naming conventions: `pdf_path_*`, `pdf_text_*`, `pdf_image_*`.
+
+## Path geometry
+
+For path objects, `pdf_path_segments()` returns a tibble of segment
+coordinates plus a `close_figure` flag on each segment:
+
+```{r}
+paths <- Filter(function(o) o$type == "path", objs)
+pdf_path_segments(paths[[1L]])
+```
+
+Stroke and fill colour, dash pattern, and miscellaneous style come back as
+separate accessors:
+
+```{r}
+pdf_path_stroke(paths[[1L]])
+pdf_path_fill(paths[[1L]])
+pdf_path_dash(paths[[1L]])
+```
+
+For a one-call extraction that returns one row per segment across every
+path on every page — the shape `kmextract` and similar consumers expect — use
+`pdf_extract_paths(path_or_doc)`:
+
+```{r}
+extracted <- pdf_extract_paths(fixture)
+str(extracted, max.level = 1L)
+nrow(extracted)
+head(extracted, 3L)
+```
+
+The result is a tibble with one row per path segment, plus per-path
+attributes (stroke/fill color, page size, etc.) and a `text_runs`
+attribute carrying the page's text in tabular form. See the
+[extracting-paths](extracting-paths.html) vignette for the full schema.
+
+## Text content
+
+`pdf_text_content(text_obj)` returns the Unicode string for one text
+object, and `pdf_text_runs(page)` enumerates every text run on a page
+with positions, font sizes, and font metadata:
+
+```{r}
+runs <- pdf_text_runs(page)
+runs
+```
+
+For one-text-object access (font name, weight, embedded flag) use
+`pdf_text_font(text_obj)`. See the
+[text-extraction](text-extraction.html) vignette for the full set.
+
+## Rendering
+
+To rasterise a page, `pdf_render_page(page_or_doc, dpi)` returns a
+`pdfium_bitmap` object that inherits from base R's `nativeRaster`:
+
+```{r}
+bmp <- pdf_render_page(doc, dpi = 96)
+bmp
+dim(bmp)        # height, width
+```
+
+`pdfium_bitmap` is directly usable by `graphics::plot()`,
+`graphics::rasterImage()`, and `grid::rasterGrob()`. Three converters
+produce other common shapes:
+
+```{r}
+arr <- as.array(bmp)        # 3D [H, W, 4] doubles in 0..1, like png::writePNG
+ras <- as.raster(bmp)       # base R "raster" class, hex-color matrix
+mat <- as.matrix(bmp)       # plain character matrix
+```
+
+The save helper `pdf_render_to_png(file, ...)` writes the bitmap straight
+to a PNG file via the `png` package (a Suggests dependency).
+
+## Embedded images and form XObjects
+
+For object-type-specific extraction, see:
+
+- [`pdf_image_info()`](../reference/pdf_image_info.html) /
+  [`pdf_image_bitmap()`](../reference/pdf_image_bitmap.html) /
+  [`pdf_image_data()`](../reference/pdf_image_data.html) for
+  embedded raster images. The raw-stream-bytes path
+  (`pdf_image_data(decoded = FALSE)`) lets you save the original
+  JPEG/JBIG2/JPEG2000 without re-encoding.
+- [`pdf_form_objects()`](../reference/pdf_form_objects.html) to walk
+  the page objects nested inside a Form XObject (a reusable sub-page
+  used for tiling patterns, glyph procedures, annotation appearance
+  streams, etc.).
+- [`pdf_obj_clip_path()`](../reference/pdf_obj_clip_path.html) /
+  [`pdf_clip_path_segments()`](../reference/pdf_clip_path_segments.html)
+  to read the clip geometry attached to a page object.
+
+## Cleanup
+
+```{r}
+pdf_close_page(page)
+pdf_close(doc)
+```
+
+`pdf_close()` and `pdf_close_page()` are idempotent — calling them more
+than once is a no-op. R's GC also runs the finalisers automatically when
+handles become unreachable. The [architecture](architecture.html) vignette
+covers the memory model in depth.

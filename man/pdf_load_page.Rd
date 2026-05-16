@@ -4,13 +4,13 @@
 \alias{pdf_load_page}
 \title{Load a single page from an open PDF document}
 \usage{
-pdf_load_page(doc, page = 1L)
+pdf_load_page(doc, page_num = 1L)
 }
 \arguments{
 \item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}}.}
 
-\item{page}{One-based page index. Must satisfy
-\verb{1 <= page <= pdf_page_count(doc)}.}
+\item{page_num}{One-based page index. Must satisfy
+\verb{1 <= page_num <= pdf_page_count(doc)}.}
 }
 \value{
 A \code{pdfium_page} object.
