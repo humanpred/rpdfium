@@ -1,0 +1,16 @@
+# Mark binary fixture formats so Git never performs line-ending
+# normalization on them. Without this, a Windows checkout with
+# `core.autocrlf=true` rewrites LF bytes inside our hand-built PDF
+# fixtures to CRLF, which shifts every byte after the change and
+# breaks byte-exact accessor tests (e.g. embedded attachment streams
+# advertised with a literal `/Length`).
+*.pdf  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+
+# Upstream patches must stay byte-identical to what `git format-patch`
+# / `git apply` expect — no autocrlf.
+*.patch binary
