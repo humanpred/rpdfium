@@ -91,8 +91,10 @@ coordinates) comes from
 ``` r
 
 pdf_obj_matrix(paths[[1L]])
-#>   a   b   c   d   e   f 
-#>   1   0   0  -1   0 216
+#>      [,1] [,2] [,3]
+#> [1,]    1    0    0
+#> [2,]    0   -1  216
+#> [3,]    0    0    1
 ```
 
 ## One-call extraction

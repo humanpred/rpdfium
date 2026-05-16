@@ -7,7 +7,7 @@ shape mirrors `pdftools::pdf_info()` to ease porting.
 ## Usage
 
 ``` r
-pdf_doc_info(doc)
+pdf_doc_info(doc, password = NULL)
 ```
 
 ## Arguments
@@ -17,6 +17,11 @@ pdf_doc_info(doc)
   A `pdfium_doc` from
   [`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md),
   or a character path.
+
+- password:
+
+  Optional password for encrypted PDFs when `doc` is a path. Ignored
+  when `doc` is already an open `pdfium_doc`.
 
 ## Value
 

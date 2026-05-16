@@ -76,6 +76,14 @@ and is *not* distributed in the source tarball — see
   : Read one entry from a PDF's Info dictionary
 - [`pdf_parse_date()`](https://humanpred.github.io/rpdfium/reference/pdf_parse_date.md)
   : Parse a PDF date string into POSIXct
+- [`pdf_text()`](https://humanpred.github.io/rpdfium/reference/pdf_text.md)
+  : Read every page's text in one call
+- [`pdf_fonts()`](https://humanpred.github.io/rpdfium/reference/pdf_fonts.md)
+  : Document-level rollup of every embedded / referenced font
+- [`pdf_file_id()`](https://humanpred.github.io/rpdfium/reference/pdf_file_id.md)
+  : Read the document's file identifier from its trailer
+- [`pdf_doc_page_mode()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_page_mode.md)
+  : Read the document's PageMode entry from its catalog
 - [`pdf_doc_permissions()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_permissions.md)
   : Permission flags from a PDF's encryption dictionary
 - [`pdf_bookmarks()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmarks.md)
@@ -111,6 +119,10 @@ and is *not* distributed in the source tarball — see
   : Page dimensions in PDF points
 - [`pdf_page_rotation()`](https://humanpred.github.io/rpdfium/reference/pdf_page_rotation.md)
   : Page rotation in degrees
+- [`pdf_page_box()`](https://humanpred.github.io/rpdfium/reference/pdf_page_box.md)
+  : Read a page's bounding box
+- [`pdf_page_links()`](https://humanpred.github.io/rpdfium/reference/pdf_page_links.md)
+  : List the clickable links on a page
 
 ## Annotations and form fields
 
@@ -151,6 +163,8 @@ and is *not* distributed in the source tarball — see
   : Extract every text run on a page
 - [`pdf_text_font()`](https://humanpred.github.io/rpdfium/reference/pdf_text_font.md)
   : Font metadata of a text page-object
+- [`pdf_text_chars()`](https://humanpred.github.io/rpdfium/reference/pdf_text_chars.md)
+  : Per-character text extraction
 
 ## Rendering
 

@@ -53,7 +53,7 @@ internally — convenient for one-shot inspection).</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pdf_page_count</span><span class="op">(</span><span class="va">doc</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pdf_page_count</span><span class="op">(</span><span class="va">doc</span>, password <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -62,6 +62,11 @@ internally — convenient for one-shot inspection).</p>
 
 <dl><dt id="arg-doc">doc<a class="anchor" aria-label="anchor" href="#arg-doc"></a></dt>
 <dd><p>A <code>pdfium_doc</code> from <code><a href="pdf_open.html">pdf_open()</a></code>, or a character scalar path.</p></dd>
+
+
+<dt id="arg-password">password<a class="anchor" aria-label="anchor" href="#arg-password"></a></dt>
+<dd><p>Optional password for encrypted PDFs when <code>doc</code> is
+a path. Ignored when <code>doc</code> is already an open <code>pdfium_doc</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -9,7 +9,7 @@ function `kmextract` consumes via the `pdfium_native` backend.
 ## Usage
 
 ``` r
-pdf_extract_paths(doc, page_num = 1L)
+pdf_extract_paths(doc, page_num = 1L, password = NULL)
 ```
 
 ## Arguments
@@ -25,6 +25,11 @@ pdf_extract_paths(doc, page_num = 1L)
 - page_num:
 
   One-based page index (default `1`).
+
+- password:
+
+  Optional password for encrypted PDFs when `doc` is a path. Ignored
+  when `doc` is already an open `pdfium_doc`.
 
 ## Value
 

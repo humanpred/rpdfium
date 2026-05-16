@@ -9,7 +9,7 @@ downstream object queries.
 ## Usage
 
 ``` r
-pdf_page_objects(page, page_num = 1L)
+pdf_page_objects(page, page_num = 1L, recursive = FALSE)
 ```
 
 ## Arguments
@@ -26,6 +26,18 @@ pdf_page_objects(page, page_num = 1L)
   One-based page index. Only used when `page` is a `pdfium_doc`. Ignored
   otherwise.
 
+- recursive:
+
+  Logical. When `TRUE`, descend into every `"form"` page object via
+  [`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md)
+  and return the flattened depth-first traversal: top-level objects
+  first, then each form's nested objects immediately after the form,
+  then any forms nested inside those, and so on. Nested objects carry
+  the same `parent_form` slot that
+  [`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md)
+  would set, so callers can reconstruct the tree from the flat list.
+  Default `FALSE`.
+
 ## Value
 
 A list (possibly empty) of `pdfium_obj` objects.
@@ -41,7 +53,8 @@ explicitly invalidates all returned objects.
 
 ## See also
 
-[`pdf_obj_type()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_type.md)
+[`pdf_obj_type()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_type.md),
+[`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md)
 
 ## Examples
 

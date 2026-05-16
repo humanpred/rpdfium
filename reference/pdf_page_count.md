@@ -7,7 +7,7 @@ document internally — convenient for one-shot inspection).
 ## Usage
 
 ``` r
-pdf_page_count(doc)
+pdf_page_count(doc, password = NULL)
 ```
 
 ## Arguments
@@ -17,6 +17,11 @@ pdf_page_count(doc)
   A `pdfium_doc` from
   [`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md),
   or a character scalar path.
+
+- password:
+
+  Optional password for encrypted PDFs when `doc` is a path. Ignored
+  when `doc` is already an open `pdfium_doc`.
 
 ## Value
 
