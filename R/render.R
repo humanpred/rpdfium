@@ -212,21 +212,29 @@ print.pdfium_bitmap <- function(x, ...) {
 #' engine both consume cleanly) and drawn with [grid::grid.raster()]
 #' on a fresh `grid` page.
 #'
-#' Why not `graphics::rasterImage()` on the bare `nativeRaster`
-#' integer matrix? Per the documented R raster contract (see
-#' `?grDevices::as.raster`, "Raster images are internally
-#' represented row-first"), `"raster"` and `nativeRaster` objects
-#' must have row-major memory layout. R's `as.raster.matrix()`
-#' transposes its input to satisfy that. Our integer matrix comes
-#' straight from C++ as a standard R column-major matrix, which is
-#' non-conformant with the row-major contract — feeding it directly
-#' to `graphics::rasterImage()` or `grid::grid.raster()` renders the
-#' bytes at the wrong positions (the symptom on detailed content is
-#' a diagonal fuzzy stripe pattern). Going through `as.array(x)` to
-#' a 3-D `c(H, W, 4)` numeric array sidesteps the layout contract
-#' entirely — the array path uses positional channel storage rather
-#' than a row-vs-column convention, and `grid::grid.raster()` on it
-#' is pixel-perfect on every platform we've tested.
+#' We go through `as.array(x)` rather than handing the integer matrix
+#' directly to `graphics::rasterImage()` for two reasons that
+#' compound:
+#'
+#' 1. Per the documented raster contract (see
+#'    `?grDevices::as.raster`, "Raster images are internally
+#'    represented row-first"), `"raster"` and `nativeRaster` objects
+#'    must have row-major memory layout. R's `as.raster.matrix()`
+#'    transposes its input precisely to satisfy that. Our integer
+#'    matrix comes out of C++ as a standard R column-major matrix,
+#'    so feeding it directly is non-conformant and shows diagonal
+#'    stripe artifacts on detailed content.
+#' 2. `rasterImage` with `plot.window` uses the user-coordinate
+#'    system, which defaults (`xaxs = "r", yaxs = "r"`) to padding
+#'    the interval by 4% on each side — silently compressing the
+#'    raster into ~92% of the device and forcing sub-pixel
+#'    resampling. `grid::grid.raster()` uses npc coordinates and
+#'    isn't subject to this.
+#'
+#' Going through `as.array(x)` to a 3-D `c(H, W, 4)` numeric array
+#' and rendering with `grid::grid.raster()` sidesteps both: the
+#' array path uses positional channel storage (no row-vs-column
+#' convention), and grid coordinates are 0..1 npc without padding.
 #'
 #' @param x A `pdfium_bitmap` from [pdf_render_page()] or
 #'   [pdf_image_bitmap()] / [pdf_image_rendered()].

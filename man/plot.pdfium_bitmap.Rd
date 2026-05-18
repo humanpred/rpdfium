@@ -28,21 +28,30 @@ engine both consume cleanly) and drawn with \code{\link[grid:grid.raster]{grid::
 on a fresh \code{grid} page.
 }
 \details{
-Why not \code{graphics::rasterImage()} on the bare \code{nativeRaster}
-integer matrix? Per the documented R raster contract (see
+We go through \code{as.array(x)} rather than handing the integer matrix
+directly to \code{graphics::rasterImage()} for two reasons that
+compound:
+\enumerate{
+\item Per the documented raster contract (see
 \code{?grDevices::as.raster}, "Raster images are internally
 represented row-first"), \code{"raster"} and \code{nativeRaster} objects
 must have row-major memory layout. R's \code{as.raster.matrix()}
-transposes its input to satisfy that. Our integer matrix comes
-straight from C++ as a standard R column-major matrix, which is
-non-conformant with the row-major contract — feeding it directly
-to \code{graphics::rasterImage()} or \code{grid::grid.raster()} renders the
-bytes at the wrong positions (the symptom on detailed content is
-a diagonal fuzzy stripe pattern). Going through \code{as.array(x)} to
-a 3-D \code{c(H, W, 4)} numeric array sidesteps the layout contract
-entirely — the array path uses positional channel storage rather
-than a row-vs-column convention, and \code{grid::grid.raster()} on it
-is pixel-perfect on every platform we've tested.
+transposes its input precisely to satisfy that. Our integer
+matrix comes out of C++ as a standard R column-major matrix,
+so feeding it directly is non-conformant and shows diagonal
+stripe artifacts on detailed content.
+\item \code{rasterImage} with \code{plot.window} uses the user-coordinate
+system, which defaults (\verb{xaxs = "r", yaxs = "r"}) to padding
+the interval by 4\% on each side — silently compressing the
+raster into ~92\% of the device and forcing sub-pixel
+resampling. \code{grid::grid.raster()} uses npc coordinates and
+isn't subject to this.
+}
+
+Going through \code{as.array(x)} to a 3-D \code{c(H, W, 4)} numeric array
+and rendering with \code{grid::grid.raster()} sidesteps both: the
+array path uses positional channel storage (no row-vs-column
+convention), and grid coordinates are 0..1 npc without padding.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
