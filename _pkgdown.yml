@@ -79,6 +79,7 @@ reference:
       - pdf_text_runs
       - pdf_text_font
       - pdf_text_chars
+      - pdf_text_search
   - title: Rendering
     contents:
       - pdf_render_page
