@@ -112,29 +112,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// cpp_doc_file_id
-Rcpp::RawVector cpp_doc_file_id(SEXP doc_ptr, int id_type);
-RcppExport SEXP _pdfium_cpp_doc_file_id(SEXP doc_ptrSEXP, SEXP id_typeSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
-    Rcpp::traits::input_parameter< int >::type id_type(id_typeSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_doc_file_id(doc_ptr, id_type));
-    return rcpp_result_gen;
-END_RCPP
-}
-// cpp_doc_page_mode
-int cpp_doc_page_mode(SEXP doc_ptr);
-RcppExport SEXP _pdfium_cpp_doc_page_mode(SEXP doc_ptrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_doc_page_mode(doc_ptr));
-    return rcpp_result_gen;
-END_RCPP
-}
 // cpp_bookmarks
 Rcpp::List cpp_bookmarks(SEXP doc_ptr);
 RcppExport SEXP _pdfium_cpp_bookmarks(SEXP doc_ptrSEXP) {
@@ -166,6 +143,29 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_doc_permissions(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_doc_file_id
+Rcpp::RawVector cpp_doc_file_id(SEXP doc_ptr, int id_type);
+RcppExport SEXP _pdfium_cpp_doc_file_id(SEXP doc_ptrSEXP, SEXP id_typeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type id_type(id_typeSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_doc_file_id(doc_ptr, id_type));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_doc_page_mode
+int cpp_doc_page_mode(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_doc_page_mode(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_doc_page_mode(doc_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -712,6 +712,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_text_search_page
+Rcpp::List cpp_text_search_page(SEXP page_ptr, std::string query, bool match_case, bool match_whole_word, bool consecutive);
+RcppExport SEXP _pdfium_cpp_text_search_page(SEXP page_ptrSEXP, SEXP querySEXP, SEXP match_caseSEXP, SEXP match_whole_wordSEXP, SEXP consecutiveSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type query(querySEXP);
+    Rcpp::traits::input_parameter< bool >::type match_case(match_caseSEXP);
+    Rcpp::traits::input_parameter< bool >::type match_whole_word(match_whole_wordSEXP);
+    Rcpp::traits::input_parameter< bool >::type consecutive(consecutiveSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_search_page(page_ptr, query, match_case, match_whole_word, consecutive));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_annot_count", (DL_FUNC) &_pdfium_cpp_annot_count, 1},
@@ -723,11 +738,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_clip_path_count_paths", (DL_FUNC) &_pdfium_cpp_clip_path_count_paths, 1},
     {"_pdfium_cpp_clip_path_count_segments", (DL_FUNC) &_pdfium_cpp_clip_path_count_segments, 2},
     {"_pdfium_cpp_clip_path_segments_df", (DL_FUNC) &_pdfium_cpp_clip_path_segments_df, 1},
-    {"_pdfium_cpp_doc_file_id", (DL_FUNC) &_pdfium_cpp_doc_file_id, 2},
-    {"_pdfium_cpp_doc_page_mode", (DL_FUNC) &_pdfium_cpp_doc_page_mode, 1},
     {"_pdfium_cpp_bookmarks", (DL_FUNC) &_pdfium_cpp_bookmarks, 1},
     {"_pdfium_cpp_page_label", (DL_FUNC) &_pdfium_cpp_page_label, 2},
     {"_pdfium_cpp_doc_permissions", (DL_FUNC) &_pdfium_cpp_doc_permissions, 1},
+    {"_pdfium_cpp_doc_file_id", (DL_FUNC) &_pdfium_cpp_doc_file_id, 2},
+    {"_pdfium_cpp_doc_page_mode", (DL_FUNC) &_pdfium_cpp_doc_page_mode, 1},
     {"_pdfium_cpp_doc_meta_text", (DL_FUNC) &_pdfium_cpp_doc_meta_text, 2},
     {"_pdfium_cpp_doc_info", (DL_FUNC) &_pdfium_cpp_doc_info, 1},
     {"_pdfium_cpp_doc_file_version", (DL_FUNC) &_pdfium_cpp_doc_file_version, 1},
@@ -776,6 +791,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_text_content", (DL_FUNC) &_pdfium_cpp_text_content, 1},
     {"_pdfium_cpp_text_font", (DL_FUNC) &_pdfium_cpp_text_font, 1},
     {"_pdfium_cpp_page_text_runs", (DL_FUNC) &_pdfium_cpp_page_text_runs, 1},
+    {"_pdfium_cpp_text_search_page", (DL_FUNC) &_pdfium_cpp_text_search_page, 5},
     {NULL, NULL, 0}
 };
 
