@@ -1,13 +1,12 @@
 # Plot a pdfium_bitmap
 
 Draws the bitmap into the active graphics device at its source pixel
-resolution, with `asp = 1` and zero margins so the image fills the
-device without distortion. Internally a fresh plot window is opened
-([`plot.new()`](https://rdrr.io/r/graphics/frame.html) +
-[`plot.window()`](https://rdrr.io/r/graphics/plot.window.html)) and the
-bitmap is drawn with
-[`graphics::rasterImage()`](https://rdrr.io/r/graphics/rasterImage.html),
-which natively accepts R's `nativeRaster` integer encoding.
+resolution. Internally the bitmap is converted to a 3-D numeric array
+(the format
+[`png::writePNG()`](https://rdrr.io/pkg/png/man/writePNG.html) and the R
+graphics engine both consume cleanly) and drawn with
+[`grid::grid.raster()`](https://rdrr.io/r/grid/grid.raster.html) on a
+fresh `grid` page.
 
 ## Usage
 
@@ -30,14 +29,14 @@ plot(x, interpolate = TRUE, ...)
 - interpolate:
 
   Passed through to
-  [`graphics::rasterImage()`](https://rdrr.io/r/graphics/rasterImage.html).
+  [`grid::grid.raster()`](https://rdrr.io/r/grid/grid.raster.html).
   Default `TRUE`; set `FALSE` for pixel-exact (nearest-neighbour)
   display of small bitmaps.
 
 - ...:
 
   Further arguments passed to
-  [`graphics::rasterImage()`](https://rdrr.io/r/graphics/rasterImage.html).
+  [`grid::grid.raster()`](https://rdrr.io/r/grid/grid.raster.html).
 
 ## Value
 
@@ -45,12 +44,33 @@ Invisibly returns `x`. Called for the plotting side effect.
 
 ## Details
 
-Base R does not ship a
-[`plot()`](https://rdrr.io/r/graphics/plot.default.html) method for the
-`nativeRaster` class, so calling
-[`plot()`](https://rdrr.io/r/graphics/plot.default.html) on a bare
-`nativeRaster` integer matrix fails with "need finite 'xlim' values".
-This S3 method fixes that for `pdfium_bitmap` objects specifically.
+We go through `as.array(x)` rather than handing the integer matrix
+directly to
+[`graphics::rasterImage()`](https://rdrr.io/r/graphics/rasterImage.html)
+for two reasons that compound:
+
+1.  Per the documented raster contract (see
+    [`?grDevices::as.raster`](https://rdrr.io/r/grDevices/as.raster.html),
+    "Raster images are internally represented row-first"), `"raster"`
+    and `nativeRaster` objects must have row-major memory layout. R's
+    `as.raster.matrix()` transposes its input precisely to satisfy that.
+    Our integer matrix comes out of C++ as a standard R column-major
+    matrix, so feeding it directly is non-conformant and shows diagonal
+    stripe artifacts on detailed content.
+
+2.  `rasterImage` with `plot.window` uses the user-coordinate system,
+    which defaults (`xaxs = "r", yaxs = "r"`) to padding the interval by
+    4% on each side — silently compressing the raster into ~92% of the
+    device and forcing sub-pixel resampling.
+    [`grid::grid.raster()`](https://rdrr.io/r/grid/grid.raster.html)
+    uses npc coordinates and isn't subject to this.
+
+Going through `as.array(x)` to a 3-D `c(H, W, 4)` numeric array and
+rendering with
+[`grid::grid.raster()`](https://rdrr.io/r/grid/grid.raster.html)
+sidesteps both: the array path uses positional channel storage (no
+row-vs-column convention), and grid coordinates are 0..1 npc without
+padding.
 
 ## Examples
 
