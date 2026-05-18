@@ -280,13 +280,17 @@ test_that("plot(bmp) draws into a PDF device without erroring", {
 })
 
 test_that("plot(bmp) renders pixel-for-pixel correctly via PNG roundtrip", {
-  # Regression test for the layout bug where graphics::rasterImage()
-  # (and grid::grid.raster() on a bare nativeRaster) renders our
-  # column-major integer matrix as if it were row-major, producing
-  # diagonal-stripe artifacts on detailed content. The fix routes
-  # plot.pdfium_bitmap through grid::grid.raster(as.array(x)) — the
-  # only API/input combination that reads back byte-identical on
-  # both Linux and Windows.
+  # Regression test for our matrix's non-conformance with the
+  # documented R raster contract (see ?grDevices::as.raster:
+  # "Raster images are internally represented row-first"). Our C++
+  # writes the integer matrix column-major (R standard for
+  # `matrix(integer, ...)`), which is the *wrong* memory layout
+  # for a raster — feeding it directly to graphics::rasterImage()
+  # or grid::grid.raster() renders the bytes at the wrong positions
+  # and shows diagonal-stripe artifacts on detailed content. The
+  # plot method routes through as.array(x) -> grid::grid.raster()
+  # so the layout contract is sidestepped (the 3-D array path uses
+  # positional channels, not row-vs-column conventions).
   #
   # We build a synthetic pdfium_bitmap whose every pixel encodes its
   # own (row, col) so any layout error surfaces immediately.

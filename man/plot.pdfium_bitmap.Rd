@@ -29,15 +29,20 @@ on a fresh \code{grid} page.
 }
 \details{
 Why not \code{graphics::rasterImage()} on the bare \code{nativeRaster}
-integer matrix? On every platform we've tested
-(R 4.5.2 / Windows and R 4.6.0 / Linux), both
-\code{graphics::rasterImage()} and \code{grid::grid.raster()} reorder pixels
-when given a \code{nativeRaster} integer matrix or a \code{"raster"}
-character hex matrix of dimension >= ~200x200 — the symptom is
-diagonal fuzzy stripes on detailed content. Only \code{grid::grid.raster()}
-fed a 3-D numeric array \code{c(H, W, 4)} reads back pixel-for-pixel
-identical to the source. See \verb{dev/decisions/} for the diagnostic
-walkthrough that pinned this down.
+integer matrix? Per the documented R raster contract (see
+\code{?grDevices::as.raster}, "Raster images are internally
+represented row-first"), \code{"raster"} and \code{nativeRaster} objects
+must have row-major memory layout. R's \code{as.raster.matrix()}
+transposes its input to satisfy that. Our integer matrix comes
+straight from C++ as a standard R column-major matrix, which is
+non-conformant with the row-major contract — feeding it directly
+to \code{graphics::rasterImage()} or \code{grid::grid.raster()} renders the
+bytes at the wrong positions (the symptom on detailed content is
+a diagonal fuzzy stripe pattern). Going through \code{as.array(x)} to
+a 3-D \code{c(H, W, 4)} numeric array sidesteps the layout contract
+entirely — the array path uses positional channel storage rather
+than a row-vs-column convention, and \code{grid::grid.raster()} on it
+is pixel-perfect on every platform we've tested.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
