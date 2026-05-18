@@ -36,6 +36,10 @@ reference:
       - pdf_file_id
       - pdf_doc_page_mode
       - pdf_doc_permissions
+      - pdf_doc_is_tagged
+      - pdf_doc_javascript
+      - pdf_viewer_preferences
+      - pdf_named_dests
       - pdf_bookmarks
       - pdf_page_label
       - pdf_page_labels

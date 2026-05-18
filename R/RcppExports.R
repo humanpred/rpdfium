@@ -57,6 +57,22 @@ cpp_doc_page_mode <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_page_mode`, doc_ptr)
 }
 
+cpp_doc_is_tagged <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_doc_is_tagged`, doc_ptr)
+}
+
+cpp_doc_viewer_prefs <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_doc_viewer_prefs`, doc_ptr)
+}
+
+cpp_doc_named_dests <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_doc_named_dests`, doc_ptr)
+}
+
+cpp_doc_javascript <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_doc_javascript`, doc_ptr)
+}
+
 cpp_doc_meta_text <- function(doc_ptr, tag) {
     .Call(`_pdfium_cpp_doc_meta_text`, doc_ptr, tag)
 }

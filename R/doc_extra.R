@@ -192,3 +192,123 @@ pdf_doc_page_mode <- function(doc, password = NULL) {
   }
   .pdfium_page_modes[[idx]]
 }
+
+# Duplex mode codes from FPDF_DUPLEXTYPE in fpdf_doc.h
+# (DuplexUndefined=0, Simplex=1, DuplexFlipShortEdge=2,
+# DuplexFlipLongEdge=3). Bumped to 1-based index in pdf_viewer_preferences().
+.pdfium_duplex_modes <- c(
+  "none",                    # 0 DuplexUndefined
+  "simplex",                 # 1 Simplex
+  "duplex_flip_short_edge",  # 2 DuplexFlipShortEdge
+  "duplex_flip_long_edge"    # 3 DuplexFlipLongEdge
+)
+
+#' Is the document marked as tagged?
+#'
+#' Reports whether the PDF catalog's `/MarkInfo` entry advertises
+#' the document as tagged (i.e., it carries a structure tree usable
+#' for accessibility/reflow). Wraps `FPDFCatalog_IsTagged`. Note
+#' that a "tagged" advertisement is not a guarantee that the
+#' structure tree is well-formed.
+#'
+#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param password Optional password for encrypted PDFs when `doc`
+#'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
+#' @return Logical scalar.
+#' @export
+pdf_doc_is_tagged <- function(doc, password = NULL) {
+  h <- as_doc_handle(doc, "doc", password = password)
+  on.exit(h$on_exit(), add = TRUE)
+  cpp_doc_is_tagged(h$doc$ptr)
+}
+
+#' Read the document's viewer preferences
+#'
+#' Returns the print-related preferences encoded in the PDF's
+#' ViewerPreferences dictionary: whether the viewer should honor the
+#' author's print scaling, the suggested number of copies, the
+#' paper-handling (duplex) option, and the print-page-range
+#' specification. Wraps the `FPDF_VIEWERREF_*` family.
+#'
+#' Most PDFs don't set these; the returned defaults are PDFium's
+#' "no preference" sentinels: `print_scaling = TRUE`,
+#' `num_copies = 1`, `duplex = "none"`, `print_page_ranges` empty.
+#'
+#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param password Optional password for encrypted PDFs when `doc`
+#'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
+#' @return A named list with:
+#'   * `print_scaling` (logical) — TRUE if the author wants the
+#'     viewer's print dialog to use its default scaling.
+#'   * `num_copies` (integer) — suggested copies; 1 if not set.
+#'   * `duplex` (character) — one of `"none"`, `"simplex"`,
+#'     `"duplex_flip_short_edge"`, `"duplex_flip_long_edge"`.
+#'   * `print_page_ranges` (integer) — 1-based page numbers the
+#'     author suggests printing; empty when unspecified.
+#' @export
+pdf_viewer_preferences <- function(doc, password = NULL) {
+  h <- as_doc_handle(doc, "doc", password = password)
+  on.exit(h$on_exit(), add = TRUE)
+  raw <- cpp_doc_viewer_prefs(h$doc$ptr)
+  idx <- raw$duplex_code + 1L
+  duplex <- if (idx < 1L || idx > length(.pdfium_duplex_modes)) {
+    "none"
+  } else {
+    .pdfium_duplex_modes[[idx]]
+  }
+  list(
+    print_scaling      = as.logical(raw$print_scaling),
+    num_copies         = as.integer(raw$num_copies),
+    duplex             = duplex,
+    print_page_ranges  = as.integer(raw$print_page_ranges)
+  )
+}
+
+#' Enumerate the document's named destinations
+#'
+#' PDF authors can attach named "destinations" to specific page
+#' positions (e.g. for cross-document links or programmatic
+#' navigation). Returns one row per named destination with its name
+#' and target page. Wraps `FPDF_CountNamedDests` /
+#' `FPDF_GetNamedDest` / `FPDFDest_GetDestPageIndex`.
+#'
+#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param password Optional password for encrypted PDFs when `doc`
+#'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
+#' @return A tibble with columns `name` (character, UTF-8) and
+#'   `page` (integer, 1-based; `NA` when PDFium can't resolve the
+#'   destination's target page).
+#' @export
+pdf_named_dests <- function(doc, password = NULL) {
+  h <- as_doc_handle(doc, "doc", password = password)
+  on.exit(h$on_exit(), add = TRUE)
+  raw <- cpp_doc_named_dests(h$doc$ptr)
+  page <- raw$page_index_zero
+  has_page <- !is.na(page)
+  page[has_page] <- page[has_page] + 1L
+  tibble::tibble(name = raw$name, page = page)
+}
+
+#' Enumerate document-level JavaScript actions
+#'
+#' Returns one row per JavaScript action attached to the document
+#' (typically OpenAction or Document JS). Useful for static analysis
+#' of PDFs that may contain executable JavaScript. PDFium never
+#' executes the script; this is a passive readout. Wraps
+#' `FPDFDoc_GetJavaScriptAction*` / `FPDFJavaScriptAction_GetName` /
+#' `_GetScript`.
+#'
+#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param password Optional password for encrypted PDFs when `doc`
+#'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
+#' @return A tibble with columns `name` (UTF-8 action name, often
+#'   empty for the top-level OpenAction) and `script` (the
+#'   JavaScript source, UTF-8). Empty tibble when no JS actions
+#'   are present.
+#' @export
+pdf_doc_javascript <- function(doc, password = NULL) {
+  h <- as_doc_handle(doc, "doc", password = password)
+  on.exit(h$on_exit(), add = TRUE)
+  raw <- cpp_doc_javascript(h$doc$ptr)
+  tibble::tibble(name = raw$name, script = raw$script)
+}

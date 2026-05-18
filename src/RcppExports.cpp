@@ -169,6 +169,50 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_doc_is_tagged
+bool cpp_doc_is_tagged(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_doc_is_tagged(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_doc_is_tagged(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_doc_viewer_prefs
+Rcpp::List cpp_doc_viewer_prefs(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_doc_viewer_prefs(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_doc_viewer_prefs(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_doc_named_dests
+Rcpp::List cpp_doc_named_dests(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_doc_named_dests(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_doc_named_dests(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_doc_javascript
+Rcpp::List cpp_doc_javascript(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_doc_javascript(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_doc_javascript(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_doc_meta_text
 SEXP cpp_doc_meta_text(SEXP doc_ptr, std::string tag);
 RcppExport SEXP _pdfium_cpp_doc_meta_text(SEXP doc_ptrSEXP, SEXP tagSEXP) {
@@ -798,6 +842,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_doc_permissions", (DL_FUNC) &_pdfium_cpp_doc_permissions, 1},
     {"_pdfium_cpp_doc_file_id", (DL_FUNC) &_pdfium_cpp_doc_file_id, 2},
     {"_pdfium_cpp_doc_page_mode", (DL_FUNC) &_pdfium_cpp_doc_page_mode, 1},
+    {"_pdfium_cpp_doc_is_tagged", (DL_FUNC) &_pdfium_cpp_doc_is_tagged, 1},
+    {"_pdfium_cpp_doc_viewer_prefs", (DL_FUNC) &_pdfium_cpp_doc_viewer_prefs, 1},
+    {"_pdfium_cpp_doc_named_dests", (DL_FUNC) &_pdfium_cpp_doc_named_dests, 1},
+    {"_pdfium_cpp_doc_javascript", (DL_FUNC) &_pdfium_cpp_doc_javascript, 1},
     {"_pdfium_cpp_doc_meta_text", (DL_FUNC) &_pdfium_cpp_doc_meta_text, 2},
     {"_pdfium_cpp_doc_info", (DL_FUNC) &_pdfium_cpp_doc_info, 1},
     {"_pdfium_cpp_doc_file_version", (DL_FUNC) &_pdfium_cpp_doc_file_version, 1},
