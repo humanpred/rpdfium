@@ -95,6 +95,7 @@ Rcpp::List cpp_form_fields_list(SEXP doc_ptr) {
         Rcpp::_["page_num"]      = Rcpp::IntegerVector(),
         Rcpp::_["field_type"]    = Rcpp::IntegerVector(),
         Rcpp::_["field_flags"]   = Rcpp::IntegerVector(),
+        Rcpp::_["is_checked"]    = Rcpp::IntegerVector(),
         Rcpp::_["name"]          = Rcpp::CharacterVector(),
         Rcpp::_["alternate_name"] = Rcpp::CharacterVector(),
         Rcpp::_["value"]         = Rcpp::CharacterVector(),
@@ -108,6 +109,7 @@ Rcpp::List cpp_form_fields_list(SEXP doc_ptr) {
   std::vector<int> page_nums;
   std::vector<int> field_types;
   std::vector<int> field_flags;
+  std::vector<int> is_checked;  // 1=checked, 0=unchecked, -1=N/A
   std::vector<std::string> names;
   std::vector<std::string> alt_names;
   std::vector<std::string> values;
@@ -134,6 +136,23 @@ Rcpp::List cpp_form_fields_list(SEXP doc_ptr) {
       field_types.push_back(ftype < 0 ? NA_INTEGER : ftype);
       field_flags.push_back(
           FPDFAnnot_GetFormFieldFlags(form, annot));
+      // FPDFAnnot_IsChecked only returns meaningful values for
+      // checkbox / radiobutton fields whose control is registered
+      // in PDFium's ControlMap (PDFium keys the map by the field
+      // dict pointer, which can mismatch the annot dict pointer
+      // for hand-built PDFs). For everything else (and as a fallback
+      // for those mismatches), we surface -1 here and let the R
+      // wrapper infer from the field's value (PDFium reports
+      // "Off" when no control is checked, the on-state name
+      // otherwise — see CPDF_FormField::GetCheckValue).
+      bool checkable = (ftype == FPDF_FORMFIELD_CHECKBOX ||
+                         ftype == FPDF_FORMFIELD_RADIOBUTTON);
+      if (checkable) {
+        int rc = FPDFAnnot_IsChecked(form, annot) ? 1 : 0;
+        is_checked.push_back(rc);
+      } else {
+        is_checked.push_back(-1);
+      }
       names.push_back(
           read_form_string(form, annot, FPDFAnnot_GetFormFieldName));
       alt_names.push_back(read_form_string(
@@ -163,6 +182,7 @@ Rcpp::List cpp_form_fields_list(SEXP doc_ptr) {
       Rcpp::_["page_num"]       = page_nums,
       Rcpp::_["field_type"]     = field_types,
       Rcpp::_["field_flags"]    = field_flags,
+      Rcpp::_["is_checked"]     = is_checked,
       Rcpp::_["name"]           = names,
       Rcpp::_["alternate_name"] = alt_names,
       Rcpp::_["value"]          = values,

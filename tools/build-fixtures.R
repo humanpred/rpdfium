@@ -265,27 +265,29 @@ local({
   }
 
   build_annotated <- function() {
-    # Single-page PDF with four annotations:
+    # Single-page PDF with five annotations:
     #   * text (sticky note)  /Contents="Hello"   /T="Alice"
     #   * highlight           (no /Contents)
     #   * link to a URI
     #   * widget text field   /T="name" /TU="Full name" /V="Bob"
-    # Plus a top-level /AcroForm with the widget as its only field.
-    # Used by test-annotations.R and test-form-fields.R. Cairo's R
-    # driver doesn't emit annotations or widgets, so the file is
-    # constructed from raw PDF syntax.
+    #   * widget checkbox     /T="agree" /V=/Yes (checked)
+    # Plus a top-level /AcroForm carrying both widgets as fields.
+    # Used by test-annotations.R, test-form-fields.R, and the link-
+    # based navigation tests. Cairo's R driver doesn't emit
+    # annotations or widgets, so the file is constructed from raw
+    # PDF syntax.
     out <- file.path(out_dir, "annotated.pdf")
 
     obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
 
     obj1 <- obj(1,
                 paste0("<< /Type /Catalog /Pages 2 0 R ",
-                       "/AcroForm << /Fields [7 0 R] >> >>"))
+                       "/AcroForm << /Fields [7 0 R 8 0 R] >> >>"))
     obj2 <- obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
     obj3 <- obj(3,
                 paste0("<< /Type /Page /Parent 2 0 R ",
                        "/MediaBox [0 0 300 300] /Resources <<>> ",
-                       "/Annots [4 0 R 5 0 R 6 0 R 7 0 R] >>"))
+                       "/Annots [4 0 R 5 0 R 6 0 R 7 0 R 8 0 R] >>"))
     obj4 <- obj(4,
                 paste0("<< /Type /Annot /Subtype /Text ",
                        "/Rect [20 250 40 270] ",
@@ -303,6 +305,32 @@ local({
                 paste0("<< /Type /Annot /Subtype /Widget /FT /Tx ",
                        "/T (name) /TU (Full name) /V (Bob) ",
                        "/Rect [50 100 200 120] /P 3 0 R >>"))
+    # Object 8: AcroForm checkbox widget in the "checked" state.
+    # /FT /Btn with no Pushbutton/Radio bits means checkbox. /V and
+    # /AS both set to /Yes give the widget the "on" appearance
+    # state. The /AP dict supplies appearance streams for both
+    # the /Yes and /Off states; PDFium needs the on-state name in
+    # /AP/N to read FPDFAnnot_IsChecked correctly (PDFium derives
+    # the on-state name from /AP/N's keys, defaulting to "Yes" only
+    # when /AP is absent — and treats /V == on-state-name as
+    # checked, which requires the lookup to actually succeed).
+    obj8 <- obj(8,
+                paste0("<< /Type /Annot /Subtype /Widget /FT /Btn ",
+                       "/T (agree) /TU (I agree) ",
+                       "/V /Yes /AS /Yes ",
+                       "/AP << /N << /Yes 9 0 R /Off 10 0 R >> >> ",
+                       "/Rect [50 60 70 80] /P 3 0 R >>"))
+    # Minimal appearance-stream XObjects for the two states. Empty
+    # content streams suffice; PDFium only reads the dictionary keys
+    # to discover the on-state name.
+    ap_content <- charToRaw("")
+    ap_head <- function(n) paste0(
+      n, " 0 obj\n<< /Type /XObject /Subtype /Form ",
+      "/BBox [0 0 20 20] /Resources <<>> /Length 0 >>\nstream\n")
+    obj9_bytes <- c(charToRaw(ap_head(9)), ap_content,
+                    charToRaw("\nendstream\nendobj\n"))
+    obj10_bytes <- c(charToRaw(ap_head(10)), ap_content,
+                     charToRaw("\nendstream\nendobj\n"))
 
     header <- charToRaw("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
     parts <- list(
@@ -313,21 +341,24 @@ local({
       charToRaw(obj4),
       charToRaw(obj5),
       charToRaw(obj6),
-      charToRaw(obj7)
+      charToRaw(obj7),
+      charToRaw(obj8),
+      obj9_bytes,
+      obj10_bytes
     )
     cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
-    offs <- cum[seq_len(7L) + 1L]
+    offs <- cum[seq_len(10L) + 1L]
     xref_offset <- cum[[length(cum)]]
     fmt10 <- function(n) sprintf("%010d", n)
     xref <- paste(
       c("xref",
-        "0 8",
+        "0 11",
         "0000000000 65535 f ",
         paste0(fmt10(offs), " 00000 n ")),
       collapse = "\n"
     )
     trailer <- paste0(
-      "\ntrailer\n<< /Size 8 /Root 1 0 R >>\nstartxref\n",
+      "\ntrailer\n<< /Size 11 /Root 1 0 R >>\nstartxref\n",
       xref_offset, "\n%%EOF\n"
     )
     full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))

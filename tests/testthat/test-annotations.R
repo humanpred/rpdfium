@@ -1,9 +1,10 @@
 # Tests for pdf_annotations(). annotated.pdf is a hand-built
-# fixture with four annotations on page 1:
+# fixture with five annotations on page 1:
 #   1. text     /Rect [20 250 40 270]  /Contents="Hello" /T="Alice"
 #   2. highlight /Rect [50 200 200 220]
 #   3. link     /Rect [50 150 200 170]  (URI -> example.com)
 #   4. widget   /Rect [50 100 200 120]  (form text field, name="name")
+#   5. widget   /Rect [50  60  70  80]  (form checkbox,  name="agree")
 
 test_that("pdf_annotations returns 0 rows for a page with no annots", {
   doc <- pdf_open(fixture_path("shapes"))
@@ -19,14 +20,14 @@ test_that("pdf_annotations returns 0 rows for a page with no annots", {
                       "contents", "title"))
 })
 
-test_that("pdf_annotations enumerates the four documented annots", {
+test_that("pdf_annotations enumerates the documented annots", {
   doc <- pdf_open(fixture_path("annotated"))
   on.exit(pdf_close(doc), add = TRUE)
   res <- pdf_annotations(doc, page_num = 1L)
-  expect_equal(nrow(res), 4L)
-  expect_identical(res$annotation_index, 1L:4L)
+  expect_equal(nrow(res), 5L)
+  expect_identical(res$annotation_index, 1L:5L)
   expect_identical(res$subtype,
-                   c("text", "highlight", "link", "widget"))
+                   c("text", "highlight", "link", "widget", "widget"))
 })
 
 test_that("pdf_annotations surfaces the text annotation's strings", {

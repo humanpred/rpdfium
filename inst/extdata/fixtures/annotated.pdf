@@ -1,13 +1,13 @@
 %PDF-1.4
 %‚„œ”
 1 0 obj
-<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [7 0 R] >> >>
+<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [7 0 R 8 0 R] >> >>
 endobj
 2 0 obj
 << /Type /Pages /Kids [3 0 R] /Count 1 >>
 endobj
 3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources <<>> /Annots [4 0 R 5 0 R 6 0 R 7 0 R] >>
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources <<>> /Annots [4 0 R 5 0 R 6 0 R 7 0 R 8 0 R] >>
 endobj
 4 0 obj
 << /Type /Annot /Subtype /Text /Rect [20 250 40 270] /Contents (Hello) /T (Alice) >>
@@ -21,18 +21,36 @@ endobj
 7 0 obj
 << /Type /Annot /Subtype /Widget /FT /Tx /T (name) /TU (Full name) /V (Bob) /Rect [50 100 200 120] /P 3 0 R >>
 endobj
+8 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Btn /T (agree) /TU (I agree) /V /Yes /AS /Yes /AP << /N << /Yes 9 0 R /Off 10 0 R >> >> /Rect [50 60 70 80] /P 3 0 R >>
+endobj
+9 0 obj
+<< /Type /XObject /Subtype /Form /BBox [0 0 20 20] /Resources <<>> /Length 0 >>
+stream
+
+endstream
+endobj
+10 0 obj
+<< /Type /XObject /Subtype /Form /BBox [0 0 20 20] /Resources <<>> /Length 0 >>
+stream
+
+endstream
+endobj
 xref
-0 8
+0 11
 0000000000 65535 f 
 0000000015 00000 n 
-0000000096 00000 n 
-0000000153 00000 n 
-0000000274 00000 n 
-0000000374 00000 n 
-0000000495 00000 n 
-0000000611 00000 n 
+0000000102 00000 n 
+0000000159 00000 n 
+0000000286 00000 n 
+0000000386 00000 n 
+0000000507 00000 n 
+0000000623 00000 n 
+0000000749 00000 n 
+0000000922 00000 n 
+0000001035 00000 n 
 trailer
-<< /Size 8 /Root 1 0 R >>
+<< /Size 11 /Root 1 0 R >>
 startxref
-737
+1149
 %%EOF

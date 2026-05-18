@@ -21,10 +21,15 @@ A tibble with columns:
 \code{"listbox"}, \code{"textfield"}, \code{"signature"}, or one of the
 XFA variants (\code{"xfa_*"}); \code{"unknown"} for non-AcroForm
 widgets PDFium can't classify.
-\item \code{field_flags} integer - PDF form-field flags bitmask
+\item \code{field_flags} integer - raw PDF form-field flags bitmask
 (bit 1 = ReadOnly, bit 2 = Required, bit 3 = NoExport,
 bit 13 = Password for textfields, bit 16 = MultiLine for
 textfields, etc.; see PDF spec Table 226).
+\item \code{is_readonly}, \code{is_required}, \code{is_no_export} logical -
+decoded universal flag bits (bits 1, 2, 3) for convenience.
+\item \code{is_checked} logical - current state of the widget;
+\code{TRUE} / \code{FALSE} for \code{checkbox} / \code{radiobutton} fields,
+\code{NA} for every other field type.
 \item \code{name} character - fully qualified field name, the
 period-joined dotted path PDFium reports (e.g.
 \code{"address.city"}).
@@ -54,8 +59,9 @@ to R).
 \details{
 Wraps \code{FPDFDOC_InitFormFillEnvironment},
 \code{FPDFDOC_ExitFormFillEnvironment}, the
-\verb{FPDFAnnot_GetFormField*} family, and \verb{FPDFAnnot_GetOption*}
-for choice-list options.
+\verb{FPDFAnnot_GetFormField*} family, \code{FPDFAnnot_IsChecked} for the
+check/radio state, and \verb{FPDFAnnot_GetOption*} for choice-list
+options.
 }
 \seealso{
 \code{\link[=pdf_annotations]{pdf_annotations()}} for the page-level annotation
