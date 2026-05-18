@@ -46,13 +46,24 @@ Invisibly returns \code{file}.
 }
 \description{
 Convenience wrapper that calls \code{\link[=pdf_render_page]{pdf_render_page()}} and writes the
-result via \code{\link[png:writePNG]{png::writePNG()}}. The \code{png} package is required at
-runtime (it's a Suggests dependency).
+resulting bitmap to disk through R's built-in PNG graphics device.
+Uses \code{\link[grDevices:png]{grDevices::png()}} for the file output and
+\code{\link[grid:grid.raster]{grid::grid.raster()}} for the pixel placement, so it depends only
+on R's recommended packages — no extra runtime dependency.
+}
+\details{
+The PNG device is sized to exactly match the rendered bitmap so
+\code{\link[grid:grid.raster]{grid::grid.raster()}} (\code{interpolate = FALSE}) writes one PDFium
+pixel per PNG pixel. The output is RGBA when any pixel has alpha
+below 1 and RGB otherwise (R's PNG device flattens the alpha
+channel away when it's uniformly opaque, which is a lossless
+equivalence — the on-disk bytes will not match
+\code{png::writePNG()} byte-for-byte but the rendered image will).
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
                        package = "pdfium")
-if (nzchar(fixture) && requireNamespace("png", quietly = TRUE)) {
+if (nzchar(fixture)) {
   out <- tempfile(fileext = ".png")
   pdf_render_to_png(pdf_open(fixture), file = out, dpi = 96)
   file.exists(out)

@@ -229,9 +229,28 @@ test_that("pdf_render_to_png() writes a valid PNG", {
   expect_true(file.exists(out))
   expect_gt(file.size(out), 0)
 
-  # The PNG should round-trip back to the same RGBA dimensions.
+  # The PNG round-trips back to the rendered page's pixel
+  # dimensions. shapes.pdf is fully opaque, so R's PNG device
+  # flattens the alpha channel away (lossless equivalent). On
+  # pages with partial transparency the third axis would be 4.
   arr <- png::readPNG(out)
-  expect_equal(dim(arr), c(216L, 288L, 4L))
+  expect_equal(dim(arr)[1L:2L], c(216L, 288L))
+  expect_true(dim(arr)[[3L]] %in% c(3L, 4L))
+})
+
+test_that("pdf_render_to_png() preserves the rendered RGB pixels", {
+  skip_if_not_installed("png")
+  doc <- pdf_open(fixture_path("shapes"))
+  on.exit(pdf_close(doc), add = TRUE)
+  bmp <- pdf_render_page(doc, page_num = 1L, dpi = 72)
+  ref <- as.array(bmp)
+  out <- withr::local_tempfile(fileext = ".png")
+  pdf_render_to_png(doc, file = out, dpi = 72)
+  rt <- png::readPNG(out)
+  expect_equal(dim(rt)[1L:2L], dim(ref)[1L:2L])
+  # The graphics device may emit RGB when alpha is uniformly 1;
+  # compare the three colour channels only.
+  expect_equal(rt[, , 1L:3L], ref[, , 1L:3L], tolerance = 1e-6)
 })
 
 test_that("pdf_render_to_png() validates file argument", {

@@ -20,6 +20,8 @@ BugReports: https://github.com/humanpred/rpdfium/issues
 Depends:
     R (>= 4.2)
 Imports:
+    grDevices,
+    grid,
     Rcpp,
     tibble
 LinkingTo:

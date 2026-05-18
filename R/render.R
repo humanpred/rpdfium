@@ -335,8 +335,18 @@ as.matrix.pdfium_bitmap <- function(x, ...) {
 #' Render a PDF page directly to a PNG file
 #'
 #' Convenience wrapper that calls [pdf_render_page()] and writes the
-#' result via [png::writePNG()]. The `png` package is required at
-#' runtime (it's a Suggests dependency).
+#' resulting bitmap to disk through R's built-in PNG graphics device.
+#' Uses [grDevices::png()] for the file output and
+#' [grid::grid.raster()] for the pixel placement, so it depends only
+#' on R's recommended packages — no extra runtime dependency.
+#'
+#' The PNG device is sized to exactly match the rendered bitmap so
+#' [grid::grid.raster()] (`interpolate = FALSE`) writes one PDFium
+#' pixel per PNG pixel. The output is RGBA when any pixel has alpha
+#' below 1 and RGB otherwise (R's PNG device flattens the alpha
+#' channel away when it's uniformly opaque, which is a lossless
+#' equivalence — the on-disk bytes will not match
+#' `png::writePNG()` byte-for-byte but the rendered image will).
 #'
 #' @inheritParams pdf_render_page
 #' @param file Output file path.
@@ -344,7 +354,7 @@ as.matrix.pdfium_bitmap <- function(x, ...) {
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
 #'                        package = "pdfium")
-#' if (nzchar(fixture) && requireNamespace("png", quietly = TRUE)) {
+#' if (nzchar(fixture)) {
 #'   out <- tempfile(fileext = ".png")
 #'   pdf_render_to_png(pdf_open(fixture), file = out, dpi = 96)
 #'   file.exists(out)
@@ -353,28 +363,29 @@ as.matrix.pdfium_bitmap <- function(x, ...) {
 pdf_render_to_png <- function(page, file, page_num = 1L, dpi = 72,
                               background = "white",
                               annotations = FALSE, rotation = 0L) {
-  # Validate file first so callers see "file must be ..." even when
-  # `png` isn't installed (e.g. R CMD check under
-  # _R_CHECK_DEPENDS_ONLY_=TRUE).
   if (!is.character(file) || length(file) != 1L || is.na(file) ||
         !nzchar(file)) {
     stop("`file` must be a single non-empty character string.",
          call. = FALSE)
   }
-  # nocov start - "png not installed" guard; coverage runs always
-  # have png available because it's in Suggests and gets installed
-  # for tests, so this branch is unreachable here. The behavior is
-  # exercised manually and via R CMD check on stripped-down setups.
-  if (!requireNamespace("png", quietly = TRUE)) {
-    stop("`pdf_render_to_png()` requires the `png` package: ",
-         "install.packages(\"png\")",
-         call. = FALSE)
-  }
-  # nocov end
   bmp <- pdf_render_page(page, page_num = page_num, dpi = dpi,
                          background = background,
                          annotations = annotations,
                          rotation = rotation)
-  png::writePNG(as.array(bmp), target = file)
+  arr <- as.array(bmp)
+  pixel_w <- dim(arr)[[2L]]
+  pixel_h <- dim(arr)[[1L]]
+  grDevices::png(filename  = file,
+                 width     = pixel_w,
+                 height    = pixel_h,
+                 units     = "px",
+                 res       = dpi,
+                 bg        = "transparent",
+                 antialias = "none")
+  on.exit(grDevices::dev.off(), add = TRUE)
+  grid::grid.raster(arr,
+                    width      = grid::unit(1, "npc"),
+                    height     = grid::unit(1, "npc"),
+                    interpolate = FALSE)
   invisible(file)
 }
