@@ -278,3 +278,59 @@ test_that("plot(bmp) draws into a PDF device without erroring", {
   grDevices::dev.off()
   expect_true(file.exists(out))
 })
+
+test_that("plot(bmp) renders pixel-for-pixel correctly via PNG roundtrip", {
+  # Regression test for the layout bug where graphics::rasterImage()
+  # (and grid::grid.raster() on a bare nativeRaster) renders our
+  # column-major integer matrix as if it were row-major, producing
+  # diagonal-stripe artifacts on detailed content. The fix routes
+  # plot.pdfium_bitmap through grid::grid.raster(as.array(x)) — the
+  # only API/input combination that reads back byte-identical on
+  # both Linux and Windows.
+  #
+  # We build a synthetic pdfium_bitmap whose every pixel encodes its
+  # own (row, col) so any layout error surfaces immediately.
+  skip_if_not_installed("png")
+
+  H <- 64L; W <- 96L
+  ii <- matrix(rep(seq_len(H), times = W), nrow = H)
+  jj <- matrix(rep(seq_len(W), each  = H), nrow = H)
+  abgr <- function(r, g, b, a = 255L) {
+    bitwOr(bitwOr(bitwOr(
+      bitwShiftL(as.integer(a), 24L),
+      bitwShiftL(as.integer(b), 16L)),
+      bitwShiftL(as.integer(g),  8L)),
+      as.integer(r))
+  }
+  m <- abgr(as.integer(ii %% 256L), as.integer(jj %% 256L), 0L)
+  dim(m) <- c(H, W)
+  class(m) <- c("pdfium_bitmap", "nativeRaster")
+  attr(m, "channels") <- 4L
+  attr(m, "dpi") <- 72
+  attr(m, "source_page") <- 1L
+  attr(m, "source_path") <- NA_character_
+  attr(m, "rotation_applied") <- 0L
+
+  out <- withr::local_tempfile(fileext = ".png")
+  grDevices::png(out, width = W, height = H)
+  plot(m, interpolate = FALSE)
+  grDevices::dev.off()
+
+  pix <- png::readPNG(out)
+  expect_equal(dim(pix)[1L:2L], c(H, W))
+
+  # Spot-check three positions: top-left interior, mid-image, far
+  # corner. Each rendered pixel must encode its own (row, col).
+  check <- function(r, c) {
+    v <- round(pix[r, c, ] * 255)
+    expect_equal(v[1L], r %% 256L,
+                 info = sprintf("R-byte at [%d, %d]", r, c))
+    expect_equal(v[2L], c %% 256L,
+                 info = sprintf("G-byte at [%d, %d]", r, c))
+    expect_equal(v[3L], 0L,
+                 info = sprintf("B-byte at [%d, %d]", r, c))
+  }
+  check( 3L,  5L)
+  check(32L, 48L)
+  check(50L, 80L)
+})

@@ -10,11 +10,11 @@
 \item{x}{A \code{pdfium_bitmap} from \code{\link[=pdf_render_page]{pdf_render_page()}} or
 \code{\link[=pdf_image_bitmap]{pdf_image_bitmap()}} / \code{\link[=pdf_image_rendered]{pdf_image_rendered()}}.}
 
-\item{interpolate}{Passed through to \code{\link[graphics:rasterImage]{graphics::rasterImage()}}.
+\item{interpolate}{Passed through to \code{\link[grid:grid.raster]{grid::grid.raster()}}.
 Default \code{TRUE}; set \code{FALSE} for pixel-exact (nearest-neighbour)
 display of small bitmaps.}
 
-\item{...}{Further arguments passed to \code{\link[graphics:rasterImage]{graphics::rasterImage()}}.}
+\item{...}{Further arguments passed to \code{\link[grid:grid.raster]{grid::grid.raster()}}.}
 }
 \value{
 Invisibly returns \code{x}. Called for the plotting side
@@ -22,17 +22,22 @@ effect.
 }
 \description{
 Draws the bitmap into the active graphics device at its source
-pixel resolution, with \code{asp = 1} and zero margins so the image
-fills the device without distortion. Internally a fresh plot
-window is opened (\code{plot.new()} + \code{plot.window()}) and the bitmap
-is drawn with \code{\link[graphics:rasterImage]{graphics::rasterImage()}}, which natively accepts
-R's \code{nativeRaster} integer encoding.
+pixel resolution. Internally the bitmap is converted to a 3-D
+numeric array (the format \code{png::writePNG()} and the R graphics
+engine both consume cleanly) and drawn with \code{\link[grid:grid.raster]{grid::grid.raster()}}
+on a fresh \code{grid} page.
 }
 \details{
-Base R does not ship a \code{plot()} method for the \code{nativeRaster}
-class, so calling \code{plot()} on a bare \code{nativeRaster} integer
-matrix fails with "need finite 'xlim' values". This S3 method
-fixes that for \code{pdfium_bitmap} objects specifically.
+Why not \code{graphics::rasterImage()} on the bare \code{nativeRaster}
+integer matrix? On every platform we've tested
+(R 4.5.2 / Windows and R 4.6.0 / Linux), both
+\code{graphics::rasterImage()} and \code{grid::grid.raster()} reorder pixels
+when given a \code{nativeRaster} integer matrix or a \code{"raster"}
+character hex matrix of dimension >= ~200x200 — the symptom is
+diagonal fuzzy stripes on detailed content. Only \code{grid::grid.raster()}
+fed a 3-D numeric array \code{c(H, W, 4)} reads back pixel-for-pixel
+identical to the source. See \verb{dev/decisions/} for the diagnostic
+walkthrough that pinned this down.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
