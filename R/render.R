@@ -18,12 +18,13 @@
 #'
 #' Rasterises one page of a PDF document via PDFium and returns a
 #' `pdfium_bitmap` object (an integer matrix that inherits from base
-#' R's `nativeRaster` class). The object can be passed directly to
-#' [graphics::rasterImage()], [grid::rasterGrob()], or
-#' [graphics::plot()] without conversion. Conversion helpers
-#' ([as.raster.pdfium_bitmap()], [as.array.pdfium_bitmap()],
-#' [as.matrix.pdfium_bitmap()]) cover the other common bitmap
-#' shapes downstream packages expect.
+#' R's `nativeRaster` class). Use [graphics::plot()] for an
+#' immediate-display path (the S3 method here routes through
+#' [grid::grid.raster()] on a 3-D RGBA array, the one R-engine
+#' combination that renders pixel-for-pixel correctly across
+#' platforms). Conversion helpers ([as.raster.pdfium_bitmap()],
+#' [as.array.pdfium_bitmap()], [as.matrix.pdfium_bitmap()]) cover
+#' the other common bitmap shapes downstream packages expect.
 #'
 #' @param page A `pdfium_page` from [pdf_load_page()], or a
 #'   `pdfium_doc` (the page given by `page_num` will be loaded and
@@ -206,23 +207,41 @@ print.pdfium_bitmap <- function(x, ...) {
 #' Plot a pdfium_bitmap
 #'
 #' Draws the bitmap into the active graphics device at its source
-#' pixel resolution, with `asp = 1` and zero margins so the image
-#' fills the device without distortion. Internally a fresh plot
-#' window is opened (`plot.new()` + `plot.window()`) and the bitmap
-#' is drawn with [graphics::rasterImage()], which natively accepts
-#' R's `nativeRaster` integer encoding.
+#' pixel resolution. Internally the bitmap is converted to a 3-D
+#' numeric array (the format `png::writePNG()` and the R graphics
+#' engine both consume cleanly) and drawn with [grid::grid.raster()]
+#' on a fresh `grid` page.
 #'
-#' Base R does not ship a `plot()` method for the `nativeRaster`
-#' class, so calling `plot()` on a bare `nativeRaster` integer
-#' matrix fails with "need finite 'xlim' values". This S3 method
-#' fixes that for `pdfium_bitmap` objects specifically.
+#' We go through `as.array(x)` rather than handing the integer matrix
+#' directly to `graphics::rasterImage()` for two reasons that
+#' compound:
+#'
+#' 1. Per the documented raster contract (see
+#'    `?grDevices::as.raster`, "Raster images are internally
+#'    represented row-first"), `"raster"` and `nativeRaster` objects
+#'    must have row-major memory layout. R's `as.raster.matrix()`
+#'    transposes its input precisely to satisfy that. Our integer
+#'    matrix comes out of C++ as a standard R column-major matrix,
+#'    so feeding it directly is non-conformant and shows diagonal
+#'    stripe artifacts on detailed content.
+#' 2. `rasterImage` with `plot.window` uses the user-coordinate
+#'    system, which defaults (`xaxs = "r", yaxs = "r"`) to padding
+#'    the interval by 4% on each side — silently compressing the
+#'    raster into ~92% of the device and forcing sub-pixel
+#'    resampling. `grid::grid.raster()` uses npc coordinates and
+#'    isn't subject to this.
+#'
+#' Going through `as.array(x)` to a 3-D `c(H, W, 4)` numeric array
+#' and rendering with `grid::grid.raster()` sidesteps both: the
+#' array path uses positional channel storage (no row-vs-column
+#' convention), and grid coordinates are 0..1 npc without padding.
 #'
 #' @param x A `pdfium_bitmap` from [pdf_render_page()] or
 #'   [pdf_image_bitmap()] / [pdf_image_rendered()].
-#' @param interpolate Passed through to [graphics::rasterImage()].
+#' @param interpolate Passed through to [grid::grid.raster()].
 #'   Default `TRUE`; set `FALSE` for pixel-exact (nearest-neighbour)
 #'   display of small bitmaps.
-#' @param ... Further arguments passed to [graphics::rasterImage()].
+#' @param ... Further arguments passed to [grid::grid.raster()].
 #' @return Invisibly returns `x`. Called for the plotting side
 #'   effect.
 #' @exportS3Method graphics::plot pdfium_bitmap
@@ -234,15 +253,8 @@ print.pdfium_bitmap <- function(x, ...) {
 #'   plot(bmp)
 #' }
 plot.pdfium_bitmap <- function(x, interpolate = TRUE, ...) {
-  d <- dim(x)              # (height, width)
-  op <- graphics::par(mar = c(0, 0, 0, 0))
-  on.exit(graphics::par(op), add = TRUE)
-  graphics::plot.new()
-  graphics::plot.window(xlim = c(0, d[2L]),
-                        ylim = c(0, d[1L]),
-                        asp  = 1)
-  graphics::rasterImage(x, 0, 0, d[2L], d[1L],
-                        interpolate = interpolate, ...)
+  grid::grid.newpage()
+  grid::grid.raster(as.array(x), interpolate = interpolate, ...)
   invisible(x)
 }
 

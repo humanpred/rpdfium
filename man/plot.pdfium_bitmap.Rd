@@ -10,11 +10,11 @@
 \item{x}{A \code{pdfium_bitmap} from \code{\link[=pdf_render_page]{pdf_render_page()}} or
 \code{\link[=pdf_image_bitmap]{pdf_image_bitmap()}} / \code{\link[=pdf_image_rendered]{pdf_image_rendered()}}.}
 
-\item{interpolate}{Passed through to \code{\link[graphics:rasterImage]{graphics::rasterImage()}}.
+\item{interpolate}{Passed through to \code{\link[grid:grid.raster]{grid::grid.raster()}}.
 Default \code{TRUE}; set \code{FALSE} for pixel-exact (nearest-neighbour)
 display of small bitmaps.}
 
-\item{...}{Further arguments passed to \code{\link[graphics:rasterImage]{graphics::rasterImage()}}.}
+\item{...}{Further arguments passed to \code{\link[grid:grid.raster]{grid::grid.raster()}}.}
 }
 \value{
 Invisibly returns \code{x}. Called for the plotting side
@@ -22,17 +22,36 @@ effect.
 }
 \description{
 Draws the bitmap into the active graphics device at its source
-pixel resolution, with \code{asp = 1} and zero margins so the image
-fills the device without distortion. Internally a fresh plot
-window is opened (\code{plot.new()} + \code{plot.window()}) and the bitmap
-is drawn with \code{\link[graphics:rasterImage]{graphics::rasterImage()}}, which natively accepts
-R's \code{nativeRaster} integer encoding.
+pixel resolution. Internally the bitmap is converted to a 3-D
+numeric array (the format \code{png::writePNG()} and the R graphics
+engine both consume cleanly) and drawn with \code{\link[grid:grid.raster]{grid::grid.raster()}}
+on a fresh \code{grid} page.
 }
 \details{
-Base R does not ship a \code{plot()} method for the \code{nativeRaster}
-class, so calling \code{plot()} on a bare \code{nativeRaster} integer
-matrix fails with "need finite 'xlim' values". This S3 method
-fixes that for \code{pdfium_bitmap} objects specifically.
+We go through \code{as.array(x)} rather than handing the integer matrix
+directly to \code{graphics::rasterImage()} for two reasons that
+compound:
+\enumerate{
+\item Per the documented raster contract (see
+\code{?grDevices::as.raster}, "Raster images are internally
+represented row-first"), \code{"raster"} and \code{nativeRaster} objects
+must have row-major memory layout. R's \code{as.raster.matrix()}
+transposes its input precisely to satisfy that. Our integer
+matrix comes out of C++ as a standard R column-major matrix,
+so feeding it directly is non-conformant and shows diagonal
+stripe artifacts on detailed content.
+\item \code{rasterImage} with \code{plot.window} uses the user-coordinate
+system, which defaults (\verb{xaxs = "r", yaxs = "r"}) to padding
+the interval by 4\% on each side — silently compressing the
+raster into ~92\% of the device and forcing sub-pixel
+resampling. \code{grid::grid.raster()} uses npc coordinates and
+isn't subject to this.
+}
+
+Going through \code{as.array(x)} to a 3-D \code{c(H, W, 4)} numeric array
+and rendering with \code{grid::grid.raster()} sidesteps both: the
+array path uses positional channel storage (no row-vs-column
+convention), and grid coordinates are 0..1 npc without padding.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
