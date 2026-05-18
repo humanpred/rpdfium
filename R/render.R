@@ -353,6 +353,14 @@ as.matrix.pdfium_bitmap <- function(x, ...) {
 pdf_render_to_png <- function(page, file, page_num = 1L, dpi = 72,
                               background = "white",
                               annotations = FALSE, rotation = 0L) {
+  # Validate file first so callers see "file must be ..." even when
+  # `png` isn't installed (e.g. R CMD check under
+  # _R_CHECK_DEPENDS_ONLY_=TRUE).
+  if (!is.character(file) || length(file) != 1L || is.na(file) ||
+        !nzchar(file)) {
+    stop("`file` must be a single non-empty character string.",
+         call. = FALSE)
+  }
   # nocov start - "png not installed" guard; coverage runs always
   # have png available because it's in Suggests and gets installed
   # for tests, so this branch is unreachable here. The behavior is
@@ -363,11 +371,6 @@ pdf_render_to_png <- function(page, file, page_num = 1L, dpi = 72,
          call. = FALSE)
   }
   # nocov end
-  if (!is.character(file) || length(file) != 1L || is.na(file) ||
-        !nzchar(file)) {
-    stop("`file` must be a single non-empty character string.",
-         call. = FALSE)
-  }
   bmp <- pdf_render_page(page, page_num = page_num, dpi = dpi,
                          background = background,
                          annotations = annotations,
