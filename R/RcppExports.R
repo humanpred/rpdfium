@@ -241,6 +241,14 @@ cpp_page_text_chars <- function(page_ptr) {
     .Call(`_pdfium_cpp_page_text_chars`, page_ptr)
 }
 
+cpp_link_at_point <- function(doc_ptr, page_ptr, x, y) {
+    .Call(`_pdfium_cpp_link_at_point`, doc_ptr, page_ptr, x, y)
+}
+
+cpp_page_aactions <- function(doc_ptr, page_ptr) {
+    .Call(`_pdfium_cpp_page_aactions`, doc_ptr, page_ptr)
+}
+
 cpp_path_segment_count <- function(obj_ptr) {
     .Call(`_pdfium_cpp_path_segment_count`, obj_ptr)
 }

@@ -60,6 +60,8 @@ reference:
       - pdf_page_rotation
       - pdf_page_box
       - pdf_page_links
+      - pdf_link_at_point
+      - pdf_page_actions
   - title: Annotations and form fields
     contents:
       - pdf_annotations

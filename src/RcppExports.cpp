@@ -682,6 +682,32 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_link_at_point
+Rcpp::List cpp_link_at_point(SEXP doc_ptr, SEXP page_ptr, double x, double y);
+RcppExport SEXP _pdfium_cpp_link_at_point(SEXP doc_ptrSEXP, SEXP page_ptrSEXP, SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_link_at_point(doc_ptr, page_ptr, x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_page_aactions
+Rcpp::List cpp_page_aactions(SEXP doc_ptr, SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_page_aactions(SEXP doc_ptrSEXP, SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_page_aactions(doc_ptr, page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_path_segment_count
 int cpp_path_segment_count(SEXP obj_ptr);
 RcppExport SEXP _pdfium_cpp_path_segment_count(SEXP obj_ptrSEXP) {
@@ -910,6 +936,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_page_box", (DL_FUNC) &_pdfium_cpp_page_box, 2},
     {"_pdfium_cpp_page_links", (DL_FUNC) &_pdfium_cpp_page_links, 2},
     {"_pdfium_cpp_page_text_chars", (DL_FUNC) &_pdfium_cpp_page_text_chars, 1},
+    {"_pdfium_cpp_link_at_point", (DL_FUNC) &_pdfium_cpp_link_at_point, 4},
+    {"_pdfium_cpp_page_aactions", (DL_FUNC) &_pdfium_cpp_page_aactions, 2},
     {"_pdfium_cpp_path_segment_count", (DL_FUNC) &_pdfium_cpp_path_segment_count, 1},
     {"_pdfium_cpp_path_segments", (DL_FUNC) &_pdfium_cpp_path_segments, 1},
     {"_pdfium_cpp_render_page", (DL_FUNC) &_pdfium_cpp_render_page, 7},
