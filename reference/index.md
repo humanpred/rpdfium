@@ -103,6 +103,8 @@
   : Font metadata of a text page-object
 - [`pdf_text_chars()`](https://humanpred.github.io/rpdfium/reference/pdf_text_chars.md)
   : Per-character text extraction
+- [`pdf_text_search()`](https://humanpred.github.io/rpdfium/reference/pdf_text_search.md)
+  : Find every occurrence of a query string in a PDF
 
 ## Rendering
 
