@@ -87,6 +87,81 @@ void read_annot_color(FPDF_ANNOTATION annot,
   }
 }
 
+// Helper: read all sets of attachment points (quadpoints) from an
+// annotation. Returns an N x 8 numeric matrix with columns
+// x1, y1, x2, y2, x3, y3, x4, y4 (one row per quad set), or
+// R_NilValue when the annotation has no quadpoints.
+SEXP read_annot_quad_points(FPDF_ANNOTATION annot) {
+  if (!FPDFAnnot_HasAttachmentPoints(annot)) return R_NilValue;
+  size_t n = FPDFAnnot_CountAttachmentPoints(annot);
+  if (n == 0) return R_NilValue;
+  Rcpp::NumericMatrix m(static_cast<int>(n), 8);
+  for (size_t i = 0; i < n; ++i) {
+    FS_QUADPOINTSF q;
+    if (!FPDFAnnot_GetAttachmentPoints(annot, i, &q)) {
+      for (int k = 0; k < 8; ++k) m(static_cast<int>(i), k) = NA_REAL;
+      continue;
+    }
+    m(static_cast<int>(i), 0) = q.x1;
+    m(static_cast<int>(i), 1) = q.y1;
+    m(static_cast<int>(i), 2) = q.x2;
+    m(static_cast<int>(i), 3) = q.y2;
+    m(static_cast<int>(i), 4) = q.x3;
+    m(static_cast<int>(i), 5) = q.y3;
+    m(static_cast<int>(i), 6) = q.x4;
+    m(static_cast<int>(i), 7) = q.y4;
+  }
+  Rcpp::CharacterVector cn = {"x1", "y1", "x2", "y2",
+                                "x3", "y3", "x4", "y4"};
+  Rcpp::colnames(m) = cn;
+  return m;
+}
+
+// Helper: read the /Vertices array of a line / polygon / polyline
+// annotation. Returns an N x 2 numeric matrix (columns x, y), or
+// R_NilValue when the annotation type doesn't carry vertices.
+SEXP read_annot_vertices(FPDF_ANNOTATION annot) {
+  unsigned long n = FPDFAnnot_GetVertices(annot, nullptr, 0);
+  if (n == 0) return R_NilValue;
+  std::vector<FS_POINTF> buf(n);
+  if (FPDFAnnot_GetVertices(annot, buf.data(), n) != n) return R_NilValue;
+  Rcpp::NumericMatrix m(static_cast<int>(n), 2);
+  for (unsigned long i = 0; i < n; ++i) {
+    m(static_cast<int>(i), 0) = buf[i].x;
+    m(static_cast<int>(i), 1) = buf[i].y;
+  }
+  Rcpp::CharacterVector cn = {"x", "y"};
+  Rcpp::colnames(m) = cn;
+  return m;
+}
+
+// Helper: read the ink-list paths of an ink annotation. Returns a
+// list of N x 2 numeric matrices, one per stroke, or R_NilValue
+// when the annotation is not of type ink.
+SEXP read_annot_ink_paths(FPDF_ANNOTATION annot) {
+  unsigned long n_paths = FPDFAnnot_GetInkListCount(annot);
+  if (n_paths == 0) return R_NilValue;
+  Rcpp::List out(n_paths);
+  for (unsigned long p = 0; p < n_paths; ++p) {
+    unsigned long n = FPDFAnnot_GetInkListPath(annot, p, nullptr, 0);
+    if (n == 0) {
+      out[p] = Rcpp::NumericMatrix(0, 2);
+      continue;
+    }
+    std::vector<FS_POINTF> buf(n);
+    FPDFAnnot_GetInkListPath(annot, p, buf.data(), n);
+    Rcpp::NumericMatrix m(static_cast<int>(n), 2);
+    for (unsigned long i = 0; i < n; ++i) {
+      m(static_cast<int>(i), 0) = buf[i].x;
+      m(static_cast<int>(i), 1) = buf[i].y;
+    }
+    Rcpp::CharacterVector cn = {"x", "y"};
+    Rcpp::colnames(m) = cn;
+    out[p] = m;
+  }
+  return out;
+}
+
 // [[Rcpp::export(name = "cpp_annots_list")]]
 Rcpp::List cpp_annots_list(SEXP page_ptr) {
   FPDF_PAGE page = page_from_ptr(page_ptr);
@@ -106,6 +181,9 @@ Rcpp::List cpp_annots_list(SEXP page_ptr) {
   Rcpp::NumericVector   interior_r(n), interior_g(n), interior_b(n),
                          interior_a(n);
   Rcpp::NumericVector   border_width(n);
+  Rcpp::List            quad_points(n);
+  Rcpp::List            vertices(n);
+  Rcpp::List            ink_paths(n);
 
   for (int i = 0; i < n; ++i) {
     FPDF_ANNOTATION annot = FPDFPage_GetAnnot(page, i);
@@ -123,6 +201,9 @@ Rcpp::List cpp_annots_list(SEXP page_ptr) {
       interior_r[i] = interior_g[i] = interior_b[i] = interior_a[i] =
           NA_REAL;
       border_width[i] = NA_REAL;
+      quad_points[i] = R_NilValue;
+      vertices[i] = R_NilValue;
+      ink_paths[i] = R_NilValue;
       continue;
     }
     subtype_code[i] = static_cast<int>(FPDFAnnot_GetSubtype(annot));
@@ -156,6 +237,9 @@ Rcpp::List cpp_annots_list(SEXP page_ptr) {
     } else {
       border_width[i] = NA_REAL;
     }
+    quad_points[i] = read_annot_quad_points(annot);
+    vertices[i]    = read_annot_vertices(annot);
+    ink_paths[i]   = read_annot_ink_paths(annot);
     FPDFPage_CloseAnnot(annot);
   }
   return Rcpp::List::create(
@@ -176,5 +260,8 @@ Rcpp::List cpp_annots_list(SEXP page_ptr) {
       Rcpp::_["interior_green"] = interior_g,
       Rcpp::_["interior_blue"]  = interior_b,
       Rcpp::_["interior_alpha"] = interior_a,
-      Rcpp::_["border_width"]  = border_width);
+      Rcpp::_["border_width"]  = border_width,
+      Rcpp::_["quad_points"]   = quad_points,
+      Rcpp::_["vertices"]      = vertices,
+      Rcpp::_["ink_paths"]     = ink_paths);
 }

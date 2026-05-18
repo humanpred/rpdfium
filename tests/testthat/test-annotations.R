@@ -14,8 +14,8 @@ test_that("pdf_annotations returns 0 rows for a page with no annots", {
   res <- pdf_annotations(page)
   expect_s3_class(res, "tbl_df")
   expect_equal(nrow(res), 0L)
-  expect_named(res, c("annotation_index", "subtype", "flags",
-                      "is_invisible", "is_hidden", "is_print",
+  expect_named(res, c("annotation_index", "subtype_code", "subtype",
+                      "flags", "is_invisible", "is_hidden", "is_print",
                       "is_no_view", "is_read_only", "is_locked",
                       "bounds_left", "bounds_bottom",
                       "bounds_right", "bounds_top",
@@ -23,7 +23,59 @@ test_that("pdf_annotations returns 0 rows for a page with no annots", {
                       "color_red", "color_green", "color_blue",
                       "color_alpha", "interior_red", "interior_green",
                       "interior_blue", "interior_alpha",
-                      "border_width"))
+                      "border_width",
+                      "quad_points", "vertices", "ink_paths"))
+})
+
+test_that("pdf_annotations populates quad_points / vertices / ink_paths", {
+  res <- pdf_annotations(pdf_open(fixture_path("annot_geom")),
+                         page_num = 1L)
+  expect_equal(nrow(res), 3L)
+  # The polygon row has /Vertices but no quads or ink.
+  poly <- res[res$subtype == "polygon", ]
+  expect_equal(nrow(poly), 1L)
+  expect_true(is.null(poly$quad_points[[1L]]))
+  expect_true(is.null(poly$ink_paths[[1L]]))
+  v <- poly$vertices[[1L]]
+  expect_true(is.matrix(v))
+  expect_equal(dim(v), c(3L, 2L))
+  expect_equal(v[1L, ], c(x = 10, y = 10))
+  expect_equal(v[2L, ], c(x = 60, y = 10))
+  expect_equal(v[3L, ], c(x = 35, y = 60))
+
+  # The ink row has /InkList with two strokes.
+  ink <- res[res$subtype == "ink", ]
+  expect_true(is.null(ink$quad_points[[1L]]))
+  expect_true(is.null(ink$vertices[[1L]]))
+  paths <- ink$ink_paths[[1L]]
+  expect_type(paths, "list")
+  expect_length(paths, 2L)
+  expect_equal(dim(paths[[1L]]), c(3L, 2L))
+  expect_equal(dim(paths[[2L]]), c(2L, 2L))
+  expect_equal(paths[[2L]][1L, ], c(x = 120, y = 180))
+
+  # The two-line highlight has /QuadPoints with two quad sets.
+  hl <- res[res$subtype == "highlight", ]
+  expect_true(is.null(hl$vertices[[1L]]))
+  expect_true(is.null(hl$ink_paths[[1L]]))
+  q <- hl$quad_points[[1L]]
+  expect_true(is.matrix(q))
+  expect_equal(dim(q), c(2L, 8L))
+  expect_equal(colnames(q),
+               c("x1", "y1", "x2", "y2", "x3", "y3", "x4", "y4"))
+  expect_equal(q[1L, ],
+               c(x1 = 50, y1 = 290, x2 = 250, y2 = 290,
+                 x3 = 50, y3 = 270, x4 = 250, y4 = 270))
+})
+
+test_that("pdfium_annot_subtype_code round-trips with the name helper", {
+  codes <- 0L:9L
+  names <- pdfium:::annotation_subtype_name(codes)
+  back  <- pdfium:::pdfium_annot_subtype_code(names)
+  expect_identical(back, codes)
+  # Unknown / NA -> 0L (UNKNOWN).
+  expect_identical(pdfium:::pdfium_annot_subtype_code(c("bogus", NA)),
+                   c(0L, 0L))
 })
 
 test_that("pdf_annotations reads color and subject when set", {

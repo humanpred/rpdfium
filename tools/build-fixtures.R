@@ -579,6 +579,75 @@ local({
     message("[fixtures] wrote ", out)
   }
 
+  build_annot_geom <- function() {
+    # Single-page PDF with three annotations that exercise the
+    # vector-geometry list-columns of pdf_annotations():
+    #   1. Polygon  /Vertices [x1 y1 x2 y2 x3 y3]
+    #   2. Ink      /InkList [ [stroke 1 pts] [stroke 2 pts] ]
+    #   3. Highlight  /QuadPoints [two-line quad set]
+    # Used by the quad_points / vertices / ink_paths assertions in
+    # test-annotations.R. Cairo's R driver doesn't emit any of
+    # these so the file is hand-built.
+    out <- file.path(out_dir, "annot_geom.pdf")
+    obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
+
+    obj1 <- obj(1, "<< /Type /Catalog /Pages 2 0 R >>")
+    obj2 <- obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+    obj3 <- obj(3,
+                paste0("<< /Type /Page /Parent 2 0 R ",
+                       "/MediaBox [0 0 300 300] /Resources <<>> ",
+                       "/Annots [4 0 R 5 0 R 6 0 R] >>"))
+    # Polygon: triangle with three vertices.
+    obj4 <- obj(4,
+                paste0("<< /Type /Annot /Subtype /Polygon ",
+                       "/Rect [10 10 60 60] ",
+                       "/Vertices [10 10 60 10 35 60] ",
+                       "/C [0.1 0.5 0.9] >>"))
+    # Ink annotation with two strokes (3 points + 2 points).
+    obj5 <- obj(5,
+                paste0("<< /Type /Annot /Subtype /Ink ",
+                       "/Rect [100 100 200 200] ",
+                       "/InkList [ ",
+                       "  [100 100 150 150 200 100] ",
+                       "  [120 180 180 180] ",
+                       "] >>"))
+    # Two-line highlight (two quad sets in one annotation).
+    obj6 <- obj(6,
+                paste0("<< /Type /Annot /Subtype /Highlight ",
+                       "/Rect [50 250 250 290] ",
+                       "/QuadPoints [",
+                       " 50 290 250 290  50 270 250 270 ",
+                       " 50 270 250 270  50 250 250 250 ",
+                       "] >>"))
+
+    header <- charToRaw("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    parts <- list(header,
+                  charToRaw(obj1),
+                  charToRaw(obj2),
+                  charToRaw(obj3),
+                  charToRaw(obj4),
+                  charToRaw(obj5),
+                  charToRaw(obj6))
+    cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
+    offs <- cum[seq_len(6L) + 1L]
+    xref_offset <- cum[[length(cum)]]
+    fmt10 <- function(n) sprintf("%010d", n)
+    xref <- paste(
+      c("xref",
+        "0 7",
+        "0000000000 65535 f ",
+        paste0(fmt10(offs), " 00000 n ")),
+      collapse = "\n"
+    )
+    trailer <- paste0(
+      "\ntrailer\n<< /Size 7 /Root 1 0 R >>\nstartxref\n",
+      xref_offset, "\n%%EOF\n"
+    )
+    full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))
+    writeBin(full, out)
+    message("[fixtures] wrote ", out)
+  }
+
   build_tagged <- function() {
     # Single-page tagged PDF with a tiny structure tree:
     #
@@ -777,4 +846,5 @@ local({
   build_weblinks()
   build_with_thumbnail()
   build_tagged()
+  build_annot_geom()
 })

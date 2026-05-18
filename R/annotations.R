@@ -92,7 +92,10 @@ annot_flag_decode <- function(flags, bit) {
 #' Wraps `FPDFPage_GetAnnotCount`, `FPDFPage_GetAnnot`,
 #' `FPDFAnnot_GetSubtype`, `FPDFAnnot_GetFlags`,
 #' `FPDFAnnot_GetRect`, `FPDFAnnot_GetStringValue`,
-#' `FPDFAnnot_GetColor`, and `FPDFAnnot_GetBorder`.
+#' `FPDFAnnot_GetColor`, `FPDFAnnot_GetBorder`,
+#' `FPDFAnnot_GetAttachmentPoints` / `_HasAttachmentPoints` /
+#' `_CountAttachmentPoints`, `FPDFAnnot_GetVertices`, and
+#' `FPDFAnnot_GetInkListCount` / `_GetInkListPath`.
 #'
 #' @param page A `pdfium_page` from [pdf_load_page()], or a
 #'   `pdfium_doc` (in which case `page_num` selects the page).
@@ -101,6 +104,9 @@ annot_flag_decode <- function(flags, bit) {
 #' @return A tibble with columns:
 #'   * `annotation_index` integer - 1-based index within the
 #'     page's annotation table.
+#'   * `subtype_code` integer - the raw `FPDF_ANNOT_*` enum value
+#'     (`0..28`). Useful when round-tripping into v0.2.0 writers
+#'     that take the enum directly.
 #'   * `subtype` character - one of `"text"`, `"link"`,
 #'     `"freetext"`, `"line"`, `"square"`, `"circle"`,
 #'     `"polygon"`, `"polyline"`, `"highlight"`, `"underline"`,
@@ -134,6 +140,20 @@ annot_flag_decode <- function(flags, bit) {
 #'   * `border_width` numeric - the stroke border width PDFium
 #'     reports for `/Border` / `/BS`. `NA` for subtypes that
 #'     don't carry a border.
+#'   * `quad_points` list-column - for highlights, underlines,
+#'     strikeouts, squigglies (and any other quad-bearing subtype),
+#'     a numeric matrix with one row per quad set and eight
+#'     columns `x1, y1, x2, y2, x3, y3, x4, y4` in PDF user space.
+#'     `NULL` for annotations without `/QuadPoints`. Multi-line
+#'     highlights produce one row per line.
+#'   * `vertices` list-column - for line / polygon / polyline
+#'     annotations, an N-by-2 numeric matrix with columns `x, y`.
+#'     `NULL` for other subtypes.
+#'   * `ink_paths` list-column - for ink annotations, a list of
+#'     stroke paths, each an N-by-2 numeric matrix `x, y`.
+#'     `NULL` for non-ink annotations. One element per ink
+#'     stroke; a single-stroke ink annotation produces a length-1
+#'     list.
 #'
 #' Returns a 0-row tibble of the same schema when the page has
 #' no annotations.
@@ -151,6 +171,7 @@ pdf_annotations <- function(page, page_num = 1L) {
   }
   tibble::tibble(
     annotation_index = seq_along(raw$subtype_code),
+    subtype_code     = as.integer(raw$subtype_code),
     subtype          = annotation_subtype_name(raw$subtype_code),
     flags            = flags,
     is_invisible     = decode("is_invisible"),
@@ -174,8 +195,20 @@ pdf_annotations <- function(page, page_num = 1L) {
     interior_green   = raw$interior_green,
     interior_blue    = raw$interior_blue,
     interior_alpha   = raw$interior_alpha,
-    border_width     = raw$border_width
+    border_width     = raw$border_width,
+    quad_points      = raw$quad_points,
+    vertices         = raw$vertices,
+    ink_paths        = raw$ink_paths
   )
+}
+
+# Internal: code <-> name helpers for the annotation subtype enum.
+# `annotation_subtype_name(codes)` already maps codes -> strings; this
+# is its inverse for use by v0.2.0 writers. Unknown / NA strings map
+# to FPDF_ANNOT_UNKNOWN (0).
+pdfium_annot_subtype_code <- function(names) {
+  hit <- match(tolower(as.character(names)), .pdfium_annot_subtypes)
+  ifelse(is.na(hit), 0L, hit - 1L)
 }
 
 # Internal: PDFium subtype code -> string, vectorized. Codes

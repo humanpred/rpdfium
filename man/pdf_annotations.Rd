@@ -18,6 +18,9 @@ A tibble with columns:
 \itemize{
 \item \code{annotation_index} integer - 1-based index within the
 page's annotation table.
+\item \code{subtype_code} integer - the raw \verb{FPDF_ANNOT_*} enum value
+(\verb{0..28}). Useful when round-tripping into v0.2.0 writers
+that take the enum directly.
 \item \code{subtype} character - one of \code{"text"}, \code{"link"},
 \code{"freetext"}, \code{"line"}, \code{"square"}, \code{"circle"},
 \code{"polygon"}, \code{"polyline"}, \code{"highlight"}, \code{"underline"},
@@ -51,6 +54,20 @@ circle / polygon subtypes). \code{NA} otherwise.
 \item \code{border_width} numeric - the stroke border width PDFium
 reports for \verb{/Border} / \verb{/BS}. \code{NA} for subtypes that
 don't carry a border.
+\item \code{quad_points} list-column - for highlights, underlines,
+strikeouts, squigglies (and any other quad-bearing subtype),
+a numeric matrix with one row per quad set and eight
+columns \verb{x1, y1, x2, y2, x3, y3, x4, y4} in PDF user space.
+\code{NULL} for annotations without \verb{/QuadPoints}. Multi-line
+highlights produce one row per line.
+\item \code{vertices} list-column - for line / polygon / polyline
+annotations, an N-by-2 numeric matrix with columns \verb{x, y}.
+\code{NULL} for other subtypes.
+\item \code{ink_paths} list-column - for ink annotations, a list of
+stroke paths, each an N-by-2 numeric matrix \verb{x, y}.
+\code{NULL} for non-ink annotations. One element per ink
+stroke; a single-stroke ink annotation produces a length-1
+list.
 }
 
 Returns a 0-row tibble of the same schema when the page has
@@ -69,7 +86,10 @@ options) use \code{\link[=pdf_form_fields]{pdf_form_fields()}} instead.
 Wraps \code{FPDFPage_GetAnnotCount}, \code{FPDFPage_GetAnnot},
 \code{FPDFAnnot_GetSubtype}, \code{FPDFAnnot_GetFlags},
 \code{FPDFAnnot_GetRect}, \code{FPDFAnnot_GetStringValue},
-\code{FPDFAnnot_GetColor}, and \code{FPDFAnnot_GetBorder}.
+\code{FPDFAnnot_GetColor}, \code{FPDFAnnot_GetBorder},
+\code{FPDFAnnot_GetAttachmentPoints} / \verb{_HasAttachmentPoints} /
+\verb{_CountAttachmentPoints}, \code{FPDFAnnot_GetVertices}, and
+\code{FPDFAnnot_GetInkListCount} / \verb{_GetInkListPath}.
 }
 \seealso{
 \code{\link[=pdf_form_fields]{pdf_form_fields()}} for AcroForm-specific accessors.
