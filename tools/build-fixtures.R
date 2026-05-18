@@ -295,7 +295,8 @@ local({
     obj5 <- obj(5,
                 paste0("<< /Type /Annot /Subtype /Highlight ",
                        "/Rect [50 200 200 220] ",
-                       "/QuadPoints [50 220 200 220 50 200 200 200] >>"))
+                       "/QuadPoints [50 220 200 220 50 200 200 200] ",
+                       "/C [0.9 0.9 0.2] /Subj (Important) >>"))
     obj6 <- obj(6,
                 paste0("<< /Type /Annot /Subtype /Link ",
                        "/Rect [50 150 200 170] ",

@@ -29,15 +29,28 @@ page's annotation table.
 \code{"widget"} annotations are AcroForm fields; pass the
 document to \code{\link[=pdf_form_fields]{pdf_form_fields()}} for their field-level
 metadata.
-\item \code{flags} integer - the annotation's 32-bit flag bitmask.
-Useful bits: \code{0x01} invisible, \code{0x02} hidden, \code{0x04}
-printable, \code{0x40} read-only, \code{0x80} locked.
+\item \code{flags} integer - the raw 32-bit \verb{/F} flag bitmask.
+\item \code{is_invisible}, \code{is_hidden}, \code{is_print}, \code{is_no_view},
+\code{is_read_only}, \code{is_locked} logical - decoded flag bits
+(bits 1, 2, 3, 6, 7, 8 from PDF spec Table 165).
 \item \code{bounds_left}, \code{bounds_bottom}, \code{bounds_right},
 \code{bounds_top} - rectangle in PDF user space.
-\item \code{contents} character - the annotation's \verb{/Contents} text,
-UTF-8 encoded. Empty when absent.
-\item \code{title} character - the annotation's \verb{/T} (title /
-author) text, UTF-8 encoded. Empty when absent.
+\item \code{contents} character - the annotation's \verb{/Contents} body
+text, UTF-8 encoded. Empty when absent.
+\item \code{title} character - the annotation's \verb{/T} (title / author)
+text. Empty when absent.
+\item \code{subject} character - the annotation's \verb{/Subj} subject
+line. Empty when absent.
+\item \code{color_red}, \code{color_green}, \code{color_blue}, \code{color_alpha}
+numeric - the annotation's \verb{/C} color components in
+0..1. \code{NA} when the annotation has no \verb{/C}.
+\item \code{interior_red}, \code{interior_green}, \code{interior_blue},
+\code{interior_alpha} numeric - the annotation's \verb{/IC}
+interior color components in 0..1 (used by line/square/
+circle / polygon subtypes). \code{NA} otherwise.
+\item \code{border_width} numeric - the stroke border width PDFium
+reports for \verb{/Border} / \verb{/BS}. \code{NA} for subtypes that
+don't carry a border.
 }
 
 Returns a 0-row tibble of the same schema when the page has
@@ -46,15 +59,17 @@ no annotations.
 \description{
 Returns one tibble row per annotation on the given page,
 carrying the structural metadata PDFium surfaces: subtype,
-bounding box, the 32-bit flags bitmask, and the two text
-string entries (\verb{/Contents} and \verb{/T}) every annotation kind
-may carry. For form-widget-specific fields (field type, field
-value, choice options) use \code{\link[=pdf_form_fields]{pdf_form_fields()}} instead.
+bounding box, raw + decoded flags, the three free-text string
+entries (\verb{/Contents}, \verb{/T}, \verb{/Subj}), color (\verb{/C}) and interior
+color (\verb{/IC}), and the annotation's stroke border width. For
+form-widget-specific fields (field type, field value, choice
+options) use \code{\link[=pdf_form_fields]{pdf_form_fields()}} instead.
 }
 \details{
 Wraps \code{FPDFPage_GetAnnotCount}, \code{FPDFPage_GetAnnot},
 \code{FPDFAnnot_GetSubtype}, \code{FPDFAnnot_GetFlags},
-\code{FPDFAnnot_GetRect}, \code{FPDFAnnot_GetStringValue}.
+\code{FPDFAnnot_GetRect}, \code{FPDFAnnot_GetStringValue},
+\code{FPDFAnnot_GetColor}, and \code{FPDFAnnot_GetBorder}.
 }
 \seealso{
 \code{\link[=pdf_form_fields]{pdf_form_fields()}} for AcroForm-specific accessors.

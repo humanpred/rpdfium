@@ -60,18 +60,39 @@ as_doc_handle <- function(x, arg = "doc") {
   list(doc = x, on_exit = function() invisible(NULL))
 }
 
+# PDF Annotation flag bit positions (PDF spec 12.5.3, Table 165).
+# Indexed by name; value is the 1-based bit position. The decoded
+# columns surface the six bits that matter to the typical "read
+# this PDF" pipeline. Other bits stay in the raw `flags` column.
+.pdfium_annot_flag_bits <- c(
+  is_invisible = 1L,
+  is_hidden    = 2L,
+  is_print     = 3L,
+  is_no_view   = 6L,
+  is_read_only = 7L,
+  is_locked    = 8L
+)
+
+# Internal: decode a bitmask vector against one bit position. Used
+# inside pdf_annotations() to fill the per-flag logical columns.
+annot_flag_decode <- function(flags, bit) {
+  bitwAnd(flags, bitwShiftL(1L, bit - 1L)) != 0L
+}
+
 #' List the annotations on a PDF page
 #'
 #' Returns one tibble row per annotation on the given page,
 #' carrying the structural metadata PDFium surfaces: subtype,
-#' bounding box, the 32-bit flags bitmask, and the two text
-#' string entries (`/Contents` and `/T`) every annotation kind
-#' may carry. For form-widget-specific fields (field type, field
-#' value, choice options) use [pdf_form_fields()] instead.
+#' bounding box, raw + decoded flags, the three free-text string
+#' entries (`/Contents`, `/T`, `/Subj`), color (`/C`) and interior
+#' color (`/IC`), and the annotation's stroke border width. For
+#' form-widget-specific fields (field type, field value, choice
+#' options) use [pdf_form_fields()] instead.
 #'
 #' Wraps `FPDFPage_GetAnnotCount`, `FPDFPage_GetAnnot`,
 #' `FPDFAnnot_GetSubtype`, `FPDFAnnot_GetFlags`,
-#' `FPDFAnnot_GetRect`, `FPDFAnnot_GetStringValue`.
+#' `FPDFAnnot_GetRect`, `FPDFAnnot_GetStringValue`,
+#' `FPDFAnnot_GetColor`, and `FPDFAnnot_GetBorder`.
 #'
 #' @param page A `pdfium_page` from [pdf_load_page()], or a
 #'   `pdfium_doc` (in which case `page_num` selects the page).
@@ -91,15 +112,28 @@ as_doc_handle <- function(x, arg = "doc") {
 #'     `"widget"` annotations are AcroForm fields; pass the
 #'     document to [pdf_form_fields()] for their field-level
 #'     metadata.
-#'   * `flags` integer - the annotation's 32-bit flag bitmask.
-#'     Useful bits: `0x01` invisible, `0x02` hidden, `0x04`
-#'     printable, `0x40` read-only, `0x80` locked.
+#'   * `flags` integer - the raw 32-bit `/F` flag bitmask.
+#'   * `is_invisible`, `is_hidden`, `is_print`, `is_no_view`,
+#'     `is_read_only`, `is_locked` logical - decoded flag bits
+#'     (bits 1, 2, 3, 6, 7, 8 from PDF spec Table 165).
 #'   * `bounds_left`, `bounds_bottom`, `bounds_right`,
 #'     `bounds_top` - rectangle in PDF user space.
-#'   * `contents` character - the annotation's `/Contents` text,
-#'     UTF-8 encoded. Empty when absent.
-#'   * `title` character - the annotation's `/T` (title /
-#'     author) text, UTF-8 encoded. Empty when absent.
+#'   * `contents` character - the annotation's `/Contents` body
+#'     text, UTF-8 encoded. Empty when absent.
+#'   * `title` character - the annotation's `/T` (title / author)
+#'     text. Empty when absent.
+#'   * `subject` character - the annotation's `/Subj` subject
+#'     line. Empty when absent.
+#'   * `color_red`, `color_green`, `color_blue`, `color_alpha`
+#'     numeric - the annotation's `/C` color components in
+#'     0..1. `NA` when the annotation has no `/C`.
+#'   * `interior_red`, `interior_green`, `interior_blue`,
+#'     `interior_alpha` numeric - the annotation's `/IC`
+#'     interior color components in 0..1 (used by line/square/
+#'     circle / polygon subtypes). `NA` otherwise.
+#'   * `border_width` numeric - the stroke border width PDFium
+#'     reports for `/Border` / `/BS`. `NA` for subtypes that
+#'     don't carry a border.
 #'
 #' Returns a 0-row tibble of the same schema when the page has
 #' no annotations.
@@ -111,16 +145,39 @@ pdf_annotations <- function(page, page_num = 1L) {
   on.exit(if (page_h$close_on_exit) pdf_close_page(page_h$page),
           add = TRUE)
   raw <- cpp_annots_list(page_h$page$ptr)
+  flags <- as.integer(raw$flags)
   tibble::tibble(
     annotation_index = seq_along(raw$subtype_code),
     subtype          = annotation_subtype_name(raw$subtype_code),
-    flags            = as.integer(raw$flags),
+    flags            = flags,
+    is_invisible     = annot_flag_decode(
+      flags, .pdfium_annot_flag_bits[["is_invisible"]]),
+    is_hidden        = annot_flag_decode(
+      flags, .pdfium_annot_flag_bits[["is_hidden"]]),
+    is_print         = annot_flag_decode(
+      flags, .pdfium_annot_flag_bits[["is_print"]]),
+    is_no_view       = annot_flag_decode(
+      flags, .pdfium_annot_flag_bits[["is_no_view"]]),
+    is_read_only     = annot_flag_decode(
+      flags, .pdfium_annot_flag_bits[["is_read_only"]]),
+    is_locked        = annot_flag_decode(
+      flags, .pdfium_annot_flag_bits[["is_locked"]]),
     bounds_left      = raw$bounds_left,
     bounds_bottom    = raw$bounds_bottom,
     bounds_right     = raw$bounds_right,
     bounds_top       = raw$bounds_top,
     contents         = raw$contents,
-    title            = raw$title
+    title            = raw$title,
+    subject          = raw$subject,
+    color_red        = raw$color_red,
+    color_green      = raw$color_green,
+    color_blue       = raw$color_blue,
+    color_alpha      = raw$color_alpha,
+    interior_red     = raw$interior_red,
+    interior_green   = raw$interior_green,
+    interior_blue    = raw$interior_blue,
+    interior_alpha   = raw$interior_alpha,
+    border_width     = raw$border_width
   )
 }
 
