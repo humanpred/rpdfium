@@ -119,6 +119,9 @@ reference:
       - pdf_obj_clip_path
       - pdf_clip_path_count
       - pdf_clip_path_segments
+  - title: Structure tree (tagged PDF / accessibility)
+    contents:
+      - pdf_structure_tree
   - title: One-call extraction
     contents:
       - pdf_extract_paths

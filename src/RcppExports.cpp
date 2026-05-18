@@ -826,6 +826,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_struct_tree_page
+Rcpp::List cpp_struct_tree_page(SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_struct_tree_page(SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_struct_tree_page(page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_text_font_size
 double cpp_text_font_size(SEXP obj_ptr);
 RcppExport SEXP _pdfium_cpp_text_font_size(SEXP obj_ptrSEXP) {
@@ -981,6 +992,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_signatures_list", (DL_FUNC) &_pdfium_cpp_signatures_list, 1},
     {"_pdfium_cpp_signature_contents", (DL_FUNC) &_pdfium_cpp_signature_contents, 2},
     {"_pdfium_cpp_signature_byte_range", (DL_FUNC) &_pdfium_cpp_signature_byte_range, 2},
+    {"_pdfium_cpp_struct_tree_page", (DL_FUNC) &_pdfium_cpp_struct_tree_page, 1},
     {"_pdfium_cpp_text_font_size", (DL_FUNC) &_pdfium_cpp_text_font_size, 1},
     {"_pdfium_cpp_text_content", (DL_FUNC) &_pdfium_cpp_text_content, 1},
     {"_pdfium_cpp_text_font", (DL_FUNC) &_pdfium_cpp_text_font, 1},

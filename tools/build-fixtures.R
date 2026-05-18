@@ -579,6 +579,112 @@ local({
     message("[fixtures] wrote ", out)
   }
 
+  build_tagged <- function() {
+    # Single-page tagged PDF with a tiny structure tree:
+    #
+    #   Document
+    #     H1   "Title"   (Alt: "Heading", Lang: "en", ID: "h1-1")
+    #     P    (one MarkedContent, mcid 0)
+    #     Figure  (Alt: "Logo")
+    #
+    # Used by test-struct-tree.R to exercise the populated branch of
+    # pdf_structure_tree(). The page content stream carries a single
+    # /BDC ... /EMC marked-content tag with /MCID 0 so PDFium can
+    # bind the P element to a real content item; the H1 and Figure
+    # elements have no marked-content of their own (they hold child
+    # K entries that are integers pointing into MCIDs, but we keep
+    # the fixture minimal — PDFium still surfaces type/alt/lang for
+    # them).
+    out <- file.path(out_dir, "tagged.pdf")
+    obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
+
+    # Page content stream: a single tagged span "Hi" emitted via
+    # BDC /MCID 0 ... EMC. We don't include a font; PDFium reads
+    # the structure tree from the catalog regardless of whether the
+    # page content stream actually paints visible glyphs.
+    page_content <- paste(
+      "/P <</MCID 0>> BDC",
+      "EMC",
+      sep = "\n"
+    )
+    page_content_bytes <- charToRaw(paste0(page_content, "\n"))
+
+    obj1 <- obj(1,
+                paste0("<< /Type /Catalog /Pages 2 0 R ",
+                       "/StructTreeRoot 4 0 R /MarkInfo ",
+                       "<< /Marked true >> ",
+                       "/Lang (en) >>"))
+    obj2 <- obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+    obj3 <- obj(3,
+                paste0("<< /Type /Page /Parent 2 0 R ",
+                       "/MediaBox [0 0 200 200] /Resources <<>> ",
+                       "/StructParents 0 /Contents 9 0 R >>"))
+    # StructTreeRoot
+    obj4 <- obj(4,
+                paste0("<< /Type /StructTreeRoot /K 5 0 R ",
+                       "/ParentTree 10 0 R /ParentTreeNextKey 1 >>"))
+    # Document element (top of the tree)
+    obj5 <- obj(5,
+                paste0("<< /Type /StructElem /S /Document ",
+                       "/P 4 0 R /K [6 0 R 7 0 R 8 0 R] >>"))
+    # H1 child
+    obj6 <- obj(6,
+                paste0("<< /Type /StructElem /S /H1 ",
+                       "/P 5 0 R /T (Title) ",
+                       "/Lang (en) /Alt (Heading) /ID (h1-1) >>"))
+    # P child (with marked content ID 0 on page 3)
+    obj7 <- obj(7,
+                paste0("<< /Type /StructElem /S /P ",
+                       "/P 5 0 R /Pg 3 0 R ",
+                       "/K << /Type /MCR /Pg 3 0 R /MCID 0 >> >>"))
+    # Figure child (alt text only)
+    obj8 <- obj(8,
+                paste0("<< /Type /StructElem /S /Figure ",
+                       "/P 5 0 R /Alt (Logo) >>"))
+    # Content stream
+    obj9_head <- paste0("9 0 obj\n<< /Length ",
+                        length(page_content_bytes), " >>\nstream\n")
+    obj9_bytes <- c(charToRaw(obj9_head), page_content_bytes,
+                    charToRaw("\nendstream\nendobj\n"))
+    # ParentTree (NumberTree mapping page parent-tree key -> array
+    # of structure elements). One entry: key 0 -> [7 0 R], because
+    # the P element on page 3 (StructParents 0) owns MCID 0.
+    obj10 <- obj(10, "<< /Nums [0 [7 0 R]] >>")
+
+    header <- charToRaw("%PDF-1.5\n%\xe2\xe3\xcf\xd3\n")
+    parts <- list(
+      header,
+      charToRaw(obj1),
+      charToRaw(obj2),
+      charToRaw(obj3),
+      charToRaw(obj4),
+      charToRaw(obj5),
+      charToRaw(obj6),
+      charToRaw(obj7),
+      charToRaw(obj8),
+      obj9_bytes,
+      charToRaw(obj10)
+    )
+    cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
+    offs <- cum[seq_len(10L) + 1L]
+    xref_offset <- cum[[length(cum)]]
+    fmt10 <- function(n) sprintf("%010d", n)
+    xref <- paste(
+      c("xref",
+        "0 11",
+        "0000000000 65535 f ",
+        paste0(fmt10(offs), " 00000 n ")),
+      collapse = "\n"
+    )
+    trailer <- paste0(
+      "\ntrailer\n<< /Size 11 /Root 1 0 R >>\nstartxref\n",
+      xref_offset, "\n%%EOF\n"
+    )
+    full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))
+    writeBin(full, out)
+    message("[fixtures] wrote ", out)
+  }
+
   build_weblinks <- function() {
     # Cairo PDF whose drawn text contains URLs PDFium's web-link
     # detector can pick up. Used by test-page-thumbs.R to exercise
@@ -670,4 +776,5 @@ local({
   build_outline()
   build_weblinks()
   build_with_thumbnail()
+  build_tagged()
 })

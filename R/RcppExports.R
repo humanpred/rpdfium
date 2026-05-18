@@ -289,6 +289,10 @@ cpp_signature_byte_range <- function(doc_ptr, index_zero) {
     .Call(`_pdfium_cpp_signature_byte_range`, doc_ptr, index_zero)
 }
 
+cpp_struct_tree_page <- function(page_ptr) {
+    .Call(`_pdfium_cpp_struct_tree_page`, page_ptr)
+}
+
 cpp_text_font_size <- function(obj_ptr) {
     .Call(`_pdfium_cpp_text_font_size`, obj_ptr)
 }
