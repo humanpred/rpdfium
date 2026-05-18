@@ -146,22 +146,19 @@ pdf_annotations <- function(page, page_num = 1L) {
           add = TRUE)
   raw <- cpp_annots_list(page_h$page$ptr)
   flags <- as.integer(raw$flags)
+  decode <- function(bit_name) {
+    annot_flag_decode(flags, .pdfium_annot_flag_bits[[bit_name]])
+  }
   tibble::tibble(
     annotation_index = seq_along(raw$subtype_code),
     subtype          = annotation_subtype_name(raw$subtype_code),
     flags            = flags,
-    is_invisible     = annot_flag_decode(
-      flags, .pdfium_annot_flag_bits[["is_invisible"]]),
-    is_hidden        = annot_flag_decode(
-      flags, .pdfium_annot_flag_bits[["is_hidden"]]),
-    is_print         = annot_flag_decode(
-      flags, .pdfium_annot_flag_bits[["is_print"]]),
-    is_no_view       = annot_flag_decode(
-      flags, .pdfium_annot_flag_bits[["is_no_view"]]),
-    is_read_only     = annot_flag_decode(
-      flags, .pdfium_annot_flag_bits[["is_read_only"]]),
-    is_locked        = annot_flag_decode(
-      flags, .pdfium_annot_flag_bits[["is_locked"]]),
+    is_invisible     = decode("is_invisible"),
+    is_hidden        = decode("is_hidden"),
+    is_print         = decode("is_print"),
+    is_no_view       = decode("is_no_view"),
+    is_read_only     = decode("is_read_only"),
+    is_locked        = decode("is_locked"),
     bounds_left      = raw$bounds_left,
     bounds_bottom    = raw$bounds_bottom,
     bounds_right     = raw$bounds_right,

@@ -40,8 +40,8 @@ test_that("pdf_viewer_preferences reports PDFium defaults on fixtures", {
   expect_true(prefs$num_copies >= 1L)
   expect_type(prefs$duplex, "character")
   expect_true(prefs$duplex %in%
-              c("none", "simplex",
-                "duplex_flip_short_edge", "duplex_flip_long_edge"))
+                c("none", "simplex",
+                  "duplex_flip_short_edge", "duplex_flip_long_edge"))
   expect_type(prefs$print_page_ranges, "integer")
 })
 

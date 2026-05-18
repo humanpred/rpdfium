@@ -118,17 +118,18 @@ pdf_form_fields <- function(doc) {
   inferred <- checkable & !is_checked_lgl &
     nzchar(raw$value) & raw$value != "Off"
   is_checked_lgl[inferred] <- TRUE
+  decode <- function(bit_name) {
+    form_field_flag_decode(field_flags,
+                           .pdfium_field_flag_bits[[bit_name]])
+  }
   tibble::tibble(
     field_index    = seq_along(type_name),
     page_num       = as.integer(raw$page_num),
     field_type     = type_name,
     field_flags    = field_flags,
-    is_readonly    = form_field_flag_decode(
-      field_flags, .pdfium_field_flag_bits[["is_readonly"]]),
-    is_required    = form_field_flag_decode(
-      field_flags, .pdfium_field_flag_bits[["is_required"]]),
-    is_no_export   = form_field_flag_decode(
-      field_flags, .pdfium_field_flag_bits[["is_no_export"]]),
+    is_readonly    = decode("is_readonly"),
+    is_required    = decode("is_required"),
+    is_no_export   = decode("is_no_export"),
     is_checked     = is_checked_lgl,
     name           = raw$name,
     alternate_name = raw$alternate_name,
