@@ -708,6 +708,39 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_page_thumbnail_raw
+Rcpp::RawVector cpp_page_thumbnail_raw(SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_page_thumbnail_raw(SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_page_thumbnail_raw(page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_page_thumbnail_decoded
+Rcpp::RawVector cpp_page_thumbnail_decoded(SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_page_thumbnail_decoded(SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_page_thumbnail_decoded(page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_page_weblinks
+Rcpp::List cpp_page_weblinks(SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_page_weblinks(SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_page_weblinks(page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_path_segment_count
 int cpp_path_segment_count(SEXP obj_ptr);
 RcppExport SEXP _pdfium_cpp_path_segment_count(SEXP obj_ptrSEXP) {
@@ -938,6 +971,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_page_text_chars", (DL_FUNC) &_pdfium_cpp_page_text_chars, 1},
     {"_pdfium_cpp_link_at_point", (DL_FUNC) &_pdfium_cpp_link_at_point, 4},
     {"_pdfium_cpp_page_aactions", (DL_FUNC) &_pdfium_cpp_page_aactions, 2},
+    {"_pdfium_cpp_page_thumbnail_raw", (DL_FUNC) &_pdfium_cpp_page_thumbnail_raw, 1},
+    {"_pdfium_cpp_page_thumbnail_decoded", (DL_FUNC) &_pdfium_cpp_page_thumbnail_decoded, 1},
+    {"_pdfium_cpp_page_weblinks", (DL_FUNC) &_pdfium_cpp_page_weblinks, 1},
     {"_pdfium_cpp_path_segment_count", (DL_FUNC) &_pdfium_cpp_path_segment_count, 1},
     {"_pdfium_cpp_path_segments", (DL_FUNC) &_pdfium_cpp_path_segments, 1},
     {"_pdfium_cpp_render_page", (DL_FUNC) &_pdfium_cpp_render_page, 7},

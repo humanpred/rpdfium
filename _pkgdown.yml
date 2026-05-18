@@ -62,6 +62,8 @@ reference:
       - pdf_page_links
       - pdf_link_at_point
       - pdf_page_actions
+      - pdf_page_thumbnail
+      - pdf_text_weblinks
   - title: Annotations and form fields
     contents:
       - pdf_annotations

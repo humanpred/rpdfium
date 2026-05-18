@@ -547,6 +547,85 @@ local({
     message("[fixtures] wrote ", out)
   }
 
+  build_weblinks <- function() {
+    # Cairo PDF whose drawn text contains URLs PDFium's web-link
+    # detector can pick up. Used by test-page-thumbs.R to exercise
+    # pdf_text_weblinks(). The URLs themselves are intentionally not
+    # link-annotated; that path is exercised by `annotated.pdf` and
+    # test-page-nav.R.
+    out <- file.path(out_dir, "weblinks.pdf")
+    grDevices::cairo_pdf(out, width = 6, height = 4)
+    on.exit(grDevices::dev.off(), add = TRUE)
+    graphics::par(mar = c(0, 0, 0, 0))
+    graphics::plot.new()
+    graphics::plot.window(c(0, 6), c(0, 4))
+    graphics::text(3.0, 3.0, "Visit https://example.com today",
+                   cex = 0.9)
+    graphics::text(3.0, 2.0, "Mirror: http://example.org/path",
+                   cex = 0.9)
+    message("[fixtures] wrote ", out)
+  }
+
+  build_with_thumbnail <- function() {
+    # Hand-built single-page PDF with a /Thumb attached to the page.
+    # The thumbnail is a 4x4 8-bit DeviceGray image stream of 16
+    # bytes (no filter). Used by test-page-thumbs.R to exercise the
+    # FPDFPage_GetRawThumbnailData / GetDecodedThumbnailData byte
+    # protocol on a page that actually carries a thumbnail (Cairo's
+    # R driver does not emit /Thumb).
+    out <- file.path(out_dir, "with_thumbnail.pdf")
+
+    # 16 bytes: gradient 0x00, 0x10, 0x20, ..., 0xF0.
+    thumb_pixels <- as.raw(seq(0L, 240L, by = 16L))
+
+    obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
+
+    obj1 <- obj(1, "<< /Type /Catalog /Pages 2 0 R >>")
+    obj2 <- obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+    obj3 <- obj(3,
+                paste0("<< /Type /Page /Parent 2 0 R ",
+                       "/MediaBox [0 0 100 100] /Resources <<>> ",
+                       "/Thumb 4 0 R >>"))
+    # Object 4: the thumbnail image XObject. No /Filter, so the
+    # "raw" and "decoded" byte payloads are identical.
+    obj4_head <- paste0("4 0 obj\n",
+                        "<< /Type /XObject /Subtype /Image ",
+                        "/Width 4 /Height 4 /BitsPerComponent 8 ",
+                        "/ColorSpace /DeviceGray ",
+                        "/Length ", length(thumb_pixels),
+                        " >>\nstream\n")
+    obj4_bytes <- c(charToRaw(obj4_head),
+                    thumb_pixels,
+                    charToRaw("\nendstream\nendobj\n"))
+
+    header <- charToRaw("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    parts <- list(
+      header,
+      charToRaw(obj1),
+      charToRaw(obj2),
+      charToRaw(obj3),
+      obj4_bytes
+    )
+    cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
+    offs <- cum[seq_len(4L) + 1L]
+    xref_offset <- cum[[length(cum)]]
+    fmt10 <- function(n) sprintf("%010d", n)
+    xref <- paste(
+      c("xref",
+        "0 5",
+        "0000000000 65535 f ",
+        paste0(fmt10(offs), " 00000 n ")),
+      collapse = "\n"
+    )
+    trailer <- paste0(
+      "\ntrailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n",
+      xref_offset, "\n%%EOF\n"
+    )
+    full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))
+    writeBin(full, out)
+    message("[fixtures] wrote ", out)
+  }
+
   build_minimal()
   build_shapes()
   build_unicode()
@@ -557,4 +636,6 @@ local({
   build_attachments()
   build_signed()
   build_outline()
+  build_weblinks()
+  build_with_thumbnail()
 })

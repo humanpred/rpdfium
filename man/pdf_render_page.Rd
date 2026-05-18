@@ -46,12 +46,13 @@ A \code{pdfium_bitmap} object - an integer matrix with \code{class = c("pdfium_b
 \description{
 Rasterises one page of a PDF document via PDFium and returns a
 \code{pdfium_bitmap} object (an integer matrix that inherits from base
-R's \code{nativeRaster} class). The object can be passed directly to
-\code{\link[graphics:rasterImage]{graphics::rasterImage()}}, \code{\link[grid:rasterGrob]{grid::rasterGrob()}}, or
-\code{\link[graphics:plot]{graphics::plot()}} without conversion. Conversion helpers
-(\code{\link[=as.raster.pdfium_bitmap]{as.raster.pdfium_bitmap()}}, \code{\link[=as.array.pdfium_bitmap]{as.array.pdfium_bitmap()}},
-\code{\link[=as.matrix.pdfium_bitmap]{as.matrix.pdfium_bitmap()}}) cover the other common bitmap
-shapes downstream packages expect.
+R's \code{nativeRaster} class). Use \code{\link[graphics:plot]{graphics::plot()}} for an
+immediate-display path (the S3 method here routes through
+\code{\link[grid:grid.raster]{grid::grid.raster()}} on a 3-D RGBA array, the one R-engine
+combination that renders pixel-for-pixel correctly across
+platforms). Conversion helpers (\code{\link[=as.raster.pdfium_bitmap]{as.raster.pdfium_bitmap()}},
+\code{\link[=as.array.pdfium_bitmap]{as.array.pdfium_bitmap()}}, \code{\link[=as.matrix.pdfium_bitmap]{as.matrix.pdfium_bitmap()}}) cover
+the other common bitmap shapes downstream packages expect.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",

@@ -249,6 +249,18 @@ cpp_page_aactions <- function(doc_ptr, page_ptr) {
     .Call(`_pdfium_cpp_page_aactions`, doc_ptr, page_ptr)
 }
 
+cpp_page_thumbnail_raw <- function(page_ptr) {
+    .Call(`_pdfium_cpp_page_thumbnail_raw`, page_ptr)
+}
+
+cpp_page_thumbnail_decoded <- function(page_ptr) {
+    .Call(`_pdfium_cpp_page_thumbnail_decoded`, page_ptr)
+}
+
+cpp_page_weblinks <- function(page_ptr) {
+    .Call(`_pdfium_cpp_page_weblinks`, page_ptr)
+}
+
 cpp_path_segment_count <- function(obj_ptr) {
     .Call(`_pdfium_cpp_path_segment_count`, obj_ptr)
 }
