@@ -382,6 +382,61 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_obj_line_cap
+int cpp_obj_line_cap(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_line_cap(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_line_cap(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_obj_line_join
+int cpp_obj_line_join(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_line_join(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_line_join(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_obj_has_transparency
+bool cpp_obj_has_transparency(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_has_transparency(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_has_transparency(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_obj_is_active
+SEXP cpp_obj_is_active(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_is_active(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_is_active(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_obj_rotated_bounds
+Rcpp::NumericVector cpp_obj_rotated_bounds(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_rotated_bounds(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_rotated_bounds(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_page_object_count
 int cpp_page_object_count(SEXP page_ptr);
 RcppExport SEXP _pdfium_cpp_page_object_count(SEXP page_ptrSEXP) {
@@ -762,6 +817,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_close_document", (DL_FUNC) &_pdfium_cpp_close_document, 1},
     {"_pdfium_cpp_handle_is_valid", (DL_FUNC) &_pdfium_cpp_handle_is_valid, 1},
     {"_pdfium_cpp_page_count", (DL_FUNC) &_pdfium_cpp_page_count, 1},
+    {"_pdfium_cpp_obj_line_cap", (DL_FUNC) &_pdfium_cpp_obj_line_cap, 1},
+    {"_pdfium_cpp_obj_line_join", (DL_FUNC) &_pdfium_cpp_obj_line_join, 1},
+    {"_pdfium_cpp_obj_has_transparency", (DL_FUNC) &_pdfium_cpp_obj_has_transparency, 1},
+    {"_pdfium_cpp_obj_is_active", (DL_FUNC) &_pdfium_cpp_obj_is_active, 1},
+    {"_pdfium_cpp_obj_rotated_bounds", (DL_FUNC) &_pdfium_cpp_obj_rotated_bounds, 1},
     {"_pdfium_cpp_page_object_count", (DL_FUNC) &_pdfium_cpp_page_object_count, 1},
     {"_pdfium_cpp_page_get_object", (DL_FUNC) &_pdfium_cpp_page_get_object, 2},
     {"_pdfium_cpp_obj_type", (DL_FUNC) &_pdfium_cpp_obj_type, 1},

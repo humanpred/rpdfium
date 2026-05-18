@@ -133,6 +133,26 @@ cpp_page_count <- function(ptr) {
     .Call(`_pdfium_cpp_page_count`, ptr)
 }
 
+cpp_obj_line_cap <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_line_cap`, obj_ptr)
+}
+
+cpp_obj_line_join <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_line_join`, obj_ptr)
+}
+
+cpp_obj_has_transparency <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_has_transparency`, obj_ptr)
+}
+
+cpp_obj_is_active <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_is_active`, obj_ptr)
+}
+
+cpp_obj_rotated_bounds <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_rotated_bounds`, obj_ptr)
+}
+
 cpp_page_object_count <- function(page_ptr) {
     .Call(`_pdfium_cpp_page_object_count`, page_ptr)
 }

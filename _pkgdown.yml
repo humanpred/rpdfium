@@ -65,13 +65,18 @@ reference:
       - pdf_page_objects
       - pdf_obj_type
       - pdf_obj_bounds
+      - pdf_obj_rotated_bounds
       - pdf_obj_matrix
+      - pdf_obj_has_transparency
+      - pdf_obj_is_active
   - title: Paths
     contents:
       - pdf_path_segments
       - pdf_path_stroke
       - pdf_path_fill
       - pdf_path_dash
+      - pdf_path_line_cap
+      - pdf_path_line_join
   - title: Text
     contents:
       - pdf_text_font_size
