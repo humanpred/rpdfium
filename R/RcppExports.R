@@ -285,6 +285,14 @@ cpp_page_text_runs <- function(page_ptr) {
     .Call(`_pdfium_cpp_page_text_runs`, page_ptr)
 }
 
+cpp_text_render_mode <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_text_render_mode`, obj_ptr)
+}
+
+cpp_page_text_colors <- function(page_ptr) {
+    .Call(`_pdfium_cpp_page_text_colors`, page_ptr)
+}
+
 cpp_text_search_page <- function(page_ptr, query, match_case, match_whole_word, consecutive) {
     .Call(`_pdfium_cpp_text_search_page`, page_ptr, query, match_case, match_whole_word, consecutive)
 }

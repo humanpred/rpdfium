@@ -811,6 +811,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_text_render_mode
+int cpp_text_render_mode(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_text_render_mode(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_render_mode(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_page_text_colors
+Rcpp::List cpp_page_text_colors(SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_page_text_colors(SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_page_text_colors(page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_text_search_page
 Rcpp::List cpp_text_search_page(SEXP page_ptr, std::string query, bool match_case, bool match_whole_word, bool consecutive);
 RcppExport SEXP _pdfium_cpp_text_search_page(SEXP page_ptrSEXP, SEXP querySEXP, SEXP match_caseSEXP, SEXP match_whole_wordSEXP, SEXP consecutiveSEXP) {
@@ -899,6 +921,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_text_content", (DL_FUNC) &_pdfium_cpp_text_content, 1},
     {"_pdfium_cpp_text_font", (DL_FUNC) &_pdfium_cpp_text_font, 1},
     {"_pdfium_cpp_page_text_runs", (DL_FUNC) &_pdfium_cpp_page_text_runs, 1},
+    {"_pdfium_cpp_text_render_mode", (DL_FUNC) &_pdfium_cpp_text_render_mode, 1},
+    {"_pdfium_cpp_page_text_colors", (DL_FUNC) &_pdfium_cpp_page_text_colors, 1},
     {"_pdfium_cpp_text_search_page", (DL_FUNC) &_pdfium_cpp_text_search_page, 5},
     {NULL, NULL, 0}
 };

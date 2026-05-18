@@ -88,6 +88,8 @@ reference:
       - pdf_text_runs
       - pdf_text_font
       - pdf_text_chars
+      - pdf_text_colors
+      - pdf_text_render_mode
       - pdf_text_search
   - title: Rendering
     contents:
