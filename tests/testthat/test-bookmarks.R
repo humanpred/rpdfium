@@ -19,12 +19,16 @@ test_that("pdf_bookmarks() returns the documented tibble shape", {
   bm <- pdf_bookmarks(doc)
   expect_s3_class(bm, "tbl_df")
   expect_named(bm, c("bookmark_index", "parent_index", "level",
-                     "title", "page_num"))
+                     "title", "page_num", "action_type", "uri",
+                     "filepath"))
   expect_type(bm$bookmark_index, "integer")
   expect_type(bm$parent_index,   "integer")
   expect_type(bm$level,          "integer")
   expect_type(bm$title,          "character")
   expect_type(bm$page_num,       "integer")
+  expect_type(bm$action_type,    "character")
+  expect_type(bm$uri,            "character")
+  expect_type(bm$filepath,       "character")
 })
 
 test_that("pdf_bookmarks() reads the outline tree depth-first", {
@@ -36,6 +40,11 @@ test_that("pdf_bookmarks() reads the outline tree depth-first", {
   expect_identical(bm$level,        c(1L, 2L, 2L))
   expect_identical(bm$parent_index, c(0L, 1L, 1L))
   expect_identical(bm$page_num,     c(1L, 1L, 2L))
+  # All three bookmarks resolve to a within-doc /Dest, so
+  # action_type is "goto" everywhere and URI / filepath are NA.
+  expect_identical(bm$action_type, rep("goto", 3L))
+  expect_true(all(is.na(bm$uri)))
+  expect_true(all(is.na(bm$filepath)))
 })
 
 test_that("pdf_bookmarks() returns 0 rows for a PDF without an outline", {
@@ -43,7 +52,8 @@ test_that("pdf_bookmarks() returns 0 rows for a PDF without an outline", {
   expect_s3_class(bm, "tbl_df")
   expect_equal(nrow(bm), 0L)
   expect_named(bm, c("bookmark_index", "parent_index", "level",
-                     "title", "page_num"))
+                     "title", "page_num", "action_type", "uri",
+                     "filepath"))
 })
 
 test_that("pdf_bookmarks() accepts a path or an open doc", {

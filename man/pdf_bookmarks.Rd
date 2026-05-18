@@ -19,7 +19,15 @@ entry, or \code{0} for top-level bookmarks.
 \item \code{level} integer - 1-based nesting depth.
 \item \code{title} character - the bookmark's display text, UTF-8.
 \item \code{page_num} integer - 1-based destination page number, or
-\code{NA} when the bookmark has no page destination.
+\code{NA} when the bookmark has no resolvable page destination
+(e.g. for URI / launch actions, or unresolvable dests).
+\item \code{action_type} character - one of \code{"goto"}, \code{"remote_goto"},
+\code{"uri"}, \code{"launch"}, \code{"embedded_goto"}.
+\item \code{uri} character - the action's target URL when
+\code{action_type == "uri"}; \code{NA} otherwise.
+\item \code{filepath} character - the external file path when
+\code{action_type} is \code{"remote_goto"} / \code{"launch"} /
+\code{"embedded_goto"}; \code{NA} otherwise.
 }
 
 Returns a 0-row tibble of the same schema when the document has
@@ -28,9 +36,9 @@ no outline.
 \description{
 Returns a tibble row per bookmark, walking PDFium's outline tree
 depth-first. Each row carries the bookmark's title, its position
-in the hierarchy, and the page it points to (or \code{NA} when the
-bookmark uses an action — URI, launch — rather than a
-destination).
+in the hierarchy, the page it points to (when resolvable), and the
+action it carries (URI, launch, remote_goto, embedded_goto, or
+the typical goto-within-this-document).
 }
 \details{
 The tree structure is recoverable from the \code{parent_index} column
@@ -40,14 +48,17 @@ its \code{parent_index}. The \code{level} column is a convenience for
 filtering ("show me chapter-level entries only").
 
 Wraps \code{FPDFBookmark_GetFirstChild}, \code{FPDFBookmark_GetNextSibling},
-\code{FPDFBookmark_GetTitle}, \code{FPDFBookmark_GetDest}, and
+\code{FPDFBookmark_GetTitle}, \code{FPDFBookmark_GetDest},
+\code{FPDFBookmark_GetAction}, \code{FPDFAction_GetType} /
+\code{FPDFAction_GetURIPath} / \code{FPDFAction_GetFilePath}, and
 \code{FPDFDest_GetDestPageIndex}.
 }
 \examples{
-fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+fixture <- system.file("extdata", "fixtures", "outline.pdf",
                        package = "pdfium")
 if (nzchar(fixture)) pdf_bookmarks(fixture)
 }
 \seealso{
-\code{\link[=pdf_page_labels]{pdf_page_labels()}} for logical page numbering.
+\code{\link[=pdf_page_labels]{pdf_page_labels()}} for logical page numbering,
+\code{\link[=pdf_page_links]{pdf_page_links()}} for clickable link annotations on a page.
 }

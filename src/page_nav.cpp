@@ -16,6 +16,7 @@
 #include "fpdfview.h"
 #include "fpdf_doc.h"
 #include "fpdf_formfill.h"
+#include "action_helpers.h"
 #include "utf16.h"
 
 namespace {
@@ -37,47 +38,6 @@ FPDF_PAGE nav_page_from_ptr(SEXP page_ptr) {
   FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
   if (page == nullptr) Rcpp::stop("Page handle is closed.");
   return page;
-}
-
-// Helper: classify an FPDF_ACTION and extract its associated payload
-// (URI string, file path, dest page index). Fills the output strings
-// and `dest_page_idx` (-1 means none / unresolved).
-void classify_action(FPDF_DOCUMENT doc,
-                     FPDF_ACTION action,
-                     int& action_code,
-                     std::string& uri_out,
-                     std::string& filepath_out,
-                     int& dest_page_idx) {
-  uri_out.clear();
-  filepath_out.clear();
-  dest_page_idx = -1;
-  if (action == nullptr) {
-    action_code = 0;  // PDFACTION_UNSUPPORTED
-    return;
-  }
-  unsigned long t = FPDFAction_GetType(action);
-  action_code = static_cast<int>(t);
-  if (t == PDFACTION_URI) {
-    unsigned long need = FPDFAction_GetURIPath(doc, action, nullptr, 0);
-    if (need > 1) {
-      std::vector<char> buf(need);
-      FPDFAction_GetURIPath(doc, action, buf.data(), need);
-      uri_out.assign(buf.data(), need - 1);
-    }
-  } else if (t == PDFACTION_REMOTEGOTO || t == PDFACTION_LAUNCH ||
-             t == PDFACTION_EMBEDDEDGOTO) {
-    unsigned long need = FPDFAction_GetFilePath(action, nullptr, 0);
-    if (need > 1) {
-      std::vector<char> buf(need);
-      FPDFAction_GetFilePath(action, buf.data(), need);
-      filepath_out.assign(buf.data(), need - 1);
-    }
-  }
-  FPDF_DEST dest = FPDFAction_GetDest(doc, action);
-  if (dest != nullptr) {
-    int p = FPDFDest_GetDestPageIndex(doc, dest);
-    if (p >= 0) dest_page_idx = p;
-  }
 }
 
 }  // namespace
@@ -114,7 +74,8 @@ Rcpp::List cpp_link_at_point(SEXP doc_ptr, SEXP page_ptr,
   FPDF_ACTION action = FPDFLink_GetAction(link);
   int action_code = 0, dest_page_idx = -1;
   std::string uri, filepath;
-  classify_action(doc, action, action_code, uri, filepath, dest_page_idx);
+  pdfium_r::classify_action(doc, action, action_code, uri, filepath,
+                            dest_page_idx);
   // If no /A action, fall back to /Dest on the link itself.
   if (action == nullptr) {
     FPDF_DEST dest = FPDFLink_GetDest(doc, link);
@@ -163,7 +124,7 @@ Rcpp::List cpp_page_aactions(SEXP doc_ptr, SEXP page_ptr) {
     if (action == nullptr) continue;
     int action_code = 0, dest = -1;
     std::string uri, fp;
-    classify_action(doc, action, action_code, uri, fp, dest);
+    pdfium_r::classify_action(doc, action, action_code, uri, fp, dest);
     trigger.emplace_back(kAANames[i]);
     action_codes.push_back(action_code);
     uris.emplace_back(uri);

@@ -33,9 +33,9 @@ as_doc_handle <- function(x, arg = "doc") {
 #'
 #' Returns a tibble row per bookmark, walking PDFium's outline tree
 #' depth-first. Each row carries the bookmark's title, its position
-#' in the hierarchy, and the page it points to (or `NA` when the
-#' bookmark uses an action — URI, launch — rather than a
-#' destination).
+#' in the hierarchy, the page it points to (when resolvable), and the
+#' action it carries (URI, launch, remote_goto, embedded_goto, or
+#' the typical goto-within-this-document).
 #'
 #' The tree structure is recoverable from the `parent_index` column
 #' alone: top-level bookmarks have `parent_index == 0`, and every
@@ -44,7 +44,9 @@ as_doc_handle <- function(x, arg = "doc") {
 #' filtering ("show me chapter-level entries only").
 #'
 #' Wraps `FPDFBookmark_GetFirstChild`, `FPDFBookmark_GetNextSibling`,
-#' `FPDFBookmark_GetTitle`, `FPDFBookmark_GetDest`, and
+#' `FPDFBookmark_GetTitle`, `FPDFBookmark_GetDest`,
+#' `FPDFBookmark_GetAction`, `FPDFAction_GetType` /
+#' `FPDFAction_GetURIPath` / `FPDFAction_GetFilePath`, and
 #' `FPDFDest_GetDestPageIndex`.
 #'
 #' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
@@ -56,14 +58,23 @@ as_doc_handle <- function(x, arg = "doc") {
 #'   * `level` integer - 1-based nesting depth.
 #'   * `title` character - the bookmark's display text, UTF-8.
 #'   * `page_num` integer - 1-based destination page number, or
-#'     `NA` when the bookmark has no page destination.
+#'     `NA` when the bookmark has no resolvable page destination
+#'     (e.g. for URI / launch actions, or unresolvable dests).
+#'   * `action_type` character - one of `"goto"`, `"remote_goto"`,
+#'     `"uri"`, `"launch"`, `"embedded_goto"`.
+#'   * `uri` character - the action's target URL when
+#'     `action_type == "uri"`; `NA` otherwise.
+#'   * `filepath` character - the external file path when
+#'     `action_type` is `"remote_goto"` / `"launch"` /
+#'     `"embedded_goto"`; `NA` otherwise.
 #'
 #' Returns a 0-row tibble of the same schema when the document has
 #' no outline.
 #'
-#' @seealso [pdf_page_labels()] for logical page numbering.
+#' @seealso [pdf_page_labels()] for logical page numbering,
+#'   [pdf_page_links()] for clickable link annotations on a page.
 #' @examples
-#' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+#' fixture <- system.file("extdata", "fixtures", "outline.pdf",
 #'                        package = "pdfium")
 #' if (nzchar(fixture)) pdf_bookmarks(fixture)
 #' @export
@@ -73,12 +84,27 @@ pdf_bookmarks <- function(doc) {
   raw <- cpp_bookmarks(h$doc$ptr)
   page_num <- raw$page_num
   page_num[page_num < 0L] <- NA_integer_
+
+  uri <- raw$uri
+  uri <- ifelse(nzchar(uri), uri, NA_character_)
+  filepath <- raw$filepath
+  filepath <- ifelse(nzchar(filepath), filepath, NA_character_)
+
+  # action_code 0 means "no /A and unresolvable /Dest" — surface as
+  # "unsupported" via the shared lookup. URI / filepath columns are
+  # NA in that case anyway.
+  action_codes <- as.integer(raw$action_code)
+  action_type <- pdfium_action_type_name(action_codes)
+
   tibble::tibble(
     bookmark_index = seq_along(raw$title),
     parent_index   = as.integer(raw$parent_index),
     level          = as.integer(raw$level),
     title          = raw$title,
-    page_num       = as.integer(page_num)
+    page_num       = as.integer(page_num),
+    action_type    = action_type,
+    uri            = uri,
+    filepath       = filepath
   )
 }
 

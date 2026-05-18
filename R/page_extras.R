@@ -123,18 +123,6 @@ pdf_text_chars <- function(page, page_num = 1L) {
   )
 }
 
-# PDF action types from fpdf_doc.h. Indexed by code + 1; 0 means
-# "no /A action, only /Dest" which we map to "goto" for callers'
-# convenience.
-.pdfium_action_types <- c(
-  "goto",         # 0: no /A, /Dest only
-  "unsupported",  # 1: PDFACTION_UNSUPPORTED
-  "goto",         # 2: PDFACTION_GOTO
-  "remote_goto",  # 3: PDFACTION_REMOTEGOTO
-  "uri",          # 4: PDFACTION_URI
-  "launch"        # 5: PDFACTION_LAUNCH
-)
-
 #' List the clickable links on a page
 #'
 #' Returns one tibble row per link annotation on the page, with
@@ -142,8 +130,8 @@ pdf_text_chars <- function(page, page_num = 1L) {
 #' (target page for internal links, URL for external links).
 #' Wraps `FPDFLink_Enumerate` plus the per-link
 #' `FPDFLink_GetAnnotRect`, `FPDFLink_GetAction` / `_GetDest`,
-#' `FPDFAction_GetType`, `FPDFAction_GetURIPath`, and
-#' `FPDFDest_GetDestPageIndex`.
+#' `FPDFAction_GetType`, `FPDFAction_GetURIPath`,
+#' `FPDFAction_GetFilePath`, and `FPDFDest_GetDestPageIndex`.
 #'
 #' @param page A `pdfium_page` from [pdf_load_page()], or a
 #'   `pdfium_doc`.
@@ -157,12 +145,15 @@ pdf_text_chars <- function(page, page_num = 1L) {
 #'   * `action_type` character - one of `"goto"` (jump within
 #'     the document), `"remote_goto"` (jump to a remote PDF),
 #'     `"uri"` (open a URL), `"launch"` (launch an external file
-#'     or application), `"unsupported"`.
-#'   * `uri` character - non-empty for `action_type == "uri"`;
-#'     the target URL.
-#'   * `dest_page_num` integer - non-NA for `goto` /
-#'     `remote_goto`; the 1-based destination page within the
-#'     current (or remote) document.
+#'     or application), `"embedded_goto"` (jump into an embedded
+#'     file), or `"unsupported"`.
+#'   * `uri` character - the target URL when
+#'     `action_type == "uri"`; `NA` otherwise.
+#'   * `filepath` character - the external file path when
+#'     `action_type` is `"remote_goto"` / `"launch"` /
+#'     `"embedded_goto"`; `NA` otherwise.
+#'   * `dest_page_num` integer - 1-based destination page within
+#'     the current (or remote) document; `NA` when not resolvable.
 #'
 #' Returns a 0-row tibble of the same schema when the page has no
 #' link annotations.
@@ -175,21 +166,19 @@ pdf_page_links <- function(page, page_num = 1L) {
   doc_ptr <- ph$page$doc$ptr
   raw <- cpp_page_links(doc_ptr, ph$page$ptr)
   action_codes <- as.integer(raw$action_code)
-  idx <- action_codes + 1L
-  safe_idx <- pmax(pmin(idx, length(.pdfium_action_types)), 1L)
-  action_type <- ifelse(
-    idx < 1L | idx > length(.pdfium_action_types),
-    "unsupported",
-    .pdfium_action_types[safe_idx]
-  )
+  uri <- raw$uri
+  uri <- ifelse(nzchar(uri), uri, NA_character_)
+  fp <- raw$filepath
+  fp <- ifelse(nzchar(fp), fp, NA_character_)
   tibble::tibble(
     link_index    = seq_along(action_codes),
     bounds_left   = raw$bounds_left,
     bounds_bottom = raw$bounds_bottom,
     bounds_right  = raw$bounds_right,
     bounds_top    = raw$bounds_top,
-    action_type   = action_type,
-    uri           = raw$uri,
+    action_type   = pdfium_action_type_name(action_codes),
+    uri           = uri,
+    filepath      = fp,
     dest_page_num = as.integer(raw$dest_page_num)
   )
 }

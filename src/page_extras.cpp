@@ -20,6 +20,7 @@
 #include "fpdf_doc.h"
 #include "fpdf_text.h"
 #include "fpdf_transformpage.h"
+#include "action_helpers.h"
 #include "utf16.h"
 
 namespace {
@@ -86,6 +87,7 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
   std::vector<double> left, bottom, right, top;
   std::vector<int>    action_code;
   std::vector<std::string> uri;
+  std::vector<std::string> filepath;
   std::vector<int>    dest_page;
 
   // FPDFLink_Enumerate iterates link annotations on the page. The
@@ -106,40 +108,24 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
       top.push_back(NA_REAL);
     }
     FPDF_ACTION action = FPDFLink_GetAction(link);
+    int code = 0, dest_idx = -1;
+    std::string uri_text, fp_text;
+    pdfium_r::classify_action(doc, action, code, uri_text, fp_text,
+                              dest_idx);
+    // Fall back to /Dest on the link itself for the no-/A case.
     if (action == nullptr) {
-      // Link with a /Dest only (no /A action).
-      action_code.push_back(0);  // 0 == GoTo via Dest
-      uri.emplace_back();
-      // Pull the destination page index directly off the link.
       FPDF_DEST dest = FPDFLink_GetDest(doc, link);
-      int idx = (dest == nullptr) ? -1
-                                  : FPDFDest_GetDestPageIndex(doc, dest);
-      dest_page.push_back(idx < 0 ? NA_INTEGER : idx + 1);
-      continue;
-    }
-    unsigned long act_type = FPDFAction_GetType(action);
-    action_code.push_back(static_cast<int>(act_type));
-    // URI extraction (ASCII-encoded path string).
-    std::string uri_text;
-    if (act_type == PDFACTION_URI) {
-      unsigned long need =
-          FPDFAction_GetURIPath(doc, action, nullptr, 0);
-      if (need > 1) {
-        std::vector<char> buf(need);
-        FPDFAction_GetURIPath(doc, action, buf.data(), need);
-        uri_text.assign(buf.data(), need - 1);
-      }
-    }
-    uri.emplace_back(uri_text);
-    // Destination page (only meaningful for GoTo / RemoteGoTo).
-    int dest_idx = -1;
-    if (act_type == PDFACTION_GOTO ||
-        act_type == PDFACTION_REMOTEGOTO) {
-      FPDF_DEST dest = FPDFAction_GetDest(doc, action);
       if (dest != nullptr) {
-        dest_idx = FPDFDest_GetDestPageIndex(doc, dest);
+        int p = FPDFDest_GetDestPageIndex(doc, dest);
+        if (p >= 0) {
+          dest_idx = p;
+          code = PDFACTION_GOTO;
+        }
       }
     }
+    action_code.push_back(code);
+    uri.emplace_back(uri_text);
+    filepath.emplace_back(fp_text);
     dest_page.push_back(dest_idx < 0 ? NA_INTEGER : dest_idx + 1);
   }
   return Rcpp::List::create(
@@ -149,6 +135,7 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
       Rcpp::_["bounds_top"]    = top,
       Rcpp::_["action_code"]   = action_code,
       Rcpp::_["uri"]           = uri,
+      Rcpp::_["filepath"]      = filepath,
       Rcpp::_["dest_page_num"] = dest_page);
 }
 

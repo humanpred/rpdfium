@@ -179,7 +179,26 @@ test_that("pdf_page_links returns 0 rows for a page with no links", {
   expect_equal(nrow(links), 0L)
   expect_named(links, c("link_index", "bounds_left", "bounds_bottom",
                         "bounds_right", "bounds_top", "action_type",
-                        "uri", "dest_page_num"))
+                        "uri", "filepath", "dest_page_num"))
+})
+
+test_that("pdf_page_links reports a URI link's target correctly", {
+  # annotated.pdf has one URI link annotation at rect (50,150)-(200,170)
+  # targeting https://example.com. Previously the action_type lookup
+  # was off by one and reported this as "launch" — the test guards
+  # against that regression.
+  doc <- pdf_open(fixture_path("annotated"))
+  on.exit(pdf_close(doc), add = TRUE)
+  links <- pdf_page_links(doc, page_num = 1L)
+  expect_equal(nrow(links), 1L)
+  expect_equal(links$action_type, "uri")
+  expect_equal(links$uri,         "https://example.com")
+  expect_true(is.na(links$filepath))
+  expect_true(is.na(links$dest_page_num))
+  expect_equal(links$bounds_left,   50)
+  expect_equal(links$bounds_bottom, 150)
+  expect_equal(links$bounds_right,  200)
+  expect_equal(links$bounds_top,    170)
 })
 
 # pdf_page_objects(recursive) -----------------------------------
