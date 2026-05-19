@@ -52,8 +52,11 @@ std::string read_struct_string(
 }
 
 // Read one structure-element attribute *value* as a typed R SEXP.
-// PDFium's value tagging is the same enum as page-object marks:
-// BOOLEAN / NUMBER / STRING / NAME / others -> NULL.
+// PDFium's value tagging is the same enum as page-object marks
+// (BOOLEAN / NUMBER / STRING / NAME / ARRAY) with arrays of
+// recursively-typed children — useful for `/BBox = [l b r t]`,
+// `/RowSpan` arrays, and similar structural metadata. Unsupported
+// types (Dict / Reference / Stream) come back as NULL.
 SEXP read_attr_value(FPDF_STRUCTELEMENT_ATTR_VALUE value) {
   if (value == nullptr) return R_NilValue;
   int type = FPDF_StructElement_Attr_GetType(value);
@@ -86,8 +89,19 @@ SEXP read_attr_value(FPDF_STRUCTELEMENT_ATTR_VALUE value) {
     }
     return Rcpp::wrap(std::string(buf.data(), out_buflen - 1));
   }
-  // Blob: surface as raw vector. Other types (Array / Dict /
-  // Reference) come back as NULL — PDFium doesn't expose them via
+  if (type == FPDF_OBJECT_ARRAY) {
+    int n = FPDF_StructElement_Attr_CountChildren(value);
+    if (n <= 0) return Rcpp::List();
+    Rcpp::List arr(n);
+    for (int i = 0; i < n; ++i) {
+      FPDF_STRUCTELEMENT_ATTR_VALUE child =
+          FPDF_StructElement_Attr_GetChildAtIndex(value, i);
+      arr[i] = read_attr_value(child);
+    }
+    return arr;
+  }
+  // Blob: surface as raw vector. Other types (Dict / Reference /
+  // Stream) come back as NULL — PDFium doesn't expose them via
   // this API.
   unsigned long out_buflen = 0;
   if (FPDF_StructElement_Attr_GetBlobValue(value, nullptr, 0,
