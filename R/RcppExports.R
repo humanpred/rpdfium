@@ -201,6 +201,10 @@ cpp_open_document_from_memory <- function(bytes, password) {
     .Call(`_pdfium_cpp_open_document_from_memory`, bytes, password)
 }
 
+cpp_create_new_document <- function() {
+    .Call(`_pdfium_cpp_create_new_document`)
+}
+
 cpp_close_document <- function(ptr) {
     invisible(.Call(`_pdfium_cpp_close_document`, ptr))
 }
@@ -211,6 +215,42 @@ cpp_handle_is_valid <- function(ptr) {
 
 cpp_page_count <- function(ptr) {
     .Call(`_pdfium_cpp_page_count`, ptr)
+}
+
+cpp_page_new <- function(doc_ptr, page_index, width, height) {
+    .Call(`_pdfium_cpp_page_new`, doc_ptr, page_index, width, height)
+}
+
+cpp_page_delete <- function(doc_ptr, page_index) {
+    invisible(.Call(`_pdfium_cpp_page_delete`, doc_ptr, page_index))
+}
+
+cpp_page_set_rotation <- function(page_ptr, rotation_code) {
+    invisible(.Call(`_pdfium_cpp_page_set_rotation`, page_ptr, rotation_code))
+}
+
+cpp_move_pages <- function(doc_ptr, page_indices, dest_index) {
+    .Call(`_pdfium_cpp_move_pages`, doc_ptr, page_indices, dest_index)
+}
+
+cpp_import_pages_by_index <- function(dest_doc_ptr, src_doc_ptr, page_indices, insert_index) {
+    .Call(`_pdfium_cpp_import_pages_by_index`, dest_doc_ptr, src_doc_ptr, page_indices, insert_index)
+}
+
+cpp_import_n_pages_to_one <- function(src_doc_ptr, output_width, output_height, n_cols, n_rows) {
+    .Call(`_pdfium_cpp_import_n_pages_to_one`, src_doc_ptr, output_width, output_height, n_cols, n_rows)
+}
+
+cpp_page_set_box <- function(page_ptr, box, left, bottom, right, top) {
+    invisible(.Call(`_pdfium_cpp_page_set_box`, page_ptr, box, left, bottom, right, top))
+}
+
+cpp_catalog_set_language <- function(doc_ptr, lang) {
+    .Call(`_pdfium_cpp_catalog_set_language`, doc_ptr, lang)
+}
+
+cpp_page_generate_content <- function(page_ptr) {
+    .Call(`_pdfium_cpp_page_generate_content`, page_ptr)
 }
 
 cpp_named_dest_by_name <- function(doc_ptr, name) {
@@ -371,6 +411,14 @@ cpp_render_page <- function(page_ptr, pixel_width, pixel_height, rotation_code, 
 
 cpp_render_page_with_matrix <- function(page_ptr, pixel_width, pixel_height, matrix6, clip4, render_flags, background_argb, fill_background) {
     .Call(`_pdfium_cpp_render_page_with_matrix`, page_ptr, pixel_width, pixel_height, matrix6, clip4, render_flags, background_argb, fill_background)
+}
+
+cpp_save_to_file <- function(doc_ptr, path, flags, version) {
+    .Call(`_pdfium_cpp_save_to_file`, doc_ptr, path, flags, version)
+}
+
+cpp_save_to_raw <- function(doc_ptr, flags, version) {
+    .Call(`_pdfium_cpp_save_to_raw`, doc_ptr, flags, version)
 }
 
 cpp_signature_count <- function(doc_ptr) {

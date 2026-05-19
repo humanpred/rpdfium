@@ -8,11 +8,20 @@
 #' @return An object of class `c("pdfium_doc", "pdfium_handle")`.
 #' @keywords internal
 #' @noRd
-new_pdfium_doc <- function(ptr, path) {
+new_pdfium_doc <- function(ptr, path, readwrite = FALSE) {
   checkmate::assert_class(ptr, "externalptr")
   checkmate::assert_string(path)
+  checkmate::assert_flag(readwrite)
+  # `state` is a mutable environment attached to the doc so writer
+  # functions can record dirty pages, cache the form-fill env, etc.
+  # R's S3 list is copy-on-modify, so without an env the writer
+  # surface couldn't track in-flight edits across function calls.
+  state <- new.env(parent = emptyenv())
+  state$dirty_pages <- integer(0L)
+  state$ffl_env <- NULL
   structure(
-    list(ptr = ptr, path = path),
+    list(ptr = ptr, path = path,
+         readwrite = readwrite, state = state),
     class = c("pdfium_doc", "pdfium_handle")
   )
 }

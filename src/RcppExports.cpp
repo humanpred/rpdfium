@@ -585,6 +585,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_create_new_document
+SEXP cpp_create_new_document();
+RcppExport SEXP _pdfium_cpp_create_new_document() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(cpp_create_new_document());
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_close_document
 void cpp_close_document(SEXP ptr);
 RcppExport SEXP _pdfium_cpp_close_document(SEXP ptrSEXP) {
@@ -614,6 +624,122 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type ptr(ptrSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_page_count(ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_page_new
+SEXP cpp_page_new(SEXP doc_ptr, int page_index, double width, double height);
+RcppExport SEXP _pdfium_cpp_page_new(SEXP doc_ptrSEXP, SEXP page_indexSEXP, SEXP widthSEXP, SEXP heightSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type page_index(page_indexSEXP);
+    Rcpp::traits::input_parameter< double >::type width(widthSEXP);
+    Rcpp::traits::input_parameter< double >::type height(heightSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_page_new(doc_ptr, page_index, width, height));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_page_delete
+void cpp_page_delete(SEXP doc_ptr, int page_index);
+RcppExport SEXP _pdfium_cpp_page_delete(SEXP doc_ptrSEXP, SEXP page_indexSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type page_index(page_indexSEXP);
+    cpp_page_delete(doc_ptr, page_index);
+    return R_NilValue;
+END_RCPP
+}
+// cpp_page_set_rotation
+void cpp_page_set_rotation(SEXP page_ptr, int rotation_code);
+RcppExport SEXP _pdfium_cpp_page_set_rotation(SEXP page_ptrSEXP, SEXP rotation_codeSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type rotation_code(rotation_codeSEXP);
+    cpp_page_set_rotation(page_ptr, rotation_code);
+    return R_NilValue;
+END_RCPP
+}
+// cpp_move_pages
+bool cpp_move_pages(SEXP doc_ptr, Rcpp::IntegerVector page_indices, int dest_index);
+RcppExport SEXP _pdfium_cpp_move_pages(SEXP doc_ptrSEXP, SEXP page_indicesSEXP, SEXP dest_indexSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type page_indices(page_indicesSEXP);
+    Rcpp::traits::input_parameter< int >::type dest_index(dest_indexSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_move_pages(doc_ptr, page_indices, dest_index));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_import_pages_by_index
+bool cpp_import_pages_by_index(SEXP dest_doc_ptr, SEXP src_doc_ptr, Rcpp::IntegerVector page_indices, int insert_index);
+RcppExport SEXP _pdfium_cpp_import_pages_by_index(SEXP dest_doc_ptrSEXP, SEXP src_doc_ptrSEXP, SEXP page_indicesSEXP, SEXP insert_indexSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type dest_doc_ptr(dest_doc_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type src_doc_ptr(src_doc_ptrSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type page_indices(page_indicesSEXP);
+    Rcpp::traits::input_parameter< int >::type insert_index(insert_indexSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_import_pages_by_index(dest_doc_ptr, src_doc_ptr, page_indices, insert_index));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_import_n_pages_to_one
+SEXP cpp_import_n_pages_to_one(SEXP src_doc_ptr, float output_width, float output_height, int n_cols, int n_rows);
+RcppExport SEXP _pdfium_cpp_import_n_pages_to_one(SEXP src_doc_ptrSEXP, SEXP output_widthSEXP, SEXP output_heightSEXP, SEXP n_colsSEXP, SEXP n_rowsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type src_doc_ptr(src_doc_ptrSEXP);
+    Rcpp::traits::input_parameter< float >::type output_width(output_widthSEXP);
+    Rcpp::traits::input_parameter< float >::type output_height(output_heightSEXP);
+    Rcpp::traits::input_parameter< int >::type n_cols(n_colsSEXP);
+    Rcpp::traits::input_parameter< int >::type n_rows(n_rowsSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_import_n_pages_to_one(src_doc_ptr, output_width, output_height, n_cols, n_rows));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_page_set_box
+void cpp_page_set_box(SEXP page_ptr, std::string box, float left, float bottom, float right, float top);
+RcppExport SEXP _pdfium_cpp_page_set_box(SEXP page_ptrSEXP, SEXP boxSEXP, SEXP leftSEXP, SEXP bottomSEXP, SEXP rightSEXP, SEXP topSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type box(boxSEXP);
+    Rcpp::traits::input_parameter< float >::type left(leftSEXP);
+    Rcpp::traits::input_parameter< float >::type bottom(bottomSEXP);
+    Rcpp::traits::input_parameter< float >::type right(rightSEXP);
+    Rcpp::traits::input_parameter< float >::type top(topSEXP);
+    cpp_page_set_box(page_ptr, box, left, bottom, right, top);
+    return R_NilValue;
+END_RCPP
+}
+// cpp_catalog_set_language
+bool cpp_catalog_set_language(SEXP doc_ptr, std::string lang);
+RcppExport SEXP _pdfium_cpp_catalog_set_language(SEXP doc_ptrSEXP, SEXP langSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type lang(langSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_catalog_set_language(doc_ptr, lang));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_page_generate_content
+bool cpp_page_generate_content(SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_page_generate_content(SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_page_generate_content(page_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1088,6 +1214,33 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_save_to_file
+bool cpp_save_to_file(SEXP doc_ptr, std::string path, int flags, int version);
+RcppExport SEXP _pdfium_cpp_save_to_file(SEXP doc_ptrSEXP, SEXP pathSEXP, SEXP flagsSEXP, SEXP versionSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type path(pathSEXP);
+    Rcpp::traits::input_parameter< int >::type flags(flagsSEXP);
+    Rcpp::traits::input_parameter< int >::type version(versionSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_save_to_file(doc_ptr, path, flags, version));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_save_to_raw
+Rcpp::RawVector cpp_save_to_raw(SEXP doc_ptr, int flags, int version);
+RcppExport SEXP _pdfium_cpp_save_to_raw(SEXP doc_ptrSEXP, SEXP flagsSEXP, SEXP versionSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type flags(flagsSEXP);
+    Rcpp::traits::input_parameter< int >::type version(versionSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_save_to_raw(doc_ptr, flags, version));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_signature_count
 int cpp_signature_count(SEXP doc_ptr);
 RcppExport SEXP _pdfium_cpp_signature_count(SEXP doc_ptrSEXP) {
@@ -1317,9 +1470,19 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_destroy_library", (DL_FUNC) &_pdfium_cpp_destroy_library, 0},
     {"_pdfium_cpp_open_document", (DL_FUNC) &_pdfium_cpp_open_document, 2},
     {"_pdfium_cpp_open_document_from_memory", (DL_FUNC) &_pdfium_cpp_open_document_from_memory, 2},
+    {"_pdfium_cpp_create_new_document", (DL_FUNC) &_pdfium_cpp_create_new_document, 0},
     {"_pdfium_cpp_close_document", (DL_FUNC) &_pdfium_cpp_close_document, 1},
     {"_pdfium_cpp_handle_is_valid", (DL_FUNC) &_pdfium_cpp_handle_is_valid, 1},
     {"_pdfium_cpp_page_count", (DL_FUNC) &_pdfium_cpp_page_count, 1},
+    {"_pdfium_cpp_page_new", (DL_FUNC) &_pdfium_cpp_page_new, 4},
+    {"_pdfium_cpp_page_delete", (DL_FUNC) &_pdfium_cpp_page_delete, 2},
+    {"_pdfium_cpp_page_set_rotation", (DL_FUNC) &_pdfium_cpp_page_set_rotation, 2},
+    {"_pdfium_cpp_move_pages", (DL_FUNC) &_pdfium_cpp_move_pages, 3},
+    {"_pdfium_cpp_import_pages_by_index", (DL_FUNC) &_pdfium_cpp_import_pages_by_index, 4},
+    {"_pdfium_cpp_import_n_pages_to_one", (DL_FUNC) &_pdfium_cpp_import_n_pages_to_one, 5},
+    {"_pdfium_cpp_page_set_box", (DL_FUNC) &_pdfium_cpp_page_set_box, 6},
+    {"_pdfium_cpp_catalog_set_language", (DL_FUNC) &_pdfium_cpp_catalog_set_language, 2},
+    {"_pdfium_cpp_page_generate_content", (DL_FUNC) &_pdfium_cpp_page_generate_content, 1},
     {"_pdfium_cpp_named_dest_by_name", (DL_FUNC) &_pdfium_cpp_named_dest_by_name, 2},
     {"_pdfium_cpp_bookmark_find", (DL_FUNC) &_pdfium_cpp_bookmark_find, 2},
     {"_pdfium_cpp_form_field_at_point", (DL_FUNC) &_pdfium_cpp_form_field_at_point, 4},
@@ -1360,6 +1523,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_path_segments", (DL_FUNC) &_pdfium_cpp_path_segments, 1},
     {"_pdfium_cpp_render_page", (DL_FUNC) &_pdfium_cpp_render_page, 7},
     {"_pdfium_cpp_render_page_with_matrix", (DL_FUNC) &_pdfium_cpp_render_page_with_matrix, 8},
+    {"_pdfium_cpp_save_to_file", (DL_FUNC) &_pdfium_cpp_save_to_file, 4},
+    {"_pdfium_cpp_save_to_raw", (DL_FUNC) &_pdfium_cpp_save_to_raw, 3},
     {"_pdfium_cpp_signature_count", (DL_FUNC) &_pdfium_cpp_signature_count, 1},
     {"_pdfium_cpp_signatures_list", (DL_FUNC) &_pdfium_cpp_signatures_list, 1},
     {"_pdfium_cpp_signature_contents", (DL_FUNC) &_pdfium_cpp_signature_contents, 2},

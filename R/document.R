@@ -24,6 +24,15 @@
 #'   Mutually exclusive with `path`.
 #' @param password Optional password for encrypted PDFs. `NULL`
 #'   (the default) passes no password to PDFium.
+#' @param readwrite Logical. If `TRUE`, the document is opened in
+#'   read-write mode and every mutator function ([pdf_save()],
+#'   [pdf_set_page_rotation()], the `pdf_*_set_*()` family,
+#'   annotation authoring, form filling, …) will accept it.
+#'   Defaults `FALSE` — a read-only handle that refuses mutations
+#'   with a clear error message. See ADR-012 in
+#'   `dev/decisions/`. PDFium itself has no read/write distinction;
+#'   the flag is the R wrapper's safety net against accidental
+#'   edits inside long pipelines.
 #' @return A `pdfium_doc` object.
 #'
 #' @examples
@@ -44,15 +53,21 @@
 #'   pdf_close(doc)
 #' }
 #' @export
-pdf_open <- function(path = NULL, source = NULL, password = NULL) {
+pdf_open <- function(path = NULL, source = NULL, password = NULL,
+                     readwrite = FALSE) {
   validate_pdf_open_args(path, source, password)
+  checkmate::assert_flag(readwrite)
   pwd <- if (is.null(password)) "" else password
   if (!is.null(source)) {
     ptr <- cpp_open_document_from_memory(source, pwd)
-    return(new_pdfium_doc(ptr, "<raw bytes>"))
+    return(new_pdfium_doc(ptr, "<raw bytes>", readwrite = readwrite))
   }
   ptr <- cpp_open_document(path.expand(path), pwd)
-  new_pdfium_doc(ptr, normalizePath(path, winslash = "/", mustWork = FALSE))
+  new_pdfium_doc(
+    ptr,
+    normalizePath(path, winslash = "/", mustWork = FALSE),
+    readwrite = readwrite
+  )
 }
 
 # Internal: validate the three pdf_open() arguments. Split into
