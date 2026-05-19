@@ -67,13 +67,19 @@ void read_bookmark_action(FPDF_DOCUMENT doc,
                           int& action_code,
                           std::string& uri_out,
                           std::string& filepath_out,
-                          int& dest_page_idx) {
+                          int& dest_page_idx,
+                          int& dest_view,
+                          double& dest_x,
+                          double& dest_y,
+                          double& dest_zoom) {
   // Default to "goto" semantics; classify_action will overwrite if an
   // /A is present, and we'll then fold in /Dest below.
   action_code = 0;
   uri_out.clear();
   filepath_out.clear();
   dest_page_idx = -1;
+  dest_view = 0;
+  dest_x = dest_y = dest_zoom = NA_REAL;
 
   FPDF_ACTION action = FPDFBookmark_GetAction(bookmark);
   if (action != nullptr) {
@@ -83,6 +89,9 @@ void read_bookmark_action(FPDF_DOCUMENT doc,
   // Direct /Dest on the bookmark (overrides / supplements any
   // action-derived dest_page_idx for plain within-doc GoTo).
   FPDF_DEST dest = FPDFBookmark_GetDest(doc, bookmark);
+  if (dest == nullptr && action != nullptr) {
+    dest = FPDFAction_GetDest(doc, action);
+  }
   if (dest != nullptr) {
     int idx = FPDFDest_GetDestPageIndex(doc, dest);
     if (idx >= 0) {
@@ -91,6 +100,8 @@ void read_bookmark_action(FPDF_DOCUMENT doc,
         action_code = PDFACTION_GOTO;
       }
     }
+    pdfium_r::read_dest_details(doc, dest, dest_view, dest_x, dest_y,
+                                 dest_zoom);
   }
 }
 
@@ -107,12 +118,18 @@ void walk_bookmarks(FPDF_DOCUMENT doc,
                     std::vector<int>& page_nums,
                     std::vector<int>& action_codes,
                     std::vector<std::string>& uris,
-                    std::vector<std::string>& filepaths) {
+                    std::vector<std::string>& filepaths,
+                    std::vector<int>& dest_views,
+                    std::vector<double>& dest_xs,
+                    std::vector<double>& dest_ys,
+                    std::vector<double>& dest_zooms) {
   while (current != nullptr) {
-    int action_code = 0, dest_page_idx = -1;
+    int action_code = 0, dest_page_idx = -1, dest_view = 0;
+    double dest_x = NA_REAL, dest_y = NA_REAL, dest_zoom = NA_REAL;
     std::string uri, filepath;
     read_bookmark_action(doc, current, action_code, uri, filepath,
-                         dest_page_idx);
+                         dest_page_idx,
+                         dest_view, dest_x, dest_y, dest_zoom);
 
     parent_indices.push_back(parent_index);
     levels.push_back(level);
@@ -121,13 +138,18 @@ void walk_bookmarks(FPDF_DOCUMENT doc,
     action_codes.push_back(action_code);
     uris.emplace_back(uri);
     filepaths.emplace_back(filepath);
+    dest_views.push_back(dest_view);
+    dest_xs.push_back(dest_x);
+    dest_ys.push_back(dest_y);
+    dest_zooms.push_back(dest_zoom);
     int this_index = static_cast<int>(parent_indices.size());
 
     FPDF_BOOKMARK child = FPDFBookmark_GetFirstChild(doc, current);
     if (child != nullptr) {
       walk_bookmarks(doc, child, this_index, level + 1,
                      parent_indices, levels, titles, page_nums,
-                     action_codes, uris, filepaths);
+                     action_codes, uris, filepaths,
+                     dest_views, dest_xs, dest_ys, dest_zooms);
     }
     current = FPDFBookmark_GetNextSibling(doc, current);
   }
@@ -146,11 +168,14 @@ Rcpp::List cpp_bookmarks(SEXP doc_ptr) {
   std::vector<int> action_codes;
   std::vector<std::string> uris;
   std::vector<std::string> filepaths;
+  std::vector<int> dest_views;
+  std::vector<double> dest_xs, dest_ys, dest_zooms;
 
   FPDF_BOOKMARK root = FPDFBookmark_GetFirstChild(doc, nullptr);
   walk_bookmarks(doc, root, /*parent=*/0, /*level=*/1,
                  parent_indices, levels, titles, page_nums,
-                 action_codes, uris, filepaths);
+                 action_codes, uris, filepaths,
+                 dest_views, dest_xs, dest_ys, dest_zooms);
 
   return Rcpp::List::create(
       Rcpp::_["parent_index"] = parent_indices,
@@ -159,7 +184,11 @@ Rcpp::List cpp_bookmarks(SEXP doc_ptr) {
       Rcpp::_["page_num"]     = page_nums,
       Rcpp::_["action_code"]  = action_codes,
       Rcpp::_["uri"]          = uris,
-      Rcpp::_["filepath"]     = filepaths);
+      Rcpp::_["filepath"]     = filepaths,
+      Rcpp::_["dest_view"]    = dest_views,
+      Rcpp::_["dest_x"]       = dest_xs,
+      Rcpp::_["dest_y"]       = dest_ys,
+      Rcpp::_["dest_zoom"]    = dest_zooms);
 }
 
 // [[Rcpp::export(name = "cpp_page_label")]]

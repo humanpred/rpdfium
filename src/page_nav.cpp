@@ -62,7 +62,11 @@ Rcpp::List cpp_link_at_point(SEXP doc_ptr, SEXP page_ptr,
       Rcpp::_["action_code"] = NA_INTEGER,
       Rcpp::_["uri"]         = std::string(),
       Rcpp::_["filepath"]    = std::string(),
-      Rcpp::_["dest_page"]   = NA_INTEGER
+      Rcpp::_["dest_page"]   = NA_INTEGER,
+      Rcpp::_["dest_view"]   = NA_INTEGER,
+      Rcpp::_["dest_x"]      = NA_REAL,
+      Rcpp::_["dest_y"]      = NA_REAL,
+      Rcpp::_["dest_zoom"]   = NA_REAL
     );
   }
   int z = FPDFLink_GetLinkZOrderAtPoint(page, x, y);
@@ -72,18 +76,24 @@ Rcpp::List cpp_link_at_point(SEXP doc_ptr, SEXP page_ptr,
     left = r.left; bottom = r.bottom; right = r.right; top = r.top;
   }
   FPDF_ACTION action = FPDFLink_GetAction(link);
-  int action_code = 0, dest_page_idx = -1;
+  int action_code = 0, dest_page_idx = -1, dest_view = 0;
+  double dest_x = NA_REAL, dest_y = NA_REAL, dest_zoom = NA_REAL;
   std::string uri, filepath;
   pdfium_r::classify_action(doc, action, action_code, uri, filepath,
                             dest_page_idx);
-  // If no /A action, fall back to /Dest on the link itself.
-  if (action == nullptr) {
-    FPDF_DEST dest = FPDFLink_GetDest(doc, link);
-    if (dest != nullptr) {
-      int p = FPDFDest_GetDestPageIndex(doc, dest);
+  FPDF_DEST dest_handle =
+      (action != nullptr) ? FPDFAction_GetDest(doc, action)
+                          : FPDFLink_GetDest(doc, link);
+  if (dest_handle != nullptr) {
+    if (dest_page_idx < 0) {
+      int p = FPDFDest_GetDestPageIndex(doc, dest_handle);
       if (p >= 0) dest_page_idx = p;
     }
-    action_code = 1;  // PDFACTION_GOTO
+    pdfium_r::read_dest_details(doc, dest_handle, dest_view,
+                                 dest_x, dest_y, dest_zoom);
+  }
+  if (action == nullptr) {
+    action_code = 1;  // PDFACTION_GOTO for /Dest-only links
   }
   return Rcpp::List::create(
     Rcpp::_["found"]       = true,
@@ -96,7 +106,11 @@ Rcpp::List cpp_link_at_point(SEXP doc_ptr, SEXP page_ptr,
     Rcpp::_["uri"]         = uri,
     Rcpp::_["filepath"]    = filepath,
     Rcpp::_["dest_page"]   = (dest_page_idx < 0) ? NA_INTEGER
-                                                  : (dest_page_idx + 1)
+                                                  : (dest_page_idx + 1),
+    Rcpp::_["dest_view"]   = dest_view,
+    Rcpp::_["dest_x"]      = dest_x,
+    Rcpp::_["dest_y"]      = dest_y,
+    Rcpp::_["dest_zoom"]   = dest_zoom
   );
 }
 
@@ -118,24 +132,40 @@ Rcpp::List cpp_page_aactions(SEXP doc_ptr, SEXP page_ptr) {
   std::vector<std::string> uris;
   std::vector<std::string> filepaths;
   std::vector<int> dest_pages;
+  std::vector<int> dest_views;
+  std::vector<double> dest_xs, dest_ys, dest_zooms;
 
   for (size_t i = 0; i < sizeof(kAATypes) / sizeof(int); ++i) {
     FPDF_ACTION action = FPDF_GetPageAAction(page, kAATypes[i]);
     if (action == nullptr) continue;
-    int action_code = 0, dest = -1;
+    int action_code = 0, dest = -1, dview = 0;
+    double dx = NA_REAL, dy = NA_REAL, dzoom = NA_REAL;
     std::string uri, fp;
     pdfium_r::classify_action(doc, action, action_code, uri, fp, dest);
+    FPDF_DEST dest_handle = FPDFAction_GetDest(doc, action);
+    if (dest_handle != nullptr) {
+      pdfium_r::read_dest_details(doc, dest_handle, dview, dx, dy,
+                                   dzoom);
+    }
     trigger.emplace_back(kAANames[i]);
     action_codes.push_back(action_code);
     uris.emplace_back(uri);
     filepaths.emplace_back(fp);
     dest_pages.push_back(dest < 0 ? NA_INTEGER : dest + 1);
+    dest_views.push_back(dview);
+    dest_xs.push_back(dx);
+    dest_ys.push_back(dy);
+    dest_zooms.push_back(dzoom);
   }
   return Rcpp::List::create(
     Rcpp::_["trigger"]     = trigger,
     Rcpp::_["action_code"] = action_codes,
     Rcpp::_["uri"]         = uris,
     Rcpp::_["filepath"]    = filepaths,
-    Rcpp::_["dest_page"]   = dest_pages
+    Rcpp::_["dest_page"]   = dest_pages,
+    Rcpp::_["dest_view"]   = dest_views,
+    Rcpp::_["dest_x"]      = dest_xs,
+    Rcpp::_["dest_y"]      = dest_ys,
+    Rcpp::_["dest_zoom"]   = dest_zooms
   );
 }

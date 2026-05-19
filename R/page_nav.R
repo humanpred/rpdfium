@@ -21,6 +21,28 @@ pdfium_action_type_name <- function(codes) {
   out
 }
 
+# FPDF dest-view codes (fpdf_doc.h):
+#   0 = UNKNOWN_MODE, 1 = XYZ, 2 = FIT, 3 = FITH, 4 = FITV,
+#   5 = FITR, 6 = FITB, 7 = FITBH, 8 = FITBV
+.pdfium_dest_views <- c(
+  "xyz",    # 1 PDFDEST_VIEW_XYZ   (x, y, zoom; explicit point + scale)
+  "fit",    # 2 PDFDEST_VIEW_FIT   (fit whole page)
+  "fith",   # 3 PDFDEST_VIEW_FITH  (fit page width at y)
+  "fitv",   # 4 PDFDEST_VIEW_FITV  (fit page height at x)
+  "fitr",   # 5 PDFDEST_VIEW_FITR  (fit specific rectangle)
+  "fitb",   # 6 PDFDEST_VIEW_FITB  (fit bounding box)
+  "fitbh",  # 7 PDFDEST_VIEW_FITBH (fit bbox width at y)
+  "fitbv"   # 8 PDFDEST_VIEW_FITBV (fit bbox height at x)
+)
+
+pdfium_dest_view_name <- function(codes) {
+  codes <- as.integer(codes)
+  out <- rep("unknown", length(codes))
+  hit <- codes >= 1L & codes <= length(.pdfium_dest_views)
+  out[hit] <- .pdfium_dest_views[codes[hit]]
+  out
+}
+
 #' Hit-test for the link annotation under a point
 #'
 #' Finds the link annotation at PDF user-space coordinates `(x, y)`
@@ -81,7 +103,11 @@ pdf_link_at_point <- function(page, x, y, page_num = 1L) {
     action_type  = pdfium_action_type_name(raw$action_code),
     uri          = if (nzchar(raw$uri)) raw$uri else NA_character_,
     filepath     = if (nzchar(raw$filepath)) raw$filepath else NA_character_,
-    dest_page    = as.integer(raw$dest_page)
+    dest_page    = as.integer(raw$dest_page),
+    dest_view    = pdfium_dest_view_name(raw$dest_view),
+    dest_x       = raw$dest_x,
+    dest_y       = raw$dest_y,
+    dest_zoom    = raw$dest_zoom
   )
 }
 
@@ -96,7 +122,11 @@ empty_link_at_point_tibble <- function() {
     action_type  = character(),
     uri          = character(),
     filepath     = character(),
-    dest_page    = integer()
+    dest_page    = integer(),
+    dest_view    = character(),
+    dest_x       = numeric(),
+    dest_y       = numeric(),
+    dest_zoom    = numeric()
   )
 }
 
@@ -134,7 +164,11 @@ pdf_page_actions <- function(page, page_num = 1L) {
     action_type  = pdfium_action_type_name(raw$action_code),
     uri          = uri,
     filepath     = fp,
-    dest_page    = as.integer(raw$dest_page)
+    dest_page    = as.integer(raw$dest_page),
+    dest_view    = pdfium_dest_view_name(raw$dest_view),
+    dest_x       = raw$dest_x,
+    dest_y       = raw$dest_y,
+    dest_zoom    = raw$dest_zoom
   )
 }
 
@@ -144,6 +178,10 @@ empty_page_actions_tibble <- function() {
     action_type  = character(),
     uri          = character(),
     filepath     = character(),
-    dest_page    = integer()
+    dest_page    = integer(),
+    dest_view    = character(),
+    dest_x       = numeric(),
+    dest_y       = numeric(),
+    dest_zoom    = numeric()
   )
 }

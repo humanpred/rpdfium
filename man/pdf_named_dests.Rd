@@ -13,14 +13,27 @@ pdf_named_dests(doc, password = NULL)
 is a path. Ignored when \code{doc} is already an open \code{pdfium_doc}.}
 }
 \value{
-A tibble with columns \code{name} (character, UTF-8) and
-\code{page} (integer, 1-based; \code{NA} when PDFium can't resolve the
-destination's target page).
+A tibble with columns:
+\itemize{
+\item \code{name} character - the destination name, UTF-8.
+\item \code{page} integer - 1-based target page; \code{NA} when PDFium
+can't resolve it.
+\item \code{dest_view} character - the dest's view mode: one of
+\code{"xyz"}, \code{"fit"}, \code{"fith"}, \code{"fitv"}, \code{"fitr"}, \code{"fitb"},
+\code{"fitbh"}, \code{"fitbv"}, or \code{"unknown"}.
+\item \code{dest_x}, \code{dest_y} numeric - the explicit (x, y) point for
+XYZ destinations and the line offset for FitH / FitV /
+FitBH / FitBV. \code{NA} when not specified by the destination.
+\item \code{dest_zoom} numeric - the explicit zoom for XYZ destinations,
+\code{NA} otherwise.
+}
 }
 \description{
 PDF authors can attach named "destinations" to specific page
 positions (e.g. for cross-document links or programmatic
-navigation). Returns one row per named destination with its name
-and target page. Wraps \code{FPDF_CountNamedDests} /
-\code{FPDF_GetNamedDest} / \code{FPDFDest_GetDestPageIndex}.
+navigation). Returns one row per named destination with its name,
+target page, and the dest's view/zoom parameters. Wraps
+\code{FPDF_CountNamedDests} / \code{FPDF_GetNamedDest} /
+\code{FPDFDest_GetDestPageIndex} / \code{FPDFDest_GetView} /
+\code{FPDFDest_GetLocationInPage}.
 }

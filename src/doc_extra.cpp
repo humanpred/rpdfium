@@ -23,6 +23,7 @@
 #include "fpdf_doc.h"
 #include "fpdf_ext.h"
 #include "fpdf_javascript.h"
+#include "action_helpers.h"
 #include "utf16.h"
 
 using pdfium_r::utf16le_to_utf8;
@@ -122,11 +123,17 @@ Rcpp::List cpp_doc_named_dests(SEXP doc_ptr) {
   if (n <= 0) {
     return Rcpp::List::create(
       Rcpp::_["name"]             = Rcpp::CharacterVector(0),
-      Rcpp::_["page_index_zero"]  = Rcpp::IntegerVector(0)
+      Rcpp::_["page_index_zero"]  = Rcpp::IntegerVector(0),
+      Rcpp::_["dest_view"]        = Rcpp::IntegerVector(0),
+      Rcpp::_["dest_x"]           = Rcpp::NumericVector(0),
+      Rcpp::_["dest_y"]           = Rcpp::NumericVector(0),
+      Rcpp::_["dest_zoom"]        = Rcpp::NumericVector(0)
     );
   }
   Rcpp::CharacterVector names(n);
   Rcpp::IntegerVector page_index_zero(n);
+  Rcpp::IntegerVector dest_view(n);
+  Rcpp::NumericVector dest_x(n), dest_y(n), dest_zoom(n);
   for (int i = 0; i < n; ++i) {
     // Two-pass byte-count probe: buflen in/out (bytes).
     long buflen = 0;
@@ -134,6 +141,8 @@ Rcpp::List cpp_doc_named_dests(SEXP doc_ptr) {
     if (dest == nullptr || buflen <= 0) {
       names[i] = NA_STRING;
       page_index_zero[i] = NA_INTEGER;
+      dest_view[i] = 0;
+      dest_x[i] = dest_y[i] = dest_zoom[i] = NA_REAL;
       continue;
     }
     std::vector<unsigned short> buf(static_cast<size_t>(buflen) / 2);
@@ -147,10 +156,21 @@ Rcpp::List cpp_doc_named_dests(SEXP doc_ptr) {
                               CE_UTF8);
     int p = FPDFDest_GetDestPageIndex(doc, dest);
     page_index_zero[i] = (p < 0) ? NA_INTEGER : p;
+    int view = 0;
+    double x = NA_REAL, y = NA_REAL, zoom = NA_REAL;
+    pdfium_r::read_dest_details(doc, dest, view, x, y, zoom);
+    dest_view[i] = view;
+    dest_x[i]    = x;
+    dest_y[i]    = y;
+    dest_zoom[i] = zoom;
   }
   return Rcpp::List::create(
     Rcpp::_["name"]             = names,
-    Rcpp::_["page_index_zero"]  = page_index_zero
+    Rcpp::_["page_index_zero"]  = page_index_zero,
+    Rcpp::_["dest_view"]        = dest_view,
+    Rcpp::_["dest_x"]           = dest_x,
+    Rcpp::_["dest_y"]           = dest_y,
+    Rcpp::_["dest_zoom"]        = dest_zoom
   );
 }
 

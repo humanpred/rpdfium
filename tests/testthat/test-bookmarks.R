@@ -20,7 +20,8 @@ test_that("pdf_bookmarks() returns the documented tibble shape", {
   expect_s3_class(bm, "tbl_df")
   expect_named(bm, c("bookmark_index", "parent_index", "level",
                      "title", "page_num", "action_type", "uri",
-                     "filepath"))
+                     "filepath", "dest_view", "dest_x", "dest_y",
+                     "dest_zoom"))
   expect_type(bm$bookmark_index, "integer")
   expect_type(bm$parent_index,   "integer")
   expect_type(bm$level,          "integer")
@@ -53,7 +54,8 @@ test_that("pdf_bookmarks() returns 0 rows for a PDF without an outline", {
   expect_equal(nrow(bm), 0L)
   expect_named(bm, c("bookmark_index", "parent_index", "level",
                      "title", "page_num", "action_type", "uri",
-                     "filepath"))
+                     "filepath", "dest_view", "dest_x", "dest_y",
+                     "dest_zoom"))
 })
 
 test_that("pdf_bookmarks() accepts a path or an open doc", {

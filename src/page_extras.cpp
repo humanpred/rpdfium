@@ -90,6 +90,8 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
   std::vector<std::string> uri;
   std::vector<std::string> filepath;
   std::vector<int>    dest_page;
+  std::vector<int>    dest_view;
+  std::vector<double> dest_x, dest_y, dest_zoom;
   Rcpp::List          quad_points;
 
   // FPDFLink_Enumerate iterates link annotations on the page. The
@@ -110,25 +112,35 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
       top.push_back(NA_REAL);
     }
     FPDF_ACTION action = FPDFLink_GetAction(link);
-    int code = 0, dest_idx = -1;
+    int code = 0, dest_idx = -1, dview = 0;
+    double dx = NA_REAL, dy = NA_REAL, dzoom = NA_REAL;
     std::string uri_text, fp_text;
     pdfium_r::classify_action(doc, action, code, uri_text, fp_text,
                               dest_idx);
-    // Fall back to /Dest on the link itself for the no-/A case.
-    if (action == nullptr) {
-      FPDF_DEST dest = FPDFLink_GetDest(doc, link);
-      if (dest != nullptr) {
-        int p = FPDFDest_GetDestPageIndex(doc, dest);
+    // Resolve the dest handle (action's first, falling back to the
+    // link's /Dest for the no-/A case) for view + location info.
+    FPDF_DEST dest_handle =
+        (action != nullptr) ? FPDFAction_GetDest(doc, action)
+                            : FPDFLink_GetDest(doc, link);
+    if (dest_handle != nullptr) {
+      if (dest_idx < 0) {
+        int p = FPDFDest_GetDestPageIndex(doc, dest_handle);
         if (p >= 0) {
           dest_idx = p;
-          code = PDFACTION_GOTO;
+          if (action == nullptr) code = PDFACTION_GOTO;
         }
       }
+      pdfium_r::read_dest_details(doc, dest_handle, dview, dx, dy,
+                                   dzoom);
     }
     action_code.push_back(code);
     uri.emplace_back(uri_text);
     filepath.emplace_back(fp_text);
     dest_page.push_back(dest_idx < 0 ? NA_INTEGER : dest_idx + 1);
+    dest_view.push_back(dview);
+    dest_x.push_back(dx);
+    dest_y.push_back(dy);
+    dest_zoom.push_back(dzoom);
     // Per-line quad points for multi-line links (the same shape as
     // FPDFAnnot_GetAttachmentPoints uses for highlights). Single-
     // line links produce a 1-row 8-column matrix; absent quads
@@ -170,6 +182,10 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
       Rcpp::_["uri"]           = uri,
       Rcpp::_["filepath"]      = filepath,
       Rcpp::_["dest_page_num"] = dest_page,
+      Rcpp::_["dest_view"]     = dest_view,
+      Rcpp::_["dest_x"]        = dest_x,
+      Rcpp::_["dest_y"]        = dest_y,
+      Rcpp::_["dest_zoom"]     = dest_zoom,
       Rcpp::_["quad_points"]   = quad_points);
 }
 

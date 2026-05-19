@@ -268,16 +268,27 @@ pdf_viewer_preferences <- function(doc, password = NULL) {
 #'
 #' PDF authors can attach named "destinations" to specific page
 #' positions (e.g. for cross-document links or programmatic
-#' navigation). Returns one row per named destination with its name
-#' and target page. Wraps `FPDF_CountNamedDests` /
-#' `FPDF_GetNamedDest` / `FPDFDest_GetDestPageIndex`.
+#' navigation). Returns one row per named destination with its name,
+#' target page, and the dest's view/zoom parameters. Wraps
+#' `FPDF_CountNamedDests` / `FPDF_GetNamedDest` /
+#' `FPDFDest_GetDestPageIndex` / `FPDFDest_GetView` /
+#' `FPDFDest_GetLocationInPage`.
 #'
 #' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
-#' @return A tibble with columns `name` (character, UTF-8) and
-#'   `page` (integer, 1-based; `NA` when PDFium can't resolve the
-#'   destination's target page).
+#' @return A tibble with columns:
+#'   * `name` character - the destination name, UTF-8.
+#'   * `page` integer - 1-based target page; `NA` when PDFium
+#'     can't resolve it.
+#'   * `dest_view` character - the dest's view mode: one of
+#'     `"xyz"`, `"fit"`, `"fith"`, `"fitv"`, `"fitr"`, `"fitb"`,
+#'     `"fitbh"`, `"fitbv"`, or `"unknown"`.
+#'   * `dest_x`, `dest_y` numeric - the explicit (x, y) point for
+#'     XYZ destinations and the line offset for FitH / FitV /
+#'     FitBH / FitBV. `NA` when not specified by the destination.
+#'   * `dest_zoom` numeric - the explicit zoom for XYZ destinations,
+#'     `NA` otherwise.
 #' @export
 pdf_named_dests <- function(doc, password = NULL) {
   h <- as_doc_handle(doc, "doc", password = password)
@@ -286,7 +297,14 @@ pdf_named_dests <- function(doc, password = NULL) {
   page <- raw$page_index_zero
   has_page <- !is.na(page)
   page[has_page] <- page[has_page] + 1L
-  tibble::tibble(name = raw$name, page = page)
+  tibble::tibble(
+    name      = raw$name,
+    page      = page,
+    dest_view = pdfium_dest_view_name(raw$dest_view),
+    dest_x    = raw$dest_x,
+    dest_y    = raw$dest_y,
+    dest_zoom = raw$dest_zoom
+  )
 }
 
 #' Enumerate document-level JavaScript actions

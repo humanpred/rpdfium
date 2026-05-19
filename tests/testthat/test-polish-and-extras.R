@@ -240,6 +240,7 @@ test_that("pdf_page_links returns 0 rows for a page with no links", {
   expect_named(links, c("link_index", "bounds_left", "bounds_bottom",
                         "bounds_right", "bounds_top", "action_type",
                         "uri", "filepath", "dest_page_num",
+                        "dest_view", "dest_x", "dest_y", "dest_zoom",
                         "quad_points"))
 })
 

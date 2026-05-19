@@ -32,7 +32,8 @@ test_that("pdf_link_at_point returns 0 rows when no link is under the point", {
   expect_s3_class(out, "tbl_df")
   expect_equal(nrow(out), 0L)
   expect_named(out, c("z_order", "left", "bottom", "right", "top",
-                      "action_type", "uri", "filepath", "dest_page"))
+                      "action_type", "uri", "filepath", "dest_page",
+                      "dest_view", "dest_x", "dest_y", "dest_zoom"))
 })
 
 test_that("pdf_link_at_point validates x and y", {
@@ -61,7 +62,8 @@ test_that("pdf_page_actions returns empty tibble for typical PDFs", {
     expect_s3_class(out, "tbl_df")
     expect_equal(nrow(out), 0L)
     expect_named(out, c("trigger", "action_type", "uri", "filepath",
-                        "dest_page"))
+                        "dest_page", "dest_view", "dest_x", "dest_y",
+                        "dest_zoom"))
   }
 })
 

@@ -55,9 +55,12 @@ test_that("pdf_viewer_preferences accepts doc or path", {
 test_that("pdf_named_dests returns an empty tibble of the right shape", {
   out <- pdf_named_dests(fixture_path("shapes"))
   expect_s3_class(out, "tbl_df")
-  expect_named(out, c("name", "page"))
+  expect_named(out, c("name", "page", "dest_view", "dest_x", "dest_y",
+                      "dest_zoom"))
   expect_type(out$name, "character")
   expect_type(out$page, "integer")
+  expect_type(out$dest_view, "character")
+  expect_type(out$dest_x,    "double")
 })
 
 test_that("pdf_named_dests rejects bad doc inputs", {

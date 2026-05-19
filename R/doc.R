@@ -67,6 +67,13 @@ as_doc_handle <- function(x, arg = "doc") {
 #'   * `filepath` character - the external file path when
 #'     `action_type` is `"remote_goto"` / `"launch"` /
 #'     `"embedded_goto"`; `NA` otherwise.
+#'   * `dest_view` character - the destination view mode (one of
+#'     `"xyz"`, `"fit"`, `"fith"`, `"fitv"`, `"fitr"`, `"fitb"`,
+#'     `"fitbh"`, `"fitbv"`, `"unknown"`).
+#'   * `dest_x`, `dest_y`, `dest_zoom` numeric - the explicit point
+#'     / zoom for XYZ destinations and the line offset for
+#'     FitH / FitV / FitBH / FitBV. `NA` for components the
+#'     destination doesn't specify.
 #'
 #' Returns a 0-row tibble of the same schema when the document has
 #' no outline.
@@ -104,7 +111,11 @@ pdf_bookmarks <- function(doc) {
     page_num       = as.integer(page_num),
     action_type    = action_type,
     uri            = uri,
-    filepath       = filepath
+    filepath       = filepath,
+    dest_view      = pdfium_dest_view_name(raw$dest_view),
+    dest_x         = raw$dest_x,
+    dest_y         = raw$dest_y,
+    dest_zoom      = raw$dest_zoom
   )
 }
 

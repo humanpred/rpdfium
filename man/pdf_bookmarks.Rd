@@ -28,6 +28,13 @@ entry, or \code{0} for top-level bookmarks.
 \item \code{filepath} character - the external file path when
 \code{action_type} is \code{"remote_goto"} / \code{"launch"} /
 \code{"embedded_goto"}; \code{NA} otherwise.
+\item \code{dest_view} character - the destination view mode (one of
+\code{"xyz"}, \code{"fit"}, \code{"fith"}, \code{"fitv"}, \code{"fitr"}, \code{"fitb"},
+\code{"fitbh"}, \code{"fitbv"}, \code{"unknown"}).
+\item \code{dest_x}, \code{dest_y}, \code{dest_zoom} numeric - the explicit point
+/ zoom for XYZ destinations and the line offset for
+FitH / FitV / FitBH / FitBV. \code{NA} for components the
+destination doesn't specify.
 }
 
 Returns a 0-row tibble of the same schema when the document has
