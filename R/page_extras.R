@@ -41,9 +41,8 @@ pdf_page_box <- function(page, page_num = 1L,
                            "trim", "art"
                          )) {
   box <- match.arg(box)
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
-  cpp_page_box(ph$page$ptr, box)
+  page <- as_open_page(page, page_num)
+  cpp_page_box(page$ptr, box)
 }
 
 #' Per-character text extraction
@@ -116,10 +115,9 @@ pdf_page_box <- function(page, page_num = 1L,
 #' @seealso [pdf_text_runs()], [pdf_text()].
 #' @export
 pdf_text_chars <- function(page, page_num = 1L) {
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
-  raw <- cpp_page_text_chars(ph$page$ptr)
-  font <- cpp_text_char_font_info(ph$page$ptr)
+  page <- as_open_page(page, page_num)
+  raw <- cpp_page_text_chars(page$ptr)
+  font <- cpp_text_char_font_info(page$ptr)
   tibble::as_tibble(build_text_chars_cols(raw, font))
 }
 
@@ -173,10 +171,9 @@ pdf_text_char_at_point <- function(page, x, y, tolerance = 2,
   checkmate::assert_number(x, finite = TRUE)
   checkmate::assert_number(y, finite = TRUE)
   tolerance <- validate_char_at_point_tolerance(tolerance)
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
+  page <- as_open_page(page, page_num)
   idx0 <- cpp_text_char_at_pos(
-    ph$page$ptr,
+    page$ptr,
     as.numeric(x), as.numeric(y),
     as.numeric(tolerance[[1L]]),
     as.numeric(tolerance[[2L]])
@@ -217,10 +214,9 @@ pdf_text_char_at_point <- function(page, x, y, tolerance = 2,
 #' @export
 pdf_text_index_from_char <- function(page, char_index, page_num = 1L) {
   checkmate::assert_int(char_index)
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
+  page <- as_open_page(page, page_num)
   out <- cpp_text_text_index_from_char(
-    ph$page$ptr,
+    page$ptr,
     as.integer(char_index - 1L)
   )
   if (out < 0L) NA_integer_ else as.integer(out)
@@ -231,10 +227,9 @@ pdf_text_index_from_char <- function(page, char_index, page_num = 1L) {
 pdf_text_char_from_text_index <- function(page, text_index,
                                           page_num = 1L) {
   checkmate::assert_int(text_index)
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
+  page <- as_open_page(page, page_num)
   out <- cpp_text_char_index_from_text(
-    ph$page$ptr,
+    page$ptr,
     as.integer(text_index)
   )
   if (out < 0L) NA_integer_ else as.integer(out + 1L)
@@ -287,26 +282,19 @@ pdf_text_char_from_text_index <- function(page, text_index,
 #' link annotations.
 #' @export
 pdf_page_links <- function(page, page_num = 1L) {
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
+  page <- as_open_page(page, page_num)
   # The link enumerator needs the doc handle for action / dest
   # resolution. Pull it off the page's parent reference.
-  doc_ptr <- ph$page$doc$ptr
-  raw <- cpp_page_links(doc_ptr, ph$page$ptr)
-  action_codes <- as.integer(raw$action_code)
-  uri <- raw$uri
-  uri <- ifelse(nzchar(uri), uri, NA_character_)
-  fp <- raw$filepath
-  fp <- ifelse(nzchar(fp), fp, NA_character_)
+  raw <- cpp_page_links(page$doc$ptr, page$ptr)
   tibble::tibble(
-    link_index    = seq_along(action_codes),
+    link_index    = seq_along(raw$action_code),
     bounds_left   = raw$bounds_left,
     bounds_bottom = raw$bounds_bottom,
     bounds_right  = raw$bounds_right,
     bounds_top    = raw$bounds_top,
-    action_type   = pdfium_action_type_name(action_codes),
-    uri           = uri,
-    filepath      = fp,
+    action_type   = pdfium_action_type_name(raw$action_code),
+    uri           = na_if_empty(raw$uri),
+    filepath      = na_if_empty(raw$filepath),
     dest_page_num = as.integer(raw$dest_page_num),
     dest_view     = pdfium_dest_view_name(raw$dest_view),
     dest_x        = raw$dest_x,

@@ -63,22 +63,15 @@ check_image_obj <- function(obj, arg = "obj") {
 pdf_image_info <- function(obj) {
   check_image_obj(obj)
   m <- cpp_image_metadata(obj$ptr, obj$page$ptr)
-  cs_index <- m$colorspace + 1L
-  # PDFium currently exposes 12 colorspace enum values (0..11). The
-  # else-branch below fires only if PDFium adds new values above
-  # index 11; unreachable today, hence # nocov on that line.
-  cs_name <- if (cs_index >= 1L && cs_index <= length(.pdfium_colorspaces)) {
-    .pdfium_colorspaces[[cs_index]]
-  } else {
-    "Unknown" # nocov
-  }
   list(
     width             = as.integer(m$width),
     height            = as.integer(m$height),
     horizontal_dpi    = as.numeric(m$horizontal_dpi),
     vertical_dpi      = as.numeric(m$vertical_dpi),
     bits_per_pixel    = as.integer(m$bits_per_pixel),
-    colorspace        = cs_name,
+    colorspace        = .pdfium_enum_name(m$colorspace,
+                                          .pdfium_colorspaces,
+                                          fallback = "Unknown"),
     marked_content_id = as.integer(m$marked_content_id)
   )
 }

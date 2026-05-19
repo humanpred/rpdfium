@@ -43,16 +43,15 @@
 #' @export
 pdf_page_objects <- function(page, page_num = 1L, recursive = FALSE) {
   checkmate::assert_flag(recursive)
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
+  page <- as_open_page(page, page_num)
 
-  n <- cpp_page_object_count(ph$page$ptr)
+  n <- cpp_page_object_count(page$ptr)
   out <- vector("list", n)
   for (i in seq_len(n)) {
-    obj_ptr <- cpp_page_get_object(ph$page$ptr, i - 1L)
+    obj_ptr <- cpp_page_get_object(page$ptr, i - 1L)
     type_code <- cpp_obj_type(obj_ptr)
     type_name <- pdfium_obj_type_name(type_code)
-    out[[i]] <- new_pdfium_obj(obj_ptr, ph$page, i, type_name)
+    out[[i]] <- new_pdfium_obj(obj_ptr, page, i, type_name)
   }
   if (!recursive) {
     return(out)
@@ -178,13 +177,8 @@ pdf_obj_matrix <- function(obj) {
 }
 
 # Internal: convert a PDFium FPDF_PAGEOBJ_* code (int) to its short
-# character name. Unknown codes return "unknown" to keep the public
-# API stable against future PDFium enum additions.
+# character name. See R/utils.R::.pdfium_enum_name for the fallback
+# semantics.
 pdfium_obj_type_name <- function(code) {
-  idx <- as.integer(code) + 1L
-  if (idx < 1L || idx > length(.pdfium_obj_type_names)) {
-    "unknown"
-  } else {
-    .pdfium_obj_type_names[[idx]]
-  }
+  .pdfium_enum_name(code, .pdfium_obj_type_names)
 }

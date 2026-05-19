@@ -126,9 +126,8 @@ form_field_flag_decode <- function(flags, bit) {
 #'   highlights, ink, etc.
 #' @export
 pdf_form_fields <- function(doc) {
-  h <- as_doc_handle(doc)
-  on.exit(h$on_exit(), add = TRUE)
-  raw <- cpp_form_fields_list(h$doc$ptr)
+  doc <- as_open_doc(doc)
+  raw <- cpp_form_fields_list(doc$ptr)
   type_name <- form_field_type_name(raw$field_type)
   field_flags <- as.integer(raw$field_flags)
   is_checked <- as.integer(raw$is_checked)
@@ -149,10 +148,6 @@ pdf_form_fields <- function(doc) {
       .pdfium_field_flag_bits[[bit_name]]
     )
   }
-  control_count <- as.integer(raw$control_count)
-  control_count[control_count < 0L] <- NA_integer_
-  control_index <- as.integer(raw$control_index)
-  control_index[control_index < 0L] <- NA_integer_
   tibble::tibble(
     field_index = seq_along(type_name),
     page_num = as.integer(raw$page_num),
@@ -162,8 +157,8 @@ pdf_form_fields <- function(doc) {
     is_required = decode("is_required"),
     is_no_export = decode("is_no_export"),
     is_checked = is_checked_lgl,
-    control_count = control_count,
-    control_index = control_index,
+    control_count = na_if_negative(raw$control_count),
+    control_index = na_if_negative(raw$control_index),
     name = raw$name,
     alternate_name = raw$alternate_name,
     value = raw$value,
@@ -180,9 +175,5 @@ pdf_form_fields <- function(doc) {
 
 # Internal: PDFium field-type code -> name, vectorized.
 form_field_type_name <- function(codes) {
-  out <- rep("unknown", length(codes))
-  ok <- !is.na(codes) & codes >= 0L &
-    codes < length(.pdfium_form_field_types)
-  out[ok] <- .pdfium_form_field_types[codes[ok] + 1L]
-  out
+  .pdfium_enum_name(codes, .pdfium_form_field_types)
 }

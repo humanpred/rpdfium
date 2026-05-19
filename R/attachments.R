@@ -38,9 +38,8 @@
 #' if (nzchar(fixture)) pdf_attachments(fixture)
 #' @export
 pdf_attachments <- function(doc) {
-  h <- as_doc_handle(doc)
-  on.exit(h$on_exit(), add = TRUE)
-  raw <- cpp_attachments_list(h$doc$ptr)
+  doc <- as_open_doc(doc)
+  raw <- cpp_attachments_list(doc$ptr)
   tibble::tibble(
     attachment_index = seq_along(raw$name),
     name             = raw$name,
@@ -68,7 +67,6 @@ pdf_attachments <- function(doc) {
 #' @export
 pdf_attachment_data <- function(doc, attachment_index = 1L) {
   checkmate::assert_count(attachment_index, positive = TRUE)
-  h <- as_doc_handle(doc)
-  on.exit(h$on_exit(), add = TRUE)
-  cpp_attachment_data(h$doc$ptr, as.integer(attachment_index) - 1L)
+  doc <- as_open_doc(doc)
+  cpp_attachment_data(doc$ptr, as.integer(attachment_index) - 1L)
 }

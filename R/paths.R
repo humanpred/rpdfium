@@ -9,14 +9,8 @@
 )
 
 # Internal: convert a FPDF_SEGMENT_* integer code to its short name.
-# Returns "unknown" for negative or out-of-range codes so the public
-# tibble stays well-typed against any future PDFium enum additions.
 pdfium_segment_type_name <- function(codes) {
-  codes <- as.integer(codes)
-  out <- rep("unknown", length(codes))
-  hit <- codes >= 0L & codes < length(.pdfium_segment_type_names)
-  out[hit] <- .pdfium_segment_type_names[codes[hit] + 1L]
-  out
+  .pdfium_enum_name(codes, .pdfium_segment_type_names)
 }
 
 #' Path segments of a path page-object
@@ -225,16 +219,11 @@ pdf_path_dash <- function(obj) {
 pdf_path_draw_mode <- function(obj) {
   obj <- check_path_obj(obj)
   raw <- cpp_path_draw_mode(obj$ptr)
-  code <- raw$fill_mode_code
-  name <- if (is.na(code) || code < 0L ||
-    code >= length(.pdfium_fill_mode_names)) {
-    NA_character_
-  } else {
-    .pdfium_fill_mode_names[code + 1L]
-  }
   list(
-    fill_mode      = name,
-    fill_mode_code = as.integer(code),
+    fill_mode      = .pdfium_enum_name(raw$fill_mode_code,
+                                       .pdfium_fill_mode_names,
+                                       fallback = NA_character_),
+    fill_mode_code = as.integer(raw$fill_mode_code),
     stroke         = as.logical(raw$stroke)
   )
 }

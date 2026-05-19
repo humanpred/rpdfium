@@ -52,13 +52,12 @@
 pdf_annot_dict_value <- function(page, annotation_index, key,
                                  page_num = 1L) {
   checkmate::assert_count(annotation_index, positive = TRUE)
-  checkmate::assert_string(key, min.chars = 1L)
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
+  key <- assert_pdf_key(key)
+  page <- as_open_page(page, page_num)
   raw <- cpp_annot_dict_value(
-    ph$page$ptr,
+    page$ptr,
     as.integer(annotation_index - 1L),
-    enc2utf8(key)
+    key
   )
   vs <- as.character(raw$value_string)
   # nocov start — defensive: cpp always returns a length-1 chr.
@@ -100,11 +99,10 @@ pdf_annot_appearance <- function(page, annotation_index,
                                  page_num = 1L) {
   mode <- match.arg(mode)
   checkmate::assert_count(annotation_index, positive = TRUE)
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
+  page <- as_open_page(page, page_num)
   code <- .pdfium_annot_appearance_modes[[mode]]
   as.character(cpp_annot_appearance(
-    ph$page$ptr,
+    page$ptr,
     as.integer(annotation_index - 1L),
     as.integer(code)
   ))
@@ -133,10 +131,9 @@ pdf_annot_appearance <- function(page, annotation_index,
 pdf_link_annot_at_point <- function(page, x, y, page_num = 1L) {
   checkmate::assert_number(x, finite = TRUE)
   checkmate::assert_number(y, finite = TRUE)
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
+  page <- as_open_page(page, page_num)
   raw <- cpp_link_annot_at_point(
-    ph$page$ptr,
+    page$ptr,
     as.numeric(x), as.numeric(y)
   )
   list(
@@ -186,8 +183,7 @@ pdf_obj_marked_content_id <- function(obj) {
 #'   names).
 #' @export
 pdf_doc_focusable_subtypes <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, password = password)
-  on.exit(h$on_exit(), add = TRUE)
-  codes <- cpp_doc_focusable_subtypes(h$doc$ptr)
+  doc <- as_open_doc(doc, password = password)
+  codes <- cpp_doc_focusable_subtypes(doc$ptr)
   annotation_subtype_name(codes)
 }

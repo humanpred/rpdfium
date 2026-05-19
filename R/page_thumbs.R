@@ -41,12 +41,11 @@
 #' @export
 pdf_page_thumbnail <- function(page, page_num = 1L, decoded = TRUE) {
   checkmate::assert_flag(decoded)
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
+  page <- as_open_page(page, page_num)
   if (decoded) {
-    cpp_page_thumbnail_decoded(ph$page$ptr)
+    cpp_page_thumbnail_decoded(page$ptr)
   } else {
-    cpp_page_thumbnail_raw(ph$page$ptr)
+    cpp_page_thumbnail_raw(page$ptr)
   }
 }
 
@@ -87,9 +86,8 @@ pdf_page_thumbnail <- function(page, page_num = 1L, decoded = TRUE) {
 #'   [pdf_text_search()] for arbitrary string search.
 #' @export
 pdf_text_weblinks <- function(page, page_num = 1L) {
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
-  raw <- cpp_page_weblinks(ph$page$ptr)
+  page <- as_open_page(page, page_num)
+  raw <- cpp_page_weblinks(page$ptr)
   n <- length(raw$url)
   if (n == 0L) {
     return(empty_text_weblinks_tibble())

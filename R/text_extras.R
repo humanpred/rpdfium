@@ -33,14 +33,8 @@
 #' @export
 pdf_text_render_mode <- function(obj) {
   check_pdfium_obj(obj, allowed_types = "text")
-  code <- cpp_text_render_mode(obj$ptr)
-  idx <- code + 1L
-  # nocov start — defensive: PDFium render mode is 0..7.
-  if (idx < 1L || idx > length(.pdfium_text_render_modes)) {
-    return("unknown")
-  }
-  # nocov end
-  .pdfium_text_render_modes[[idx]]
+  .pdfium_enum_name(cpp_text_render_mode(obj$ptr),
+                    .pdfium_text_render_modes)
 }
 
 #' Per-character fill and stroke colors and text-index mapping
@@ -79,9 +73,8 @@ pdf_text_render_mode <- function(obj) {
 #'   [pdf_text_render_mode()] (per-text-object render mode).
 #' @export
 pdf_text_colors <- function(page, page_num = 1L) {
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
-  raw <- cpp_page_text_colors(ph$page$ptr)
+  page <- as_open_page(page, page_num)
+  raw <- cpp_page_text_colors(page$ptr)
   tibble::tibble(
     char_index    = seq_along(raw$text_index),
     text_index    = raw$text_index,

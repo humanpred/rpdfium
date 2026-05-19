@@ -52,15 +52,7 @@ check_pdfium_obj <- function(obj, allowed_types = NULL, arg = "obj") {
 #' @export
 pdf_path_line_cap <- function(obj) {
   check_pdfium_obj(obj, allowed_types = "path")
-  code <- cpp_obj_line_cap(obj$ptr)
-  idx <- code + 1L
-  # nocov start — PDFium's line-cap enum is 0/1/2; the "unknown"
-  # fallback is defensive against a future enum extension.
-  if (idx < 1L || idx > length(.pdfium_line_caps)) {
-    return("unknown")
-  }
-  # nocov end
-  .pdfium_line_caps[[idx]]
+  .pdfium_enum_name(cpp_obj_line_cap(obj$ptr), .pdfium_line_caps)
 }
 
 #' Stroke line-join style of a path page-object
@@ -78,14 +70,7 @@ pdf_path_line_cap <- function(obj) {
 #' @export
 pdf_path_line_join <- function(obj) {
   check_pdfium_obj(obj, allowed_types = "path")
-  code <- cpp_obj_line_join(obj$ptr)
-  idx <- code + 1L
-  # nocov start — defensive: PDFium line-join enum is 0/1/2.
-  if (idx < 1L || idx > length(.pdfium_line_joins)) {
-    return("unknown")
-  }
-  # nocov end
-  .pdfium_line_joins[[idx]]
+  .pdfium_enum_name(cpp_obj_line_join(obj$ptr), .pdfium_line_joins)
 }
 
 #' Does a page object use alpha blending?

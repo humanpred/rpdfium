@@ -158,9 +158,8 @@ annot_flag_decode <- function(flags, bit) {
 #' @seealso [pdf_form_fields()] for AcroForm-specific accessors.
 #' @export
 pdf_annotations <- function(page, page_num = 1L) {
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
-  raw <- cpp_annots_list(ph$page$doc$ptr, ph$page$ptr)
+  page <- as_open_page(page, page_num)
+  raw <- cpp_annots_list(page$doc$ptr, page$ptr)
   flags <- as.integer(raw$flags)
   decode <- function(bit_name) {
     annot_flag_decode(flags, .pdfium_annot_flag_bits[[bit_name]])
@@ -214,12 +213,7 @@ pdfium_annot_subtype_code <- function(names) {
   ifelse(is.na(hit), 0L, hit - 1L)
 }
 
-# Internal: PDFium subtype code -> string, vectorized. Codes
-# outside 0..28 fall through to "unknown".
+# Internal: PDFium subtype code -> string, vectorized.
 annotation_subtype_name <- function(codes) {
-  out <- rep("unknown", length(codes))
-  ok <- !is.na(codes) & codes >= 0L &
-    codes < length(.pdfium_annot_subtypes)
-  out[ok] <- .pdfium_annot_subtypes[codes[ok] + 1L]
-  out
+  .pdfium_enum_name(codes, .pdfium_annot_subtypes)
 }

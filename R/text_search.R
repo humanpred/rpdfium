@@ -71,15 +71,14 @@ pdf_text_search <- function(doc, query,
                             password = NULL) {
   validate_text_search_args(query, case_sensitive, whole_word, consecutive)
 
-  h <- as_doc_handle(doc, password = password)
-  on.exit(h$on_exit(), add = TRUE)
+  doc <- as_open_doc(doc, password = password)
 
-  n <- cpp_page_count(h$doc$ptr)
+  n <- cpp_page_count(doc$ptr)
   query_utf8 <- enc2utf8(query)
 
   rows <- vector("list", n)
   for (i in seq_len(n)) {
-    page <- pdf_load_page(h$doc, i)
+    page <- pdf_load_page(doc, i)
     raw <- cpp_text_search_page(
       page$ptr, query_utf8,
       match_case = case_sensitive,

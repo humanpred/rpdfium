@@ -29,10 +29,9 @@
 #' @seealso [pdf_named_dests()].
 #' @export
 pdf_named_dest_by_name <- function(doc, name, password = NULL) {
-  checkmate::assert_string(name, min.chars = 1L)
-  h <- as_doc_handle(doc, password = password)
-  on.exit(h$on_exit(), add = TRUE)
-  raw <- cpp_named_dest_by_name(h$doc$ptr, enc2utf8(name))
+  name <- assert_pdf_key(name, arg = "name")
+  doc <- as_open_doc(doc, password = password)
+  raw <- cpp_named_dest_by_name(doc$ptr, name)
   list(
     found     = as.logical(raw$found),
     page      = as.integer(raw$page),
@@ -62,11 +61,10 @@ pdf_named_dest_by_name <- function(doc, name, password = NULL) {
 #' @seealso [pdf_bookmarks()].
 #' @export
 pdf_bookmark_find <- function(doc, title, password = NULL) {
-  checkmate::assert_string(title, min.chars = 1L)
-  h <- as_doc_handle(doc, password = password)
-  on.exit(h$on_exit(), add = TRUE)
-  idx <- cpp_bookmark_find(h$doc$ptr, enc2utf8(title))
-  if (idx < 0L) NA_integer_ else as.integer(idx)
+  title <- assert_pdf_key(title, arg = "title")
+  doc <- as_open_doc(doc, password = password)
+  idx <- cpp_bookmark_find(doc$ptr, title)
+  na_if_negative(idx)
 }
 
 #' Form-field hit-test for a point
@@ -94,10 +92,9 @@ pdf_bookmark_find <- function(doc, title, password = NULL) {
 pdf_form_field_at_point <- function(page, x, y, page_num = 1L) {
   checkmate::assert_number(x, finite = TRUE)
   checkmate::assert_number(y, finite = TRUE)
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
+  page <- as_open_page(page, page_num)
   raw <- cpp_form_field_at_point(
-    ph$page$doc$ptr, ph$page$ptr,
+    page$doc$ptr, page$ptr,
     as.numeric(x), as.numeric(y)
   )
   ftype <- as.integer(raw$field_type)

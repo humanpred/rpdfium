@@ -28,11 +28,10 @@
 #' if (nzchar(fixture)) pdf_text(fixture)
 #' @export
 pdf_text <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, password = password)
-  on.exit(h$on_exit(), add = TRUE)
-  n <- cpp_page_count(h$doc$ptr)
+  doc <- as_open_doc(doc, password = password)
+  n <- cpp_page_count(doc$ptr)
   vapply(seq_len(n), function(i) {
-    page <- pdf_load_page(h$doc, i)
+    page <- pdf_load_page(doc, i)
     on.exit(pdf_close_page(page))
     runs <- pdf_text_runs(page)
     if (nrow(runs) == 0L) "" else paste(runs$text, collapse = "\n")
@@ -60,12 +59,11 @@ pdf_text <- function(doc, password = NULL) {
 #' @seealso [pdf_text_runs()], [pdf_text_font()].
 #' @export
 pdf_fonts <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, password = password)
-  on.exit(h$on_exit(), add = TRUE)
-  n <- cpp_page_count(h$doc$ptr)
+  doc <- as_open_doc(doc, password = password)
+  n <- cpp_page_count(doc$ptr)
   all_runs <- list()
   for (i in seq_len(n)) {
-    page <- pdf_load_page(h$doc, i)
+    page <- pdf_load_page(doc, i)
     runs <- pdf_text_runs(page)
     pdf_close_page(page)
     if (nrow(runs) > 0L) {
@@ -132,9 +130,8 @@ pdf_file_id <- function(doc, id_type = c("permanent", "changing"),
                         password = NULL) {
   id_type <- match.arg(id_type)
   type_code <- if (identical(id_type, "permanent")) 0L else 1L
-  h <- as_doc_handle(doc, password = password)
-  on.exit(h$on_exit(), add = TRUE)
-  cpp_doc_file_id(h$doc$ptr, type_code)
+  doc <- as_open_doc(doc, password = password)
+  cpp_doc_file_id(doc$ptr, type_code)
 }
 
 # PDFium FPDFDoc_GetPageMode values from fpdf_ext.h.
@@ -164,18 +161,13 @@ pdf_file_id <- function(doc, id_type = c("permanent", "changing"),
 #'   `"unknown"` (PDFium couldn't determine the entry).
 #' @export
 pdf_doc_page_mode <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, password = password)
-  on.exit(h$on_exit(), add = TRUE)
-  code <- cpp_doc_page_mode(h$doc$ptr)
-  # PDFium's -1 sentinel maps to "unknown" (index 1 in the lookup).
-  # The `nocov` guard below is a defensive fallback for codes
-  # PDFium might add above index 5; currently unreachable because
-  # FPDFDoc_GetPageMode only returns -1 .. 5.
-  idx <- code + 2L
-  if (idx < 1L || idx > length(.pdfium_page_modes)) {
-    return("unknown") # nocov
-  }
-  .pdfium_page_modes[[idx]]
+  doc <- as_open_doc(doc, password = password)
+  # PDFium's enum starts at -1 (PAGEMODE_UNKNOWN); we offset by 1 so
+  # the lookup begins at index 0, matching .pdfium_enum_name()'s
+  # default `base = 0L`. The first lookup entry is "unknown" and
+  # acts as the in-range UNKNOWN; the fallback path fires only on
+  # codes above the current ceiling.
+  .pdfium_enum_name(cpp_doc_page_mode(doc$ptr) + 1L, .pdfium_page_modes)
 }
 
 # Duplex mode codes from FPDF_DUPLEXTYPE in fpdf_doc.h
@@ -188,16 +180,11 @@ pdf_doc_page_mode <- function(doc, password = NULL) {
   "duplex_flip_long_edge" # 3 DuplexFlipLongEdge
 )
 
-# Internal: idx -> duplex name with defensive fallback. The PDFium
-# enum is 0..3 so an out-of-range code shouldn't happen, but we
-# return "none" rather than indexing past the end of the lookup.
+# Internal: idx -> duplex name. Callers pass a 1-based index into
+# .pdfium_duplex_modes, so we shift to .pdfium_enum_name's 0-based
+# convention.
 decode_duplex <- function(idx) {
-  # nocov start — defensive: PDFium enum 0..3.
-  if (idx < 1L || idx > length(.pdfium_duplex_modes)) {
-    return("none")
-  }
-  # nocov end
-  .pdfium_duplex_modes[[idx]]
+  .pdfium_enum_name(idx - 1L, .pdfium_duplex_modes, fallback = "none")
 }
 
 #' Is the document marked as tagged?
@@ -214,9 +201,8 @@ decode_duplex <- function(idx) {
 #' @return Logical scalar.
 #' @export
 pdf_doc_is_tagged <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, password = password)
-  on.exit(h$on_exit(), add = TRUE)
-  cpp_doc_is_tagged(h$doc$ptr)
+  doc <- as_open_doc(doc, password = password)
+  cpp_doc_is_tagged(doc$ptr)
 }
 
 #' Read the document's viewer preferences
@@ -244,9 +230,8 @@ pdf_doc_is_tagged <- function(doc, password = NULL) {
 #'     author suggests printing; empty when unspecified.
 #' @export
 pdf_viewer_preferences <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, password = password)
-  on.exit(h$on_exit(), add = TRUE)
-  raw <- cpp_doc_viewer_prefs(h$doc$ptr)
+  doc <- as_open_doc(doc, password = password)
+  raw <- cpp_doc_viewer_prefs(doc$ptr)
   idx <- raw$duplex_code + 1L
   duplex <- decode_duplex(idx)
   list(
@@ -278,10 +263,9 @@ pdf_viewer_preferences <- function(doc, password = NULL) {
 #' @seealso [pdf_viewer_preferences()].
 #' @export
 pdf_viewer_preference_by_name <- function(doc, key, password = NULL) {
-  checkmate::assert_string(key, min.chars = 1L)
-  h <- as_doc_handle(doc, password = password)
-  on.exit(h$on_exit(), add = TRUE)
-  out <- cpp_viewer_ref_name(h$doc$ptr, enc2utf8(key))
+  key <- assert_pdf_key(key)
+  doc <- as_open_doc(doc, password = password)
+  out <- cpp_viewer_ref_name(doc$ptr, key)
   # nocov start — non-NA branch requires a fixture whose
   # /ViewerPreferences carries a Name-typed entry (e.g. Direction
   # = /L2R). The shipped fixtures don't set one. Behaviour
@@ -320,9 +304,8 @@ pdf_viewer_preference_by_name <- function(doc, key, password = NULL) {
 #'     `NA` otherwise.
 #' @export
 pdf_named_dests <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, password = password)
-  on.exit(h$on_exit(), add = TRUE)
-  raw <- cpp_doc_named_dests(h$doc$ptr)
+  doc <- as_open_doc(doc, password = password)
+  raw <- cpp_doc_named_dests(doc$ptr)
   page <- raw$page_index_zero
   has_page <- !is.na(page)
   page[has_page] <- page[has_page] + 1L
@@ -354,8 +337,7 @@ pdf_named_dests <- function(doc, password = NULL) {
 #'   are present.
 #' @export
 pdf_doc_javascript <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, password = password)
-  on.exit(h$on_exit(), add = TRUE)
-  raw <- cpp_doc_javascript(h$doc$ptr)
+  doc <- as_open_doc(doc, password = password)
+  raw <- cpp_doc_javascript(doc$ptr)
   tibble::tibble(name = raw$name, script = raw$script)
 }

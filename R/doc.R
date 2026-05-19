@@ -67,32 +67,20 @@
 #' if (nzchar(fixture)) pdf_bookmarks(fixture)
 #' @export
 pdf_bookmarks <- function(doc) {
-  h <- as_doc_handle(doc)
-  on.exit(h$on_exit(), add = TRUE)
-  raw <- cpp_bookmarks(h$doc$ptr)
-  page_num <- raw$page_num
-  page_num[page_num < 0L] <- NA_integer_
-
-  uri <- raw$uri
-  uri <- ifelse(nzchar(uri), uri, NA_character_)
-  filepath <- raw$filepath
-  filepath <- ifelse(nzchar(filepath), filepath, NA_character_)
-
+  doc <- as_open_doc(doc)
+  raw <- cpp_bookmarks(doc$ptr)
   # action_code 0 means "no /A and unresolvable /Dest" — surface as
   # "unsupported" via the shared lookup. URI / filepath columns are
   # NA in that case anyway.
-  action_codes <- as.integer(raw$action_code)
-  action_type <- pdfium_action_type_name(action_codes)
-
   tibble::tibble(
     bookmark_index = seq_along(raw$title),
     parent_index   = as.integer(raw$parent_index),
     level          = as.integer(raw$level),
     title          = raw$title,
-    page_num       = as.integer(page_num),
-    action_type    = action_type,
-    uri            = uri,
-    filepath       = filepath,
+    page_num       = na_if_negative(raw$page_num),
+    action_type    = pdfium_action_type_name(raw$action_code),
+    uri            = na_if_empty(raw$uri),
+    filepath       = na_if_empty(raw$filepath),
     dest_view      = pdfium_dest_view_name(raw$dest_view),
     dest_x         = raw$dest_x,
     dest_y         = raw$dest_y,
@@ -119,9 +107,8 @@ pdf_bookmarks <- function(doc) {
 #' @export
 pdf_page_label <- function(doc, page_num = 1L) {
   checkmate::assert_count(page_num, positive = TRUE)
-  h <- as_doc_handle(doc)
-  on.exit(h$on_exit(), add = TRUE)
-  cpp_page_label(h$doc$ptr, as.integer(page_num) - 1L)
+  doc <- as_open_doc(doc)
+  cpp_page_label(doc$ptr, as.integer(page_num) - 1L)
 }
 
 #' Read every page's logical label in one call
@@ -140,12 +127,11 @@ pdf_page_label <- function(doc, page_num = 1L) {
 #' if (nzchar(fixture)) pdf_page_labels(fixture)
 #' @export
 pdf_page_labels <- function(doc) {
-  h <- as_doc_handle(doc)
-  on.exit(h$on_exit(), add = TRUE)
-  n <- cpp_page_count(h$doc$ptr)
+  doc <- as_open_doc(doc)
+  n <- cpp_page_count(doc$ptr)
   vapply(
     seq_len(n),
-    function(i) cpp_page_label(h$doc$ptr, i - 1L),
+    function(i) cpp_page_label(doc$ptr, i - 1L),
     character(1L)
   )
 }
@@ -198,8 +184,7 @@ pdf_page_labels <- function(doc) {
 #' @return A named logical vector with the eight flags listed above.
 #' @export
 pdf_doc_permissions <- function(doc) {
-  h <- as_doc_handle(doc)
-  on.exit(h$on_exit(), add = TRUE)
+  doc <- as_open_doc(doc)
   # cpp_doc_permissions returns the raw unsigned 32-bit mask as a
   # double (R's integer cannot hold 0xFFFFFFFF). All documented
   # permission bits are in bits 1-16, so reduce to the low 16 bits
@@ -207,7 +192,7 @@ pdf_doc_permissions <- function(doc) {
   # documents PDFium returns 0xFFFFFFFF and the low-16 reduction
   # gives 0xFFFF -- every flag is set, every operation allowed,
   # which is the correct contract.
-  mask <- cpp_doc_permissions(h$doc$ptr)
+  mask <- cpp_doc_permissions(doc$ptr)
   decode_perm_mask(mask)
 }
 
@@ -238,9 +223,8 @@ decode_perm_mask <- function(mask) {
 #' @seealso [pdf_doc_permissions()], [pdf_doc_security()].
 #' @export
 pdf_doc_user_permissions <- function(doc) {
-  h <- as_doc_handle(doc)
-  on.exit(h$on_exit(), add = TRUE)
-  decode_perm_mask(cpp_doc_user_permissions(h$doc$ptr))
+  doc <- as_open_doc(doc)
+  decode_perm_mask(cpp_doc_user_permissions(doc$ptr))
 }
 
 #' Document security handler revision
@@ -265,9 +249,8 @@ pdf_doc_user_permissions <- function(doc) {
 #' @seealso [pdf_doc_permissions()], [pdf_doc_user_permissions()].
 #' @export
 pdf_doc_security <- function(doc) {
-  h <- as_doc_handle(doc)
-  on.exit(h$on_exit(), add = TRUE)
-  rev <- as.integer(cpp_doc_security_revision(h$doc$ptr))
+  doc <- as_open_doc(doc)
+  rev <- as.integer(cpp_doc_security_revision(doc$ptr))
   # nocov start — non-NA branch needs an encrypted PDF; the
   # fixture pipeline doesn't ship one. Behaviour verified against
   # encrypted PDFs in ad-hoc local testing.
@@ -289,9 +272,8 @@ pdf_doc_security <- function(doc) {
 #' @return Logical scalar.
 #' @export
 pdf_doc_xref_valid <- function(doc) {
-  h <- as_doc_handle(doc)
-  on.exit(h$on_exit(), add = TRUE)
-  as.logical(cpp_doc_xref_valid(h$doc$ptr))
+  doc <- as_open_doc(doc)
+  as.logical(cpp_doc_xref_valid(doc$ptr))
 }
 
 #' Byte offsets of every `%%EOF` trailer marker
@@ -311,7 +293,6 @@ pdf_doc_xref_valid <- function(doc) {
 #'   2 GB).
 #' @export
 pdf_doc_trailer_ends <- function(doc) {
-  h <- as_doc_handle(doc)
-  on.exit(h$on_exit(), add = TRUE)
-  cpp_doc_trailer_ends(h$doc$ptr)
+  doc <- as_open_doc(doc)
+  cpp_doc_trailer_ends(doc$ptr)
 }

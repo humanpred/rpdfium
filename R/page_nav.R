@@ -14,11 +14,9 @@
 # 0 (PDFACTION_UNSUPPORTED) maps to "unsupported".
 
 pdfium_action_type_name <- function(codes) {
-  codes <- as.integer(codes)
-  out <- rep("unsupported", length(codes))
-  hit <- codes >= 1L & codes <= length(.pdfium_action_types)
-  out[hit] <- .pdfium_action_types[codes[hit]]
-  out
+  .pdfium_enum_name(codes, .pdfium_action_types,
+    base = 1L, fallback = "unsupported"
+  )
 }
 
 # FPDF dest-view codes (fpdf_doc.h):
@@ -36,11 +34,7 @@ pdfium_action_type_name <- function(codes) {
 )
 
 pdfium_dest_view_name <- function(codes) {
-  codes <- as.integer(codes)
-  out <- rep("unknown", length(codes))
-  hit <- codes >= 1L & codes <= length(.pdfium_dest_views)
-  out[hit] <- .pdfium_dest_views[codes[hit]]
-  out
+  .pdfium_enum_name(codes, .pdfium_dest_views, base = 1L)
 }
 
 #' Hit-test for the link annotation under a point
@@ -82,11 +76,10 @@ pdfium_dest_view_name <- function(codes) {
 pdf_link_at_point <- function(page, x, y, page_num = 1L) {
   checkmate::assert_number(x, finite = TRUE)
   checkmate::assert_number(y, finite = TRUE)
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
-  doc_ptr <- ph$page$doc$ptr
+  page <- as_open_page(page, page_num)
+  doc_ptr <- page$doc$ptr
   raw <- cpp_link_at_point(
-    doc_ptr, ph$page$ptr,
+    doc_ptr, page$ptr,
     as.numeric(x), as.numeric(y)
   )
   if (!raw$found) {
@@ -99,8 +92,8 @@ pdf_link_at_point <- function(page, x, y, page_num = 1L) {
     right        = raw$right,
     top          = raw$top,
     action_type  = pdfium_action_type_name(raw$action_code),
-    uri          = if (nzchar(raw$uri)) raw$uri else NA_character_,
-    filepath     = if (nzchar(raw$filepath)) raw$filepath else NA_character_,
+    uri          = na_if_empty(raw$uri),
+    filepath     = na_if_empty(raw$filepath),
     dest_page    = as.integer(raw$dest_page),
     dest_view    = pdfium_dest_view_name(raw$dest_view),
     dest_x       = raw$dest_x,
@@ -149,10 +142,9 @@ empty_link_at_point_tibble <- function() {
 #'     as in `pdf_link_at_point()`.
 #' @export
 pdf_page_actions <- function(page, page_num = 1L) {
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
-  doc_ptr <- ph$page$doc$ptr
-  raw <- cpp_page_aactions(doc_ptr, ph$page$ptr)
+  page <- as_open_page(page, page_num)
+  doc_ptr <- page$doc$ptr
+  raw <- cpp_page_aactions(doc_ptr, page$ptr)
   n <- length(raw$trigger)
   if (n == 0L) {
     return(empty_page_actions_tibble())
@@ -166,13 +158,11 @@ pdf_page_actions <- function(page, page_num = 1L) {
 # OpenAction or CloseAction, which the shipped fixture set lacks.
 # nocov start
 build_page_actions_tibble <- function(raw) {
-  uri <- ifelse(nzchar(raw$uri), raw$uri, NA_character_)
-  fp <- ifelse(nzchar(raw$filepath), raw$filepath, NA_character_)
   tibble::tibble(
     trigger      = as.character(raw$trigger),
     action_type  = pdfium_action_type_name(raw$action_code),
-    uri          = uri,
-    filepath     = fp,
+    uri          = na_if_empty(raw$uri),
+    filepath     = na_if_empty(raw$filepath),
     dest_page    = as.integer(raw$dest_page),
     dest_view    = pdfium_dest_view_name(raw$dest_view),
     dest_x       = raw$dest_x,

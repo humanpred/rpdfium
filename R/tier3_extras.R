@@ -85,13 +85,12 @@ pdf_text_obj_rendered_bitmap <- function(obj, scale = 1) {
 pdf_attachment_dict_value <- function(doc, attachment_index, key,
                                       password = NULL) {
   checkmate::assert_count(attachment_index, positive = TRUE)
-  checkmate::assert_string(key, min.chars = 1L)
-  h <- as_doc_handle(doc, password = password)
-  on.exit(h$on_exit(), add = TRUE)
+  key <- assert_pdf_key(key)
+  doc <- as_open_doc(doc, password = password)
   raw <- cpp_attachment_dict_value(
-    h$doc$ptr,
+    doc$ptr,
     as.integer(attachment_index - 1L),
-    enc2utf8(key)
+    key
   )
   val_chr <- as.character(raw$value)
   # nocov start — defensive: cpp always returns length-1 chr.
@@ -126,11 +125,10 @@ pdf_attachment_dict_value <- function(doc, attachment_index, key,
 #' @export
 pdf_text_char_obj_index <- function(page, char_index, page_num = 1L) {
   checkmate::assert_count(char_index, positive = TRUE)
-  ph <- as_open_page(page, page_num)
-  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
+  page <- as_open_page(page, page_num)
   idx <- cpp_text_char_obj_index(
-    ph$page$ptr,
+    page$ptr,
     as.integer(char_index - 1L)
   )
-  if (idx < 0L) NA_integer_ else as.integer(idx)
+  na_if_negative(idx)
 }
