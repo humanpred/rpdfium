@@ -8,22 +8,18 @@
 # Internal: object-validator helper for the pdfium_obj wrappers below.
 # Splits per-type checks from each public function so cyclocomp stays
 # under the lintr limit.
-check_pdfium_obj <- function(obj, allowed_types = NULL) {
-  if (!inherits(obj, "pdfium_obj")) {
-    stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-      call. = FALSE
-    )
-  }
+check_pdfium_obj <- function(obj, allowed_types = NULL, arg = "obj") {
+  checkmate::assert_class(obj, "pdfium_obj", .var.name = arg)
   if (!is_open(obj)) {
     stop("Parent page has been closed; object handle is no longer valid.",
       call. = FALSE
     )
   }
-  if (!is.null(allowed_types) && !(obj$type %in% allowed_types)) {
-    stop(sprintf(
-      "`obj` must be one of {%s}; got type \"%s\".",
-      paste(allowed_types, collapse = ", "), obj$type
-    ), call. = FALSE)
+  if (!is.null(allowed_types)) {
+    checkmate::assert_choice(
+      obj$type, allowed_types,
+      .var.name = paste0(arg, "$type")
+    )
   }
   invisible(obj)
 }

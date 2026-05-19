@@ -24,8 +24,8 @@ test_that("pdf_path_line_cap / line_join reject non-path objects", {
   texts <- Filter(function(o) o$type == "text", pdf_page_objects(p))
   skip_if(length(texts) == 0L, "no text objects on shapes.pdf")
 
-  expect_error(pdf_path_line_cap(texts[[1L]]), "must be one of")
-  expect_error(pdf_path_line_join(texts[[1L]]), "must be one of")
+  expect_error(pdf_path_line_cap(texts[[1L]]), "Must be element of set")
+  expect_error(pdf_path_line_join(texts[[1L]]), "Must be element of set")
 })
 
 test_that("pdf_obj_has_transparency returns a logical scalar", {
@@ -76,8 +76,8 @@ test_that("the new accessors all reject bad inputs", {
     pdf_obj_has_transparency, pdf_obj_is_active,
     pdf_obj_rotated_bounds
   )) {
-    expect_error(fn("not an obj"), "must be a `pdfium_obj`")
-    expect_error(fn(NULL), "must be a `pdfium_obj`")
+    expect_error(fn("not an obj"), "class .pdfium_obj.")
+    expect_error(fn(NULL), "class .pdfium_obj.")
   }
 })
 
@@ -115,7 +115,7 @@ test_that("pdf_path_draw_mode rejects non-path objects and closed pages", {
   p <- pdf_load_page(doc, 1L)
   objs <- pdf_page_objects(p)
   path_obj <- Filter(function(o) o$type == "path", objs)[[1L]]
-  expect_error(pdf_path_draw_mode("nope"), "must be a `pdfium_obj`")
+  expect_error(pdf_path_draw_mode("nope"), "class .pdfium_obj.")
   pdf_close_page(p)
   expect_error(
     pdf_path_draw_mode(path_obj),
@@ -164,7 +164,7 @@ test_that("pdf_obj_marks rejects non-objects and closed parents", {
   on.exit(pdf_close(doc), add = TRUE)
   p <- pdf_load_page(doc, 1L)
   obj <- pdf_page_objects(p)[[1L]]
-  expect_error(pdf_obj_marks("nope"), "must be a `pdfium_obj`")
+  expect_error(pdf_obj_marks("nope"), "class .pdfium_obj.")
   pdf_close_page(p)
   expect_error(pdf_obj_marks(obj), "Parent page has been closed")
 })

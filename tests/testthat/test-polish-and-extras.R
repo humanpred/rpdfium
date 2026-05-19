@@ -62,15 +62,15 @@ test_that("pdf_open validates source / path / password", {
   )
   expect_error(
     pdf_open(source = "not raw"),
-    "must be a raw vector"
+    "Assertion on"
   )
   expect_error(
     pdf_open(source = raw(0L)),
-    "must be non-empty"
+    "Assertion on"
   )
   expect_error(
     pdf_open(fx, password = 42),
-    "must be NULL or a single non-NA character string"
+    "Assertion on"
   )
 })
 
@@ -188,16 +188,16 @@ test_that("text-index <-> char-index round trip is consistent", {
 test_that("pdf_text_char_at_point / index helpers validate inputs", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)
-  expect_error(pdf_text_char_at_point(doc, NA, 1), "finite numeric")
-  expect_error(pdf_text_char_at_point(doc, 1, NA), "finite numeric")
+  expect_error(pdf_text_char_at_point(doc, NA, 1), "Assertion on")
+  expect_error(pdf_text_char_at_point(doc, 1, NA), "Assertion on")
   expect_error(
     pdf_text_char_at_point(doc, 1, 1, tolerance = NA),
-    "finite numeric"
+    "Assertion on"
   )
-  expect_error(pdf_text_index_from_char(doc, NA), "finite integer")
+  expect_error(pdf_text_index_from_char(doc, NA), "Assertion on")
   expect_error(
     pdf_text_char_from_text_index(doc, NA),
-    "finite integer"
+    "Assertion on"
   )
 })
 
@@ -338,11 +338,11 @@ test_that("pdf_page_objects(recursive) validates its flag", {
 
   expect_error(
     pdf_page_objects(page, recursive = NA),
-    "must be a single TRUE or FALSE"
+    "Assertion on"
   )
   expect_error(
     pdf_page_objects(page, recursive = "yes"),
-    "must be a single TRUE or FALSE"
+    "Assertion on"
   )
 })
 
@@ -389,7 +389,7 @@ test_that("as_open_page_pair refuses closed pages, closed docs, and bad inputs",
 
   expect_error(
     pdf_page_box(42L),
-    "must be a `pdfium_page` or a `pdfium_doc`"
+    "class .pdfium_page./.pdfium_doc."
   )
 })
 
@@ -400,7 +400,7 @@ test_that("doc_extra's internal as_doc_handle rejects bad inputs and closed docs
   # pdf_file_id() so the helper's branches are covered.
   expect_error(
     pdf_text(42L),
-    "must be a `pdfium_doc` or a path to a PDF file"
+    "class .pdfium_doc."
   )
   doc <- pdf_open(fixture_path("shapes"))
   pdf_close(doc)

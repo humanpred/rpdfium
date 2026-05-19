@@ -61,16 +61,16 @@ test_that("pdf_signatures accepts a path or an open doc", {
 
 test_that("pdf_signature_contents / _byte_range validate their indices", {
   fx <- fixture_path("signed")
-  expect_error(pdf_signature_contents(fx, 0), "positive integer")
-  expect_error(pdf_signature_contents(fx, 1.5), "positive integer")
-  expect_error(pdf_signature_contents(fx, NA_integer_), "positive integer")
-  expect_error(pdf_signature_byte_range(fx, 0), "positive integer")
-  expect_error(pdf_signature_byte_range(fx, -1), "positive integer")
-  expect_error(pdf_signature_byte_range(fx, c(1, 2)), "positive integer")
+  expect_error(pdf_signature_contents(fx, 0), "Assertion on")
+  expect_error(pdf_signature_contents(fx, 1.5), "Assertion on")
+  expect_error(pdf_signature_contents(fx, NA_integer_), "Assertion on")
+  expect_error(pdf_signature_byte_range(fx, 0), "Assertion on")
+  expect_error(pdf_signature_byte_range(fx, -1), "Assertion on")
+  expect_error(pdf_signature_byte_range(fx, c(1, 2)), "Assertion on")
 })
 
 test_that("pdf_signatures rejects bad inputs and closed docs", {
-  expect_error(pdf_signatures(42), "must be a `pdfium_doc` or a path")
+  expect_error(pdf_signatures(42), "class .pdfium_doc.")
   doc <- pdf_open(fixture_path("signed"))
   pdf_close(doc)
   expect_error(pdf_signatures(doc), "Document has been closed")

@@ -79,19 +79,8 @@
 #' @export
 pdf_glyph_path <- function(obj, glyph_code, font_size = NA_real_) {
   check_pdfium_obj(obj, allowed_types = "text")
-  if (!is.numeric(glyph_code) || length(glyph_code) != 1L ||
-    !is.finite(glyph_code) || glyph_code < 0L) {
-    stop("`glyph_code` must be a single non-negative integer.",
-      call. = FALSE
-    )
-  }
-  if (length(font_size) != 1L ||
-    (!is.na(font_size) && (!is.numeric(font_size) ||
-      !is.finite(font_size)))) {
-    stop("`font_size` must be a single numeric (or NA).",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_count(glyph_code)
+  checkmate::assert_number(font_size, finite = TRUE, na.ok = TRUE)
   raw <- cpp_text_obj_glyph_path(
     obj$ptr,
     as.integer(glyph_code),
@@ -124,19 +113,8 @@ pdf_glyph_path <- function(obj, glyph_code, font_size = NA_real_) {
 #' @export
 pdf_glyph_width <- function(obj, glyph_code, font_size = NA_real_) {
   check_pdfium_obj(obj, allowed_types = "text")
-  if (!is.numeric(glyph_code) || length(glyph_code) != 1L ||
-    !is.finite(glyph_code) || glyph_code < 0L) {
-    stop("`glyph_code` must be a single non-negative integer.",
-      call. = FALSE
-    )
-  }
-  if (length(font_size) != 1L ||
-    (!is.na(font_size) && (!is.numeric(font_size) ||
-      !is.finite(font_size)))) {
-    stop("`font_size` must be a single numeric (or NA).",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_count(glyph_code)
+  checkmate::assert_number(font_size, finite = TRUE, na.ok = TRUE)
   out <- cpp_text_obj_glyph_width(
     obj$ptr,
     as.integer(glyph_code),
@@ -168,12 +146,10 @@ pdf_glyph_width <- function(obj, glyph_code, font_size = NA_real_) {
 #' @export
 pdf_text_font_metrics <- function(obj, font_size = 1) {
   check_pdfium_obj(obj, allowed_types = "text")
-  if (!is.numeric(font_size) || length(font_size) != 1L ||
-    !is.finite(font_size) || font_size <= 0) {
-    stop("`font_size` must be a single positive finite numeric.",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_number(font_size,
+    lower = .Machine$double.eps,
+    finite = TRUE
+  )
   raw <- cpp_text_obj_font_metrics(obj$ptr, as.numeric(font_size))
   list(
     ascent  = as.numeric(raw$ascent),

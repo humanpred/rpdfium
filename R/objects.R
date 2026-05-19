@@ -42,10 +42,7 @@
 #' }
 #' @export
 pdf_page_objects <- function(page, page_num = 1L, recursive = FALSE) {
-  if (!is.logical(recursive) || length(recursive) != 1L ||
-    is.na(recursive)) {
-    stop("`recursive` must be a single TRUE or FALSE.", call. = FALSE)
-  }
+  checkmate::assert_flag(recursive)
   page <- as_open_page(page, page_num)
   on_exit_close <- attr(page, ".close_on_exit")
   if (isTRUE(on_exit_close)) on.exit(pdf_close_page(page), add = TRUE)
@@ -89,16 +86,7 @@ flatten_page_objs_recursive <- function(objs) {
 #'   `"form"`, `"shading"`, or `"unknown"`.
 #' @export
 pdf_obj_type <- function(obj) {
-  if (!inherits(obj, "pdfium_obj")) {
-    stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-      call. = FALSE
-    )
-  }
-  if (!is_open(obj)) {
-    stop("Parent page has been closed; object handle is no longer valid.",
-      call. = FALSE
-    )
-  }
+  check_pdfium_obj(obj)
   # We cached the type at construction time. Verify against the live
   # query in case future PDFium versions allow runtime type mutation.
   pdfium_obj_type_name(cpp_obj_type(obj$ptr))
@@ -132,16 +120,7 @@ pdf_obj_type <- function(obj) {
 #' }
 #' @export
 pdf_obj_bounds <- function(obj) {
-  if (!inherits(obj, "pdfium_obj")) {
-    stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-      call. = FALSE
-    )
-  }
-  if (!is_open(obj)) {
-    stop("Parent page has been closed; object handle is no longer valid.",
-      call. = FALSE
-    )
-  }
+  check_pdfium_obj(obj)
   cpp_obj_bounds(obj$ptr)
 }
 
@@ -187,16 +166,7 @@ pdf_obj_bounds <- function(obj) {
 #' }
 #' @export
 pdf_obj_matrix <- function(obj) {
-  if (!inherits(obj, "pdfium_obj")) {
-    stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-      call. = FALSE
-    )
-  }
-  if (!is_open(obj)) {
-    stop("Parent page has been closed; object handle is no longer valid.",
-      call. = FALSE
-    )
-  }
+  check_pdfium_obj(obj)
   m <- cpp_obj_matrix(obj$ptr)
   matrix(
     c(
@@ -225,15 +195,17 @@ pdfium_obj_type_name <- function(code) {
 # from a doc, the returned page carries a `.close_on_exit = TRUE`
 # attribute so the caller can close it on exit.
 as_open_page <- function(x, page_num = 1L) {
+  checkmate::assert_multi_class(
+    x, c("pdfium_page", "pdfium_doc"),
+    .var.name = "page"
+  )
   if (inherits(x, "pdfium_page")) {
     if (!is_open(x)) stop("Page has been closed.", call. = FALSE)
     attr(x, ".close_on_exit") <- FALSE
     return(x)
   }
-  if (inherits(x, "pdfium_doc")) {
-    p <- pdf_load_page(x, page_num)
-    attr(p, ".close_on_exit") <- TRUE
-    return(p)
-  }
-  stop("`page` must be a `pdfium_page` or `pdfium_doc`.", call. = FALSE)
+  # `x` is a pdfium_doc — load `page_num` and arrange for close.
+  p <- pdf_load_page(x, page_num)
+  attr(p, ".close_on_exit") <- TRUE
+  p
 }

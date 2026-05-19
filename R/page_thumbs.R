@@ -40,9 +40,7 @@
 #' @seealso [pdf_render_page()] to rasterize the full page instead.
 #' @export
 pdf_page_thumbnail <- function(page, page_num = 1L, decoded = TRUE) {
-  if (!is.logical(decoded) || length(decoded) != 1L || is.na(decoded)) {
-    stop("`decoded` must be a single TRUE or FALSE.", call. = FALSE)
-  }
+  checkmate::assert_flag(decoded)
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   if (decoded) {

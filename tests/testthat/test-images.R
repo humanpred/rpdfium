@@ -152,26 +152,26 @@ test_that("image accessors reject non-image objects", {
   skip_if(length(paths) == 0L, "shapes.pdf has no path objects")
   p <- paths[[1L]]
 
-  expect_error(pdf_image_info(p), "requires an image")
-  expect_error(pdf_image_size(p), "requires an image")
-  expect_error(pdf_image_bitmap(p), "requires an image")
-  expect_error(pdf_image_rendered(p), "requires an image")
-  expect_error(pdf_image_data(p), "requires an image")
-  expect_error(pdf_image_filters(p), "requires an image")
+  expect_error(pdf_image_info(p), "Must be element of set")
+  expect_error(pdf_image_size(p), "Must be element of set")
+  expect_error(pdf_image_bitmap(p), "Must be element of set")
+  expect_error(pdf_image_rendered(p), "Must be element of set")
+  expect_error(pdf_image_data(p), "Must be element of set")
+  expect_error(pdf_image_filters(p), "Must be element of set")
 })
 
 test_that("image accessors reject bad inputs", {
   expect_error(
     pdf_image_info("not-an-obj"),
-    "must be a `pdfium_obj`"
+    "class .pdfium_obj."
   )
   expect_error(
     pdf_image_bitmap(list()),
-    "must be a `pdfium_obj`"
+    "class .pdfium_obj."
   )
   expect_error(
     pdf_image_data(42),
-    "must be a `pdfium_obj`"
+    "class .pdfium_obj."
   )
 })
 
@@ -183,15 +183,15 @@ test_that("pdf_image_data validates the decoded flag", {
 
   expect_error(
     pdf_image_data(bundle$obj, decoded = NA),
-    "TRUE/FALSE"
+    "Assertion on"
   )
   expect_error(
     pdf_image_data(bundle$obj, decoded = c(TRUE, FALSE)),
-    "TRUE/FALSE"
+    "Assertion on"
   )
   expect_error(
     pdf_image_data(bundle$obj, decoded = "yes"),
-    "TRUE/FALSE"
+    "Assertion on"
   )
 })
 

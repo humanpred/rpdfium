@@ -54,7 +54,7 @@ test_that("pdf_text_runs accepts a pdfium_page (caller still owns it)", {
 test_that("pdf_text_runs validates inputs and refuses closed pages", {
   expect_error(
     pdf_text_runs("nope"),
-    "must be a `pdfium_page` or `pdfium_doc`"
+    "class .pdfium_page./.pdfium_doc."
   )
 
   doc <- pdf_open(fixture_path("shapes"))

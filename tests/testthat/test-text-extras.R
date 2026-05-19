@@ -26,12 +26,12 @@ test_that("pdf_text_render_mode rejects non-text objects", {
   on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(p))
   skip_if(length(paths) == 0L, "no path objects on shapes.pdf")
-  expect_error(pdf_text_render_mode(paths[[1L]]), "must be one of")
+  expect_error(pdf_text_render_mode(paths[[1L]]), "Must be element of set")
 })
 
 test_that("pdf_text_render_mode rejects bad inputs", {
-  expect_error(pdf_text_render_mode(42), "must be a `pdfium_obj`")
-  expect_error(pdf_text_render_mode(NULL), "must be a `pdfium_obj`")
+  expect_error(pdf_text_render_mode(42), "class .pdfium_obj.")
+  expect_error(pdf_text_render_mode(NULL), "class .pdfium_obj.")
 })
 
 test_that("pdf_text_colors returns one row per character with stable columns", {
@@ -82,7 +82,7 @@ test_that("pdf_text_colors accepts a doc + page_num", {
 test_that("pdf_text_colors rejects bad inputs", {
   expect_error(
     pdf_text_colors("not a page"),
-    "must be a `pdfium_page` or a `pdfium_doc`"
+    "class .pdfium_page./.pdfium_doc."
   )
   doc <- pdf_open(fixture_path("shapes"))
   pdf_close(doc)

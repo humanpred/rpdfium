@@ -74,7 +74,7 @@ test_that("pdf_bookmarks() accepts a path or an open doc", {
 })
 
 test_that("pdf_bookmarks() rejects bad inputs and closed docs", {
-  expect_error(pdf_bookmarks(42), "must be a `pdfium_doc` or a path")
+  expect_error(pdf_bookmarks(42), "class .pdfium_doc.")
   doc <- pdf_open(fixture_path("outline"))
   pdf_close(doc)
   expect_error(pdf_bookmarks(doc), "Document has been closed")
@@ -109,23 +109,23 @@ test_that("pdf_page_label() validates page_num", {
   on.exit(pdf_close(doc), add = TRUE)
   expect_error(
     pdf_page_label(doc, 0),
-    "must be a single positive integer"
+    "Assertion on"
   )
   expect_error(
     pdf_page_label(doc, -1),
-    "must be a single positive integer"
+    "Assertion on"
   )
   expect_error(
     pdf_page_label(doc, 1.5),
-    "must be a single positive integer"
+    "Assertion on"
   )
   expect_error(
     pdf_page_label(doc, NA_integer_),
-    "must be a single positive integer"
+    "Assertion on"
   )
   expect_error(
     pdf_page_label(doc, c(1, 2)),
-    "must be a single positive integer"
+    "Assertion on"
   )
 })
 

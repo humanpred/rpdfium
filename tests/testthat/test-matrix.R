@@ -93,7 +93,7 @@ test_that("text object matrix encodes the rendered font size on the diagonal", {
 })
 
 test_that("pdf_obj_matrix validates inputs and closed-page state", {
-  expect_error(pdf_obj_matrix("nope"), "must be a `pdfium_obj`")
+  expect_error(pdf_obj_matrix("nope"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
   doc <- pdf_open(pdf)
@@ -144,7 +144,7 @@ test_that("pdf_path_dash returns non-empty array for the dashed line", {
 })
 
 test_that("pdf_path_dash refuses non-path objects and closed pages", {
-  expect_error(pdf_path_dash("nope"), "must be a `pdfium_obj`")
+  expect_error(pdf_path_dash("nope"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
   doc <- pdf_open(pdf)
@@ -159,6 +159,6 @@ test_that("pdf_path_dash refuses non-path objects and closed pages", {
   )[[1]]
   expect_error(
     pdf_path_dash(text_obj),
-    "must be a path-type pdfium_obj.*\"text\""
+    "Must be element of set .'path'."
   )
 })

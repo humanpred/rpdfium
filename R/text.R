@@ -196,21 +196,5 @@ pdf_text_font <- function(obj) {
 # Internal: validate that `obj` is an open pdfium_obj of type "text".
 # Centralised so the input-validation message stays in one place.
 check_text_obj <- function(obj) {
-  if (!inherits(obj, "pdfium_obj")) {
-    stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-      call. = FALSE
-    )
-  }
-  if (!is_open(obj)) {
-    stop("Parent page has been closed; object handle is no longer valid.",
-      call. = FALSE
-    )
-  }
-  if (!identical(obj$type, "text")) {
-    stop("`obj` must be a text-type pdfium_obj; got type \"",
-      obj$type, "\".",
-      call. = FALSE
-    )
-  }
-  invisible(obj)
+  check_pdfium_obj(obj, allowed_types = "text")
 }

@@ -25,7 +25,7 @@ test_that("pdf_doc_is_tagged accepts doc or path equivalently", {
 })
 
 test_that("pdf_doc_is_tagged rejects bad inputs and closed docs", {
-  expect_error(pdf_doc_is_tagged(42), "must be a `pdfium_doc`")
+  expect_error(pdf_doc_is_tagged(42), "class .pdfium_doc.")
   doc <- pdf_open(fixture_path("shapes"))
   pdf_close(doc)
   expect_error(pdf_doc_is_tagged(doc), "closed")
@@ -74,7 +74,7 @@ test_that("pdf_named_dests returns an empty tibble of the right shape", {
 })
 
 test_that("pdf_named_dests rejects bad doc inputs", {
-  expect_error(pdf_named_dests(list()), "must be a `pdfium_doc`")
+  expect_error(pdf_named_dests(list()), "class .pdfium_doc.")
   doc <- pdf_open(fixture_path("shapes"))
   pdf_close(doc)
   expect_error(pdf_named_dests(doc), "closed")
@@ -107,13 +107,13 @@ test_that("pdf_viewer_preference_by_name returns NA when key absent", {
 test_that("pdf_viewer_preference_by_name validates key", {
   expect_error(
     pdf_viewer_preference_by_name(fixture_path("shapes"), ""),
-    "non-empty character"
+    "Assertion on"
   )
   expect_error(
     pdf_viewer_preference_by_name(
       fixture_path("shapes"),
       NA_character_
     ),
-    "non-empty character"
+    "Assertion on"
   )
 })

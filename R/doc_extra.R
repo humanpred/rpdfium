@@ -13,12 +13,7 @@ as_doc_handle <- function(x, arg = "doc", password = NULL) {
     doc <- pdf_open(x, password = password)
     return(list(doc = doc, on_exit = function() pdf_close(doc)))
   }
-  if (!inherits(x, "pdfium_doc")) {
-    stop(sprintf(
-      "`%s` must be a `pdfium_doc` or a path to a PDF file.",
-      arg
-    ), call. = FALSE)
-  }
+  checkmate::assert_class(x, "pdfium_doc", .var.name = arg)
   if (!is_open(x)) {
     stop("Document has been closed.", call. = FALSE)
   }
@@ -300,12 +295,7 @@ pdf_viewer_preferences <- function(doc, password = NULL) {
 #' @seealso [pdf_viewer_preferences()].
 #' @export
 pdf_viewer_preference_by_name <- function(doc, key, password = NULL) {
-  if (!is.character(key) || length(key) != 1L || is.na(key) ||
-    !nzchar(key)) {
-    stop("`key` must be a single non-empty character string.",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_string(key, min.chars = 1L)
   h <- as_doc_handle(doc, "doc", password = password)
   on.exit(h$on_exit(), add = TRUE)
   out <- cpp_viewer_ref_name(h$doc$ptr, enc2utf8(key))

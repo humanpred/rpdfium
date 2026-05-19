@@ -115,30 +115,11 @@ pdf_text_search <- function(doc, query,
 # simple enough to satisfy cyclocomp.
 validate_text_search_args <- function(query, case_sensitive, whole_word,
                                       consecutive) {
-  validate_text_search_query(query)
-  validate_text_search_flag(case_sensitive, "case_sensitive")
-  validate_text_search_flag(whole_word, "whole_word")
-  validate_text_search_flag(consecutive, "consecutive")
+  checkmate::assert_string(query, min.chars = 1L)
+  checkmate::assert_flag(case_sensitive)
+  checkmate::assert_flag(whole_word)
+  checkmate::assert_flag(consecutive)
   invisible(NULL)
-}
-
-validate_text_search_query <- function(query) {
-  ok <- is.character(query) && length(query) == 1L && !is.na(query) &&
-    nzchar(query)
-  if (!ok) {
-    stop("`query` must be a single non-empty character string.",
-      call. = FALSE
-    )
-  }
-}
-
-validate_text_search_flag <- function(value, name) {
-  ok <- is.logical(value) && length(value) == 1L && !is.na(value)
-  if (!ok) {
-    stop(sprintf("`%s` must be a single TRUE/FALSE.", name),
-      call. = FALSE
-    )
-  }
 }
 
 # Internal: the canonical zero-row return shape. Kept in one place so

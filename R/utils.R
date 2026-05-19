@@ -13,46 +13,10 @@ pdfium_lib_dir <- function() {
   system.file("lib", package = "pdfium")
 }
 
-# Shared input-validation helpers used across the wrappers. Kept
-# small and self-explanatory so they don't bloat the cyclomatic
-# complexity of the surrounding public functions.
-
-# Internal: stop unless `value` is a single positive finite numeric
-# that's >= 1.
-validate_positive_int <- function(value, arg_name) {
-  ok <- is.numeric(value) && length(value) == 1L &&
-    is.finite(value) && value >= 1L
-  if (!ok) {
-    stop(sprintf("`%s` must be a single positive integer.", arg_name),
-      call. = FALSE
-    )
-  }
-  invisible(NULL)
-}
-
-# Internal: stop unless `value` is a single non-NA non-empty character.
-validate_nonempty_char <- function(value, arg_name) {
-  ok <- is.character(value) && length(value) == 1L &&
-    !is.na(value) && nzchar(value)
-  if (!ok) {
-    stop(
-      sprintf(
-        "`%s` must be a single non-empty character string.",
-        arg_name
-      ),
-      call. = FALSE
-    )
-  }
-  invisible(NULL)
-}
-
-# Internal: stop unless `value` is a single finite numeric.
-validate_finite_numeric <- function(value, arg_name) {
-  ok <- is.numeric(value) && length(value) == 1L && is.finite(value)
-  if (!ok) {
-    stop(sprintf("`%s` must be a single finite numeric.", arg_name),
-      call. = FALSE
-    )
-  }
-  invisible(NULL)
-}
+# Argument validation across the package goes through `checkmate`
+# directly at the call site — see ADR-010. Earlier ad-hoc helpers
+# (validate_positive_int / _nonempty_char / _finite_numeric) were
+# retired in the same pass; new code uses
+# `checkmate::assert_count(x, positive = TRUE)` /
+# `checkmate::assert_string(x, min.chars = 1L)` /
+# `checkmate::assert_number(x, finite = TRUE)` instead.

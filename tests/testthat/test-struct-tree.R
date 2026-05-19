@@ -52,7 +52,7 @@ test_that("pdf_structure_tree accepts a doc + page_num or a page", {
 test_that("pdf_structure_tree rejects bad inputs and closed pages", {
   expect_error(
     pdf_structure_tree("nope"),
-    "must be a `pdfium_page` or a `pdfium_doc`"
+    "class .pdfium_page./.pdfium_doc."
   )
   doc <- pdf_open(fixture_path("tagged"))
   page <- pdf_load_page(doc, 1L)

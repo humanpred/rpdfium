@@ -1,5 +1,5 @@
 test_that("pdf_path_segments validates inputs and refuses non-path objects", {
-  expect_error(pdf_path_segments("not an obj"), "must be a `pdfium_obj`")
+  expect_error(pdf_path_segments("not an obj"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
   doc <- pdf_open(pdf)
@@ -12,7 +12,7 @@ test_that("pdf_path_segments validates inputs and refuses non-path objects", {
   text_obj <- Filter(function(o) o$type == "text", objs)[[1]]
   expect_error(
     pdf_path_segments(text_obj),
-    "must be a path-type pdfium_obj.*\"text\""
+    "Must be element of set .'path'."
   )
 })
 

@@ -25,12 +25,10 @@
 #'   [pdf_image_bitmap()] for image objects.
 #' @export
 pdf_text_obj_rendered_bitmap <- function(obj, scale = 1) {
-  if (!is.numeric(scale) || length(scale) != 1L || !is.finite(scale) ||
-    scale <= 0) {
-    stop("`scale` must be a single positive finite numeric.",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_number(scale,
+    lower = .Machine$double.eps,
+    finite = TRUE
+  )
   check_pdfium_obj(obj, allowed_types = "text")
   m <- cpp_text_obj_rendered_bitmap(
     obj$page$doc$ptr, obj$page$ptr,
@@ -86,8 +84,8 @@ pdf_text_obj_rendered_bitmap <- function(obj, scale = 1) {
 #' @export
 pdf_attachment_dict_value <- function(doc, attachment_index, key,
                                       password = NULL) {
-  validate_positive_int(attachment_index, "attachment_index")
-  validate_nonempty_char(key, "key")
+  checkmate::assert_count(attachment_index, positive = TRUE)
+  checkmate::assert_string(key, min.chars = 1L)
   h <- as_doc_handle(doc, "doc", password = password)
   on.exit(h$on_exit(), add = TRUE)
   raw <- cpp_attachment_dict_value(
@@ -127,12 +125,7 @@ pdf_attachment_dict_value <- function(doc, attachment_index, key,
 #' @seealso [pdf_text_chars()], [pdf_text_runs()].
 #' @export
 pdf_text_char_obj_index <- function(page, char_index, page_num = 1L) {
-  if (!is.numeric(char_index) || length(char_index) != 1L ||
-    !is.finite(char_index) || char_index < 1L) {
-    stop("`char_index` must be a single positive integer.",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_count(char_index, positive = TRUE)
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   idx <- cpp_text_char_obj_index(

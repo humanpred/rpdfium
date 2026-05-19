@@ -50,12 +50,7 @@ as_doc_handle <- function(x, arg = "doc") {
     doc <- pdf_open(x)
     return(list(doc = doc, on_exit = function() pdf_close(doc)))
   }
-  if (!inherits(x, "pdfium_doc")) {
-    stop(sprintf(
-      "`%s` must be a `pdfium_doc` or a path to a PDF file.",
-      arg
-    ), call. = FALSE)
-  }
+  checkmate::assert_class(x, "pdfium_doc", .var.name = arg)
   if (!is_open(x)) {
     stop("Document has been closed.", call. = FALSE)
   }
@@ -250,17 +245,17 @@ annotation_subtype_name <- function(codes) {
 # which case load `page_num`). Returns (page, close_on_exit) so
 # the caller can decide whether to free.
 as_open_annot_page <- function(page, page_num) {
+  checkmate::assert_multi_class(
+    page, c("pdfium_page", "pdfium_doc"),
+    .var.name = "page"
+  )
   if (inherits(page, "pdfium_page")) {
     if (!is_open(page)) {
       stop("Page has been closed.", call. = FALSE)
     }
     return(list(page = page, close_on_exit = FALSE))
   }
-  if (inherits(page, "pdfium_doc")) {
-    p <- pdf_load_page(page, page_num)
-    return(list(page = p, close_on_exit = TRUE))
-  }
-  stop("`page` must be a `pdfium_page` or a `pdfium_doc`.",
-    call. = FALSE
-  )
+  # `page` is a pdfium_doc — load `page_num` and arrange for close.
+  p <- pdf_load_page(page, page_num)
+  list(page = p, close_on_exit = TRUE)
 }

@@ -186,11 +186,11 @@ test_that("pdf_annotations accepts an open page directly", {
 test_that("pdf_annotations rejects bad inputs", {
   expect_error(
     pdf_annotations("not a page"),
-    "must be a `pdfium_page` or a `pdfium_doc`"
+    "class .pdfium_page./.pdfium_doc."
   )
   expect_error(
     pdf_annotations(42),
-    "must be a `pdfium_page` or a `pdfium_doc`"
+    "class .pdfium_page./.pdfium_doc."
   )
 })
 

@@ -43,7 +43,7 @@ test_that("pdf_text_content handles a multi-text-object page (unicode.pdf)", {
 })
 
 test_that("pdf_text_content validates input and refuses non-text objects", {
-  expect_error(pdf_text_content("nope"), "must be a `pdfium_obj`")
+  expect_error(pdf_text_content("nope"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
   doc <- pdf_open(pdf)
@@ -58,7 +58,7 @@ test_that("pdf_text_content validates input and refuses non-text objects", {
   )[[1]]
   expect_error(
     pdf_text_content(path_obj),
-    "must be a text-type pdfium_obj.*\"path\""
+    "Must be element of set"
   )
 })
 

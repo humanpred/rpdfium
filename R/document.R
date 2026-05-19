@@ -80,34 +80,15 @@ validate_pdf_open_exclusivity <- function(path, source) {
 }
 
 validate_pdf_open_password <- function(password) {
-  ok <- is.null(password) ||
-    (is.character(password) && length(password) == 1L &&
-      !is.na(password))
-  if (!ok) {
-    stop("`password` must be NULL or a single non-NA character string.",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_string(password, na.ok = FALSE, null.ok = TRUE)
 }
 
 validate_pdf_open_source <- function(source) {
-  if (!is.raw(source)) {
-    stop("`source` must be a raw vector.", call. = FALSE)
-  }
-  if (length(source) == 0L) {
-    stop("`source` must be non-empty.", call. = FALSE)
-  }
+  checkmate::assert_raw(source, min.len = 1L)
 }
 
 validate_pdf_open_path <- function(path) {
-  if (!is.character(path) || length(path) != 1L || is.na(path)) {
-    stop("`path` must be a single, non-NA character string.",
-      call. = FALSE
-    )
-  }
-  if (!nzchar(path)) {
-    stop("`path` must not be the empty string.", call. = FALSE)
-  }
+  checkmate::assert_string(path, min.chars = 1L)
   if (!file.exists(path)) {
     stop("PDF file not found: ", path, call. = FALSE)
   }
@@ -125,9 +106,7 @@ validate_pdf_open_path <- function(path) {
 #' @return Invisibly returns `doc` with its underlying pointer marked closed.
 #' @export
 pdf_close <- function(doc) {
-  if (!inherits(doc, "pdfium_doc")) {
-    stop("`doc` must be a `pdfium_doc` (from `pdf_open()`).", call. = FALSE)
-  }
+  checkmate::assert_class(doc, "pdfium_doc", .var.name = "doc")
   cpp_close_document(doc$ptr)
   invisible(doc)
 }
@@ -157,9 +136,7 @@ pdf_page_count <- function(doc, password = NULL) {
     on.exit(pdf_close(handle), add = TRUE)
     return(cpp_page_count(handle$ptr))
   }
-  if (!inherits(doc, "pdfium_doc")) {
-    stop("`doc` must be a `pdfium_doc` or a path to a PDF file.", call. = FALSE)
-  }
+  checkmate::assert_class(doc, "pdfium_doc", .var.name = "doc")
   if (!is_open(doc)) {
     stop("Document has been closed.", call. = FALSE)
   }
@@ -192,18 +169,11 @@ pdf_page_count <- function(doc, password = NULL) {
 #' }
 #' @export
 pdf_doc_meta <- function(doc, tag) {
-  if (!inherits(doc, "pdfium_doc")) {
-    stop("`doc` must be a `pdfium_doc` (from `pdf_open()`).",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_class(doc, "pdfium_doc",
+    .var.name = "doc"
+  )
   if (!is_open(doc)) stop("Document has been closed.", call. = FALSE)
-  if (!is.character(tag) || length(tag) != 1L || is.na(tag) ||
-    !nzchar(tag)) {
-    stop("`tag` must be a single non-empty character string.",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_string(tag, min.chars = 1L)
   cpp_doc_meta_text(doc$ptr, tag)
 }
 
@@ -251,11 +221,7 @@ pdf_doc_info <- function(doc, password = NULL) {
     on.exit(pdf_close(handle), add = TRUE)
     return(pdf_doc_info(handle))
   }
-  if (!inherits(doc, "pdfium_doc")) {
-    stop("`doc` must be a `pdfium_doc` or a path to a PDF file.",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_class(doc, "pdfium_doc", .var.name = "doc")
   if (!is_open(doc)) stop("Document has been closed.", call. = FALSE)
 
   raw <- cpp_doc_info(doc$ptr)
@@ -290,9 +256,7 @@ pdf_parse_date <- function(s) {
   if (length(s) == 0L) {
     return(as.POSIXct(character(0), tz = "UTC"))
   }
-  if (!is.character(s)) {
-    stop("`s` must be a character vector.", call. = FALSE)
-  }
+  checkmate::assert_character(s)
   body <- sub("^D:", "", s, perl = TRUE)
   # Default suffix for fields the PDF date omits: Jan 1 00:00:00.
   # Aligned to the YYYY-only case, so the substring we splice in

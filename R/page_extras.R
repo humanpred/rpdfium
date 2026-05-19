@@ -11,18 +11,18 @@
 # as_open_annot_page in R/annotations.R (open PR C); the rebase
 # will dedupe.
 as_open_page_pair <- function(page, page_num) {
+  checkmate::assert_multi_class(
+    page, c("pdfium_page", "pdfium_doc"),
+    .var.name = "page"
+  )
   if (inherits(page, "pdfium_page")) {
     if (!is_open(page)) stop("Page has been closed.", call. = FALSE)
     return(list(page = page, close_on_exit = FALSE))
   }
-  if (inherits(page, "pdfium_doc")) {
-    if (!is_open(page)) stop("Document has been closed.", call. = FALSE)
-    p <- pdf_load_page(page, page_num)
-    return(list(page = p, close_on_exit = TRUE))
-  }
-  stop("`page` must be a `pdfium_page` or a `pdfium_doc`.",
-    call. = FALSE
-  )
+  # `page` is a pdfium_doc — load `page_num` and arrange for close.
+  if (!is_open(page)) stop("Document has been closed.", call. = FALSE)
+  p <- pdf_load_page(page, page_num)
+  list(page = p, close_on_exit = TRUE)
 }
 
 #' Read a page's bounding box
@@ -189,8 +189,8 @@ build_text_chars_cols <- function(raw, font) {
 #' @export
 pdf_text_char_at_point <- function(page, x, y, tolerance = 2,
                                    page_num = 1L) {
-  validate_finite_numeric(x, "x")
-  validate_finite_numeric(y, "y")
+  checkmate::assert_number(x, finite = TRUE)
+  checkmate::assert_number(y, finite = TRUE)
   tolerance <- validate_char_at_point_tolerance(tolerance)
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
@@ -235,10 +235,7 @@ pdf_text_char_at_point <- function(page, x, y, tolerance = 2,
 #' @seealso [pdf_text_chars()], [pdf_text()], [pdf_text_search()].
 #' @export
 pdf_text_index_from_char <- function(page, char_index, page_num = 1L) {
-  if (!is.numeric(char_index) || length(char_index) != 1L ||
-    !is.finite(char_index)) {
-    stop("`char_index` must be a single finite integer.", call. = FALSE)
-  }
+  checkmate::assert_int(char_index)
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   out <- cpp_text_text_index_from_char(
@@ -252,12 +249,7 @@ pdf_text_index_from_char <- function(page, char_index, page_num = 1L) {
 #' @export
 pdf_text_char_from_text_index <- function(page, text_index,
                                           page_num = 1L) {
-  if (!is.numeric(text_index) || length(text_index) != 1L ||
-    !is.finite(text_index)) {
-    stop("`text_index` must be a single finite integer.",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_int(text_index)
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   out <- cpp_text_char_index_from_text(
@@ -347,12 +339,11 @@ pdf_page_links <- function(page, page_num = 1L) {
 # length-2 c(x_tol, y_tol). Accepts length-1 (replicated) or
 # length-2 numeric.
 validate_char_at_point_tolerance <- function(tolerance) {
-  ok <- is.numeric(tolerance) && all(is.finite(tolerance)) &&
-    length(tolerance) >= 1L && length(tolerance) <= 2L
-  if (!ok) {
-    stop("`tolerance` must be a finite numeric of length 1 or 2.",
-         call. = FALSE)
-  }
+  checkmate::assert_numeric(tolerance,
+    finite = TRUE,
+    min.len = 1L, max.len = 2L,
+    any.missing = FALSE
+  )
   if (length(tolerance) == 1L) tolerance <- c(tolerance, tolerance)
   tolerance
 }

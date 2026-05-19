@@ -51,8 +51,8 @@
 #' @export
 pdf_annot_dict_value <- function(page, annotation_index, key,
                                  page_num = 1L) {
-  validate_positive_int(annotation_index, "annotation_index")
-  validate_nonempty_char(key, "key")
+  checkmate::assert_count(annotation_index, positive = TRUE)
+  checkmate::assert_string(key, min.chars = 1L)
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   raw <- cpp_annot_dict_value(
@@ -99,7 +99,7 @@ pdf_annot_appearance <- function(page, annotation_index,
                                  ),
                                  page_num = 1L) {
   mode <- match.arg(mode)
-  validate_positive_int(annotation_index, "annotation_index")
+  checkmate::assert_count(annotation_index, positive = TRUE)
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   code <- .pdfium_annot_appearance_modes[[mode]]
@@ -131,12 +131,8 @@ pdf_annot_appearance <- function(page, annotation_index,
 #' @seealso [pdf_link_at_point()], [pdf_annotations()].
 #' @export
 pdf_link_annot_at_point <- function(page, x, y, page_num = 1L) {
-  if (!is.numeric(x) || length(x) != 1L || !is.finite(x)) {
-    stop("`x` must be a single finite numeric.", call. = FALSE)
-  }
-  if (!is.numeric(y) || length(y) != 1L || !is.finite(y)) {
-    stop("`y` must be a single finite numeric.", call. = FALSE)
-  }
+  checkmate::assert_number(x, finite = TRUE)
+  checkmate::assert_number(y, finite = TRUE)
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   raw <- cpp_link_annot_at_point(

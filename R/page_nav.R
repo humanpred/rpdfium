@@ -80,12 +80,8 @@ pdfium_dest_view_name <- function(codes) {
 #' @seealso [pdf_page_links()] for the full enumeration.
 #' @export
 pdf_link_at_point <- function(page, x, y, page_num = 1L) {
-  if (!is.numeric(x) || length(x) != 1L || !is.finite(x)) {
-    stop("`x` must be a single finite numeric.", call. = FALSE)
-  }
-  if (!is.numeric(y) || length(y) != 1L || !is.finite(y)) {
-    stop("`y` must be a single finite numeric.", call. = FALSE)
-  }
+  checkmate::assert_number(x, finite = TRUE)
+  checkmate::assert_number(y, finite = TRUE)
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   doc_ptr <- ph$page$doc$ptr
@@ -161,7 +157,7 @@ pdf_page_actions <- function(page, page_num = 1L) {
   if (n == 0L) {
     return(empty_page_actions_tibble())
   }
-  build_page_actions_tibble(raw)  # nocov
+  build_page_actions_tibble(raw) # nocov
 }
 
 # Internal: build the populated tibble for pdf_page_actions().

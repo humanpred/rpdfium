@@ -66,7 +66,7 @@ test_that("pdf_text_font reports sensible values for Cairo-embedded text", {
 })
 
 test_that("pdf_text_font validates input and refuses non-text objects", {
-  expect_error(pdf_text_font("nope"), "must be a `pdfium_obj`")
+  expect_error(pdf_text_font("nope"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
   doc <- pdf_open(pdf)
@@ -80,7 +80,7 @@ test_that("pdf_text_font validates input and refuses non-text objects", {
   )[[1]]
   expect_error(
     pdf_text_font(path_obj),
-    "must be a text-type pdfium_obj.*\"path\""
+    "Must be element of set"
   )
 })
 

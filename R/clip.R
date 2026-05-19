@@ -8,12 +8,10 @@
 # pdfium_page on the R-side wrapper too so format/print can show
 # the containment chain.
 new_pdfium_clip_path <- function(ptr, page, source_obj_index, n_paths) {
-  stopifnot(
-    typeof(ptr) == "externalptr",
-    inherits(page, "pdfium_page"),
-    is.numeric(source_obj_index), length(source_obj_index) == 1L,
-    is.numeric(n_paths), length(n_paths) == 1L
-  )
+  checkmate::assert_class(ptr, "externalptr", .var.name = "ptr")
+  checkmate::assert_class(page, "pdfium_page", .var.name = "page")
+  checkmate::assert_number(source_obj_index)
+  checkmate::assert_number(n_paths)
   structure(
     list(
       ptr = ptr, page = page,
@@ -73,17 +71,7 @@ print.pdfium_clip_path <- function(x, ...) {
 #' }
 #' @export
 pdf_obj_clip_path <- function(obj) {
-  if (!inherits(obj, "pdfium_obj")) {
-    stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()` ",
-      "or `pdf_form_objects()`).",
-      call. = FALSE
-    )
-  }
-  if (!is_open(obj)) {
-    stop("Parent page has been closed; the page object is no longer valid.",
-      call. = FALSE
-    )
-  }
+  check_pdfium_obj(obj)
   ptr <- cpp_obj_get_clip_path(obj$ptr, obj$page$ptr)
   # FPDFPageObj_GetClipPath returns a handle for every page object
   # (it's a pointer to the obj's `m_ClipPath` member, which exists
@@ -111,12 +99,9 @@ pdf_obj_clip_path <- function(obj) {
 #' @return Integer scalar.
 #' @export
 pdf_clip_path_count <- function(clip_path) {
-  if (!inherits(clip_path, "pdfium_clip_path")) {
-    stop("`clip_path` must be a `pdfium_clip_path` (from ",
-      "`pdf_obj_clip_path()`).",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_class(clip_path, "pdfium_clip_path",
+    .var.name = "clip_path"
+  )
   if (!is_open(clip_path$page)) {
     stop("Parent page has been closed; the clip path is no longer valid.",
       call. = FALSE
@@ -152,12 +137,9 @@ pdf_clip_path_count <- function(clip_path) {
 #'   regular page object's path.
 #' @export
 pdf_clip_path_segments <- function(clip_path) {
-  if (!inherits(clip_path, "pdfium_clip_path")) {
-    stop("`clip_path` must be a `pdfium_clip_path` (from ",
-      "`pdf_obj_clip_path()`).",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_class(clip_path, "pdfium_clip_path",
+    .var.name = "clip_path"
+  )
   if (!is_open(clip_path$page)) {
     stop("Parent page has been closed; the clip path is no longer valid.",
       call. = FALSE

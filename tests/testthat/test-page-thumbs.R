@@ -36,12 +36,12 @@ test_that("pdf_page_thumbnail accepts a doc + page_num", {
 test_that("pdf_page_thumbnail validates `decoded`", {
   doc <- pdf_open(fixture_path("with_thumbnail"))
   on.exit(pdf_close(doc), add = TRUE)
-  expect_error(pdf_page_thumbnail(doc, decoded = NA), "TRUE or FALSE")
+  expect_error(pdf_page_thumbnail(doc, decoded = NA), "Assertion on")
   expect_error(
     pdf_page_thumbnail(doc, decoded = c(TRUE, FALSE)),
-    "TRUE or FALSE"
+    "Assertion on"
   )
-  expect_error(pdf_page_thumbnail(doc, decoded = "yes"), "TRUE or FALSE")
+  expect_error(pdf_page_thumbnail(doc, decoded = "yes"), "Assertion on")
 })
 
 test_that("pdf_text_weblinks returns 0-row tibble when page has no URLs", {
@@ -97,10 +97,10 @@ test_that("pdf_page_thumbnail / pdf_text_weblinks reject closed pages", {
 test_that("page-thumbnail / weblinks reject bad page inputs", {
   expect_error(
     pdf_page_thumbnail("nope"),
-    "must be a `pdfium_page` or a `pdfium_doc`"
+    "class .pdfium_page./.pdfium_doc."
   )
   expect_error(
     pdf_text_weblinks(42),
-    "must be a `pdfium_page` or a `pdfium_doc`"
+    "class .pdfium_page./.pdfium_doc."
   )
 })

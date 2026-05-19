@@ -79,22 +79,7 @@ pdf_path_segments <- function(obj) {
 # Internal: validate that `obj` is an open pdfium_obj of type "path".
 # Returns the validated object so callers can chain.
 check_path_obj <- function(obj) {
-  if (!inherits(obj, "pdfium_obj")) {
-    stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-      call. = FALSE
-    )
-  }
-  if (!is_open(obj)) {
-    stop("Parent page has been closed; object handle is no longer valid.",
-      call. = FALSE
-    )
-  }
-  if (!identical(obj$type, "path")) {
-    stop("`obj` must be a path-type pdfium_obj; got type \"",
-      obj$type, "\".",
-      call. = FALSE
-    )
-  }
+  check_pdfium_obj(obj, allowed_types = "path")
   obj
 }
 

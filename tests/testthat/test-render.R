@@ -12,36 +12,36 @@ test_that("pdf_render_page() validates dpi/annotations/rotation", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)
 
-  expect_error(pdf_render_page(doc, dpi = 0), "positive number")
-  expect_error(pdf_render_page(doc, dpi = -1), "positive number")
-  expect_error(pdf_render_page(doc, dpi = NA_real_), "positive number")
-  expect_error(pdf_render_page(doc, dpi = c(72, 96)), "positive number")
-  expect_error(pdf_render_page(doc, dpi = "72"), "positive number")
+  expect_error(pdf_render_page(doc, dpi = 0), "Assertion on")
+  expect_error(pdf_render_page(doc, dpi = -1), "Assertion on")
+  expect_error(pdf_render_page(doc, dpi = NA_real_), "Assertion on")
+  expect_error(pdf_render_page(doc, dpi = c(72, 96)), "Assertion on")
+  expect_error(pdf_render_page(doc, dpi = "72"), "Assertion on")
 
   expect_error(
     pdf_render_page(doc, annotations = NA),
-    "TRUE/FALSE"
+    "Assertion on"
   )
   expect_error(
     pdf_render_page(doc, annotations = c(TRUE, FALSE)),
-    "TRUE/FALSE"
+    "Assertion on"
   )
   expect_error(
     pdf_render_page(doc, annotations = "yes"),
-    "TRUE/FALSE"
+    "Assertion on"
   )
 
   expect_error(
     pdf_render_page(doc, rotation = 45),
-    "one of 0, 90, 180, or 270"
+    "Must be element of set"
   )
   expect_error(
     pdf_render_page(doc, rotation = NA_integer_),
-    "one of 0, 90, 180, or 270"
+    "Must be element of set"
   )
   expect_error(
     pdf_render_page(doc, rotation = c(0, 90)),
-    "one of 0, 90, 180, or 270"
+    "Must be element of set"
   )
 })
 
@@ -144,11 +144,11 @@ test_that("pdf_render_page(background = NA) skips the buffer fill", {
 test_that("parse_bitmap_background() rejects malformed colors", {
   expect_error(
     pdfium:::parse_bitmap_background(NULL),
-    "color string, integer, or NA"
+    "Assertion on"
   )
   expect_error(
     pdfium:::parse_bitmap_background(list()),
-    "color string, integer, or NA"
+    "Assertion on"
   )
   # col2rgb itself errors on unknown names; we surface that error.
   expect_error(pdfium:::parse_bitmap_background("not_a_color"),
@@ -287,21 +287,21 @@ test_that("pdf_render_page_with_matrix validates inputs", {
       pixel_width = 100,
       pixel_height = 100
     ),
-    "length-6"
+    "Assertion on"
   )
   expect_error(
     pdf_render_page_with_matrix(doc, rep(NA_real_, 6),
       pixel_width = 100,
       pixel_height = 100
     ),
-    "finite numeric"
+    "Assertion on"
   )
   expect_error(
     pdf_render_page_with_matrix(doc, c(1, 0, 0, 1, 0, 0),
       pixel_width = 0,
       pixel_height = 100
     ),
-    "positive integer"
+    "Assertion on"
   )
   expect_error(
     pdf_render_page_with_matrix(doc, c(1, 0, 0, 1, 0, 0),
@@ -309,7 +309,7 @@ test_that("pdf_render_page_with_matrix validates inputs", {
       pixel_height = 100,
       clip_rect = c(1, 2, 3)
     ),
-    "length-4 numeric"
+    "Assertion on"
   )
   # matrix() shape coercion paths.
   expect_silent({
@@ -323,19 +323,19 @@ test_that("pdf_render_page_with_matrix validates inputs", {
     pdf_render_page_with_matrix(doc, matrix(0, nrow = 4, ncol = 4),
       pixel_width = 50, pixel_height = 50
     ),
-    "3x2, 2x3, or a length-6 vector"
+    "Assertion on"
   )
   expect_error(
     pdf_render_page_with_matrix(doc, "not numeric",
       pixel_width = 50, pixel_height = 50
     ),
-    "length-6 finite numeric"
+    "Assertion on"
   )
   expect_error(
     pdf_render_page_with_matrix(doc, c(1, 0, 0, 1, 0, 0),
       pixel_width = c(50, 60), pixel_height = 50
     ),
-    "positive integer"
+    "Assertion on"
   )
 })
 
@@ -345,19 +345,19 @@ test_that("pdf_render_to_png() validates file argument", {
 
   expect_error(
     pdf_render_to_png(doc, file = ""),
-    "single non-empty character"
+    "Assertion on"
   )
   expect_error(
     pdf_render_to_png(doc, file = NA_character_),
-    "single non-empty character"
+    "Assertion on"
   )
   expect_error(
     pdf_render_to_png(doc, file = c("a.png", "b.png")),
-    "single non-empty character"
+    "Assertion on"
   )
   expect_error(
     pdf_render_to_png(doc, file = 42),
-    "single non-empty character"
+    "Assertion on"
   )
 })
 

@@ -3,7 +3,7 @@
 # "challenging character mapping" use case.
 
 helper_text_obj <- function() {
-  doc <- pdf_open(fixture_path("shapes"))
+  doc <- pdf_open(fixture_path("shapes")) # nolint: object_usage_linter
   page <- pdf_load_page(doc, 1L)
   text <- Filter(function(o) o$type == "text", pdf_page_objects(page))
   list(doc = doc, page = page, obj = text[[1L]])
@@ -35,23 +35,23 @@ test_that("pdf_glyph_path validates obj type, glyph_code, font_size", {
   on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
   expect_error(
     pdf_glyph_path("nope", 0x48L),
-    "must be a `pdfium_obj`"
+    "class .pdfium_obj."
   )
   expect_error(
     pdf_glyph_path(bundle$obj, -1L),
-    "non-negative integer"
+    "Assertion on"
   )
   expect_error(
     pdf_glyph_path(bundle$obj, NA),
-    "non-negative integer"
+    "Assertion on"
   )
   expect_error(
     pdf_glyph_path(bundle$obj, 0x48L, font_size = "12"),
-    "single numeric"
+    "Assertion on"
   )
   expect_error(
     pdf_glyph_path(bundle$obj, 0x48L, font_size = c(1, 2)),
-    "single numeric"
+    "Assertion on"
   )
 })
 
@@ -86,18 +86,30 @@ test_that("pdf_glyph_width validates obj type, glyph_code, font_size", {
   bundle <- helper_text_obj()
   on.exit(pdf_close(bundle$doc), add = TRUE)
   on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
-  expect_error(pdf_glyph_width("nope", 0x48L),
-               "must be a `pdfium_obj`")
-  expect_error(pdf_glyph_width(bundle$obj, -1L),
-               "non-negative integer")
-  expect_error(pdf_glyph_width(bundle$obj, NA),
-               "non-negative integer")
-  expect_error(pdf_glyph_width(bundle$obj, c(1L, 2L)),
-               "non-negative integer")
-  expect_error(pdf_glyph_width(bundle$obj, 0x48L, font_size = "12"),
-               "single numeric")
-  expect_error(pdf_glyph_width(bundle$obj, 0x48L, font_size = c(1, 2)),
-               "single numeric")
+  expect_error(
+    pdf_glyph_width("nope", 0x48L),
+    "class .pdfium_obj."
+  )
+  expect_error(
+    pdf_glyph_width(bundle$obj, -1L),
+    "Assertion on"
+  )
+  expect_error(
+    pdf_glyph_width(bundle$obj, NA),
+    "Assertion on"
+  )
+  expect_error(
+    pdf_glyph_width(bundle$obj, c(1L, 2L)),
+    "Assertion on"
+  )
+  expect_error(
+    pdf_glyph_width(bundle$obj, 0x48L, font_size = "12"),
+    "Assertion on"
+  )
+  expect_error(
+    pdf_glyph_width(bundle$obj, 0x48L, font_size = c(1, 2)),
+    "Assertion on"
+  )
 })
 
 test_that("pdf_text_font_metrics validates font_size", {
@@ -106,11 +118,11 @@ test_that("pdf_text_font_metrics validates font_size", {
   on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
   expect_error(
     pdf_text_font_metrics(bundle$obj, font_size = 0),
-    "positive finite numeric"
+    "Assertion on"
   )
   expect_error(
     pdf_text_font_metrics(bundle$obj, font_size = NA),
-    "positive finite numeric"
+    "Assertion on"
   )
 })
 

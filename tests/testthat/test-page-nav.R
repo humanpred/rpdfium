@@ -44,10 +44,10 @@ test_that("pdf_link_at_point validates x and y", {
   p <- pdf_load_page(doc, 1L)
   on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
 
-  expect_error(pdf_link_at_point(p, NA_real_, 10), "finite numeric")
-  expect_error(pdf_link_at_point(p, 10, c(1, 2)), "finite numeric")
-  expect_error(pdf_link_at_point(p, "100", 10), "finite numeric")
-  expect_error(pdf_link_at_point(p, 10, Inf), "finite numeric")
+  expect_error(pdf_link_at_point(p, NA_real_, 10), "Assertion on")
+  expect_error(pdf_link_at_point(p, 10, c(1, 2)), "Assertion on")
+  expect_error(pdf_link_at_point(p, "100", 10), "Assertion on")
+  expect_error(pdf_link_at_point(p, 10, Inf), "Assertion on")
 })
 
 test_that("pdf_link_at_point accepts a doc + page_num", {
@@ -83,10 +83,10 @@ test_that("pdf_page_actions / pdf_link_at_point reject closed pages", {
 test_that("page-nav functions reject bad page inputs", {
   expect_error(
     pdf_link_at_point("nope", 1, 1),
-    "must be a `pdfium_page` or a `pdfium_doc`"
+    "class .pdfium_page./.pdfium_doc."
   )
   expect_error(
     pdf_page_actions(42),
-    "must be a `pdfium_page` or a `pdfium_doc`"
+    "class .pdfium_page./.pdfium_doc."
   )
 })

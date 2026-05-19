@@ -3,30 +3,30 @@ test_that("pdf_load_page() validates its inputs", {
   doc <- pdf_open(pdf)
   on.exit(pdf_close(doc), add = TRUE)
 
-  expect_error(pdf_load_page("not a doc"), "must be a `pdfium_doc`")
+  expect_error(pdf_load_page("not a doc"), "class .pdfium_doc.")
   expect_error(
     pdf_load_page(doc, page_num = 0),
-    "must be a single positive integer"
+    "Assertion on"
   )
   expect_error(
     pdf_load_page(doc, page_num = -1),
-    "must be a single positive integer"
+    "Assertion on"
   )
   expect_error(
     pdf_load_page(doc, page_num = 1.5),
-    "must be a single positive integer"
+    "Assertion on"
   )
   expect_error(
     pdf_load_page(doc, page_num = c(1, 2)),
-    "must be a single positive integer"
+    "Assertion on"
   )
   expect_error(
     pdf_load_page(doc, page_num = NA_integer_),
-    "must be a single positive integer"
+    "Assertion on"
   )
   expect_error(
     pdf_load_page(doc, page_num = "1"),
-    "must be a single positive integer"
+    "Assertion on"
   )
   expect_error(
     pdf_load_page(doc, page_num = 99L),
@@ -64,7 +64,7 @@ test_that("pdf_close_page() is idempotent and refuses non-pages", {
   expect_invisible(pdf_close_page(page))
   expect_false(is_open(page))
 
-  expect_error(pdf_close_page("nope"), "must be a `pdfium_page`")
+  expect_error(pdf_close_page("nope"), "class .pdfium_page.")
 })
 
 test_that("page format / print reflect open / closed and parent path", {
@@ -110,12 +110,14 @@ test_that("pdf_page_size refuses closed handles and bad inputs", {
   page <- pdf_load_page(doc, 1)
   pdf_close_page(page)
   expect_error(pdf_page_size(page), "Page has been closed")
-  expect_error(pdf_page_size(42), "must be a `pdfium_page` or `pdfium_doc`")
+  expect_error(pdf_page_size(42), "class .pdfium_page./.pdfium_doc.")
 
   doc2 <- pdf_open(pdf)
   pdf_close(doc2)
-  expect_error(pdf_page_size(doc2, 1L),
-               "Document has been closed")
+  expect_error(
+    pdf_page_size(doc2, 1L),
+    "Document has been closed"
+  )
 })
 
 test_that("pdf_page_rotation returns 0/90/180/270 from a page or a doc", {
@@ -141,7 +143,7 @@ test_that("pdf_page_rotation refuses closed handles and bad inputs", {
   page <- pdf_load_page(doc, 1)
   pdf_close_page(page)
   expect_error(pdf_page_rotation(page), "Page has been closed")
-  expect_error(pdf_page_rotation(42), "must be a `pdfium_page` or `pdfium_doc`")
+  expect_error(pdf_page_rotation(42), "class .pdfium_page./.pdfium_doc.")
 })
 
 test_that("auto-finalizer releases pages dropped without explicit close", {

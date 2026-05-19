@@ -149,22 +149,22 @@ test_that("pdf_form_objects rejects non-form objects", {
   skip_if(length(paths) == 0L, "shapes.pdf has no path objects")
   expect_error(
     pdf_form_objects(paths[[1L]]),
-    "requires a form"
+    "Must be element of set"
   )
 })
 
 test_that("pdf_form_objects rejects bad inputs", {
   expect_error(
     pdf_form_objects("not-an-obj"),
-    "must be a `pdfium_obj`"
+    "class .pdfium_obj."
   )
   expect_error(
     pdf_form_objects(list()),
-    "must be a `pdfium_obj`"
+    "class .pdfium_obj."
   )
   expect_error(
     pdf_form_objects(42),
-    "must be a `pdfium_obj`"
+    "class .pdfium_obj."
   )
 })
 

@@ -25,24 +25,7 @@
 # Internal: validate that x is a still-open pdfium_obj of type
 # "image". Returns the obj unchanged on success.
 check_image_obj <- function(obj, arg = "obj") {
-  if (!inherits(obj, "pdfium_obj")) {
-    stop(sprintf(
-      "`%s` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-      arg
-    ), call. = FALSE)
-  }
-  if (!is_open(obj)) {
-    stop("Parent page has been closed; the page object is no longer valid.",
-      call. = FALSE
-    )
-  }
-  if (!identical(obj$type, "image")) {
-    stop(sprintf(
-      "`%s` is a `%s` object; this function requires an image.",
-      arg, obj$type
-    ), call. = FALSE)
-  }
-  invisible(obj)
+  check_pdfium_obj(obj, allowed_types = "image", arg = arg)
 }
 
 #' Inspect metadata for an embedded image
@@ -205,9 +188,7 @@ pdf_image_rendered <- function(obj) {
 #' @export
 pdf_image_data <- function(obj, decoded = TRUE) {
   check_image_obj(obj)
-  if (!is.logical(decoded) || length(decoded) != 1L || is.na(decoded)) {
-    stop("`decoded` must be a single TRUE/FALSE.", call. = FALSE)
-  }
+  checkmate::assert_flag(decoded)
   cpp_image_data(obj$ptr, decoded)
 }
 

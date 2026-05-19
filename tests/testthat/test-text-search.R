@@ -9,38 +9,38 @@
 test_that("pdf_text_search rejects bad arguments early", {
   fix <- fixture_path("shapes")
 
-  expect_error(pdf_text_search(fix, NA_character_), "non-empty")
-  expect_error(pdf_text_search(fix, character()), "non-empty")
-  expect_error(pdf_text_search(fix, ""), "non-empty")
-  expect_error(pdf_text_search(fix, c("a", "b")), "non-empty")
-  expect_error(pdf_text_search(fix, 42), "non-empty")
+  expect_error(pdf_text_search(fix, NA_character_), "Assertion on")
+  expect_error(pdf_text_search(fix, character()), "Assertion on")
+  expect_error(pdf_text_search(fix, ""), "Assertion on")
+  expect_error(pdf_text_search(fix, c("a", "b")), "Assertion on")
+  expect_error(pdf_text_search(fix, 42), "Assertion on")
 
   expect_error(
     pdf_text_search(fix, "Hello", case_sensitive = NA),
-    "TRUE/FALSE"
+    "Assertion on"
   )
   expect_error(
     pdf_text_search(fix, "Hello", case_sensitive = "yes"),
-    "TRUE/FALSE"
+    "Assertion on"
   )
   expect_error(
     pdf_text_search(fix, "Hello", whole_word = c(TRUE, FALSE)),
-    "TRUE/FALSE"
+    "Assertion on"
   )
   expect_error(
     pdf_text_search(fix, "Hello", consecutive = NULL),
-    "TRUE/FALSE"
+    "Assertion on"
   )
 })
 
 test_that("pdf_text_search rejects bad doc inputs", {
   expect_error(
     pdf_text_search(42, "Hello"),
-    "must be a `pdfium_doc`"
+    "class .pdfium_doc."
   )
   expect_error(
     pdf_text_search(list(), "Hello"),
-    "must be a `pdfium_doc`"
+    "class .pdfium_doc."
   )
 
   # closed-doc path

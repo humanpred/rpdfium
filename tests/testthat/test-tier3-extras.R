@@ -30,15 +30,15 @@ test_that("pdf_text_obj_rendered_bitmap validates scale and obj type", {
   )
   expect_error(
     pdf_text_obj_rendered_bitmap(text[[1L]], scale = 0),
-    "positive finite numeric"
+    "Assertion on"
   )
   expect_error(
     pdf_text_obj_rendered_bitmap(text[[1L]], scale = NA_real_),
-    "positive finite numeric"
+    "Assertion on"
   )
   expect_error(
     pdf_text_obj_rendered_bitmap(paths[[1L]]),
-    "must be one of \\{text\\}"
+    "Must be element of set"
   )
 })
 
@@ -60,11 +60,11 @@ test_that("pdf_attachment_dict_value validates inputs", {
   on.exit(pdf_close(doc), add = TRUE)
   expect_error(
     pdf_attachment_dict_value(doc, 0L, "Subtype"),
-    "positive integer"
+    "Assertion on"
   )
   expect_error(
     pdf_attachment_dict_value(doc, 1L, ""),
-    "non-empty character"
+    "Assertion on"
   )
 })
 
@@ -91,6 +91,6 @@ test_that("pdf_text_char_obj_index reverse-maps chars to text-obj indices", {
 test_that("pdf_text_char_obj_index validates char_index", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)
-  expect_error(pdf_text_char_obj_index(doc, 0L), "positive integer")
-  expect_error(pdf_text_char_obj_index(doc, NA), "positive integer")
+  expect_error(pdf_text_char_obj_index(doc, 0L), "Assertion on")
+  expect_error(pdf_text_char_obj_index(doc, NA), "Assertion on")
 })

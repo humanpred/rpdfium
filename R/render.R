@@ -151,9 +151,9 @@ pdf_render_page_with_matrix <- function(page,
                                         background = "white",
                                         annotations = FALSE) {
   matrix <- validate_matrix6(matrix)
-  validate_render_pixel_dim(pixel_width, "pixel_width")
-  validate_render_pixel_dim(pixel_height, "pixel_height")
-  validate_render_annotations(annotations)
+  checkmate::assert_count(pixel_width, positive = TRUE)
+  checkmate::assert_count(pixel_height, positive = TRUE)
+  checkmate::assert_flag(annotations)
   clip_vec <- validate_clip_rect(clip_rect)
 
   page <- as_open_page(page, page_num)
@@ -184,46 +184,37 @@ pdf_render_page_with_matrix <- function(page,
 
 # Internal: coerce a 3x2 / 2x3 matrix or length-6 numeric to a
 # length-6 numeric, raising on shape / finiteness violations.
+# Kept as a local helper rather than inlined because it does shape
+# coercion on top of the numeric assertion — checkmate's assert_*
+# can't express the matrix-OR-vector union cleanly.
 validate_matrix6 <- function(m) {
   if (is.matrix(m)) {
     ok_shape <- all(dim(m) == c(3L, 2L)) ||
       all(dim(m) == c(2L, 3L)) || length(m) == 6L
     if (!ok_shape) {
-      stop("`matrix` must be 3x2, 2x3, or a length-6 vector.",
+      stop(
+        "Assertion on 'matrix' failed: ",
+        "Must be 3x2, 2x3, or a length-6 vector.",
         call. = FALSE
       )
     }
     m <- as.numeric(m)
   }
-  if (!is.numeric(m) || length(m) != 6L || any(!is.finite(m))) {
-    stop("`matrix` must be a length-6 finite numeric vector.",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_numeric(m,
+    len = 6L, finite = TRUE,
+    any.missing = FALSE, .var.name = "matrix"
+  )
   m
-}
-
-validate_render_pixel_dim <- function(value, arg_name) {
-  ok <- is.numeric(value) && length(value) == 1L &&
-    is.finite(value) && value >= 1L
-  if (!ok) {
-    stop(sprintf("`%s` must be a single positive integer.", arg_name),
-      call. = FALSE
-    )
-  }
-  invisible(NULL)
 }
 
 validate_clip_rect <- function(clip_rect) {
   if (is.null(clip_rect)) {
     return(numeric(0))
   }
-  if (!is.numeric(clip_rect) || length(clip_rect) != 4L) {
-    stop("`clip_rect` must be NULL or a length-4 numeric vector ",
-      "c(left, bottom, right, top).",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_numeric(clip_rect,
+    len = 4L,
+    .var.name = "clip_rect"
+  )
   as.numeric(clip_rect)
 }
 
@@ -231,29 +222,13 @@ validate_clip_rect <- function(clip_rect) {
 # under lintr's cyclocomp_linter limit. Each per-arg validator is
 # itself simple enough to satisfy cyclocomp.
 validate_render_args <- function(dpi, annotations, rotation) {
-  validate_render_dpi(dpi)
-  validate_render_annotations(annotations)
-  validate_render_rotation(rotation)
+  checkmate::assert_number(dpi,
+    lower = .Machine$double.eps,
+    finite = TRUE
+  )
+  checkmate::assert_flag(annotations)
+  checkmate::assert_choice(rotation, c(0, 90, 180, 270))
   invisible(NULL)
-}
-
-validate_render_dpi <- function(dpi) {
-  ok <- is.numeric(dpi) && length(dpi) == 1L && !is.na(dpi) && dpi > 0
-  if (!ok) stop("`dpi` must be a single positive number.", call. = FALSE)
-}
-
-validate_render_annotations <- function(annotations) {
-  ok <- is.logical(annotations) && length(annotations) == 1L &&
-    !is.na(annotations)
-  if (!ok) stop("`annotations` must be a single TRUE/FALSE.", call. = FALSE)
-}
-
-validate_render_rotation <- function(rotation) {
-  ok <- is.numeric(rotation) && length(rotation) == 1L &&
-    !is.na(rotation) && rotation %in% c(0, 90, 180, 270)
-  if (!ok) {
-    stop("`rotation` must be one of 0, 90, 180, or 270.", call. = FALSE)
-  }
 }
 
 # Internal: page-size-in-points to bitmap dimensions, swapped for
@@ -288,11 +263,12 @@ parse_bitmap_background <- function(x) {
   if (length(x) == 1L && is.na(x)) {
     return(list(argb = 0L, fill = FALSE))
   }
-  if (!is.character(x) && !is.numeric(x)) {
-    stop("`background` must be a color string, integer, or NA.",
-      call. = FALSE
-    )
-  }
+  checkmate::assert(
+    checkmate::check_character(x),
+    checkmate::check_numeric(x),
+    .var.name = "background",
+    combine = "or"
+  )
   rgba <- grDevices::col2rgb(x, alpha = TRUE)[, 1L]
   argb <- bitwShiftL(as.integer(rgba[["alpha"]]), 24L) +
     bitwShiftL(as.integer(rgba[["red"]]), 16L) +
@@ -490,12 +466,7 @@ pdf_render_to_png <- function(page, file, page_num = 1L, dpi = 72,
   # Validate file first so callers see "file must be ..." even when
   # `png` isn't installed (e.g. R CMD check under
   # _R_CHECK_DEPENDS_ONLY_=TRUE).
-  if (!is.character(file) || length(file) != 1L || is.na(file) ||
-    !nzchar(file)) {
-    stop("`file` must be a single non-empty character string.",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_string(file, min.chars = 1L)
   # nocov start - "png not installed" guard; coverage runs always
   # have png available because it's in Suggests and gets installed
   # for tests, so this branch is unreachable here. The behavior is

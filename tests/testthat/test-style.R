@@ -1,8 +1,8 @@
 # Tests for pdf_path_stroke / pdf_path_fill / pdf_text_font_size.
 
 test_that("pdf_path_stroke / _fill validate inputs and refuse non-path objs", {
-  expect_error(pdf_path_stroke("nope"), "must be a `pdfium_obj`")
-  expect_error(pdf_path_fill("nope"), "must be a `pdfium_obj`")
+  expect_error(pdf_path_stroke("nope"), "class .pdfium_obj.")
+  expect_error(pdf_path_fill("nope"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
   doc <- pdf_open(pdf)
@@ -14,11 +14,11 @@ test_that("pdf_path_stroke / _fill validate inputs and refuse non-path objs", {
   text_obj <- Filter(function(o) o$type == "text", pdf_page_objects(page))[[1]]
   expect_error(
     pdf_path_stroke(text_obj),
-    "must be a path-type pdfium_obj.*\"text\""
+    "Must be element of set .'path'."
   )
   expect_error(
     pdf_path_fill(text_obj),
-    "must be a path-type pdfium_obj.*\"text\""
+    "Must be element of set .'path'."
   )
 })
 
@@ -120,7 +120,7 @@ test_that("pdf_text_font_size returns a numeric scalar for text objs", {
 })
 
 test_that("pdf_text_font_size validates input and refuses non-text objects", {
-  expect_error(pdf_text_font_size("nope"), "must be a `pdfium_obj`")
+  expect_error(pdf_text_font_size("nope"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
   doc <- pdf_open(pdf)
@@ -135,7 +135,7 @@ test_that("pdf_text_font_size validates input and refuses non-text objects", {
   )[[1]]
   expect_error(
     pdf_text_font_size(path_obj),
-    "must be a text-type pdfium_obj.*\"path\""
+    "Must be element of set"
   )
 })
 

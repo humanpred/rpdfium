@@ -29,11 +29,11 @@ test_that("pdf_annot_dict_value validates inputs", {
   on.exit(pdf_close(doc), add = TRUE)
   expect_error(
     pdf_annot_dict_value(doc, 0L, "Subj"),
-    "positive integer"
+    "Assertion on"
   )
   expect_error(
     pdf_annot_dict_value(doc, 1L, ""),
-    "non-empty character"
+    "Assertion on"
   )
 })
 
@@ -69,21 +69,27 @@ test_that("pdf_link_annot_at_point returns found=FALSE when miss", {
 test_that("pdf_link_annot_at_point validates x and y", {
   doc <- pdf_open(fixture_path("annotated"))
   on.exit(pdf_close(doc), add = TRUE)
-  expect_error(pdf_link_annot_at_point(doc, NA, 10), "finite numeric")
-  expect_error(pdf_link_annot_at_point(doc, 10, NA), "finite numeric")
-  expect_error(pdf_link_annot_at_point(doc, "100", 10),
-               "finite numeric")
-  expect_error(pdf_link_annot_at_point(doc, 10, c(1, 2)),
-               "finite numeric")
+  expect_error(pdf_link_annot_at_point(doc, NA, 10), "Assertion on")
+  expect_error(pdf_link_annot_at_point(doc, 10, NA), "Assertion on")
+  expect_error(
+    pdf_link_annot_at_point(doc, "100", 10),
+    "Assertion on"
+  )
+  expect_error(
+    pdf_link_annot_at_point(doc, 10, c(1, 2)),
+    "Assertion on"
+  )
 })
 
 test_that("pdf_annot_appearance validates inputs", {
   doc <- pdf_open(fixture_path("annotated"))
   on.exit(pdf_close(doc), add = TRUE)
-  expect_error(pdf_annot_appearance(doc, 0L), "positive integer")
-  expect_error(pdf_annot_appearance(doc, NA), "positive integer")
-  expect_error(pdf_annot_appearance(doc, 1L, mode = "bogus"),
-               "should be one of")
+  expect_error(pdf_annot_appearance(doc, 0L), "Assertion on")
+  expect_error(pdf_annot_appearance(doc, NA), "Assertion on")
+  expect_error(
+    pdf_annot_appearance(doc, 1L, mode = "bogus"),
+    "should be one of"
+  )
 })
 
 test_that("pdf_obj_marked_content_id returns NA for untagged content", {

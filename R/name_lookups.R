@@ -29,12 +29,7 @@
 #' @seealso [pdf_named_dests()].
 #' @export
 pdf_named_dest_by_name <- function(doc, name, password = NULL) {
-  if (!is.character(name) || length(name) != 1L || is.na(name) ||
-    !nzchar(name)) {
-    stop("`name` must be a single non-empty character string.",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_string(name, min.chars = 1L)
   h <- as_doc_handle(doc, "doc", password = password)
   on.exit(h$on_exit(), add = TRUE)
   raw <- cpp_named_dest_by_name(h$doc$ptr, enc2utf8(name))
@@ -67,12 +62,7 @@ pdf_named_dest_by_name <- function(doc, name, password = NULL) {
 #' @seealso [pdf_bookmarks()].
 #' @export
 pdf_bookmark_find <- function(doc, title, password = NULL) {
-  if (!is.character(title) || length(title) != 1L || is.na(title) ||
-    !nzchar(title)) {
-    stop("`title` must be a single non-empty character string.",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_string(title, min.chars = 1L)
   h <- as_doc_handle(doc, "doc", password = password)
   on.exit(h$on_exit(), add = TRUE)
   idx <- cpp_bookmark_find(h$doc$ptr, enc2utf8(title))
@@ -102,12 +92,8 @@ pdf_bookmark_find <- function(doc, title, password = NULL) {
 #' @seealso [pdf_form_fields()], [pdf_link_at_point()].
 #' @export
 pdf_form_field_at_point <- function(page, x, y, page_num = 1L) {
-  if (!is.numeric(x) || length(x) != 1L || !is.finite(x)) {
-    stop("`x` must be a single finite numeric.", call. = FALSE)
-  }
-  if (!is.numeric(y) || length(y) != 1L || !is.finite(y)) {
-    stop("`y` must be a single finite numeric.", call. = FALSE)
-  }
+  checkmate::assert_number(x, finite = TRUE)
+  checkmate::assert_number(y, finite = TRUE)
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   raw <- cpp_form_field_at_point(

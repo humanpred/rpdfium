@@ -15,12 +15,7 @@ as_doc_handle <- function(x, arg = "doc") {
     doc <- pdf_open(x)
     return(list(doc = doc, on_exit = function() pdf_close(doc)))
   }
-  if (!inherits(x, "pdfium_doc")) {
-    stop(sprintf(
-      "`%s` must be a `pdfium_doc` or a path to a PDF file.",
-      arg
-    ), call. = FALSE)
-  }
+  checkmate::assert_class(x, "pdfium_doc", .var.name = arg)
   if (!is_open(x)) {
     stop("Document has been closed.", call. = FALSE)
   }
@@ -89,14 +84,7 @@ pdf_attachments <- function(doc) {
 #' @seealso [pdf_attachments()].
 #' @export
 pdf_attachment_data <- function(doc, attachment_index = 1L) {
-  if (!is.numeric(attachment_index) || length(attachment_index) != 1L ||
-    is.na(attachment_index) ||
-    attachment_index != as.integer(attachment_index) ||
-    attachment_index < 1L) {
-    stop("`attachment_index` must be a single positive integer (1-based).",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_count(attachment_index, positive = TRUE)
   h <- as_doc_handle(doc, "doc")
   on.exit(h$on_exit(), add = TRUE)
   cpp_attachment_data(h$doc$ptr, as.integer(attachment_index) - 1L)

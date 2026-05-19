@@ -90,34 +90,34 @@ test_that("pdf_clip_path_segments returns the rectangular clip geometry", {
 test_that("pdf_obj_clip_path rejects bad input", {
   expect_error(
     pdf_obj_clip_path("not-an-obj"),
-    "must be a `pdfium_obj`"
+    "class .pdfium_obj."
   )
   expect_error(
     pdf_obj_clip_path(list()),
-    "must be a `pdfium_obj`"
+    "class .pdfium_obj."
   )
   expect_error(
     pdf_obj_clip_path(42),
-    "must be a `pdfium_obj`"
+    "class .pdfium_obj."
   )
 })
 
 test_that("pdf_clip_path_count + segments reject bad input", {
   expect_error(
     pdf_clip_path_count("not-a-clip"),
-    "must be a `pdfium_clip_path`"
+    "class .pdfium_clip_path."
   )
   expect_error(
     pdf_clip_path_count(list()),
-    "must be a `pdfium_clip_path`"
+    "class .pdfium_clip_path."
   )
   expect_error(
     pdf_clip_path_segments("not-a-clip"),
-    "must be a `pdfium_clip_path`"
+    "class .pdfium_clip_path."
   )
   expect_error(
     pdf_clip_path_segments(42),
-    "must be a `pdfium_clip_path`"
+    "class .pdfium_clip_path."
   )
 })
 

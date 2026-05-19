@@ -47,7 +47,7 @@ test_that("pdf_page_objects accepts a doc (auto-loads page 1)", {
 test_that("pdf_page_objects validates inputs and closed-page state", {
   expect_error(
     pdf_page_objects("not a page"),
-    "must be a `pdfium_page` or `pdfium_doc`"
+    "class .pdfium_page./.pdfium_doc."
   )
 
   pdf <- fixture_path("shapes")
@@ -76,7 +76,7 @@ test_that("pdf_obj_type returns the cached type and validates input", {
     ))
   }
 
-  expect_error(pdf_obj_type("not an obj"), "must be a `pdfium_obj`")
+  expect_error(pdf_obj_type("not an obj"), "class .pdfium_obj.")
 })
 
 test_that("pdf_obj_type refuses objects whose parent page has closed", {
@@ -161,7 +161,7 @@ test_that("pdf_obj_bounds returns a 4-element named numeric vector", {
 })
 
 test_that("pdf_obj_bounds validates inputs and closed-page state", {
-  expect_error(pdf_obj_bounds("not an obj"), "must be a `pdfium_obj`")
+  expect_error(pdf_obj_bounds("not an obj"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
   doc <- pdf_open(pdf)

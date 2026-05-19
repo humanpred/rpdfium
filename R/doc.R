@@ -19,12 +19,7 @@ as_doc_handle <- function(x, arg = "doc") {
     doc <- pdf_open(x)
     return(list(doc = doc, on_exit = function() pdf_close(doc)))
   }
-  if (!inherits(x, "pdfium_doc")) {
-    stop(sprintf(
-      "`%s` must be a `pdfium_doc` or a path to a PDF file.",
-      arg
-    ), call. = FALSE)
-  }
+  checkmate::assert_class(x, "pdfium_doc", .var.name = arg)
   if (!is_open(x)) {
     stop("Document has been closed.", call. = FALSE)
   }
@@ -140,13 +135,7 @@ pdf_bookmarks <- function(doc) {
 #'   [pdf_bookmarks()].
 #' @export
 pdf_page_label <- function(doc, page_num = 1L) {
-  if (!is.numeric(page_num) || length(page_num) != 1L ||
-    is.na(page_num) || page_num != as.integer(page_num) ||
-    page_num < 1L) {
-    stop("`page_num` must be a single positive integer (1-based).",
-      call. = FALSE
-    )
-  }
+  checkmate::assert_count(page_num, positive = TRUE)
   h <- as_doc_handle(doc, "doc")
   on.exit(h$on_exit(), add = TRUE)
   cpp_page_label(h$doc$ptr, as.integer(page_num) - 1L)

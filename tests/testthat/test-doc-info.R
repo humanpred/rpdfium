@@ -42,7 +42,7 @@ test_that("pdf_doc_info accepts a path or an open doc", {
 })
 
 test_that("pdf_doc_info refuses bad inputs and closed docs", {
-  expect_error(pdf_doc_info(42), "must be a `pdfium_doc` or a path")
+  expect_error(pdf_doc_info(42), "class .pdfium_doc.")
   expect_error(pdf_doc_info("nope.pdf"), "not found")
 
   doc <- pdf_open(fixture_path("shapes"))
@@ -61,10 +61,10 @@ test_that("pdf_doc_meta returns standard tags and validates input", {
   expect_identical(pdf_doc_meta(doc, "NotPresent"), "")
 
   # Input validation.
-  expect_error(pdf_doc_meta(doc, ""), "must be a single non-empty")
-  expect_error(pdf_doc_meta(doc, NA_character_), "must be a single non-empty")
-  expect_error(pdf_doc_meta(doc, 42), "must be a single non-empty")
-  expect_error(pdf_doc_meta("notdoc", "Title"), "must be a `pdfium_doc`")
+  expect_error(pdf_doc_meta(doc, ""), "Assertion on")
+  expect_error(pdf_doc_meta(doc, NA_character_), "Assertion on")
+  expect_error(pdf_doc_meta(doc, 42), "Assertion on")
+  expect_error(pdf_doc_meta("notdoc", "Title"), "class .pdfium_doc.")
 })
 
 test_that("pdf_doc_meta refuses a closed doc", {
@@ -122,7 +122,7 @@ test_that("pdf_parse_date handles edge cases", {
   expect_true(is.na(res[2L]))
   expect_true(!is.na(res[3L]))
   # Refuses non-character input.
-  expect_error(pdf_parse_date(42), "must be a character vector")
+  expect_error(pdf_parse_date(42), "Assertion on")
 })
 
 test_that("pdf_doc_info's creation_date round-trips through pdf_parse_date", {

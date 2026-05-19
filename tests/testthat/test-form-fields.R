@@ -115,7 +115,7 @@ test_that("pdf_form_fields accepts a path or an open doc", {
 })
 
 test_that("pdf_form_fields rejects bad inputs and closed docs", {
-  expect_error(pdf_form_fields(42), "must be a `pdfium_doc` or a path")
+  expect_error(pdf_form_fields(42), "class .pdfium_doc.")
   doc <- pdf_open(fixture_path("annotated"))
   pdf_close(doc)
   expect_error(pdf_form_fields(doc), "Document has been closed")
