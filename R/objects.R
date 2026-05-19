@@ -29,7 +29,8 @@
 #' @seealso [pdf_obj_type()], [pdf_form_objects()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -42,7 +43,7 @@
 #' @export
 pdf_page_objects <- function(page, page_num = 1L, recursive = FALSE) {
   if (!is.logical(recursive) || length(recursive) != 1L ||
-        is.na(recursive)) {
+    is.na(recursive)) {
     stop("`recursive` must be a single TRUE or FALSE.", call. = FALSE)
   }
   page <- as_open_page(page, page_num)
@@ -57,7 +58,9 @@ pdf_page_objects <- function(page, page_num = 1L, recursive = FALSE) {
     type_name <- pdfium_obj_type_name(type_code)
     out[[i]] <- new_pdfium_obj(obj_ptr, page, i, type_name)
   }
-  if (!recursive) return(out)
+  if (!recursive) {
+    return(out)
+  }
   flatten_page_objs_recursive(out)
 }
 
@@ -88,11 +91,13 @@ flatten_page_objs_recursive <- function(objs) {
 pdf_obj_type <- function(obj) {
   if (!inherits(obj, "pdfium_obj")) {
     stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   if (!is_open(obj)) {
     stop("Parent page has been closed; object handle is no longer valid.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   # We cached the type at construction time. Verify against the live
   # query in case future PDFium versions allow runtime type mutation.
@@ -115,7 +120,8 @@ pdf_obj_type <- function(obj) {
 #'
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -128,11 +134,13 @@ pdf_obj_type <- function(obj) {
 pdf_obj_bounds <- function(obj) {
   if (!inherits(obj, "pdfium_obj")) {
     stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   if (!is_open(obj)) {
     stop("Parent page has been closed; object handle is no longer valid.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   cpp_obj_bounds(obj$ptr)
 }
@@ -167,7 +175,8 @@ pdf_obj_bounds <- function(obj) {
 #' @seealso [pdf_obj_bounds()], [pdf_path_segments()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -180,17 +189,21 @@ pdf_obj_bounds <- function(obj) {
 pdf_obj_matrix <- function(obj) {
   if (!inherits(obj, "pdfium_obj")) {
     stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   if (!is_open(obj)) {
     stop("Parent page has been closed; object handle is no longer valid.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   m <- cpp_obj_matrix(obj$ptr)
   matrix(
-    c(m[["a"]], m[["b"]], 0,
+    c(
+      m[["a"]], m[["b"]], 0,
       m[["c"]], m[["d"]], 0,
-      m[["e"]], m[["f"]], 1),
+      m[["e"]], m[["f"]], 1
+    ),
     nrow = 3, ncol = 3, byrow = FALSE
   )
 }
@@ -200,8 +213,11 @@ pdf_obj_matrix <- function(obj) {
 # API stable against future PDFium enum additions.
 pdfium_obj_type_name <- function(code) {
   idx <- as.integer(code) + 1L
-  if (idx < 1L || idx > length(.pdfium_obj_type_names)) "unknown"
-  else .pdfium_obj_type_names[[idx]]
+  if (idx < 1L || idx > length(.pdfium_obj_type_names)) {
+    "unknown"
+  } else {
+    .pdfium_obj_type_names[[idx]]
+  }
 }
 
 # Internal: resolve a page argument that may be a pdfium_page or a

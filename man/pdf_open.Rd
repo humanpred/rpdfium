@@ -41,7 +41,8 @@ with \code{readBin()} straight into RAM. Exactly one of \code{path} or
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   doc <- pdf_open(fixture)
   pdf_page_count(doc)

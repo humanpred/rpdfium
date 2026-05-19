@@ -93,7 +93,9 @@ pdf_text_weblinks <- function(page, page_num = 1L) {
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   raw <- cpp_page_weblinks(ph$page$ptr)
   n <- length(raw$url)
-  if (n == 0L) return(empty_text_weblinks_tibble())
+  if (n == 0L) {
+    return(empty_text_weblinks_tibble())
+  }
   tibble::tibble(
     url        = as.character(raw$url),
     start_char = as.integer(raw$start_char),

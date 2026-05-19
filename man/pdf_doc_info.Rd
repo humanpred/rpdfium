@@ -39,7 +39,8 @@ slots; parses that fail return \code{NA}.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   info <- pdf_doc_info(fixture)
   info$page_count

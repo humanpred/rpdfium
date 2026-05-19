@@ -11,10 +11,12 @@ test_that("pdf_structure_tree returns 0 rows for an untagged PDF", {
     out <- pdf_structure_tree(pdf_open(fixture_path(name)), 1L)
     expect_s3_class(out, "tbl_df")
     expect_equal(nrow(out), 0L)
-    expect_named(out, c("element_index", "parent_index", "level",
-                        "type", "obj_type", "title", "lang",
-                        "alt_text", "actual_text", "id",
-                        "mcid", "mcid_count", "attributes"))
+    expect_named(out, c(
+      "element_index", "parent_index", "level",
+      "type", "obj_type", "title", "lang",
+      "alt_text", "actual_text", "id",
+      "mcid", "mcid_count", "attributes"
+    ))
   }
 })
 
@@ -29,7 +31,7 @@ test_that("pdf_structure_tree walks the tagged-PDF tree", {
   expect_identical(res$element_index, 1L:2L)
   expect_identical(res$type, c("Document", "P"))
   expect_identical(res$parent_index, c(0L, 1L))
-  expect_identical(res$level,        c(1L, 2L))
+  expect_identical(res$level, c(1L, 2L))
   # P has marked content (/MCR with MCID 0); Document does not.
   expect_true(is.na(res$mcid[[1L]]))
   expect_equal(res$mcid[[2L]], 0L)
@@ -48,8 +50,10 @@ test_that("pdf_structure_tree accepts a doc + page_num or a page", {
 })
 
 test_that("pdf_structure_tree rejects bad inputs and closed pages", {
-  expect_error(pdf_structure_tree("nope"),
-               "must be a `pdfium_page` or a `pdfium_doc`")
+  expect_error(
+    pdf_structure_tree("nope"),
+    "must be a `pdfium_page` or a `pdfium_doc`"
+  )
   doc <- pdf_open(fixture_path("tagged"))
   page <- pdf_load_page(doc, 1L)
   pdf_close_page(page)

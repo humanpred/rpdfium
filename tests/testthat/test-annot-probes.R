@@ -8,8 +8,10 @@ test_that("pdf_annot_dict_value finds the highlight's /Subj", {
   on.exit(pdf_close(doc), add = TRUE)
   # The highlight is annotation_index 2; it carries /Subj=(Important).
   out <- pdf_annot_dict_value(doc, 2L, "Subj", page_num = 1L)
-  expect_named(out, c("has_key", "value_type", "value_string",
-                      "value_number"))
+  expect_named(out, c(
+    "has_key", "value_type", "value_string",
+    "value_number"
+  ))
   expect_true(out$has_key)
   expect_equal(out$value_string, "Important")
 })
@@ -25,10 +27,14 @@ test_that("pdf_annot_dict_value reports has_key=FALSE for missing keys", {
 test_that("pdf_annot_dict_value validates inputs", {
   doc <- pdf_open(fixture_path("annotated"))
   on.exit(pdf_close(doc), add = TRUE)
-  expect_error(pdf_annot_dict_value(doc, 0L, "Subj"),
-               "positive integer")
-  expect_error(pdf_annot_dict_value(doc, 1L, ""),
-               "non-empty character")
+  expect_error(
+    pdf_annot_dict_value(doc, 0L, "Subj"),
+    "positive integer"
+  )
+  expect_error(
+    pdf_annot_dict_value(doc, 1L, ""),
+    "non-empty character"
+  )
 })
 
 test_that("pdf_annot_appearance returns a string or empty", {
@@ -36,8 +42,10 @@ test_that("pdf_annot_appearance returns a string or empty", {
   on.exit(pdf_close(doc), add = TRUE)
   # No /AP on any of annotated.pdf's annots — empty string.
   expect_equal(pdf_annot_appearance(doc, 1L, page_num = 1L), "")
-  expect_equal(pdf_annot_appearance(doc, 1L, mode = "rollover",
-                                     page_num = 1L), "")
+  expect_equal(pdf_annot_appearance(doc, 1L,
+    mode = "rollover",
+    page_num = 1L
+  ), "")
 })
 
 test_that("pdf_link_annot_at_point returns the link's annotation_index", {

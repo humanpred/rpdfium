@@ -57,7 +57,8 @@
 #'   positions.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "unicode.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   pdf_text_search(fixture, "Hello")
 #'   pdf_text_search(fixture, "WORLD", case_sensitive = FALSE)
@@ -81,9 +82,9 @@ pdf_text_search <- function(doc, query,
     page <- pdf_load_page(h$doc, i)
     raw <- cpp_text_search_page(
       page$ptr, query_utf8,
-      match_case       = case_sensitive,
+      match_case = case_sensitive,
       match_whole_word = whole_word,
-      consecutive      = consecutive
+      consecutive = consecutive
     )
     pdf_close_page(page)
 
@@ -103,7 +104,9 @@ pdf_text_search <- function(doc, query,
     }
   }
   rows <- rows[!vapply(rows, is.null, logical(1L))]
-  if (length(rows) == 0L) return(empty_text_search_tibble())
+  if (length(rows) == 0L) {
+    return(empty_text_search_tibble())
+  }
   do.call(rbind, rows)
 }
 
@@ -114,8 +117,8 @@ validate_text_search_args <- function(query, case_sensitive, whole_word,
                                       consecutive) {
   validate_text_search_query(query)
   validate_text_search_flag(case_sensitive, "case_sensitive")
-  validate_text_search_flag(whole_word,     "whole_word")
-  validate_text_search_flag(consecutive,    "consecutive")
+  validate_text_search_flag(whole_word, "whole_word")
+  validate_text_search_flag(consecutive, "consecutive")
   invisible(NULL)
 }
 
@@ -124,7 +127,8 @@ validate_text_search_query <- function(query) {
     nzchar(query)
   if (!ok) {
     stop("`query` must be a single non-empty character string.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
 }
 
@@ -132,7 +136,8 @@ validate_text_search_flag <- function(value, name) {
   ok <- is.logical(value) && length(value) == 1L && !is.na(value)
   if (!ok) {
     stop(sprintf("`%s` must be a single TRUE/FALSE.", name),
-         call. = FALSE)
+      call. = FALSE
+    )
   }
 }
 

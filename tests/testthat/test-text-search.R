@@ -15,21 +15,33 @@ test_that("pdf_text_search rejects bad arguments early", {
   expect_error(pdf_text_search(fix, c("a", "b")), "non-empty")
   expect_error(pdf_text_search(fix, 42), "non-empty")
 
-  expect_error(pdf_text_search(fix, "Hello", case_sensitive = NA),
-               "TRUE/FALSE")
-  expect_error(pdf_text_search(fix, "Hello", case_sensitive = "yes"),
-               "TRUE/FALSE")
-  expect_error(pdf_text_search(fix, "Hello", whole_word = c(TRUE, FALSE)),
-               "TRUE/FALSE")
-  expect_error(pdf_text_search(fix, "Hello", consecutive = NULL),
-               "TRUE/FALSE")
+  expect_error(
+    pdf_text_search(fix, "Hello", case_sensitive = NA),
+    "TRUE/FALSE"
+  )
+  expect_error(
+    pdf_text_search(fix, "Hello", case_sensitive = "yes"),
+    "TRUE/FALSE"
+  )
+  expect_error(
+    pdf_text_search(fix, "Hello", whole_word = c(TRUE, FALSE)),
+    "TRUE/FALSE"
+  )
+  expect_error(
+    pdf_text_search(fix, "Hello", consecutive = NULL),
+    "TRUE/FALSE"
+  )
 })
 
 test_that("pdf_text_search rejects bad doc inputs", {
-  expect_error(pdf_text_search(42, "Hello"),
-               "must be a `pdfium_doc`")
-  expect_error(pdf_text_search(list(), "Hello"),
-               "must be a `pdfium_doc`")
+  expect_error(
+    pdf_text_search(42, "Hello"),
+    "must be a `pdfium_doc`"
+  )
+  expect_error(
+    pdf_text_search(list(), "Hello"),
+    "must be a `pdfium_doc`"
+  )
 
   # closed-doc path
   doc <- pdf_open(fixture_path("shapes"))
@@ -41,11 +53,11 @@ test_that("pdf_text_search finds a single hit and returns the bbox", {
   out <- pdf_text_search(fixture_path("shapes"), "Hello")
   expect_s3_class(out, "tbl_df")
   expect_equal(nrow(out), 1L)
-  expect_equal(out$page,        1L)
+  expect_equal(out$page, 1L)
   expect_equal(out$match_index, 1L)
-  expect_equal(out$start_char,  0L)
-  expect_equal(out$char_count,  5L)
-  expect_equal(out$text,        "Hello")
+  expect_equal(out$start_char, 0L)
+  expect_equal(out$char_count, 5L)
+  expect_equal(out$text, "Hello")
   # Bbox should be finite and form a rectangle (left < right, bottom < top).
   expect_true(is.finite(out$left))
   expect_true(is.finite(out$bottom))
@@ -61,11 +73,13 @@ test_that("pdf_text_search is case-insensitive by default and respects the flag"
   expect_equal(ci$text, "Hello")
 
   cs <- pdf_text_search(fixture_path("shapes"), "hello",
-                        case_sensitive = TRUE)
+    case_sensitive = TRUE
+  )
   expect_equal(nrow(cs), 0L)
 
   cs_exact <- pdf_text_search(fixture_path("shapes"), "Hello",
-                              case_sensitive = TRUE)
+    case_sensitive = TRUE
+  )
   expect_equal(nrow(cs_exact), 1L)
 })
 
@@ -76,9 +90,11 @@ test_that("pdf_text_search whole_word excludes substring matches", {
   #   - "Hello" matches under both modes (whole token of length 5)
   expect_equal(nrow(pdf_text_search(fixture_path("shapes"), "ell")), 1L)
   expect_equal(nrow(pdf_text_search(fixture_path("shapes"), "ell",
-                                    whole_word = TRUE)), 0L)
+    whole_word = TRUE
+  )), 0L)
   expect_equal(nrow(pdf_text_search(fixture_path("shapes"), "Hello",
-                                    whole_word = TRUE)), 1L)
+    whole_word = TRUE
+  )), 1L)
 })
 
 test_that("pdf_text_search returns multiple matches in source order", {
@@ -87,12 +103,14 @@ test_that("pdf_text_search returns multiple matches in source order", {
   # in 0-based PDFium indexing.
   out <- pdf_text_search(fixture_path("unicode"), "l")
   expect_gte(nrow(out), 3L)
-  expect_equal(out$page,        rep(1L, nrow(out)))
+  expect_equal(out$page, rep(1L, nrow(out)))
   expect_equal(out$match_index, seq_len(nrow(out)))
   expect_true(all(out$char_count == 1L))
   expect_true(all(out$text == "l"))
-  expect_true(all(diff(out$start_char) > 0L),
-              "matches reported in increasing start_char order")
+  expect_true(
+    all(diff(out$start_char) > 0L),
+    "matches reported in increasing start_char order"
+  )
 })
 
 test_that("pdf_text_search finds the bottom-of-page word", {
@@ -111,20 +129,22 @@ test_that("pdf_text_search returns an empty tibble of the right shape on no matc
   expect_equal(nrow(out), 0L)
   expect_equal(
     names(out),
-    c("page", "match_index", "start_char", "char_count", "text",
-      "left", "bottom", "right", "top")
+    c(
+      "page", "match_index", "start_char", "char_count", "text",
+      "left", "bottom", "right", "top"
+    )
   )
   # Column types should match the populated case so callers can
   # rbind the result without coercion surprises.
-  expect_type(out$page,        "integer")
+  expect_type(out$page, "integer")
   expect_type(out$match_index, "integer")
-  expect_type(out$start_char,  "integer")
-  expect_type(out$char_count,  "integer")
-  expect_type(out$text,        "character")
-  expect_type(out$left,        "double")
-  expect_type(out$bottom,      "double")
-  expect_type(out$right,       "double")
-  expect_type(out$top,         "double")
+  expect_type(out$start_char, "integer")
+  expect_type(out$char_count, "integer")
+  expect_type(out$text, "character")
+  expect_type(out$left, "double")
+  expect_type(out$bottom, "double")
+  expect_type(out$right, "double")
+  expect_type(out$top, "double")
 })
 
 test_that("pdf_text_search accepts either a path or an open pdfium_doc", {
@@ -155,7 +175,8 @@ test_that("pdf_text_search consecutive flag enables overlapping matches", {
   # consecutive doesn't crash and produces >= the non-consecutive
   # count.
   non_consec <- pdf_text_search(fixture_path("shapes"), "l")
-  consec     <- pdf_text_search(fixture_path("shapes"), "l",
-                                consecutive = TRUE)
+  consec <- pdf_text_search(fixture_path("shapes"), "l",
+    consecutive = TRUE
+  )
   expect_gte(nrow(consec), nrow(non_consec))
 })

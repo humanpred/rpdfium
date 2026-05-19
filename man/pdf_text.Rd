@@ -29,7 +29,8 @@ the batched text-page load.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) pdf_text(fixture)
 }
 \seealso{

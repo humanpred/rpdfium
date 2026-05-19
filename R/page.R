@@ -14,7 +14,8 @@
 #'
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   page <- pdf_load_page(doc, 1)
@@ -30,15 +31,18 @@ pdf_load_page <- function(doc, page_num = 1L) {
     stop("Document has been closed.", call. = FALSE)
   }
   if (!is.numeric(page_num) || length(page_num) != 1L || is.na(page_num) ||
-        page_num != as.integer(page_num) || page_num < 1L) {
+    page_num != as.integer(page_num) || page_num < 1L) {
     stop("`page_num` must be a single positive integer (1-based).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   page_num <- as.integer(page_num)
   n <- cpp_page_count(doc$ptr)
   if (page_num > n) {
-    stop(sprintf("`page_num` (%d) exceeds the document's page count (%d).",
-                 page_num, n), call. = FALSE)
+    stop(sprintf(
+      "`page_num` (%d) exceeds the document's page count (%d).",
+      page_num, n
+    ), call. = FALSE)
   }
   ptr <- cpp_load_page(doc$ptr, page_num - 1L)
   new_pdfium_page(ptr, doc, page_num)
@@ -55,7 +59,8 @@ pdf_load_page <- function(doc, page_num = 1L) {
 pdf_close_page <- function(page) {
   if (!inherits(page, "pdfium_page")) {
     stop("`page` must be a `pdfium_page` (from `pdf_load_page()`).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   cpp_close_page(page$ptr)
   invisible(page)
@@ -84,7 +89,8 @@ pdf_close_page <- function(page) {
 #' @seealso [pdf_page_rotation()] for the rotation angle in degrees.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   pdf_page_size(doc, 1)
@@ -127,7 +133,8 @@ pdf_page_size <- function(page, page_num = 1L) {
 #' @seealso [pdf_page_size()] for the un-rotated dimensions.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   pdf_page_rotation(doc, 1)

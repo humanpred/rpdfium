@@ -80,11 +80,12 @@ pdf_signatures <- function(doc) {
 #' @export
 pdf_signature_contents <- function(doc, signature_index = 1L) {
   if (!is.numeric(signature_index) || length(signature_index) != 1L ||
-        is.na(signature_index) ||
-        signature_index != as.integer(signature_index) ||
-        signature_index < 1L) {
+    is.na(signature_index) ||
+    signature_index != as.integer(signature_index) ||
+    signature_index < 1L) {
     stop("`signature_index` must be a single positive integer (1-based).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   h <- as_doc_handle(doc, "doc")
   on.exit(h$on_exit(), add = TRUE)
@@ -111,11 +112,12 @@ pdf_signature_contents <- function(doc, signature_index = 1L) {
 #' @export
 pdf_signature_byte_range <- function(doc, signature_index = 1L) {
   if (!is.numeric(signature_index) || length(signature_index) != 1L ||
-        is.na(signature_index) ||
-        signature_index != as.integer(signature_index) ||
-        signature_index < 1L) {
+    is.na(signature_index) ||
+    signature_index != as.integer(signature_index) ||
+    signature_index < 1L) {
     stop("`signature_index` must be a single positive integer (1-based).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   h <- as_doc_handle(doc, "doc")
   on.exit(h$on_exit(), add = TRUE)

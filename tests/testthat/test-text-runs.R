@@ -5,15 +5,17 @@ test_that("pdf_text_runs returns the documented tibble shape", {
   expect_s3_class(res, "tbl_df")
   # The font_* columns were added when font metadata extraction
   # landed; see test-text-font.R for the per-column type checks.
-  expect_named(res, c("obj_index", "bounds_left", "bounds_bottom",
-                      "bounds_right", "bounds_top", "font_size", "text",
-                      "font_base_name", "font_family", "font_weight",
-                      "font_italic_angle", "font_is_embedded",
-                      "font_flags"))
-  expect_type(res$obj_index,   "integer")
+  expect_named(res, c(
+    "obj_index", "bounds_left", "bounds_bottom",
+    "bounds_right", "bounds_top", "font_size", "text",
+    "font_base_name", "font_family", "font_weight",
+    "font_italic_angle", "font_is_embedded",
+    "font_flags"
+  ))
+  expect_type(res$obj_index, "integer")
   expect_type(res$bounds_left, "double")
-  expect_type(res$font_size,   "double")
-  expect_type(res$text,        "character")
+  expect_type(res$font_size, "double")
+  expect_type(res$text, "character")
 })
 
 test_that("pdf_text_runs returns one row per text object on shapes.pdf", {
@@ -24,7 +26,7 @@ test_that("pdf_text_runs returns one row per text object on shapes.pdf", {
   # object (after the page-bounds path and three user paths).
   expect_identical(res$obj_index[[1]], 5L)
   expect_true(res$bounds_right[[1]] > res$bounds_left[[1]])
-  expect_true(res$bounds_top[[1]]   > res$bounds_bottom[[1]])
+  expect_true(res$bounds_top[[1]] > res$bounds_bottom[[1]])
 })
 
 test_that("pdf_text_runs enumerates every text object on a multi-text page", {
@@ -34,7 +36,7 @@ test_that("pdf_text_runs enumerates every text object on a multi-text page", {
   expect_equal(nrow(res), 5L)
   expect_identical(res$text, c("Hello", "world", "pd", "fi", "um"))
   expect_true(all(res$bounds_right > res$bounds_left))
-  expect_true(all(res$bounds_top   > res$bounds_bottom))
+  expect_true(all(res$bounds_top > res$bounds_bottom))
   expect_true(all(res$font_size > 0))
 })
 
@@ -46,12 +48,14 @@ test_that("pdf_text_runs accepts a pdfium_page (caller still owns it)", {
 
   res <- pdf_text_runs(page)
   expect_equal(nrow(res), 1L)
-  expect_true(is_open(page))  # not closed by the helper
+  expect_true(is_open(page)) # not closed by the helper
 })
 
 test_that("pdf_text_runs validates inputs and refuses closed pages", {
-  expect_error(pdf_text_runs("nope"),
-               "must be a `pdfium_page` or `pdfium_doc`")
+  expect_error(
+    pdf_text_runs("nope"),
+    "must be a `pdfium_page` or `pdfium_doc`"
+  )
 
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(try(pdf_close(doc), silent = TRUE), add = TRUE)

@@ -16,7 +16,8 @@
 #' @seealso [pdf_page_objects()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -53,7 +54,8 @@ pdf_text_font_size <- function(obj) {
 #' @seealso [pdf_text_font_size()], [pdf_page_objects()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -101,7 +103,8 @@ pdf_text_content <- function(obj) {
 #' @seealso [pdf_text_content()], [pdf_extract_paths()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "unicode.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   pdf_text_runs(doc, 1)
@@ -118,8 +121,8 @@ pdf_text_runs <- function(page, page_num = 1L) {
   # spans all page objects on the page — paths, images, text). The
   # column was previously called `text_index` but that name collided
   # with `pdf_text_chars()$text_index` (the *extractable-text*
-  # offset). Renamed during the v0.1.0 reader/writer audit; see
-  # dev/reader-writer-audit.md.
+  # offset). Renamed during the v0.1.0 reader/writer audit; see the
+  # audit doc under the dev directory for the rationale.
   tibble::tibble(
     obj_index         = raw$text_index,
     bounds_left       = raw$bounds_left,
@@ -166,7 +169,8 @@ pdf_text_runs <- function(page, page_num = 1L) {
 #'   [pdf_text_font_size()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -194,15 +198,19 @@ pdf_text_font <- function(obj) {
 check_text_obj <- function(obj) {
   if (!inherits(obj, "pdfium_obj")) {
     stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   if (!is_open(obj)) {
     stop("Parent page has been closed; object handle is no longer valid.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   if (!identical(obj$type, "text")) {
     stop("`obj` must be a text-type pdfium_obj; got type \"",
-         obj$type, "\".", call. = FALSE)
+      obj$type, "\".",
+      call. = FALSE
+    )
   }
   invisible(obj)
 }

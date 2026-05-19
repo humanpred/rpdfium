@@ -33,7 +33,8 @@ library(pdfium)
 
 ```{r}
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 doc <- pdf_open(fixture)
 doc
 ```
@@ -66,7 +67,7 @@ shape mirrors `pdftools::pdf_info()` for easy porting:
 ```{r}
 info <- pdf_doc_info(doc)
 info$page_count
-info$file_version       # PDFium reports 10 * major + minor (17 = PDF 1.7)
+info$file_version # PDFium reports 10 * major + minor (17 = PDF 1.7)
 info$producer
 info$creation_date_parsed
 ```
@@ -91,8 +92,8 @@ carries a reference to its parent doc so GC ordering is safe:
 
 ```{r}
 page <- pdf_load_page(doc, 1L)
-pdf_page_size(doc, 1L)        # width and height in PDF points
-pdf_page_rotation(doc, 1L)    # 0, 90, 180, or 270 degrees
+pdf_page_size(doc, 1L) # width and height in PDF points
+pdf_page_rotation(doc, 1L) # 0, 90, 180, or 270 degrees
 ```
 
 Every drawable element on a page is a *page object*. `pdf_page_objects()`
@@ -184,7 +185,7 @@ To rasterise a page, `pdf_render_page(page_or_doc, dpi)` returns a
 ```{r}
 bmp <- pdf_render_page(doc, dpi = 96)
 bmp
-dim(bmp)        # height, width
+dim(bmp) # height, width
 ```
 
 `pdfium_bitmap` is directly usable by `graphics::plot()`,
@@ -192,9 +193,9 @@ dim(bmp)        # height, width
 produce other common shapes:
 
 ```{r}
-arr <- as.array(bmp)        # 3D [H, W, 4] doubles in 0..1, like png::writePNG
-ras <- as.raster(bmp)       # base R "raster" class, hex-color matrix
-mat <- as.matrix(bmp)       # plain character matrix
+arr <- as.array(bmp) # 3D [H, W, 4] doubles in 0..1, like png::writePNG
+ras <- as.raster(bmp) # base R "raster" class, hex-color matrix
+mat <- as.matrix(bmp) # plain character matrix
 ```
 
 The save helper `pdf_render_to_png(file, ...)` writes the bitmap straight

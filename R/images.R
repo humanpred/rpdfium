@@ -8,34 +8,39 @@
 # FPDF_COLORSPACE_UNKNOWN; we use it as the fallback when PDFium
 # reports an unknown value.
 .pdfium_colorspaces <- c(
-  "Unknown",     #  0
-  "DeviceGray",  #  1
-  "DeviceRGB",   #  2
-  "DeviceCMYK",  #  3
-  "CalGray",     #  4
-  "CalRGB",      #  5
-  "Lab",         #  6
-  "ICCBased",    #  7
-  "Separation",  #  8
-  "DeviceN",     #  9
-  "Indexed",     # 10
-  "Pattern"      # 11
+  "Unknown", #  0
+  "DeviceGray", #  1
+  "DeviceRGB", #  2
+  "DeviceCMYK", #  3
+  "CalGray", #  4
+  "CalRGB", #  5
+  "Lab", #  6
+  "ICCBased", #  7
+  "Separation", #  8
+  "DeviceN", #  9
+  "Indexed", # 10
+  "Pattern" # 11
 )
 
 # Internal: validate that x is a still-open pdfium_obj of type
 # "image". Returns the obj unchanged on success.
 check_image_obj <- function(obj, arg = "obj") {
   if (!inherits(obj, "pdfium_obj")) {
-    stop(sprintf("`%s` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-                 arg), call. = FALSE)
+    stop(sprintf(
+      "`%s` must be a `pdfium_obj` (from `pdf_page_objects()`).",
+      arg
+    ), call. = FALSE)
   }
   if (!is_open(obj)) {
     stop("Parent page has been closed; the page object is no longer valid.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   if (!identical(obj$type, "image")) {
-    stop(sprintf("`%s` is a `%s` object; this function requires an image.",
-                 arg, obj$type), call. = FALSE)
+    stop(sprintf(
+      "`%s` is a `%s` object; this function requires an image.",
+      arg, obj$type
+    ), call. = FALSE)
   }
   invisible(obj)
 }
@@ -61,13 +66,15 @@ check_image_obj <- function(obj, arg = "obj") {
 #'   [pdf_image_data()] for the raw stream bytes.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "image.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   page <- pdf_load_page(doc, 1L)
 #'   imgs <- Filter(function(o) o$type == "image", pdf_page_objects(page))
 #'   if (length(imgs) > 0L) pdf_image_info(imgs[[1L]])
-#'   pdf_close_page(page); pdf_close(doc)
+#'   pdf_close_page(page)
+#'   pdf_close(doc)
 #' }
 #' @export
 pdf_image_info <- function(obj) {
@@ -80,7 +87,7 @@ pdf_image_info <- function(obj) {
   cs_name <- if (cs_index >= 1L && cs_index <= length(.pdfium_colorspaces)) {
     .pdfium_colorspaces[[cs_index]]
   } else {
-    "Unknown"  # nocov
+    "Unknown" # nocov
   }
   list(
     width             = as.integer(m$width),
@@ -160,9 +167,11 @@ pdf_image_bitmap <- function(obj) {
 #' @export
 pdf_image_rendered <- function(obj) {
   check_image_obj(obj)
-  data <- cpp_image_get_rendered_bitmap(obj$page$doc$ptr,
-                                        obj$page$ptr,
-                                        obj$ptr)
+  data <- cpp_image_get_rendered_bitmap(
+    obj$page$doc$ptr,
+    obj$page$ptr,
+    obj$ptr
+  )
   attr(data, "channels") <- 4L
   new_pdfium_bitmap(
     data,

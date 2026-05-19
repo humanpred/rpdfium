@@ -5,11 +5,11 @@
 # additional-actions reader. Documented under fpdf_doc.h /
 # fpdf_action.h.
 .pdfium_action_types <- c(
-  "goto",            # 1 PDFACTION_GOTO  (within-document GoTo)
-  "remote_goto",     # 2 PDFACTION_REMOTEGOTO (other-document GoTo)
-  "uri",             # 3 PDFACTION_URI (web link)
-  "launch",          # 4 PDFACTION_LAUNCH (external file/program)
-  "embedded_goto"    # 5 PDFACTION_EMBEDDEDGOTO (into embedded file)
+  "goto", # 1 PDFACTION_GOTO  (within-document GoTo)
+  "remote_goto", # 2 PDFACTION_REMOTEGOTO (other-document GoTo)
+  "uri", # 3 PDFACTION_URI (web link)
+  "launch", # 4 PDFACTION_LAUNCH (external file/program)
+  "embedded_goto" # 5 PDFACTION_EMBEDDEDGOTO (into embedded file)
 )
 # 0 (PDFACTION_UNSUPPORTED) maps to "unsupported".
 
@@ -25,14 +25,14 @@ pdfium_action_type_name <- function(codes) {
 #   0 = UNKNOWN_MODE, 1 = XYZ, 2 = FIT, 3 = FITH, 4 = FITV,
 #   5 = FITR, 6 = FITB, 7 = FITBH, 8 = FITBV
 .pdfium_dest_views <- c(
-  "xyz",    # 1 PDFDEST_VIEW_XYZ   (x, y, zoom; explicit point + scale)
-  "fit",    # 2 PDFDEST_VIEW_FIT   (fit whole page)
-  "fith",   # 3 PDFDEST_VIEW_FITH  (fit page width at y)
-  "fitv",   # 4 PDFDEST_VIEW_FITV  (fit page height at x)
-  "fitr",   # 5 PDFDEST_VIEW_FITR  (fit specific rectangle)
-  "fitb",   # 6 PDFDEST_VIEW_FITB  (fit bounding box)
-  "fitbh",  # 7 PDFDEST_VIEW_FITBH (fit bbox width at y)
-  "fitbv"   # 8 PDFDEST_VIEW_FITBV (fit bbox height at x)
+  "xyz", # 1 PDFDEST_VIEW_XYZ   (x, y, zoom; explicit point + scale)
+  "fit", # 2 PDFDEST_VIEW_FIT   (fit whole page)
+  "fith", # 3 PDFDEST_VIEW_FITH  (fit page width at y)
+  "fitv", # 4 PDFDEST_VIEW_FITV  (fit page height at x)
+  "fitr", # 5 PDFDEST_VIEW_FITR  (fit specific rectangle)
+  "fitb", # 6 PDFDEST_VIEW_FITB  (fit bounding box)
+  "fitbh", # 7 PDFDEST_VIEW_FITBH (fit bbox width at y)
+  "fitbv" # 8 PDFDEST_VIEW_FITBV (fit bbox height at x)
 )
 
 pdfium_dest_view_name <- function(codes) {
@@ -89,8 +89,10 @@ pdf_link_at_point <- function(page, x, y, page_num = 1L) {
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   doc_ptr <- ph$page$doc$ptr
-  raw <- cpp_link_at_point(doc_ptr, ph$page$ptr,
-                           as.numeric(x), as.numeric(y))
+  raw <- cpp_link_at_point(
+    doc_ptr, ph$page$ptr,
+    as.numeric(x), as.numeric(y)
+  )
   if (!raw$found) {
     return(empty_link_at_point_tibble())
   }
@@ -156,9 +158,11 @@ pdf_page_actions <- function(page, page_num = 1L) {
   doc_ptr <- ph$page$doc$ptr
   raw <- cpp_page_aactions(doc_ptr, ph$page$ptr)
   n <- length(raw$trigger)
-  if (n == 0L) return(empty_page_actions_tibble())
+  if (n == 0L) {
+    return(empty_page_actions_tibble())
+  }
   uri <- ifelse(nzchar(raw$uri), raw$uri, NA_character_)
-  fp  <- ifelse(nzchar(raw$filepath), raw$filepath, NA_character_)
+  fp <- ifelse(nzchar(raw$filepath), raw$filepath, NA_character_)
   tibble::tibble(
     trigger      = as.character(raw$trigger),
     action_type  = pdfium_action_type_name(raw$action_code),

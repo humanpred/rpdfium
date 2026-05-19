@@ -12,25 +12,37 @@ test_that("pdf_render_page() validates dpi/annotations/rotation", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)
 
-  expect_error(pdf_render_page(doc, dpi = 0),       "positive number")
-  expect_error(pdf_render_page(doc, dpi = -1),      "positive number")
+  expect_error(pdf_render_page(doc, dpi = 0), "positive number")
+  expect_error(pdf_render_page(doc, dpi = -1), "positive number")
   expect_error(pdf_render_page(doc, dpi = NA_real_), "positive number")
   expect_error(pdf_render_page(doc, dpi = c(72, 96)), "positive number")
-  expect_error(pdf_render_page(doc, dpi = "72"),    "positive number")
+  expect_error(pdf_render_page(doc, dpi = "72"), "positive number")
 
-  expect_error(pdf_render_page(doc, annotations = NA),
-               "TRUE/FALSE")
-  expect_error(pdf_render_page(doc, annotations = c(TRUE, FALSE)),
-               "TRUE/FALSE")
-  expect_error(pdf_render_page(doc, annotations = "yes"),
-               "TRUE/FALSE")
+  expect_error(
+    pdf_render_page(doc, annotations = NA),
+    "TRUE/FALSE"
+  )
+  expect_error(
+    pdf_render_page(doc, annotations = c(TRUE, FALSE)),
+    "TRUE/FALSE"
+  )
+  expect_error(
+    pdf_render_page(doc, annotations = "yes"),
+    "TRUE/FALSE"
+  )
 
-  expect_error(pdf_render_page(doc, rotation = 45),
-               "one of 0, 90, 180, or 270")
-  expect_error(pdf_render_page(doc, rotation = NA_integer_),
-               "one of 0, 90, 180, or 270")
-  expect_error(pdf_render_page(doc, rotation = c(0, 90)),
-               "one of 0, 90, 180, or 270")
+  expect_error(
+    pdf_render_page(doc, rotation = 45),
+    "one of 0, 90, 180, or 270"
+  )
+  expect_error(
+    pdf_render_page(doc, rotation = NA_integer_),
+    "one of 0, 90, 180, or 270"
+  )
+  expect_error(
+    pdf_render_page(doc, rotation = c(0, 90)),
+    "one of 0, 90, 180, or 270"
+  )
 })
 
 test_that("pdf_render_page() returns the documented shape", {
@@ -39,9 +51,9 @@ test_that("pdf_render_page() returns the documented shape", {
 
   bmp <- pdf_render_page(doc, dpi = 72)
   expect_s3_class(bmp, c("pdfium_bitmap", "nativeRaster"), exact = TRUE)
-  expect_equal(dim(bmp), c(216L, 288L))      # height, width at 4x3in/72dpi
-  expect_identical(attr(bmp, "channels"),    4L)
-  expect_identical(attr(bmp, "dpi"),         72)
+  expect_equal(dim(bmp), c(216L, 288L)) # height, width at 4x3in/72dpi
+  expect_identical(attr(bmp, "channels"), 4L)
+  expect_identical(attr(bmp, "dpi"), 72)
   expect_identical(attr(bmp, "source_page"), 1L)
   expect_identical(attr(bmp, "rotation_applied"), 0L)
   expect_true(is.integer(unclass(bmp)))
@@ -51,9 +63,9 @@ test_that("pdf_render_page() scales linearly with dpi", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)
 
-  bmp_72  <- pdf_render_page(doc, dpi = 72)
+  bmp_72 <- pdf_render_page(doc, dpi = 72)
   bmp_144 <- pdf_render_page(doc, dpi = 144)
-  expect_equal(dim(bmp_72),  c(216L, 288L))
+  expect_equal(dim(bmp_72), c(216L, 288L))
   expect_equal(dim(bmp_144), c(432L, 576L))
 })
 
@@ -61,17 +73,17 @@ test_that("pdf_render_page() rotation swaps dimensions for 90/270", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)
 
-  bmp_0   <- pdf_render_page(doc, rotation = 0)
-  bmp_90  <- pdf_render_page(doc, rotation = 90)
+  bmp_0 <- pdf_render_page(doc, rotation = 0)
+  bmp_90 <- pdf_render_page(doc, rotation = 90)
   bmp_180 <- pdf_render_page(doc, rotation = 180)
   bmp_270 <- pdf_render_page(doc, rotation = 270)
 
-  expect_equal(dim(bmp_0),   c(216L, 288L))
-  expect_equal(dim(bmp_90),  c(288L, 216L))
+  expect_equal(dim(bmp_0), c(216L, 288L))
+  expect_equal(dim(bmp_90), c(288L, 216L))
   expect_equal(dim(bmp_180), c(216L, 288L))
   expect_equal(dim(bmp_270), c(288L, 216L))
 
-  expect_identical(attr(bmp_90,  "rotation_applied"), 90L)
+  expect_identical(attr(bmp_90, "rotation_applied"), 90L)
   expect_identical(attr(bmp_270, "rotation_applied"), 270L)
 })
 
@@ -93,9 +105,9 @@ test_that("pdf_render_page() pixel sampling matches the fixture", {
   cx <- 100L
   cy <- 100L
   rgb_interior <- arr[cy, cx, 1L:3L]
-  expect_equal(rgb_interior[1L], 173 / 255, tolerance = 0.05)  # R
-  expect_equal(rgb_interior[2L], 216 / 255, tolerance = 0.05)  # G
-  expect_equal(rgb_interior[3L], 230 / 255, tolerance = 0.05)  # B
+  expect_equal(rgb_interior[1L], 173 / 255, tolerance = 0.05) # R
+  expect_equal(rgb_interior[2L], 216 / 255, tolerance = 0.05) # G
+  expect_equal(rgb_interior[3L], 230 / 255, tolerance = 0.05) # B
 
   # Alpha channel is opaque everywhere on a white-backed render.
   expect_equal(arr[, , 4L], matrix(1, nrow = 216L, ncol = 288L))
@@ -106,7 +118,7 @@ test_that("pdf_render_page(background = NA) skips the buffer fill", {
   # that decides whether to fill at all. shapes.pdf paints its own
   # background so an integration test of transparency would need a
   # different fixture; the logic is what matters here.
-  res_na    <- pdfium:::parse_bitmap_background(NA)
+  res_na <- pdfium:::parse_bitmap_background(NA)
   res_white <- pdfium:::parse_bitmap_background("white")
   res_trans <- pdfium:::parse_bitmap_background("#00000000")
 
@@ -115,9 +127,13 @@ test_that("pdf_render_page(background = NA) skips the buffer fill", {
 
   expect_true(res_white$fill)
   # ARGB: alpha=FF, red=FF, green=FF, blue=FF.
-  expect_identical(res_white$argb,
-                   bitwOr(bitwOr(bitwShiftL(255L, 24L), bitwShiftL(255L, 16L)),
-                          bitwOr(bitwShiftL(255L, 8L), 255L)))
+  expect_identical(
+    res_white$argb,
+    bitwOr(
+      bitwOr(bitwShiftL(255L, 24L), bitwShiftL(255L, 16L)),
+      bitwOr(bitwShiftL(255L, 8L), 255L)
+    )
+  )
 
   # Transparent black: alpha=0, RGB=0 -> argb = 0L (still fill, the
   # fill itself uses a transparent color).
@@ -126,13 +142,18 @@ test_that("pdf_render_page(background = NA) skips the buffer fill", {
 })
 
 test_that("parse_bitmap_background() rejects malformed colors", {
-  expect_error(pdfium:::parse_bitmap_background(NULL),
-               "color string, integer, or NA")
-  expect_error(pdfium:::parse_bitmap_background(list()),
-               "color string, integer, or NA")
+  expect_error(
+    pdfium:::parse_bitmap_background(NULL),
+    "color string, integer, or NA"
+  )
+  expect_error(
+    pdfium:::parse_bitmap_background(list()),
+    "color string, integer, or NA"
+  )
   # col2rgb itself errors on unknown names; we surface that error.
   expect_error(pdfium:::parse_bitmap_background("not_a_color"),
-               regexp = NULL)
+    regexp = NULL
+  )
 })
 
 test_that("as.array.pdfium_bitmap() returns RGBA doubles in 0..1", {
@@ -239,8 +260,9 @@ test_that("pdf_render_page_with_matrix renders at the requested size", {
   on.exit(pdf_close(doc), add = TRUE)
   m <- c(2, 0, 0, 2, 0, 0)
   bmp <- pdf_render_page_with_matrix(doc, m,
-                                      pixel_width = 200,
-                                      pixel_height = 150)
+    pixel_width = 200,
+    pixel_height = 150
+  )
   expect_s3_class(bmp, "pdfium_bitmap")
   expect_equal(dim(bmp), c(150L, 200L))
 })
@@ -249,9 +271,10 @@ test_that("pdf_render_page_with_matrix accepts clip_rect", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)
   bmp <- pdf_render_page_with_matrix(doc, c(1, 0, 0, 1, 0, 0),
-                                      pixel_width = 100,
-                                      pixel_height = 100,
-                                      clip_rect = c(10, 10, 50, 50))
+    pixel_width = 100,
+    pixel_height = 100,
+    clip_rect = c(10, 10, 50, 50)
+  )
   expect_s3_class(bmp, "pdfium_bitmap")
   expect_equal(dim(bmp), c(100L, 100L))
 })
@@ -259,37 +282,57 @@ test_that("pdf_render_page_with_matrix accepts clip_rect", {
 test_that("pdf_render_page_with_matrix validates inputs", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)
-  expect_error(pdf_render_page_with_matrix(doc, c(1, 2),
-                                            pixel_width = 100,
-                                            pixel_height = 100),
-               "length-6")
-  expect_error(pdf_render_page_with_matrix(doc, rep(NA_real_, 6),
-                                            pixel_width = 100,
-                                            pixel_height = 100),
-               "finite numeric")
-  expect_error(pdf_render_page_with_matrix(doc, c(1, 0, 0, 1, 0, 0),
-                                            pixel_width = 0,
-                                            pixel_height = 100),
-               "positive integer")
-  expect_error(pdf_render_page_with_matrix(doc, c(1, 0, 0, 1, 0, 0),
-                                            pixel_width = 100,
-                                            pixel_height = 100,
-                                            clip_rect = c(1, 2, 3)),
-               "length-4 numeric")
+  expect_error(
+    pdf_render_page_with_matrix(doc, c(1, 2),
+      pixel_width = 100,
+      pixel_height = 100
+    ),
+    "length-6"
+  )
+  expect_error(
+    pdf_render_page_with_matrix(doc, rep(NA_real_, 6),
+      pixel_width = 100,
+      pixel_height = 100
+    ),
+    "finite numeric"
+  )
+  expect_error(
+    pdf_render_page_with_matrix(doc, c(1, 0, 0, 1, 0, 0),
+      pixel_width = 0,
+      pixel_height = 100
+    ),
+    "positive integer"
+  )
+  expect_error(
+    pdf_render_page_with_matrix(doc, c(1, 0, 0, 1, 0, 0),
+      pixel_width = 100,
+      pixel_height = 100,
+      clip_rect = c(1, 2, 3)
+    ),
+    "length-4 numeric"
+  )
 })
 
 test_that("pdf_render_to_png() validates file argument", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)
 
-  expect_error(pdf_render_to_png(doc, file = ""),
-               "single non-empty character")
-  expect_error(pdf_render_to_png(doc, file = NA_character_),
-               "single non-empty character")
-  expect_error(pdf_render_to_png(doc, file = c("a.png", "b.png")),
-               "single non-empty character")
-  expect_error(pdf_render_to_png(doc, file = 42),
-               "single non-empty character")
+  expect_error(
+    pdf_render_to_png(doc, file = ""),
+    "single non-empty character"
+  )
+  expect_error(
+    pdf_render_to_png(doc, file = NA_character_),
+    "single non-empty character"
+  )
+  expect_error(
+    pdf_render_to_png(doc, file = c("a.png", "b.png")),
+    "single non-empty character"
+  )
+  expect_error(
+    pdf_render_to_png(doc, file = 42),
+    "single non-empty character"
+  )
 })
 
 test_that("annotations flag is plumbed through (smoke)", {
@@ -299,7 +342,7 @@ test_that("annotations flag is plumbed through (smoke)", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)
 
-  bmp_no  <- pdf_render_page(doc, annotations = FALSE)
+  bmp_no <- pdf_render_page(doc, annotations = FALSE)
   bmp_yes <- pdf_render_page(doc, annotations = TRUE)
   expect_equal(dim(bmp_no), dim(bmp_yes))
 })
@@ -351,7 +394,7 @@ test_that("plot.pdfium_bitmap routes through as.array + grid::grid.raster", {
   H <- 64L
   W <- 96L
   ii <- matrix(rep(seq_len(H), times = W), nrow = H)
-  jj <- matrix(rep(seq_len(W), each  = H), nrow = H)
+  jj <- matrix(rep(seq_len(W), each = H), nrow = H)
   abgr <- function(r, g, b, a = 255L) {
     bitwOr(
       bitwOr(
@@ -384,19 +427,25 @@ test_that("plot.pdfium_bitmap routes through as.array + grid::grid.raster", {
     r <- pt[[1L]]
     cc <- pt[[2L]]
     expect_equal(round(arr[r, cc, 1L] * 255), r %% 256L,
-                 info = sprintf("R at [%d, %d]", r, cc))
+      info = sprintf("R at [%d, %d]", r, cc)
+    )
     expect_equal(round(arr[r, cc, 2L] * 255), cc %% 256L,
-                 info = sprintf("G at [%d, %d]", r, cc))
+      info = sprintf("G at [%d, %d]", r, cc)
+    )
     expect_equal(round(arr[r, cc, 3L] * 255), 0L,
-                 info = sprintf("B at [%d, %d]", r, cc))
+      info = sprintf("B at [%d, %d]", r, cc)
+    )
     expect_equal(round(arr[r, cc, 4L] * 255), 255L,
-                 info = sprintf("A at [%d, %d]", r, cc))
+      info = sprintf("A at [%d, %d]", r, cc)
+    )
   }
 
   # (2) The plot method must use the as.array + grid.raster path.
   body_src <- paste(deparse(body(plot.pdfium_bitmap)), collapse = " ")
   expect_match(body_src, "as\\.array")
   expect_match(body_src, "grid::grid\\.raster")
-  expect_false(grepl("rasterImage", body_src),
-               "plot.pdfium_bitmap must not call rasterImage directly")
+  expect_false(
+    grepl("rasterImage", body_src),
+    "plot.pdfium_bitmap must not call rasterImage directly"
+  )
 })

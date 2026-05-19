@@ -9,9 +9,9 @@ test_that("pdf_path_line_cap / line_join return human-readable strings", {
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(p))
   skip_if(length(paths) == 0L, "no path objects on shapes.pdf")
 
-  caps  <- vapply(paths, pdf_path_line_cap,  character(1L))
+  caps <- vapply(paths, pdf_path_line_cap, character(1L))
   joins <- vapply(paths, pdf_path_line_join, character(1L))
-  expect_true(all(caps  %in% c("butt", "round", "projecting_square")))
+  expect_true(all(caps %in% c("butt", "round", "projecting_square")))
   expect_true(all(joins %in% c("miter", "round", "bevel")))
 })
 
@@ -24,7 +24,7 @@ test_that("pdf_path_line_cap / line_join reject non-path objects", {
   texts <- Filter(function(o) o$type == "text", pdf_page_objects(p))
   skip_if(length(texts) == 0L, "no text objects on shapes.pdf")
 
-  expect_error(pdf_path_line_cap(texts[[1L]]),  "must be one of")
+  expect_error(pdf_path_line_cap(texts[[1L]]), "must be one of")
   expect_error(pdf_path_line_join(texts[[1L]]), "must be one of")
 })
 
@@ -71,11 +71,13 @@ test_that("pdf_obj_rotated_bounds returns 8 named coordinates", {
 })
 
 test_that("the new accessors all reject bad inputs", {
-  for (fn in list(pdf_path_line_cap, pdf_path_line_join,
-                  pdf_obj_has_transparency, pdf_obj_is_active,
-                  pdf_obj_rotated_bounds)) {
+  for (fn in list(
+    pdf_path_line_cap, pdf_path_line_join,
+    pdf_obj_has_transparency, pdf_obj_is_active,
+    pdf_obj_rotated_bounds
+  )) {
     expect_error(fn("not an obj"), "must be a `pdfium_obj`")
-    expect_error(fn(NULL),         "must be a `pdfium_obj`")
+    expect_error(fn(NULL), "must be a `pdfium_obj`")
   }
 })
 
@@ -90,16 +92,20 @@ test_that("pdf_path_draw_mode classifies stroke / fill / clip-only paths", {
     m <- pdf_path_draw_mode(path_obj)
     expect_named(m, c("fill_mode", "fill_mode_code", "stroke"))
     expect_true(m$fill_mode %in%
-                  c("none", "even_odd", "winding", NA_character_))
+      c("none", "even_odd", "winding", NA_character_))
     expect_true(m$fill_mode_code %in% c(0L, 1L, 2L, NA_integer_))
     expect_true(is.logical(m$stroke) && length(m$stroke) == 1L)
   }
   # shapes.pdf carries at least one path that is both filled
   # (winding) and stroked.
-  modes <- vapply(paths, function(o) pdf_path_draw_mode(o)$fill_mode,
-                  character(1L))
-  strokes <- vapply(paths, function(o) pdf_path_draw_mode(o)$stroke,
-                    logical(1L))
+  modes <- vapply(
+    paths, function(o) pdf_path_draw_mode(o)$fill_mode,
+    character(1L)
+  )
+  strokes <- vapply(
+    paths, function(o) pdf_path_draw_mode(o)$stroke,
+    logical(1L)
+  )
   expect_true(any(modes == "winding" & strokes))
 })
 
@@ -111,8 +117,10 @@ test_that("pdf_path_draw_mode rejects non-path objects and closed pages", {
   path_obj <- Filter(function(o) o$type == "path", objs)[[1L]]
   expect_error(pdf_path_draw_mode("nope"), "must be a `pdfium_obj`")
   pdf_close_page(p)
-  expect_error(pdf_path_draw_mode(path_obj),
-               "Parent page has been closed")
+  expect_error(
+    pdf_path_draw_mode(path_obj),
+    "Parent page has been closed"
+  )
 })
 
 test_that("pdf_obj_marks returns an empty tibble for untagged content", {
@@ -146,10 +154,16 @@ test_that("accessors refuse a closed parent page", {
   skip_if(length(objs) == 0L, "no page objects")
   pdf_close_page(p)
 
-  expect_error(pdf_obj_has_transparency(objs[[1L]]),
-               "Parent page has been closed")
-  expect_error(pdf_obj_is_active(objs[[1L]]),
-               "Parent page has been closed")
-  expect_error(pdf_obj_rotated_bounds(objs[[1L]]),
-               "Parent page has been closed")
+  expect_error(
+    pdf_obj_has_transparency(objs[[1L]]),
+    "Parent page has been closed"
+  )
+  expect_error(
+    pdf_obj_is_active(objs[[1L]]),
+    "Parent page has been closed"
+  )
+  expect_error(
+    pdf_obj_rotated_bounds(objs[[1L]]),
+    "Parent page has been closed"
+  )
 })

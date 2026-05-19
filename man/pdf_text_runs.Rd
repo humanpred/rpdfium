@@ -46,7 +46,8 @@ produced by \code{\link[=pdf_extract_paths]{pdf_extract_paths()}}.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "unicode.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   doc <- pdf_open(fixture)
   pdf_text_runs(doc, 1)

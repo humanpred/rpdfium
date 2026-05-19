@@ -8,8 +8,10 @@ test_that("pdf_text_content extracts the 'Hello' text from shapes.pdf", {
   page <- pdf_load_page(doc, 1)
   on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
 
-  text_obj <- Filter(function(o) o$type == "text",
-                     pdf_page_objects(page))[[1]]
+  text_obj <- Filter(
+    function(o) o$type == "text",
+    pdf_page_objects(page)
+  )[[1]]
   got <- pdf_text_content(text_obj)
   expect_type(got, "character")
   expect_length(got, 1L)
@@ -50,10 +52,14 @@ test_that("pdf_text_content validates input and refuses non-text objects", {
   page <- pdf_load_page(doc, 1)
   on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
 
-  path_obj <- Filter(function(o) o$type == "path",
-                     pdf_page_objects(page))[[1]]
-  expect_error(pdf_text_content(path_obj),
-               "must be a text-type pdfium_obj.*\"path\"")
+  path_obj <- Filter(
+    function(o) o$type == "path",
+    pdf_page_objects(page)
+  )[[1]]
+  expect_error(
+    pdf_text_content(path_obj),
+    "must be a text-type pdfium_obj.*\"path\""
+  )
 })
 
 test_that("pdf_text_content refuses objects whose parent page has closed", {
@@ -62,11 +68,15 @@ test_that("pdf_text_content refuses objects whose parent page has closed", {
   on.exit(pdf_close(doc), add = TRUE)
 
   page <- pdf_load_page(doc, 1)
-  text_obj <- Filter(function(o) o$type == "text",
-                     pdf_page_objects(page))[[1]]
+  text_obj <- Filter(
+    function(o) o$type == "text",
+    pdf_page_objects(page)
+  )[[1]]
   pdf_close_page(page)
-  expect_error(pdf_text_content(text_obj),
-               "Parent page has been closed")
+  expect_error(
+    pdf_text_content(text_obj),
+    "Parent page has been closed"
+  )
 })
 
 test_that("pdf_extract_paths populates text_runs$text with the actual text", {

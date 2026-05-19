@@ -30,9 +30,10 @@
 #' @export
 pdf_named_dest_by_name <- function(doc, name, password = NULL) {
   if (!is.character(name) || length(name) != 1L || is.na(name) ||
-        !nzchar(name)) {
+    !nzchar(name)) {
     stop("`name` must be a single non-empty character string.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   h <- as_doc_handle(doc, "doc", password = password)
   on.exit(h$on_exit(), add = TRUE)
@@ -67,9 +68,10 @@ pdf_named_dest_by_name <- function(doc, name, password = NULL) {
 #' @export
 pdf_bookmark_find <- function(doc, title, password = NULL) {
   if (!is.character(title) || length(title) != 1L || is.na(title) ||
-        !nzchar(title)) {
+    !nzchar(title)) {
     stop("`title` must be a single non-empty character string.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   h <- as_doc_handle(doc, "doc", password = password)
   on.exit(h$on_exit(), add = TRUE)
@@ -108,11 +110,16 @@ pdf_form_field_at_point <- function(page, x, y, page_num = 1L) {
   }
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
-  raw <- cpp_form_field_at_point(ph$page$doc$ptr, ph$page$ptr,
-                                  as.numeric(x), as.numeric(y))
+  raw <- cpp_form_field_at_point(
+    ph$page$doc$ptr, ph$page$ptr,
+    as.numeric(x), as.numeric(y)
+  )
   ftype <- as.integer(raw$field_type)
-  type_name <- if (is.na(ftype)) NA_character_ else
+  type_name <- if (is.na(ftype)) {
+    NA_character_
+  } else {
     form_field_type_name(ftype)
+  }
   list(
     field_type = type_name,
     z_order    = as.integer(raw$z_order)

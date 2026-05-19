@@ -36,9 +36,11 @@ test_that("pdf_page_thumbnail accepts a doc + page_num", {
 test_that("pdf_page_thumbnail validates `decoded`", {
   doc <- pdf_open(fixture_path("with_thumbnail"))
   on.exit(pdf_close(doc), add = TRUE)
-  expect_error(pdf_page_thumbnail(doc, decoded = NA),    "TRUE or FALSE")
-  expect_error(pdf_page_thumbnail(doc, decoded = c(TRUE, FALSE)),
-               "TRUE or FALSE")
+  expect_error(pdf_page_thumbnail(doc, decoded = NA), "TRUE or FALSE")
+  expect_error(
+    pdf_page_thumbnail(doc, decoded = c(TRUE, FALSE)),
+    "TRUE or FALSE"
+  )
   expect_error(pdf_page_thumbnail(doc, decoded = "yes"), "TRUE or FALSE")
 })
 
@@ -47,8 +49,10 @@ test_that("pdf_text_weblinks returns 0-row tibble when page has no URLs", {
     out <- pdf_text_weblinks(pdf_open(fixture_path(name)), 1L)
     expect_s3_class(out, "tbl_df")
     expect_equal(nrow(out), 0L)
-    expect_named(out, c("url", "start_char", "char_count",
-                        "left", "bottom", "right", "top"))
+    expect_named(out, c(
+      "url", "start_char", "char_count",
+      "left", "bottom", "right", "top"
+    ))
   }
 })
 
@@ -70,7 +74,7 @@ test_that("pdf_text_weblinks detects URLs in extracted text", {
   expect_true(all(is.finite(out$right)))
   expect_true(all(is.finite(out$top)))
   expect_true(all(out$right >= out$left))
-  expect_true(all(out$top   >= out$bottom))
+  expect_true(all(out$top >= out$bottom))
 })
 
 test_that("pdf_text_weblinks accepts a doc + page_num", {
@@ -86,13 +90,17 @@ test_that("pdf_page_thumbnail / pdf_text_weblinks reject closed pages", {
   p <- pdf_load_page(doc, 1L)
   pdf_close_page(p)
   expect_error(pdf_page_thumbnail(p), "closed")
-  expect_error(pdf_text_weblinks(p),  "closed")
+  expect_error(pdf_text_weblinks(p), "closed")
   pdf_close(doc)
 })
 
 test_that("page-thumbnail / weblinks reject bad page inputs", {
-  expect_error(pdf_page_thumbnail("nope"),
-               "must be a `pdfium_page` or a `pdfium_doc`")
-  expect_error(pdf_text_weblinks(42),
-               "must be a `pdfium_page` or a `pdfium_doc`")
+  expect_error(
+    pdf_page_thumbnail("nope"),
+    "must be a `pdfium_page` or a `pdfium_doc`"
+  )
+  expect_error(
+    pdf_text_weblinks(42),
+    "must be a `pdfium_page` or a `pdfium_doc`"
+  )
 })

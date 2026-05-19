@@ -62,7 +62,8 @@ Wraps \code{FPDFBookmark_GetFirstChild}, \code{FPDFBookmark_GetNextSibling},
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "outline.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) pdf_bookmarks(fixture)
 }
 \seealso{

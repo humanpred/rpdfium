@@ -1,6 +1,8 @@
 test_that("pdf_open() rejects bad inputs before touching PDFium", {
-  expect_error(pdf_open(NULL),
-               "One of `path` or `source` must be provided")
+  expect_error(
+    pdf_open(NULL),
+    "One of `path` or `source` must be provided"
+  )
   expect_error(pdf_open(character()), "single, non-NA character")
   expect_error(pdf_open(NA_character_), "single, non-NA character")
   expect_error(pdf_open(""), "must not be the empty string")
@@ -36,15 +38,21 @@ test_that("pdf_close() is idempotent and blocks further work", {
 })
 
 test_that("pdf_close() refuses non-doc inputs", {
-  expect_error(pdf_close("not a doc"),
-               "must be a `pdfium_doc`")
-  expect_error(pdf_close(NULL),
-               "must be a `pdfium_doc`")
+  expect_error(
+    pdf_close("not a doc"),
+    "must be a `pdfium_doc`"
+  )
+  expect_error(
+    pdf_close(NULL),
+    "must be a `pdfium_doc`"
+  )
 })
 
 test_that("pdf_page_count() rejects non-doc inputs cleanly", {
-  expect_error(pdf_page_count(42),
-               "must be a `pdfium_doc` or a path")
+  expect_error(
+    pdf_page_count(42),
+    "must be a `pdfium_doc` or a path"
+  )
 })
 
 test_that("print() and format() reflect open / closed state", {

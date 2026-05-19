@@ -36,17 +36,26 @@ reference:
       - pdf_file_id
       - pdf_doc_page_mode
       - pdf_doc_permissions
+      - pdf_doc_user_permissions
+      - pdf_doc_security
+      - pdf_doc_xref_valid
+      - pdf_doc_trailer_ends
       - pdf_doc_is_tagged
       - pdf_doc_javascript
+      - pdf_doc_focusable_subtypes
       - pdf_viewer_preferences
+      - pdf_viewer_preference_by_name
       - pdf_named_dests
+      - pdf_named_dest_by_name
       - pdf_bookmarks
+      - pdf_bookmark_find
       - pdf_page_label
       - pdf_page_labels
   - title: Attachments
     contents:
       - pdf_attachments
       - pdf_attachment_data
+      - pdf_attachment_dict_value
   - title: Signatures
     contents:
       - pdf_signatures
@@ -61,12 +70,16 @@ reference:
       - pdf_page_box
       - pdf_page_links
       - pdf_link_at_point
+      - pdf_link_annot_at_point
+      - pdf_form_field_at_point
       - pdf_page_actions
       - pdf_page_thumbnail
       - pdf_text_weblinks
   - title: Annotations and form fields
     contents:
       - pdf_annotations
+      - pdf_annot_dict_value
+      - pdf_annot_appearance
       - pdf_form_fields
   - title: Page objects
     contents:
@@ -77,6 +90,8 @@ reference:
       - pdf_obj_matrix
       - pdf_obj_has_transparency
       - pdf_obj_is_active
+      - pdf_obj_marks
+      - pdf_obj_marked_content_id
   - title: Paths
     contents:
       - pdf_path_segments
@@ -85,19 +100,29 @@ reference:
       - pdf_path_dash
       - pdf_path_line_cap
       - pdf_path_line_join
+      - pdf_path_draw_mode
   - title: Text
     contents:
       - pdf_text_font_size
       - pdf_text_content
       - pdf_text_runs
       - pdf_text_font
+      - pdf_text_font_metrics
       - pdf_text_chars
       - pdf_text_colors
       - pdf_text_render_mode
       - pdf_text_search
+      - pdf_text_char_at_point
+      - pdf_text_index_from_char
+      - pdf_text_char_from_text_index
+      - pdf_text_char_obj_index
+      - pdf_text_obj_rendered_bitmap
+      - pdf_glyph_path
+      - pdf_glyph_width
   - title: Rendering
     contents:
       - pdf_render_page
+      - pdf_render_page_with_matrix
       - pdf_render_to_png
       - plot.pdfium_bitmap
       - as.raster.pdfium_bitmap
@@ -111,6 +136,7 @@ reference:
       - pdf_image_rendered
       - pdf_image_data
       - pdf_image_filters
+      - pdf_image_icc_profile
   - title: Form XObjects
     contents:
       - pdf_form_objects

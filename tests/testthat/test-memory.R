@@ -35,7 +35,7 @@ test_that("documents are reclaimed after their wrappers go out of scope", {
       d <- pdf_open(fx)
       info <- pdf_doc_info(d)
       stopifnot(info$page_count == 1L)
-    })  # `d` goes out of scope here.
+    }) # `d` goes out of scope here.
   }
   # Force the GC to run the queued finalizers. Two passes because R
   # processes finalizers in a separate sweep from the mark/copy
@@ -63,7 +63,7 @@ test_that("pages are reclaimed after their wrappers go out of scope", {
       p <- pdf_load_page(doc, 1L)
       sz <- pdf_page_size(p)
       stopifnot(sz[["width"]] > 0)
-    })  # `p` goes out of scope here.
+    }) # `p` goes out of scope here.
   }
   invisible(gc(verbose = FALSE))
   invisible(gc(verbose = FALSE))

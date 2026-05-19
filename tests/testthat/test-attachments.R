@@ -14,9 +14,9 @@ test_that("pdf_attachments reports the documented attachment", {
   res <- pdf_attachments(fixture_path("attachments"))
   expect_equal(nrow(res), 1L)
   expect_identical(res$attachment_index, 1L)
-  expect_identical(res$name,             "hello.txt")
-  expect_identical(res$mime_type,        "text/plain")
-  expect_identical(res$size_bytes,       12)
+  expect_identical(res$name, "hello.txt")
+  expect_identical(res$mime_type, "text/plain")
+  expect_identical(res$size_bytes, 12)
 })
 
 test_that("pdf_attachment_data returns the embedded bytes verbatim", {
@@ -44,9 +44,9 @@ test_that("pdf_attachment_data accepts a path or an open doc", {
 
 test_that("pdf_attachment_data validates attachment_index", {
   fx <- fixture_path("attachments")
-  expect_error(pdf_attachment_data(fx, 0),       "positive integer")
-  expect_error(pdf_attachment_data(fx, -1),      "positive integer")
-  expect_error(pdf_attachment_data(fx, 1.5),     "positive integer")
+  expect_error(pdf_attachment_data(fx, 0), "positive integer")
+  expect_error(pdf_attachment_data(fx, -1), "positive integer")
+  expect_error(pdf_attachment_data(fx, 1.5), "positive integer")
   expect_error(pdf_attachment_data(fx, NA_integer_), "positive integer")
   expect_error(pdf_attachment_data(fx, c(1, 2)), "positive integer")
 })

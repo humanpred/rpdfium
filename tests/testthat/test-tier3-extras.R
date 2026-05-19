@@ -24,14 +24,22 @@ test_that("pdf_text_obj_rendered_bitmap validates scale and obj type", {
   on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
   text <- Filter(function(o) o$type == "text", pdf_page_objects(page))
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
-  skip_if(length(text) == 0L || length(paths) == 0L,
-          "fixture lacks text/path objects")
-  expect_error(pdf_text_obj_rendered_bitmap(text[[1L]], scale = 0),
-               "positive finite numeric")
-  expect_error(pdf_text_obj_rendered_bitmap(text[[1L]], scale = NA_real_),
-               "positive finite numeric")
-  expect_error(pdf_text_obj_rendered_bitmap(paths[[1L]]),
-               "must be one of \\{text\\}")
+  skip_if(
+    length(text) == 0L || length(paths) == 0L,
+    "fixture lacks text/path objects"
+  )
+  expect_error(
+    pdf_text_obj_rendered_bitmap(text[[1L]], scale = 0),
+    "positive finite numeric"
+  )
+  expect_error(
+    pdf_text_obj_rendered_bitmap(text[[1L]], scale = NA_real_),
+    "positive finite numeric"
+  )
+  expect_error(
+    pdf_text_obj_rendered_bitmap(paths[[1L]]),
+    "must be one of \\{text\\}"
+  )
 })
 
 test_that("pdf_attachment_dict_value returns the right shape", {
@@ -42,18 +50,22 @@ test_that("pdf_attachment_dict_value returns the right shape", {
   # we expect has_key = FALSE and value = NA.
   out <- pdf_attachment_dict_value(doc, 1L, "Subtype")
   expect_named(out, c("has_key", "value_type", "value"))
-  expect_type(out$has_key,   "logical")
+  expect_type(out$has_key, "logical")
   expect_type(out$value_type, "integer")
-  expect_type(out$value,     "character")
+  expect_type(out$value, "character")
 })
 
 test_that("pdf_attachment_dict_value validates inputs", {
   doc <- pdf_open(fixture_path("attachments"))
   on.exit(pdf_close(doc), add = TRUE)
-  expect_error(pdf_attachment_dict_value(doc, 0L, "Subtype"),
-               "positive integer")
-  expect_error(pdf_attachment_dict_value(doc, 1L, ""),
-               "non-empty character")
+  expect_error(
+    pdf_attachment_dict_value(doc, 0L, "Subtype"),
+    "positive integer"
+  )
+  expect_error(
+    pdf_attachment_dict_value(doc, 1L, ""),
+    "non-empty character"
+  )
 })
 
 test_that("pdf_text_char_obj_index reverse-maps chars to text-obj indices", {
@@ -65,8 +77,10 @@ test_that("pdf_text_char_obj_index reverse-maps chars to text-obj indices", {
   visible <- chars[!chars$is_generated, ]
   skip_if(nrow(visible) == 0L, "shapes.pdf has no visible chars")
   # First visible char must live on a text page object.
-  obj_index <- pdf_text_char_obj_index(page,
-                                        visible$char_index[[1L]])
+  obj_index <- pdf_text_char_obj_index(
+    page,
+    visible$char_index[[1L]]
+  )
   expect_type(obj_index, "integer")
   expect_gte(obj_index, 1L)
   # That index should pick out a text-type page object.

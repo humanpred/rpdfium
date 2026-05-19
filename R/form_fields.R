@@ -9,22 +9,22 @@
 # Internal: PDFium FPDF_FORMFIELD_* code -> human-readable name.
 # See fpdf_formfill.h for the codes.
 .pdfium_form_field_types <- c(
-  "unknown",        #  0 FPDF_FORMFIELD_UNKNOWN
-  "pushbutton",     #  1
-  "checkbox",       #  2
-  "radiobutton",    #  3
-  "combobox",       #  4
-  "listbox",        #  5
-  "textfield",      #  6
-  "signature",      #  7
-  "xfa",            #  8 (XFA-only flavours below; rare)
-  "xfa_checkbox",   #  9
-  "xfa_combobox",   # 10
+  "unknown", #  0 FPDF_FORMFIELD_UNKNOWN
+  "pushbutton", #  1
+  "checkbox", #  2
+  "radiobutton", #  3
+  "combobox", #  4
+  "listbox", #  5
+  "textfield", #  6
+  "signature", #  7
+  "xfa", #  8 (XFA-only flavours below; rare)
+  "xfa_checkbox", #  9
+  "xfa_combobox", # 10
   "xfa_imagefield", # 11
-  "xfa_listbox",    # 12
+  "xfa_listbox", # 12
   "xfa_pushbutton", # 13
-  "xfa_signature",  # 14
-  "xfa_textfield"   # 15
+  "xfa_signature", # 14
+  "xfa_textfield" # 15
 )
 
 # PDF spec Table 226 / 227: bit positions of the universal AcroForm
@@ -144,34 +144,36 @@ pdf_form_fields <- function(doc) {
     nzchar(raw$value) & raw$value != "Off"
   is_checked_lgl[inferred] <- TRUE
   decode <- function(bit_name) {
-    form_field_flag_decode(field_flags,
-                           .pdfium_field_flag_bits[[bit_name]])
+    form_field_flag_decode(
+      field_flags,
+      .pdfium_field_flag_bits[[bit_name]]
+    )
   }
   control_count <- as.integer(raw$control_count)
   control_count[control_count < 0L] <- NA_integer_
   control_index <- as.integer(raw$control_index)
   control_index[control_index < 0L] <- NA_integer_
   tibble::tibble(
-    field_index    = seq_along(type_name),
-    page_num       = as.integer(raw$page_num),
-    field_type     = type_name,
-    field_flags    = field_flags,
-    is_readonly    = decode("is_readonly"),
-    is_required    = decode("is_required"),
-    is_no_export   = decode("is_no_export"),
-    is_checked     = is_checked_lgl,
-    control_count  = control_count,
-    control_index  = control_index,
-    name           = raw$name,
+    field_index = seq_along(type_name),
+    page_num = as.integer(raw$page_num),
+    field_type = type_name,
+    field_flags = field_flags,
+    is_readonly = decode("is_readonly"),
+    is_required = decode("is_required"),
+    is_no_export = decode("is_no_export"),
+    is_checked = is_checked_lgl,
+    control_count = control_count,
+    control_index = control_index,
+    name = raw$name,
     alternate_name = raw$alternate_name,
-    value          = raw$value,
-    export_value   = raw$export_value,
-    bounds_left    = raw$bounds_left,
-    bounds_bottom  = raw$bounds_bottom,
-    bounds_right   = raw$bounds_right,
-    bounds_top     = raw$bounds_top,
-    options        = raw$options,
-    is_option_selected    = raw$is_option_selected,
+    value = raw$value,
+    export_value = raw$export_value,
+    bounds_left = raw$bounds_left,
+    bounds_bottom = raw$bounds_bottom,
+    bounds_right = raw$bounds_right,
+    bounds_top = raw$bounds_top,
+    options = raw$options,
+    is_option_selected = raw$is_option_selected,
     additional_actions_js = raw$additional_actions_js
   )
 }

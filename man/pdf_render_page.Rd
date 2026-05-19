@@ -56,11 +56,12 @@ the other common bitmap shapes downstream packages expect.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   bmp <- pdf_render_page(pdf_open(fixture), dpi = 96)
-  bmp                                # human summary
-  if (interactive()) plot(bmp)       # render to the active device
+  bmp # human summary
+  if (interactive()) plot(bmp) # render to the active device
 }
 }
 \seealso{

@@ -37,7 +37,8 @@ size-query form.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) pdf_attachments(fixture)
 }
 \seealso{

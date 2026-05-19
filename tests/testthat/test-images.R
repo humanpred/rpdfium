@@ -25,15 +25,17 @@ test_that("pdf_image_info returns the documented shape", {
   on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
 
   info <- pdf_image_info(bundle$obj)
-  expect_named(info, c("width", "height", "horizontal_dpi", "vertical_dpi",
-                       "bits_per_pixel", "colorspace",
-                       "marked_content_id"))
-  expect_identical(info$width,  16L)
+  expect_named(info, c(
+    "width", "height", "horizontal_dpi", "vertical_dpi",
+    "bits_per_pixel", "colorspace",
+    "marked_content_id"
+  ))
+  expect_identical(info$width, 16L)
   expect_identical(info$height, 16L)
   expect_type(info$horizontal_dpi, "double")
-  expect_type(info$vertical_dpi,   "double")
+  expect_type(info$vertical_dpi, "double")
   expect_identical(info$bits_per_pixel, 24L)
-  expect_identical(info$colorspace,     "DeviceRGB")
+  expect_identical(info$colorspace, "DeviceRGB")
   expect_identical(info$marked_content_id, -1L)
 })
 
@@ -60,7 +62,7 @@ test_that("pdf_image_bitmap returns a pdfium_bitmap with source dims", {
   # DPI is NA for source-pixel bitmaps - the image's own DPI lives
   # in pdf_image_info() and doesn't apply to the raw source raster.
   expect_true(is.na(attr(bmp, "dpi")))
-  expect_identical(attr(bmp, "source_page"),      1L)
+  expect_identical(attr(bmp, "source_page"), 1L)
   expect_identical(attr(bmp, "rotation_applied"), 0L)
 })
 
@@ -73,10 +75,10 @@ test_that("pdf_image_bitmap pixel sampling matches the fixture's quadrants", {
   arr <- as.array(pdf_image_bitmap(bundle$obj))
   # Sample interior of each 8x8 quadrant; expect ~exact colour since
   # Cairo embeds with no chroma subsampling.
-  expect_equal(arr[2L,  2L,  1L:3L], c(1, 0, 0), tolerance = 0.02)  # TL red
-  expect_equal(arr[2L,  14L, 1L:3L], c(0, 1, 0), tolerance = 0.02)  # TR green
-  expect_equal(arr[14L, 2L,  1L:3L], c(0, 0, 1), tolerance = 0.02)  # BL blue
-  expect_equal(arr[14L, 14L, 1L:3L], c(0, 0, 0), tolerance = 0.02)  # BR black
+  expect_equal(arr[2L, 2L, 1L:3L], c(1, 0, 0), tolerance = 0.02) # TL red
+  expect_equal(arr[2L, 14L, 1L:3L], c(0, 1, 0), tolerance = 0.02) # TR green
+  expect_equal(arr[14L, 2L, 1L:3L], c(0, 0, 1), tolerance = 0.02) # BL blue
+  expect_equal(arr[14L, 14L, 1L:3L], c(0, 0, 0), tolerance = 0.02) # BR black
   # Alpha should be opaque everywhere (BGR source → A defaults to FF).
   expect_equal(arr[, , 4L], matrix(1, nrow = 16L, ncol = 16L))
 })
@@ -105,10 +107,10 @@ test_that("pdf_image_data returns decoded vs raw stream bytes", {
   on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
 
   decoded <- pdf_image_data(bundle$obj, decoded = TRUE)
-  raw     <- pdf_image_data(bundle$obj, decoded = FALSE)
+  raw <- pdf_image_data(bundle$obj, decoded = FALSE)
 
   expect_type(decoded, "raw")
-  expect_type(raw,     "raw")
+  expect_type(raw, "raw")
   # 16x16 pixels x 3 bytes/pixel (DeviceRGB, 24bpp).
   expect_length(decoded, 16L * 16L * 3L)
   # Raw FlateDecode-compressed stream must be strictly smaller than
@@ -150,21 +152,27 @@ test_that("image accessors reject non-image objects", {
   skip_if(length(paths) == 0L, "shapes.pdf has no path objects")
   p <- paths[[1L]]
 
-  expect_error(pdf_image_info(p),      "requires an image")
-  expect_error(pdf_image_size(p),      "requires an image")
-  expect_error(pdf_image_bitmap(p),    "requires an image")
-  expect_error(pdf_image_rendered(p),  "requires an image")
-  expect_error(pdf_image_data(p),      "requires an image")
-  expect_error(pdf_image_filters(p),   "requires an image")
+  expect_error(pdf_image_info(p), "requires an image")
+  expect_error(pdf_image_size(p), "requires an image")
+  expect_error(pdf_image_bitmap(p), "requires an image")
+  expect_error(pdf_image_rendered(p), "requires an image")
+  expect_error(pdf_image_data(p), "requires an image")
+  expect_error(pdf_image_filters(p), "requires an image")
 })
 
 test_that("image accessors reject bad inputs", {
-  expect_error(pdf_image_info("not-an-obj"),
-               "must be a `pdfium_obj`")
-  expect_error(pdf_image_bitmap(list()),
-               "must be a `pdfium_obj`")
-  expect_error(pdf_image_data(42),
-               "must be a `pdfium_obj`")
+  expect_error(
+    pdf_image_info("not-an-obj"),
+    "must be a `pdfium_obj`"
+  )
+  expect_error(
+    pdf_image_bitmap(list()),
+    "must be a `pdfium_obj`"
+  )
+  expect_error(
+    pdf_image_data(42),
+    "must be a `pdfium_obj`"
+  )
 })
 
 test_that("pdf_image_data validates the decoded flag", {
@@ -173,12 +181,18 @@ test_that("pdf_image_data validates the decoded flag", {
   bundle <- image_obj(doc)
   on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
 
-  expect_error(pdf_image_data(bundle$obj, decoded = NA),
-               "TRUE/FALSE")
-  expect_error(pdf_image_data(bundle$obj, decoded = c(TRUE, FALSE)),
-               "TRUE/FALSE")
-  expect_error(pdf_image_data(bundle$obj, decoded = "yes"),
-               "TRUE/FALSE")
+  expect_error(
+    pdf_image_data(bundle$obj, decoded = NA),
+    "TRUE/FALSE"
+  )
+  expect_error(
+    pdf_image_data(bundle$obj, decoded = c(TRUE, FALSE)),
+    "TRUE/FALSE"
+  )
+  expect_error(
+    pdf_image_data(bundle$obj, decoded = "yes"),
+    "TRUE/FALSE"
+  )
 })
 
 test_that("image accessors refuse a closed parent page", {
@@ -191,10 +205,10 @@ test_that("image accessors refuse a closed parent page", {
   img <- imgs[[1L]]
   pdf_close_page(page)
 
-  expect_error(pdf_image_info(img),     "Parent page has been closed")
-  expect_error(pdf_image_bitmap(img),   "Parent page has been closed")
+  expect_error(pdf_image_info(img), "Parent page has been closed")
+  expect_error(pdf_image_bitmap(img), "Parent page has been closed")
   expect_error(pdf_image_rendered(img), "Parent page has been closed")
-  expect_error(pdf_image_data(img),     "Parent page has been closed")
-  expect_error(pdf_image_filters(img),  "Parent page has been closed")
-  expect_error(pdf_image_size(img),     "Parent page has been closed")
+  expect_error(pdf_image_data(img), "Parent page has been closed")
+  expect_error(pdf_image_filters(img), "Parent page has been closed")
+  expect_error(pdf_image_size(img), "Parent page has been closed")
 })

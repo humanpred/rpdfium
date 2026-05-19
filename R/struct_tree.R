@@ -78,7 +78,9 @@ pdf_structure_tree <- function(page, page_num = 1L) {
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   raw <- cpp_struct_tree_page(ph$page$ptr)
   n <- length(raw$type)
-  if (n == 0L) return(empty_structure_tree_tibble())
+  if (n == 0L) {
+    return(empty_structure_tree_tibble())
+  }
   tibble::tibble(
     element_index = seq_len(n),
     parent_index  = as.integer(raw$parent_index),

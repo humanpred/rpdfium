@@ -11,11 +11,13 @@
 check_pdfium_obj <- function(obj, allowed_types = NULL) {
   if (!inherits(obj, "pdfium_obj")) {
     stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   if (!is_open(obj)) {
     stop("Parent page has been closed; object handle is no longer valid.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   if (!is.null(allowed_types) && !(obj$type %in% allowed_types)) {
     stop(sprintf(
@@ -41,19 +43,24 @@ check_pdfium_obj <- function(obj, allowed_types = NULL) {
 #' @seealso [pdf_path_line_join()], [pdf_path_stroke()].
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture); p <- pdf_load_page(doc, 1)
+#'   doc <- pdf_open(fixture)
+#'   p <- pdf_load_page(doc, 1)
 #'   path_obj <- Filter(\(o) o$type == "path", pdf_page_objects(p))[[1]]
 #'   pdf_path_line_cap(path_obj)
-#'   pdf_close_page(p); pdf_close(doc)
+#'   pdf_close_page(p)
+#'   pdf_close(doc)
 #' }
 #' @export
 pdf_path_line_cap <- function(obj) {
   check_pdfium_obj(obj, allowed_types = "path")
   code <- cpp_obj_line_cap(obj$ptr)
   idx <- code + 1L
-  if (idx < 1L || idx > length(.pdfium_line_caps)) return("unknown")
+  if (idx < 1L || idx > length(.pdfium_line_caps)) {
+    return("unknown")
+  }
   .pdfium_line_caps[[idx]]
 }
 
@@ -74,7 +81,9 @@ pdf_path_line_join <- function(obj) {
   check_pdfium_obj(obj, allowed_types = "path")
   code <- cpp_obj_line_join(obj$ptr)
   idx <- code + 1L
-  if (idx < 1L || idx > length(.pdfium_line_joins)) return("unknown")
+  if (idx < 1L || idx > length(.pdfium_line_joins)) {
+    return("unknown")
+  }
   .pdfium_line_joins[[idx]]
 }
 
@@ -169,7 +178,9 @@ pdf_obj_marks <- function(obj) {
   check_pdfium_obj(obj)
   raw <- cpp_obj_marks_list(obj$ptr)
   n <- length(raw$name)
-  if (n == 0L) return(empty_obj_marks_tibble())
+  if (n == 0L) {
+    return(empty_obj_marks_tibble())
+  }
   tibble::tibble(
     mark_index = seq_len(n),
     name       = as.character(raw$name),

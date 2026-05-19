@@ -18,8 +18,10 @@ test_that("pdf_doc_is_tagged returns FALSE on plain Cairo fixtures", {
 test_that("pdf_doc_is_tagged accepts doc or path equivalently", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)
-  expect_identical(pdf_doc_is_tagged(doc),
-                   pdf_doc_is_tagged(fixture_path("shapes")))
+  expect_identical(
+    pdf_doc_is_tagged(doc),
+    pdf_doc_is_tagged(fixture_path("shapes"))
+  )
 })
 
 test_that("pdf_doc_is_tagged rejects bad inputs and closed docs", {
@@ -31,8 +33,10 @@ test_that("pdf_doc_is_tagged rejects bad inputs and closed docs", {
 
 test_that("pdf_viewer_preferences reports PDFium defaults on fixtures", {
   prefs <- pdf_viewer_preferences(fixture_path("shapes"))
-  expect_named(prefs, c("print_scaling", "num_copies", "duplex",
-                        "print_page_ranges"))
+  expect_named(prefs, c(
+    "print_scaling", "num_copies", "duplex",
+    "print_page_ranges"
+  ))
   expect_type(prefs$print_scaling, "logical")
   expect_length(prefs$print_scaling, 1L)
   expect_type(prefs$num_copies, "integer")
@@ -40,27 +44,33 @@ test_that("pdf_viewer_preferences reports PDFium defaults on fixtures", {
   expect_true(prefs$num_copies >= 1L)
   expect_type(prefs$duplex, "character")
   expect_true(prefs$duplex %in%
-                c("none", "simplex",
-                  "duplex_flip_short_edge", "duplex_flip_long_edge"))
+    c(
+      "none", "simplex",
+      "duplex_flip_short_edge", "duplex_flip_long_edge"
+    ))
   expect_type(prefs$print_page_ranges, "integer")
 })
 
 test_that("pdf_viewer_preferences accepts doc or path", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)
-  expect_identical(pdf_viewer_preferences(doc),
-                   pdf_viewer_preferences(fixture_path("shapes")))
+  expect_identical(
+    pdf_viewer_preferences(doc),
+    pdf_viewer_preferences(fixture_path("shapes"))
+  )
 })
 
 test_that("pdf_named_dests returns an empty tibble of the right shape", {
   out <- pdf_named_dests(fixture_path("shapes"))
   expect_s3_class(out, "tbl_df")
-  expect_named(out, c("name", "page", "dest_view", "dest_x", "dest_y",
-                      "dest_zoom"))
+  expect_named(out, c(
+    "name", "page", "dest_view", "dest_x", "dest_y",
+    "dest_zoom"
+  ))
   expect_type(out$name, "character")
   expect_type(out$page, "integer")
   expect_type(out$dest_view, "character")
-  expect_type(out$dest_x,    "double")
+  expect_type(out$dest_x, "double")
 })
 
 test_that("pdf_named_dests rejects bad doc inputs", {
@@ -82,19 +92,28 @@ test_that("pdf_doc_javascript returns an empty tibble for JS-free PDFs", {
 test_that("pdf_doc_javascript accepts doc or path", {
   doc <- pdf_open(fixture_path("outline"))
   on.exit(pdf_close(doc), add = TRUE)
-  expect_identical(pdf_doc_javascript(doc),
-                   pdf_doc_javascript(fixture_path("outline")))
+  expect_identical(
+    pdf_doc_javascript(doc),
+    pdf_doc_javascript(fixture_path("outline"))
+  )
 })
 
 test_that("pdf_viewer_preference_by_name returns NA when key absent", {
   expect_true(is.na(
-    pdf_viewer_preference_by_name(fixture_path("shapes"), "Direction")))
+    pdf_viewer_preference_by_name(fixture_path("shapes"), "Direction")
+  ))
 })
 
 test_that("pdf_viewer_preference_by_name validates key", {
-  expect_error(pdf_viewer_preference_by_name(fixture_path("shapes"), ""),
-               "non-empty character")
-  expect_error(pdf_viewer_preference_by_name(fixture_path("shapes"),
-                                              NA_character_),
-               "non-empty character")
+  expect_error(
+    pdf_viewer_preference_by_name(fixture_path("shapes"), ""),
+    "non-empty character"
+  )
+  expect_error(
+    pdf_viewer_preference_by_name(
+      fixture_path("shapes"),
+      NA_character_
+    ),
+    "non-empty character"
+  )
 })

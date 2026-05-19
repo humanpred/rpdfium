@@ -2,16 +2,20 @@
 
 test_that("pdf_doc_info returns the documented list shape", {
   info <- pdf_doc_info(fixture_path("shapes"))
-  expect_named(info,
-               c("page_count", "file_version",
-                 "title", "author", "subject", "keywords",
-                 "creator", "producer", "creation_date", "mod_date",
-                 "trapped",
-                 "creation_date_parsed", "mod_date_parsed"))
-  expect_type(info$page_count,   "integer")
+  expect_named(
+    info,
+    c(
+      "page_count", "file_version",
+      "title", "author", "subject", "keywords",
+      "creator", "producer", "creation_date", "mod_date",
+      "trapped",
+      "creation_date_parsed", "mod_date_parsed"
+    )
+  )
+  expect_type(info$page_count, "integer")
   expect_type(info$file_version, "integer")
   expect_s3_class(info$creation_date_parsed, "POSIXct")
-  expect_s3_class(info$mod_date_parsed,      "POSIXct")
+  expect_s3_class(info$mod_date_parsed, "POSIXct")
 })
 
 test_that("pdf_doc_info reports correct page count and a sane PDF version", {
@@ -34,11 +38,11 @@ test_that("pdf_doc_info accepts a path or an open doc", {
   on.exit(pdf_close(doc), add = TRUE)
   by_doc <- pdf_doc_info(doc)
   expect_identical(by_path$producer, by_doc$producer)
-  expect_true(is_open(doc))  # not closed by the helper
+  expect_true(is_open(doc)) # not closed by the helper
 })
 
 test_that("pdf_doc_info refuses bad inputs and closed docs", {
-  expect_error(pdf_doc_info(42),       "must be a `pdfium_doc` or a path")
+  expect_error(pdf_doc_info(42), "must be a `pdfium_doc` or a path")
   expect_error(pdf_doc_info("nope.pdf"), "not found")
 
   doc <- pdf_open(fixture_path("shapes"))
@@ -57,17 +61,19 @@ test_that("pdf_doc_meta returns standard tags and validates input", {
   expect_identical(pdf_doc_meta(doc, "NotPresent"), "")
 
   # Input validation.
-  expect_error(pdf_doc_meta(doc, ""),         "must be a single non-empty")
+  expect_error(pdf_doc_meta(doc, ""), "must be a single non-empty")
   expect_error(pdf_doc_meta(doc, NA_character_), "must be a single non-empty")
-  expect_error(pdf_doc_meta(doc, 42),         "must be a single non-empty")
+  expect_error(pdf_doc_meta(doc, 42), "must be a single non-empty")
   expect_error(pdf_doc_meta("notdoc", "Title"), "must be a `pdfium_doc`")
 })
 
 test_that("pdf_doc_meta refuses a closed doc", {
   doc <- pdf_open(fixture_path("shapes"))
   pdf_close(doc)
-  expect_error(pdf_doc_meta(doc, "Producer"),
-               "Document has been closed")
+  expect_error(
+    pdf_doc_meta(doc, "Producer"),
+    "Document has been closed"
+  )
 })
 
 test_that("pdf_parse_date handles common PDF formats", {

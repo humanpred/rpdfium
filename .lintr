@@ -3,7 +3,12 @@ linters: linters_with_defaults(
     object_name_linter = NULL,
     object_length_linter(40L),
     cyclocomp_linter(20L),
-    indentation_linter(indent = 2L)
+    # Indentation is owned by styler (run from the pre-commit
+    # style-files hook). lintr's indentation_linter disagrees with
+    # styler on hanging-indent rules for multi-line conditions and
+    # function signatures, producing noise rather than catching
+    # bugs. Disable to let styler be authoritative.
+    indentation_linter = NULL
   )
 exclusions: list(
     "R/RcppExports.R",

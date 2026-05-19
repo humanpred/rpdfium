@@ -11,35 +11,35 @@
 # subtype string. Indexed by `code + 1` (the codes start at 0 =
 # UNKNOWN).
 .pdfium_annot_subtypes <- c(
-  "unknown",         #  0 FPDF_ANNOT_UNKNOWN
-  "text",            #  1 FPDF_ANNOT_TEXT
-  "link",            #  2 FPDF_ANNOT_LINK
-  "freetext",        #  3 FPDF_ANNOT_FREETEXT
-  "line",            #  4 FPDF_ANNOT_LINE
-  "square",          #  5 FPDF_ANNOT_SQUARE
-  "circle",          #  6 FPDF_ANNOT_CIRCLE
-  "polygon",         #  7 FPDF_ANNOT_POLYGON
-  "polyline",        #  8 FPDF_ANNOT_POLYLINE
-  "highlight",       #  9 FPDF_ANNOT_HIGHLIGHT
-  "underline",       # 10 FPDF_ANNOT_UNDERLINE
-  "squiggly",        # 11 FPDF_ANNOT_SQUIGGLY
-  "strikeout",       # 12 FPDF_ANNOT_STRIKEOUT
-  "stamp",           # 13 FPDF_ANNOT_STAMP
-  "caret",           # 14 FPDF_ANNOT_CARET
-  "ink",             # 15 FPDF_ANNOT_INK
-  "popup",           # 16 FPDF_ANNOT_POPUP
-  "fileattachment",  # 17 FPDF_ANNOT_FILEATTACHMENT
-  "sound",           # 18 FPDF_ANNOT_SOUND
-  "movie",           # 19 FPDF_ANNOT_MOVIE
-  "widget",          # 20 FPDF_ANNOT_WIDGET
-  "screen",          # 21 FPDF_ANNOT_SCREEN
-  "printermark",     # 22 FPDF_ANNOT_PRINTERMARK
-  "trapnet",         # 23 FPDF_ANNOT_TRAPNET
-  "watermark",       # 24 FPDF_ANNOT_WATERMARK
-  "threed",          # 25 FPDF_ANNOT_THREED
-  "richmedia",       # 26 FPDF_ANNOT_RICHMEDIA
-  "xfawidget",       # 27 FPDF_ANNOT_XFAWIDGET
-  "redact"           # 28 FPDF_ANNOT_REDACT
+  "unknown", #  0 FPDF_ANNOT_UNKNOWN
+  "text", #  1 FPDF_ANNOT_TEXT
+  "link", #  2 FPDF_ANNOT_LINK
+  "freetext", #  3 FPDF_ANNOT_FREETEXT
+  "line", #  4 FPDF_ANNOT_LINE
+  "square", #  5 FPDF_ANNOT_SQUARE
+  "circle", #  6 FPDF_ANNOT_CIRCLE
+  "polygon", #  7 FPDF_ANNOT_POLYGON
+  "polyline", #  8 FPDF_ANNOT_POLYLINE
+  "highlight", #  9 FPDF_ANNOT_HIGHLIGHT
+  "underline", # 10 FPDF_ANNOT_UNDERLINE
+  "squiggly", # 11 FPDF_ANNOT_SQUIGGLY
+  "strikeout", # 12 FPDF_ANNOT_STRIKEOUT
+  "stamp", # 13 FPDF_ANNOT_STAMP
+  "caret", # 14 FPDF_ANNOT_CARET
+  "ink", # 15 FPDF_ANNOT_INK
+  "popup", # 16 FPDF_ANNOT_POPUP
+  "fileattachment", # 17 FPDF_ANNOT_FILEATTACHMENT
+  "sound", # 18 FPDF_ANNOT_SOUND
+  "movie", # 19 FPDF_ANNOT_MOVIE
+  "widget", # 20 FPDF_ANNOT_WIDGET
+  "screen", # 21 FPDF_ANNOT_SCREEN
+  "printermark", # 22 FPDF_ANNOT_PRINTERMARK
+  "trapnet", # 23 FPDF_ANNOT_TRAPNET
+  "watermark", # 24 FPDF_ANNOT_WATERMARK
+  "threed", # 25 FPDF_ANNOT_THREED
+  "richmedia", # 26 FPDF_ANNOT_RICHMEDIA
+  "xfawidget", # 27 FPDF_ANNOT_XFAWIDGET
+  "redact" # 28 FPDF_ANNOT_REDACT
 )
 
 # Internal helper: doc-or-path (defined locally per PR-stacking
@@ -51,8 +51,10 @@ as_doc_handle <- function(x, arg = "doc") {
     return(list(doc = doc, on_exit = function() pdf_close(doc)))
   }
   if (!inherits(x, "pdfium_doc")) {
-    stop(sprintf("`%s` must be a `pdfium_doc` or a path to a PDF file.",
-                 arg), call. = FALSE)
+    stop(sprintf(
+      "`%s` must be a `pdfium_doc` or a path to a PDF file.",
+      arg
+    ), call. = FALSE)
   }
   if (!is_open(x)) {
     stop("Document has been closed.", call. = FALSE)
@@ -178,7 +180,8 @@ annot_flag_decode <- function(flags, bit) {
 pdf_annotations <- function(page, page_num = 1L) {
   page_h <- as_open_annot_page(page, page_num)
   on.exit(if (page_h$close_on_exit) pdf_close_page(page_h$page),
-          add = TRUE)
+    add = TRUE
+  )
   raw <- cpp_annots_list(page_h$page$doc$ptr, page_h$page$ptr)
   flags <- as.integer(raw$flags)
   decode <- function(bit_name) {
@@ -186,40 +189,40 @@ pdf_annotations <- function(page, page_num = 1L) {
   }
   tibble::tibble(
     annotation_index = seq_along(raw$subtype_code),
-    subtype_code     = as.integer(raw$subtype_code),
-    subtype          = annotation_subtype_name(raw$subtype_code),
-    flags            = flags,
-    is_invisible     = decode("is_invisible"),
-    is_hidden        = decode("is_hidden"),
-    is_print         = decode("is_print"),
-    is_no_view       = decode("is_no_view"),
-    is_read_only     = decode("is_read_only"),
-    is_locked        = decode("is_locked"),
-    bounds_left      = raw$bounds_left,
-    bounds_bottom    = raw$bounds_bottom,
-    bounds_right     = raw$bounds_right,
-    bounds_top       = raw$bounds_top,
-    contents         = raw$contents,
-    title            = raw$title,
-    subject          = raw$subject,
-    color_red        = raw$color_red,
-    color_green      = raw$color_green,
-    color_blue       = raw$color_blue,
-    color_alpha      = raw$color_alpha,
-    interior_red     = raw$interior_red,
-    interior_green   = raw$interior_green,
-    interior_blue    = raw$interior_blue,
-    interior_alpha   = raw$interior_alpha,
-    border_width     = raw$border_width,
-    quad_points      = raw$quad_points,
-    vertices         = raw$vertices,
-    ink_paths        = raw$ink_paths,
-    font_color_red   = raw$font_color_red,
+    subtype_code = as.integer(raw$subtype_code),
+    subtype = annotation_subtype_name(raw$subtype_code),
+    flags = flags,
+    is_invisible = decode("is_invisible"),
+    is_hidden = decode("is_hidden"),
+    is_print = decode("is_print"),
+    is_no_view = decode("is_no_view"),
+    is_read_only = decode("is_read_only"),
+    is_locked = decode("is_locked"),
+    bounds_left = raw$bounds_left,
+    bounds_bottom = raw$bounds_bottom,
+    bounds_right = raw$bounds_right,
+    bounds_top = raw$bounds_top,
+    contents = raw$contents,
+    title = raw$title,
+    subject = raw$subject,
+    color_red = raw$color_red,
+    color_green = raw$color_green,
+    color_blue = raw$color_blue,
+    color_alpha = raw$color_alpha,
+    interior_red = raw$interior_red,
+    interior_green = raw$interior_green,
+    interior_blue = raw$interior_blue,
+    interior_alpha = raw$interior_alpha,
+    border_width = raw$border_width,
+    quad_points = raw$quad_points,
+    vertices = raw$vertices,
+    ink_paths = raw$ink_paths,
+    font_color_red = raw$font_color_red,
     font_color_green = raw$font_color_green,
-    font_color_blue  = raw$font_color_blue,
-    font_size        = raw$font_size,
-    popup_index      = as.integer(raw$popup_index),
-    irt_index        = as.integer(raw$irt_index),
+    font_color_blue = raw$font_color_blue,
+    font_size = raw$font_size,
+    popup_index = as.integer(raw$popup_index),
+    irt_index = as.integer(raw$irt_index),
     file_attachment_name = as.character(raw$file_attachment_name)
   )
 }
@@ -258,5 +261,6 @@ as_open_annot_page <- function(page, page_num) {
     return(list(page = p, close_on_exit = TRUE))
   }
   stop("`page` must be a `pdfium_page` or a `pdfium_doc`.",
-       call. = FALSE)
+    call. = FALSE
+  )
 }

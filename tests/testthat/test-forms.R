@@ -30,8 +30,10 @@ test_that("form fixture exposes one populated and one empty form", {
   on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
   objs <- pdf_page_objects(page)
   expect_length(objs, 2L)
-  expect_identical(vapply(objs, function(o) o$type, character(1)),
-                   c("form", "form"))
+  expect_identical(
+    vapply(objs, function(o) o$type, character(1)),
+    c("form", "form")
+  )
 })
 
 test_that("pdf_form_objects on an empty form returns an empty list", {
@@ -40,8 +42,10 @@ test_that("pdf_form_objects on an empty form returns an empty list", {
 
   page <- pdf_load_page(doc, 1L)
   on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
-  forms <- Filter(function(o) identical(o$type, "form"),
-                  pdf_page_objects(page))
+  forms <- Filter(
+    function(o) identical(o$type, "form"),
+    pdf_page_objects(page)
+  )
   skip_if(length(forms) < 2L, "fixture lacks an empty form")
   empty <- forms[[2L]]
 
@@ -60,10 +64,14 @@ test_that("pdf_form_objects returns the two nested rectangles", {
   expect_type(nested, "list")
   expect_length(nested, 2L)
   for (n in nested) expect_s3_class(n, "pdfium_obj")
-  expect_identical(vapply(nested, function(o) o$type, character(1)),
-                   c("path", "path"))
-  expect_identical(vapply(nested, function(o) o$index, integer(1)),
-                   c(1L, 2L))
+  expect_identical(
+    vapply(nested, function(o) o$type, character(1)),
+    c("path", "path")
+  )
+  expect_identical(
+    vapply(nested, function(o) o$index, integer(1)),
+    c(1L, 2L)
+  )
 })
 
 test_that("nested objects record parent_form and render with the chain", {
@@ -74,7 +82,7 @@ test_that("nested objects record parent_form and render with the chain", {
 
   nested <- pdf_form_objects(bundle$form)
   expect_s3_class(nested[[1L]]$parent_form, "pdfium_obj")
-  expect_identical(nested[[1L]]$parent_form$type,  "form")
+  expect_identical(nested[[1L]]$parent_form$type, "form")
   expect_identical(nested[[1L]]$parent_form$index, bundle$form$index)
   # format() should walk the containment chain.
   fmt <- format(nested[[1L]])
@@ -92,10 +100,10 @@ test_that("nested objects participate in the general pdfium_obj API", {
   # First rect bounds in form coords are (0, 0)-(50, 50) with 2pt
   # stroke, so PDFium reports the stroked bbox slightly outset.
   b1 <- pdf_obj_bounds(nested[[1L]])
-  expect_equal(b1[["left"]],   -2, tolerance = 0.1)
+  expect_equal(b1[["left"]], -2, tolerance = 0.1)
   expect_equal(b1[["bottom"]], -2, tolerance = 0.1)
-  expect_equal(b1[["right"]],  52, tolerance = 0.1)
-  expect_equal(b1[["top"]],    52, tolerance = 0.1)
+  expect_equal(b1[["right"]], 52, tolerance = 0.1)
+  expect_equal(b1[["top"]], 52, tolerance = 0.1)
   # Path segment readout works on the nested object.
   segs <- pdf_path_segments(nested[[1L]])
   expect_s3_class(segs, "data.frame")
@@ -115,10 +123,14 @@ test_that("the form's own matrix exposes its placement on the page", {
   #   | 1 0 50 |
   #   | 0 1 50 |
   #   | 0 0  1 |
-  expected <- matrix(c(1, 0, 50,
-                       0, 1, 50,
-                       0, 0,  1),
-                     nrow = 3, byrow = TRUE)
+  expected <- matrix(
+    c(
+      1, 0, 50,
+      0, 1, 50,
+      0, 0, 1
+    ),
+    nrow = 3, byrow = TRUE
+  )
   expect_equal(M, expected)
 })
 
@@ -130,20 +142,30 @@ test_that("pdf_form_objects rejects non-form objects", {
   page <- pdf_load_page(doc, 1L)
   on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
 
-  paths <- Filter(function(o) identical(o$type, "path"),
-                  pdf_page_objects(page))
+  paths <- Filter(
+    function(o) identical(o$type, "path"),
+    pdf_page_objects(page)
+  )
   skip_if(length(paths) == 0L, "shapes.pdf has no path objects")
-  expect_error(pdf_form_objects(paths[[1L]]),
-               "requires a form")
+  expect_error(
+    pdf_form_objects(paths[[1L]]),
+    "requires a form"
+  )
 })
 
 test_that("pdf_form_objects rejects bad inputs", {
-  expect_error(pdf_form_objects("not-an-obj"),
-               "must be a `pdfium_obj`")
-  expect_error(pdf_form_objects(list()),
-               "must be a `pdfium_obj`")
-  expect_error(pdf_form_objects(42),
-               "must be a `pdfium_obj`")
+  expect_error(
+    pdf_form_objects("not-an-obj"),
+    "must be a `pdfium_obj`"
+  )
+  expect_error(
+    pdf_form_objects(list()),
+    "must be a `pdfium_obj`"
+  )
+  expect_error(
+    pdf_form_objects(42),
+    "must be a `pdfium_obj`"
+  )
 })
 
 test_that("pdf_form_objects refuses a closed parent page", {
@@ -156,6 +178,8 @@ test_that("pdf_form_objects refuses a closed parent page", {
   form <- forms[[1L]]
   pdf_close_page(page)
 
-  expect_error(pdf_form_objects(form),
-               "Parent page has been closed")
+  expect_error(
+    pdf_form_objects(form),
+    "Parent page has been closed"
+  )
 })

@@ -4,7 +4,7 @@
 test_that("pdf_bookmark_find locates outline entries by title", {
   doc <- pdf_open(fixture_path("outline"))
   on.exit(pdf_close(doc), add = TRUE)
-  expect_equal(pdf_bookmark_find(doc, "Chapter 1"),   1L)
+  expect_equal(pdf_bookmark_find(doc, "Chapter 1"), 1L)
   expect_equal(pdf_bookmark_find(doc, "Section 1.1"), 2L)
   expect_equal(pdf_bookmark_find(doc, "Section 1.2"), 3L)
   expect_true(is.na(pdf_bookmark_find(doc, "Missing")))
@@ -13,26 +13,32 @@ test_that("pdf_bookmark_find locates outline entries by title", {
 test_that("pdf_bookmark_find validates title input", {
   doc <- pdf_open(fixture_path("outline"))
   on.exit(pdf_close(doc), add = TRUE)
-  expect_error(pdf_bookmark_find(doc, ""),    "non-empty character")
+  expect_error(pdf_bookmark_find(doc, ""), "non-empty character")
   expect_error(pdf_bookmark_find(doc, NA_character_), "non-empty character")
-  expect_error(pdf_bookmark_find(doc, c("a", "b")),    "non-empty character")
-  expect_error(pdf_bookmark_find(doc, 42),    "non-empty character")
+  expect_error(pdf_bookmark_find(doc, c("a", "b")), "non-empty character")
+  expect_error(pdf_bookmark_find(doc, 42), "non-empty character")
 })
 
 test_that("pdf_named_dest_by_name returns the right shape", {
   # outline.pdf has no /Dests dict so any name should return found=FALSE.
   out <- pdf_named_dest_by_name(fixture_path("outline"), "nope")
-  expect_named(out, c("found", "page", "dest_view", "dest_x",
-                      "dest_y", "dest_zoom"))
+  expect_named(out, c(
+    "found", "page", "dest_view", "dest_x",
+    "dest_y", "dest_zoom"
+  ))
   expect_false(out$found)
   expect_true(is.na(out$page))
 })
 
 test_that("pdf_named_dest_by_name validates `name`", {
-  expect_error(pdf_named_dest_by_name(fixture_path("shapes"), ""),
-               "non-empty character")
-  expect_error(pdf_named_dest_by_name(fixture_path("shapes"), NA_character_),
-               "non-empty character")
+  expect_error(
+    pdf_named_dest_by_name(fixture_path("shapes"), ""),
+    "non-empty character"
+  )
+  expect_error(
+    pdf_named_dest_by_name(fixture_path("shapes"), NA_character_),
+    "non-empty character"
+  )
 })
 
 test_that("pdf_form_field_at_point detects the textfield at its centre", {

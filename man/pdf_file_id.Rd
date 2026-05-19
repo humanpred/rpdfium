@@ -35,6 +35,7 @@ return any byte string (or none at all).
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) pdf_file_id(fixture)
 }

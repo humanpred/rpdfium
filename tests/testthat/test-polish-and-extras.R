@@ -32,7 +32,7 @@ test_that("pdf_obj_matrix composes with point %*% to transform coords", {
   M <- pdf_obj_matrix(paths[[1L]])
   # y-flip with 216 translation: local (10, 50, 1) -> page (10, 166).
   pt <- M %*% c(10, 50, 1)
-  expect_equal(pt[1L, 1L],  10, tolerance = 1e-3)
+  expect_equal(pt[1L, 1L], 10, tolerance = 1e-3)
   expect_equal(pt[2L, 1L], 166, tolerance = 1e-3)
 })
 
@@ -51,17 +51,27 @@ test_that("pdf_open(source = raw) loads from in-memory bytes", {
 })
 
 test_that("pdf_open validates source / path / password", {
-  expect_error(pdf_open(),
-               "One of `path` or `source` must be provided")
+  expect_error(
+    pdf_open(),
+    "One of `path` or `source` must be provided"
+  )
   fx <- fixture_path("shapes")
-  expect_error(pdf_open(path = fx, source = readBin(fx, "raw", 100L)),
-               "Pass exactly one of")
-  expect_error(pdf_open(source = "not raw"),
-               "must be a raw vector")
-  expect_error(pdf_open(source = raw(0L)),
-               "must be non-empty")
-  expect_error(pdf_open(fx, password = 42),
-               "must be NULL or a single non-NA character string")
+  expect_error(
+    pdf_open(path = fx, source = readBin(fx, "raw", 100L)),
+    "Pass exactly one of"
+  )
+  expect_error(
+    pdf_open(source = "not raw"),
+    "must be a raw vector"
+  )
+  expect_error(
+    pdf_open(source = raw(0L)),
+    "must be non-empty"
+  )
+  expect_error(
+    pdf_open(fx, password = 42),
+    "must be NULL or a single non-NA character string"
+  )
 })
 
 # pdf_text / pdf_fonts / pdf_file_id / pdf_doc_page_mode ----------
@@ -76,10 +86,12 @@ test_that("pdf_text returns one string per page", {
 test_that("pdf_fonts rolls up document fonts with first_seen_page", {
   fonts <- pdf_fonts(fixture_path("shapes"))
   expect_s3_class(fonts, "tbl_df")
-  expect_named(fonts, c("font_base_name", "font_family",
-                        "font_weight", "font_italic_angle",
-                        "font_is_embedded", "font_flags",
-                        "first_seen_page"))
+  expect_named(fonts, c(
+    "font_base_name", "font_family",
+    "font_weight", "font_italic_angle",
+    "font_is_embedded", "font_flags",
+    "first_seen_page"
+  ))
   expect_gte(nrow(fonts), 1L)
   expect_true(all(fonts$first_seen_page >= 1L))
 })
@@ -94,16 +106,20 @@ test_that("pdf_file_id returns raw bytes, possibly empty", {
 })
 
 test_that("pdf_file_id rejects unknown id_type", {
-  expect_error(pdf_file_id(fixture_path("shapes"), id_type = "neither"),
-               "should be one of")
+  expect_error(
+    pdf_file_id(fixture_path("shapes"), id_type = "neither"),
+    "should be one of"
+  )
 })
 
 test_that("pdf_doc_page_mode returns a documented label", {
   pm <- pdf_doc_page_mode(fixture_path("shapes"))
   expect_type(pm, "character")
-  expect_true(pm %in% c("unknown", "use_none", "use_outlines",
-                        "use_thumbs", "full_screen", "use_oc",
-                        "use_attachments"))
+  expect_true(pm %in% c(
+    "unknown", "use_none", "use_outlines",
+    "use_thumbs", "full_screen", "use_oc",
+    "use_attachments"
+  ))
 })
 
 # password= ------------------------------------------------------
@@ -112,12 +128,18 @@ test_that("password= flows through path-shortcut wrappers", {
   # Smoke test on a non-encrypted PDF - calling with password = NULL
   # (default) and password = "" should both succeed unchanged.
   fx <- fixture_path("shapes")
-  expect_equal(pdf_page_count(fx, password = NULL),
-               pdf_page_count(fx))
-  expect_equal(pdf_doc_info(fx, password = NULL)$page_count,
-               1L)
-  expect_s3_class(pdf_extract_paths(fx, password = NULL),
-                  "tbl_df")
+  expect_equal(
+    pdf_page_count(fx, password = NULL),
+    pdf_page_count(fx)
+  )
+  expect_equal(
+    pdf_doc_info(fx, password = NULL)$page_count,
+    1L
+  )
+  expect_s3_class(
+    pdf_extract_paths(fx, password = NULL),
+    "tbl_df"
+  )
 })
 
 # pdf_text_chars -------------------------------------------------
@@ -140,7 +162,8 @@ test_that("pdf_text_char_at_point returns NA when no glyph is near", {
   on.exit(pdf_close(doc), add = TRUE)
   # Sample a corner well outside any character.
   expect_true(is.na(pdf_text_char_at_point(doc, -100, -100,
-                                            page_num = 1L)))
+    page_num = 1L
+  )))
 })
 
 test_that("text-index <-> char-index round trip is consistent", {
@@ -154,7 +177,8 @@ test_that("text-index <-> char-index round trip is consistent", {
     ti <- chars$text_index[[i]]
     if (is.na(ti)) next
     ti_helper <- pdf_text_index_from_char(doc, chars$char_index[[i]],
-                                           page_num = 1L)
+      page_num = 1L
+    )
     expect_equal(ti_helper, ti)
     ci_back <- pdf_text_char_from_text_index(doc, ti, page_num = 1L)
     expect_equal(ci_back, chars$char_index[[i]])
@@ -166,34 +190,40 @@ test_that("pdf_text_char_at_point / index helpers validate inputs", {
   on.exit(pdf_close(doc), add = TRUE)
   expect_error(pdf_text_char_at_point(doc, NA, 1), "finite numeric")
   expect_error(pdf_text_char_at_point(doc, 1, NA), "finite numeric")
-  expect_error(pdf_text_char_at_point(doc, 1, 1, tolerance = NA),
-               "finite numeric")
+  expect_error(
+    pdf_text_char_at_point(doc, 1, 1, tolerance = NA),
+    "finite numeric"
+  )
   expect_error(pdf_text_index_from_char(doc, NA), "finite integer")
-  expect_error(pdf_text_char_from_text_index(doc, NA),
-               "finite integer")
+  expect_error(
+    pdf_text_char_from_text_index(doc, NA),
+    "finite integer"
+  )
 })
 
 test_that("pdf_text_chars returns one row per character with bounds + flags", {
   chars <- pdf_text_chars(pdf_open(fixture_path("shapes")), page_num = 1L)
   expect_s3_class(chars, "tbl_df")
-  expect_named(chars, c("char_index", "codepoint", "char",
-                        "bounds_left", "bounds_bottom",
-                        "bounds_right", "bounds_top",
-                        "font_size", "is_generated", "is_hyphen",
-                        "origin_x", "origin_y",
-                        "loose_left", "loose_bottom",
-                        "loose_right", "loose_top",
-                        "unicode_map_error", "text_index",
-                        "char_font_name", "char_font_flags"))
-  expect_type(chars$codepoint,    "integer")
-  expect_type(chars$char,         "character")
+  expect_named(chars, c(
+    "char_index", "codepoint", "char",
+    "bounds_left", "bounds_bottom",
+    "bounds_right", "bounds_top",
+    "font_size", "is_generated", "is_hyphen",
+    "origin_x", "origin_y",
+    "loose_left", "loose_bottom",
+    "loose_right", "loose_top",
+    "unicode_map_error", "text_index",
+    "char_font_name", "char_font_flags"
+  ))
+  expect_type(chars$codepoint, "integer")
+  expect_type(chars$char, "character")
   expect_type(chars$is_generated, "logical")
-  expect_type(chars$is_hyphen,    "logical")
-  expect_type(chars$origin_x,     "double")
-  expect_type(chars$origin_y,     "double")
-  expect_type(chars$loose_left,   "double")
+  expect_type(chars$is_hyphen, "logical")
+  expect_type(chars$origin_x, "double")
+  expect_type(chars$origin_y, "double")
+  expect_type(chars$loose_left, "double")
   expect_type(chars$unicode_map_error, "logical")
-  expect_type(chars$text_index,   "integer")
+  expect_type(chars$text_index, "integer")
   # The fixture text is "Hello" - 5 visible chars.
   visible <- chars[!chars$is_generated, ]
   expect_gte(nrow(visible), 5L)
@@ -209,9 +239,9 @@ test_that("pdf_page_box(media) matches pdf_page_size dimensions", {
   on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
 
   media <- pdf_page_box(page, box = "media")
-  sz    <- pdf_page_size(page)
-  expect_equal(media[["right"]]  - media[["left"]],   sz[["width"]])
-  expect_equal(media[["top"]]    - media[["bottom"]], sz[["height"]])
+  sz <- pdf_page_size(page)
+  expect_equal(media[["right"]] - media[["left"]], sz[["width"]])
+  expect_equal(media[["top"]] - media[["bottom"]], sz[["height"]])
 })
 
 test_that("pdf_page_box returns NAs for boxes the PDF doesn't declare", {
@@ -220,14 +250,17 @@ test_that("pdf_page_box returns NAs for boxes the PDF doesn't declare", {
     res <- pdf_page_box(page, box = b)
     expect_named(res, c("left", "bottom", "right", "top"))
     expect_true(all(is.na(res)),
-                info = paste0("box=", b))
+      info = paste0("box=", b)
+    )
   }
 })
 
 test_that("pdf_page_box rejects unknown box names", {
   page <- pdf_load_page(pdf_open(fixture_path("shapes")), 1L)
-  expect_error(pdf_page_box(page, box = "noBox"),
-               "should be one of")
+  expect_error(
+    pdf_page_box(page, box = "noBox"),
+    "should be one of"
+  )
 })
 
 # pdf_page_links --------------------------------------------------
@@ -238,11 +271,13 @@ test_that("pdf_page_links returns 0 rows for a page with no links", {
   links <- pdf_page_links(doc, page_num = 1L)
   expect_s3_class(links, "tbl_df")
   expect_equal(nrow(links), 0L)
-  expect_named(links, c("link_index", "bounds_left", "bounds_bottom",
-                        "bounds_right", "bounds_top", "action_type",
-                        "uri", "filepath", "dest_page_num",
-                        "dest_view", "dest_x", "dest_y", "dest_zoom",
-                        "quad_points"))
+  expect_named(links, c(
+    "link_index", "bounds_left", "bounds_bottom",
+    "bounds_right", "bounds_top", "action_type",
+    "uri", "filepath", "dest_page_num",
+    "dest_view", "dest_x", "dest_y", "dest_zoom",
+    "quad_points"
+  ))
 })
 
 test_that("pdf_page_links reports a URI link's target correctly", {
@@ -255,13 +290,13 @@ test_that("pdf_page_links reports a URI link's target correctly", {
   links <- pdf_page_links(doc, page_num = 1L)
   expect_equal(nrow(links), 1L)
   expect_equal(links$action_type, "uri")
-  expect_equal(links$uri,         "https://example.com")
+  expect_equal(links$uri, "https://example.com")
   expect_true(is.na(links$filepath))
   expect_true(is.na(links$dest_page_num))
-  expect_equal(links$bounds_left,   50)
+  expect_equal(links$bounds_left, 50)
   expect_equal(links$bounds_bottom, 150)
-  expect_equal(links$bounds_right,  200)
-  expect_equal(links$bounds_top,    170)
+  expect_equal(links$bounds_right, 200)
+  expect_equal(links$bounds_top, 170)
 })
 
 # pdf_page_objects(recursive) -----------------------------------
@@ -272,7 +307,7 @@ test_that("pdf_page_objects(recursive = TRUE) is a no-op when no forms", {
   page <- pdf_load_page(doc, 1L)
   on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
 
-  flat   <- pdf_page_objects(page)
+  flat <- pdf_page_objects(page)
   recurs <- pdf_page_objects(page, recursive = TRUE)
   expect_length(recurs, length(flat))
 })
@@ -283,14 +318,16 @@ test_that("pdf_page_objects(recursive = TRUE) descends into form objects", {
   page <- pdf_load_page(doc, 1L)
   on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
 
-  flat   <- pdf_page_objects(page)
+  flat <- pdf_page_objects(page)
   recurs <- pdf_page_objects(page, recursive = TRUE)
   # The fixture has 2 top-level forms; one populated with 2 nested
   # objects, one empty. So flat = 2; recursive = 2 + 2 + 0 = 4.
-  expect_equal(length(flat),   2L)
+  expect_equal(length(flat), 2L)
   expect_equal(length(recurs), 4L)
-  expect_identical(vapply(recurs, function(o) o$type, character(1L)),
-                   c("form", "path", "path", "form"))
+  expect_identical(
+    vapply(recurs, function(o) o$type, character(1L)),
+    c("form", "path", "path", "form")
+  )
 })
 
 test_that("pdf_page_objects(recursive) validates its flag", {
@@ -299,10 +336,14 @@ test_that("pdf_page_objects(recursive) validates its flag", {
   page <- pdf_load_page(doc, 1L)
   on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
 
-  expect_error(pdf_page_objects(page, recursive = NA),
-               "must be a single TRUE or FALSE")
-  expect_error(pdf_page_objects(page, recursive = "yes"),
-               "must be a single TRUE or FALSE")
+  expect_error(
+    pdf_page_objects(page, recursive = NA),
+    "must be a single TRUE or FALSE"
+  )
+  expect_error(
+    pdf_page_objects(page, recursive = "yes"),
+    "must be a single TRUE or FALSE"
+  )
 })
 
 # Edge-case coverage for the page-level helpers --------------------
@@ -312,10 +353,12 @@ test_that("pdf_fonts returns the empty schema for a doc with no text", {
   fonts <- pdf_fonts(fixture_path("minimal"))
   expect_s3_class(fonts, "tbl_df")
   expect_equal(nrow(fonts), 0L)
-  expect_named(fonts, c("font_base_name", "font_family",
-                        "font_weight", "font_italic_angle",
-                        "font_is_embedded", "font_flags",
-                        "first_seen_page"))
+  expect_named(fonts, c(
+    "font_base_name", "font_family",
+    "font_weight", "font_italic_angle",
+    "font_is_embedded", "font_flags",
+    "first_seen_page"
+  ))
 })
 
 test_that("pdf_doc_page_mode handles unexpected codes gracefully", {
@@ -342,10 +385,12 @@ test_that("as_open_page_pair refuses closed pages, closed docs, and bad inputs",
   expect_error(pdf_page_box(page), "Page has been closed")
 
   pdf_close(doc)
-  expect_error(pdf_page_box(doc),  "Document has been closed")
+  expect_error(pdf_page_box(doc), "Document has been closed")
 
-  expect_error(pdf_page_box(42L),
-               "must be a `pdfium_page` or a `pdfium_doc`")
+  expect_error(
+    pdf_page_box(42L),
+    "must be a `pdfium_page` or a `pdfium_doc`"
+  )
 })
 
 test_that("doc_extra's internal as_doc_handle rejects bad inputs and closed docs", {
@@ -353,12 +398,14 @@ test_that("doc_extra's internal as_doc_handle rejects bad inputs and closed docs
   # pdf_file_id, pdf_doc_page_mode) all share the as_doc_handle
   # validator. Exercise both rejection paths via pdf_text() and
   # pdf_file_id() so the helper's branches are covered.
-  expect_error(pdf_text(42L),
-               "must be a `pdfium_doc` or a path to a PDF file")
+  expect_error(
+    pdf_text(42L),
+    "must be a `pdfium_doc` or a path to a PDF file"
+  )
   doc <- pdf_open(fixture_path("shapes"))
   pdf_close(doc)
-  expect_error(pdf_text(doc),       "Document has been closed")
-  expect_error(pdf_file_id(doc),    "Document has been closed")
+  expect_error(pdf_text(doc), "Document has been closed")
+  expect_error(pdf_file_id(doc), "Document has been closed")
 })
 
 test_that("pdf_text returns the empty string for pages with no text", {

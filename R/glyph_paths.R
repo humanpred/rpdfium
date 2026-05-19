@@ -80,19 +80,23 @@
 pdf_glyph_path <- function(obj, glyph_code, font_size = NA_real_) {
   check_pdfium_obj(obj, allowed_types = "text")
   if (!is.numeric(glyph_code) || length(glyph_code) != 1L ||
-        !is.finite(glyph_code) || glyph_code < 0L) {
+    !is.finite(glyph_code) || glyph_code < 0L) {
     stop("`glyph_code` must be a single non-negative integer.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   if (length(font_size) != 1L ||
-        (!is.na(font_size) && (!is.numeric(font_size) ||
-                                !is.finite(font_size)))) {
+    (!is.na(font_size) && (!is.numeric(font_size) ||
+      !is.finite(font_size)))) {
     stop("`font_size` must be a single numeric (or NA).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
-  raw <- cpp_text_obj_glyph_path(obj$ptr,
-                                  as.integer(glyph_code),
-                                  as.numeric(font_size))
+  raw <- cpp_text_obj_glyph_path(
+    obj$ptr,
+    as.integer(glyph_code),
+    as.numeric(font_size)
+  )
   tibble::tibble(
     segment_index = seq_along(raw$segment_type),
     segment_type  = pdfium_segment_type_name(raw$segment_type),
@@ -121,19 +125,23 @@ pdf_glyph_path <- function(obj, glyph_code, font_size = NA_real_) {
 pdf_glyph_width <- function(obj, glyph_code, font_size = NA_real_) {
   check_pdfium_obj(obj, allowed_types = "text")
   if (!is.numeric(glyph_code) || length(glyph_code) != 1L ||
-        !is.finite(glyph_code) || glyph_code < 0L) {
+    !is.finite(glyph_code) || glyph_code < 0L) {
     stop("`glyph_code` must be a single non-negative integer.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   if (length(font_size) != 1L ||
-        (!is.na(font_size) && (!is.numeric(font_size) ||
-                                !is.finite(font_size)))) {
+    (!is.na(font_size) && (!is.numeric(font_size) ||
+      !is.finite(font_size)))) {
     stop("`font_size` must be a single numeric (or NA).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
-  out <- cpp_text_obj_glyph_width(obj$ptr,
-                                   as.integer(glyph_code),
-                                   as.numeric(font_size))
+  out <- cpp_text_obj_glyph_width(
+    obj$ptr,
+    as.integer(glyph_code),
+    as.numeric(font_size)
+  )
   if (!is.finite(out)) NA_real_ else out
 }
 
@@ -161,9 +169,10 @@ pdf_glyph_width <- function(obj, glyph_code, font_size = NA_real_) {
 pdf_text_font_metrics <- function(obj, font_size = 1) {
   check_pdfium_obj(obj, allowed_types = "text")
   if (!is.numeric(font_size) || length(font_size) != 1L ||
-        !is.finite(font_size) || font_size <= 0) {
+    !is.finite(font_size) || font_size <= 0) {
     stop("`font_size` must be a single positive finite numeric.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   raw <- cpp_text_obj_font_metrics(obj$ptr, as.numeric(font_size))
   list(

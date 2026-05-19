@@ -1,12 +1,12 @@
 # "Tier 3" niche read-side helpers that don't fit any of the
-# bigger modules. Three small accessors:
+# bigger modules:
 #
-#   pdf_text_obj_rendered_bitmap(obj, scale = 1)
-#     Render a single text page-object at the requested scale.
-#   pdf_attachment_dict_value(doc, attachment_index, key)
-#     Ad-hoc lookup of an attachment-dictionary entry.
-#   pdf_text_char_obj_index(page, char_index)
-#     Char-index -> page-object-index reverse mapping.
+# - pdf_text_obj_rendered_bitmap renders a single text page-object
+#   at the requested scale.
+# - pdf_attachment_dict_value does ad-hoc lookups of an
+#   attachment-dictionary entry.
+# - pdf_text_char_obj_index reverse-maps a char-index to a
+#   page-object-index.
 
 #' Rendered bitmap of a single text page-object
 #'
@@ -26,17 +26,22 @@
 #' @export
 pdf_text_obj_rendered_bitmap <- function(obj, scale = 1) {
   if (!is.numeric(scale) || length(scale) != 1L || !is.finite(scale) ||
-        scale <= 0) {
+    scale <= 0) {
     stop("`scale` must be a single positive finite numeric.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   check_pdfium_obj(obj, allowed_types = "text")
-  m <- cpp_text_obj_rendered_bitmap(obj$page$doc$ptr, obj$page$ptr,
-                                     obj$ptr, as.numeric(scale))
-  if (is.null(m)) return(NULL)
+  m <- cpp_text_obj_rendered_bitmap(
+    obj$page$doc$ptr, obj$page$ptr,
+    obj$ptr, as.numeric(scale)
+  )
+  if (is.null(m)) {
+    return(NULL)
+  }
   class(m) <- c("pdfium_bitmap", "nativeRaster")
   attr(m, "channels") <- 4L
-  attr(m, "dpi")      <- 72 * as.numeric(scale)
+  attr(m, "dpi") <- 72 * as.numeric(scale)
   attr(m, "source_page") <- obj$page$index %||% NA_integer_
   attr(m, "rotation_applied") <- 0L
   m
@@ -77,22 +82,16 @@ pdf_text_obj_rendered_bitmap <- function(obj, scale = 1) {
 #' @seealso [pdf_attachments()].
 #' @export
 pdf_attachment_dict_value <- function(doc, attachment_index, key,
-                                       password = NULL) {
-  if (!is.numeric(attachment_index) || length(attachment_index) != 1L ||
-        !is.finite(attachment_index) || attachment_index < 1L) {
-    stop("`attachment_index` must be a single positive integer.",
-         call. = FALSE)
-  }
-  if (!is.character(key) || length(key) != 1L || is.na(key) ||
-        !nzchar(key)) {
-    stop("`key` must be a single non-empty character string.",
-         call. = FALSE)
-  }
+                                      password = NULL) {
+  validate_positive_int(attachment_index, "attachment_index")
+  validate_nonempty_char(key, "key")
   h <- as_doc_handle(doc, "doc", password = password)
   on.exit(h$on_exit(), add = TRUE)
-  raw <- cpp_attachment_dict_value(h$doc$ptr,
-                                    as.integer(attachment_index - 1L),
-                                    enc2utf8(key))
+  raw <- cpp_attachment_dict_value(
+    h$doc$ptr,
+    as.integer(attachment_index - 1L),
+    enc2utf8(key)
+  )
   val_chr <- as.character(raw$value)
   if (length(val_chr) == 0L) val_chr <- NA_character_
   list(
@@ -124,13 +123,16 @@ pdf_attachment_dict_value <- function(doc, attachment_index, key,
 #' @export
 pdf_text_char_obj_index <- function(page, char_index, page_num = 1L) {
   if (!is.numeric(char_index) || length(char_index) != 1L ||
-        !is.finite(char_index) || char_index < 1L) {
+    !is.finite(char_index) || char_index < 1L) {
     stop("`char_index` must be a single positive integer.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
-  idx <- cpp_text_char_obj_index(ph$page$ptr,
-                                  as.integer(char_index - 1L))
+  idx <- cpp_text_char_obj_index(
+    ph$page$ptr,
+    as.integer(char_index - 1L)
+  )
   if (idx < 0L) NA_integer_ else as.integer(idx)
 }

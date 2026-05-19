@@ -20,7 +20,8 @@ each character to where it sits on the page and what font drew it.
 ```{r}
 library(pdfium)
 fixture <- system.file("extdata", "fixtures", "unicode.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 doc <- pdf_open(fixture)
 page <- pdf_load_page(doc, 1L)
 ```
@@ -64,9 +65,9 @@ you the same data piecewise:
 texts <- Filter(function(o) o$type == "text", pdf_page_objects(page))
 length(texts)
 
-pdf_text_content(texts[[1L]])       # the Unicode string
-pdf_text_font_size(texts[[1L]])     # font size in user-space points
-str(pdf_text_font(texts[[1L]]))     # named list of font metadata
+pdf_text_content(texts[[1L]]) # the Unicode string
+pdf_text_font_size(texts[[1L]]) # font size in user-space points
+str(pdf_text_font(texts[[1L]])) # named list of font metadata
 ```
 
 `pdf_text_runs()` is essentially a batched form of these three accessors

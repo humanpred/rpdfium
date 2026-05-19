@@ -16,8 +16,10 @@ as_doc_handle <- function(x, arg = "doc") {
     return(list(doc = doc, on_exit = function() pdf_close(doc)))
   }
   if (!inherits(x, "pdfium_doc")) {
-    stop(sprintf("`%s` must be a `pdfium_doc` or a path to a PDF file.",
-                 arg), call. = FALSE)
+    stop(sprintf(
+      "`%s` must be a `pdfium_doc` or a path to a PDF file.",
+      arg
+    ), call. = FALSE)
   }
   if (!is_open(x)) {
     stop("Document has been closed.", call. = FALSE)
@@ -53,7 +55,8 @@ as_doc_handle <- function(x, arg = "doc") {
 #' @seealso [pdf_attachment_data()].
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) pdf_attachments(fixture)
 #' @export
 pdf_attachments <- function(doc) {
@@ -87,11 +90,12 @@ pdf_attachments <- function(doc) {
 #' @export
 pdf_attachment_data <- function(doc, attachment_index = 1L) {
   if (!is.numeric(attachment_index) || length(attachment_index) != 1L ||
-        is.na(attachment_index) ||
-        attachment_index != as.integer(attachment_index) ||
-        attachment_index < 1L) {
+    is.na(attachment_index) ||
+    attachment_index != as.integer(attachment_index) ||
+    attachment_index < 1L) {
     stop("`attachment_index` must be a single positive integer (1-based).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   h <- as_doc_handle(doc, "doc")
   on.exit(h$on_exit(), add = TRUE)

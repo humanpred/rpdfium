@@ -20,8 +20,10 @@ as_doc_handle <- function(x, arg = "doc") {
     return(list(doc = doc, on_exit = function() pdf_close(doc)))
   }
   if (!inherits(x, "pdfium_doc")) {
-    stop(sprintf("`%s` must be a `pdfium_doc` or a path to a PDF file.",
-                 arg), call. = FALSE)
+    stop(sprintf(
+      "`%s` must be a `pdfium_doc` or a path to a PDF file.",
+      arg
+    ), call. = FALSE)
   }
   if (!is_open(x)) {
     stop("Document has been closed.", call. = FALSE)
@@ -82,7 +84,8 @@ as_doc_handle <- function(x, arg = "doc") {
 #'   [pdf_page_links()] for clickable link annotations on a page.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "outline.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) pdf_bookmarks(fixture)
 #' @export
 pdf_bookmarks <- function(doc) {
@@ -138,10 +141,11 @@ pdf_bookmarks <- function(doc) {
 #' @export
 pdf_page_label <- function(doc, page_num = 1L) {
   if (!is.numeric(page_num) || length(page_num) != 1L ||
-        is.na(page_num) || page_num != as.integer(page_num) ||
-        page_num < 1L) {
+    is.na(page_num) || page_num != as.integer(page_num) ||
+    page_num < 1L) {
     stop("`page_num` must be a single positive integer (1-based).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   h <- as_doc_handle(doc, "doc")
   on.exit(h$on_exit(), add = TRUE)
@@ -159,16 +163,19 @@ pdf_page_label <- function(doc, page_num = 1L) {
 #' @seealso [pdf_page_label()] for a single page.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) pdf_page_labels(fixture)
 #' @export
 pdf_page_labels <- function(doc) {
   h <- as_doc_handle(doc, "doc")
   on.exit(h$on_exit(), add = TRUE)
   n <- cpp_page_count(h$doc$ptr)
-  vapply(seq_len(n),
-         function(i) cpp_page_label(h$doc$ptr, i - 1L),
-         character(1L))
+  vapply(
+    seq_len(n),
+    function(i) cpp_page_label(h$doc$ptr, i - 1L),
+    character(1L)
+  )
 }
 
 # PDF spec 7.6.3.2 / Table 22: meaning of each /P (UserAccess) bit

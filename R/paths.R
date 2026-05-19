@@ -53,7 +53,8 @@ pdfium_segment_type_name <- function(codes) {
 #' @seealso [pdf_page_objects()], [pdf_obj_bounds()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -80,15 +81,19 @@ pdf_path_segments <- function(obj) {
 check_path_obj <- function(obj) {
   if (!inherits(obj, "pdfium_obj")) {
     stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   if (!is_open(obj)) {
     stop("Parent page has been closed; object handle is no longer valid.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   if (!identical(obj$type, "path")) {
     stop("`obj` must be a path-type pdfium_obj; got type \"",
-         obj$type, "\".", call. = FALSE)
+      obj$type, "\".",
+      call. = FALSE
+    )
   }
   obj
 }
@@ -114,7 +119,8 @@ check_path_obj <- function(obj) {
 #' @seealso [pdf_path_fill()], [pdf_path_segments()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -144,7 +150,8 @@ pdf_path_stroke <- function(obj) {
 #' @seealso [pdf_path_stroke()], [pdf_path_segments()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -180,7 +187,8 @@ pdf_path_fill <- function(obj) {
 #' @seealso [pdf_path_stroke()] for the stroke color and width.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -234,7 +242,7 @@ pdf_path_draw_mode <- function(obj) {
   raw <- cpp_path_draw_mode(obj$ptr)
   code <- raw$fill_mode_code
   name <- if (is.na(code) || code < 0L ||
-              code >= length(.pdfium_fill_mode_names)) {
+    code >= length(.pdfium_fill_mode_names)) {
     NA_character_
   } else {
     .pdfium_fill_mode_names[code + 1L]

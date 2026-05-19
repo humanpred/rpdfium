@@ -14,8 +14,10 @@ as_doc_handle <- function(x, arg = "doc", password = NULL) {
     return(list(doc = doc, on_exit = function() pdf_close(doc)))
   }
   if (!inherits(x, "pdfium_doc")) {
-    stop(sprintf("`%s` must be a `pdfium_doc` or a path to a PDF file.",
-                 arg), call. = FALSE)
+    stop(sprintf(
+      "`%s` must be a `pdfium_doc` or a path to a PDF file.",
+      arg
+    ), call. = FALSE)
   }
   if (!is_open(x)) {
     stop("Document has been closed.", call. = FALSE)
@@ -43,7 +45,8 @@ as_doc_handle <- function(x, arg = "doc", password = NULL) {
 #'   bounding box).
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) pdf_text(fixture)
 #' @export
 pdf_text <- function(doc, password = NULL) {
@@ -104,15 +107,18 @@ pdf_fonts <- function(doc, password = NULL) {
     ))
   }
   combined <- do.call(rbind, all_runs)
-  font_cols <- c("font_base_name", "font_family", "font_weight",
-                 "font_italic_angle", "font_is_embedded",
-                 "font_flags")
+  font_cols <- c(
+    "font_base_name", "font_family", "font_weight",
+    "font_italic_angle", "font_is_embedded",
+    "font_flags"
+  )
   # Deduplicate on the full font tuple, taking the smallest
   # first_seen_page for each unique combination.
   key <- do.call(paste, c(combined[font_cols], sep = ""))
   first_idx <- !duplicated(key)
   out <- combined[first_idx, c(font_cols, "first_seen_page"),
-                  drop = FALSE]
+    drop = FALSE
+  ]
   rownames(out) <- NULL
   tibble::as_tibble(out)
 }
@@ -140,7 +146,8 @@ pdf_fonts <- function(doc, password = NULL) {
 #'   `/ID` entry.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) pdf_file_id(fixture)
 #' @export
 pdf_file_id <- function(doc, id_type = c("permanent", "changing"),
@@ -154,13 +161,13 @@ pdf_file_id <- function(doc, id_type = c("permanent", "changing"),
 
 # PDFium FPDFDoc_GetPageMode values from fpdf_ext.h.
 .pdfium_page_modes <- c(
-  "unknown",         # -1 PAGEMODE_UNKNOWN (only on error)
-  "use_none",        #  0 PAGEMODE_USENONE
-  "use_outlines",    #  1 PAGEMODE_USEOUTLINES
-  "use_thumbs",      #  2 PAGEMODE_USETHUMBS
-  "full_screen",     #  3 PAGEMODE_FULLSCREEN
-  "use_oc",          #  4 PAGEMODE_USEOC
-  "use_attachments"  #  5 PAGEMODE_USEATTACHMENTS
+  "unknown", # -1 PAGEMODE_UNKNOWN (only on error)
+  "use_none", #  0 PAGEMODE_USENONE
+  "use_outlines", #  1 PAGEMODE_USEOUTLINES
+  "use_thumbs", #  2 PAGEMODE_USETHUMBS
+  "full_screen", #  3 PAGEMODE_FULLSCREEN
+  "use_oc", #  4 PAGEMODE_USEOC
+  "use_attachments" #  5 PAGEMODE_USEATTACHMENTS
 )
 
 #' Read the document's PageMode entry from its catalog
@@ -188,7 +195,7 @@ pdf_doc_page_mode <- function(doc, password = NULL) {
   # FPDFDoc_GetPageMode only returns -1 .. 5.
   idx <- code + 2L
   if (idx < 1L || idx > length(.pdfium_page_modes)) {
-    return("unknown")  # nocov
+    return("unknown") # nocov
   }
   .pdfium_page_modes[[idx]]
 }
@@ -197,10 +204,10 @@ pdf_doc_page_mode <- function(doc, password = NULL) {
 # (DuplexUndefined=0, Simplex=1, DuplexFlipShortEdge=2,
 # DuplexFlipLongEdge=3). Bumped to 1-based index in pdf_viewer_preferences().
 .pdfium_duplex_modes <- c(
-  "none",                    # 0 DuplexUndefined
-  "simplex",                 # 1 Simplex
-  "duplex_flip_short_edge",  # 2 DuplexFlipShortEdge
-  "duplex_flip_long_edge"    # 3 DuplexFlipLongEdge
+  "none", # 0 DuplexUndefined
+  "simplex", # 1 Simplex
+  "duplex_flip_short_edge", # 2 DuplexFlipShortEdge
+  "duplex_flip_long_edge" # 3 DuplexFlipLongEdge
 )
 
 #' Is the document marked as tagged?
@@ -286,9 +293,10 @@ pdf_viewer_preferences <- function(doc, password = NULL) {
 #' @export
 pdf_viewer_preference_by_name <- function(doc, key, password = NULL) {
   if (!is.character(key) || length(key) != 1L || is.na(key) ||
-        !nzchar(key)) {
+    !nzchar(key)) {
     stop("`key` must be a single non-empty character string.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   h <- as_doc_handle(doc, "doc", password = password)
   on.exit(h$on_exit(), add = TRUE)

@@ -29,7 +29,9 @@ new_pdfium_doc <- function(ptr, path) {
 #' @keywords internal
 #' @noRd
 is_open <- function(x) {
-  if (inherits(x, "pdfium_obj")) return(is_open(x$page))
+  if (inherits(x, "pdfium_obj")) {
+    return(is_open(x$page))
+  }
   stopifnot(inherits(x, "pdfium_handle"))
   cpp_handle_is_valid(x$ptr)
 }
@@ -60,9 +62,11 @@ print.pdfium_doc <- function(x, ...) {
 #' @keywords internal
 #' @noRd
 new_pdfium_page <- function(ptr, doc, index) {
-  stopifnot(typeof(ptr) == "externalptr",
-            inherits(doc, "pdfium_doc"),
-            is.numeric(index), length(index) == 1L)
+  stopifnot(
+    typeof(ptr) == "externalptr",
+    inherits(doc, "pdfium_doc"),
+    is.numeric(index), length(index) == 1L
+  )
   structure(
     list(ptr = ptr, doc = doc, index = as.integer(index)),
     class = c("pdfium_page", "pdfium_handle")
@@ -72,8 +76,10 @@ new_pdfium_page <- function(ptr, doc, index) {
 #' @export
 format.pdfium_page <- function(x, ...) {
   state <- if (is_open(x)) "open" else "closed"
-  sprintf("<pdfium_page [%s] page %d of %s>",
-          state, x$index, basename(x$doc$path))
+  sprintf(
+    "<pdfium_page [%s] page %d of %s>",
+    state, x$index, basename(x$doc$path)
+  )
 }
 
 #' @export
@@ -84,12 +90,12 @@ print.pdfium_page <- function(x, ...) {
 
 # PDFium FPDFPageObj_GetType return values, indexed by code + 1L.
 .pdfium_obj_type_names <- c(
-  "unknown",  # 0  FPDF_PAGEOBJ_UNKNOWN
-  "text",     # 1  FPDF_PAGEOBJ_TEXT
-  "path",     # 2  FPDF_PAGEOBJ_PATH
-  "image",    # 3  FPDF_PAGEOBJ_IMAGE
-  "shading",  # 4  FPDF_PAGEOBJ_SHADING
-  "form"      # 5  FPDF_PAGEOBJ_FORM
+  "unknown", # 0  FPDF_PAGEOBJ_UNKNOWN
+  "text", # 1  FPDF_PAGEOBJ_TEXT
+  "path", # 2  FPDF_PAGEOBJ_PATH
+  "image", # 3  FPDF_PAGEOBJ_IMAGE
+  "shading", # 4  FPDF_PAGEOBJ_SHADING
+  "form" # 5  FPDF_PAGEOBJ_FORM
 )
 
 #' Construct a `pdfium_obj` from an external pointer
@@ -121,14 +127,18 @@ print.pdfium_page <- function(x, ...) {
 #' @keywords internal
 #' @noRd
 new_pdfium_obj <- function(ptr, page, index, type, parent_form = NULL) {
-  stopifnot(typeof(ptr) == "externalptr",
-            inherits(page, "pdfium_page"),
-            is.numeric(index), length(index) == 1L,
-            is.character(type), length(type) == 1L,
-            is.null(parent_form) || inherits(parent_form, "pdfium_obj"))
+  stopifnot(
+    typeof(ptr) == "externalptr",
+    inherits(page, "pdfium_page"),
+    is.numeric(index), length(index) == 1L,
+    is.character(type), length(type) == 1L,
+    is.null(parent_form) || inherits(parent_form, "pdfium_obj")
+  )
   structure(
-    list(ptr = ptr, page = page, index = as.integer(index), type = type,
-         parent_form = parent_form),
+    list(
+      ptr = ptr, page = page, index = as.integer(index), type = type,
+      parent_form = parent_form
+    ),
     class = c("pdfium_obj", "pdfium_handle")
   )
 }
@@ -137,11 +147,15 @@ new_pdfium_obj <- function(ptr, page, index, type, parent_form = NULL) {
 format.pdfium_obj <- function(x, ...) {
   state <- if (is_open(x)) "open" else "closed"
   if (is.null(x$parent_form)) {
-    sprintf("<pdfium_obj [%s] %s, obj %d on page %d>",
-            state, x$type, x$index, x$page$index)
+    sprintf(
+      "<pdfium_obj [%s] %s, obj %d on page %d>",
+      state, x$type, x$index, x$page$index
+    )
   } else {
-    sprintf("<pdfium_obj [%s] %s, obj %d of form %d on page %d>",
-            state, x$type, x$index, x$parent_form$index, x$page$index)
+    sprintf(
+      "<pdfium_obj [%s] %s, obj %d of form %d on page %d>",
+      state, x$type, x$index, x$parent_form$index, x$page$index
+    )
   }
 }
 

@@ -13,10 +13,10 @@ test_that("pdf_extract_paths returns the documented tibble shape", {
     "bounds_left", "bounds_bottom", "bounds_right", "bounds_top"
   )
   expect_named(res, expected_cols)
-  expect_type(res$path_index,    "integer")
+  expect_type(res$path_index, "integer")
   expect_type(res$segment_index, "integer")
-  expect_type(res$segment_type,  "character")
-  expect_type(res$close_figure,  "logical")
+  expect_type(res$segment_type, "character")
+  expect_type(res$close_figure, "logical")
 })
 
 test_that("pdf_extract_paths attaches page_size / rotation / text_runs", {
@@ -25,20 +25,22 @@ test_that("pdf_extract_paths attaches page_size / rotation / text_runs", {
   ps <- attr(res, "page_size")
   expect_type(ps, "double")
   expect_named(ps, c("width", "height"))
-  expect_equal(ps[["width"]],  4 * 72, tolerance = 1e-3)
+  expect_equal(ps[["width"]], 4 * 72, tolerance = 1e-3)
   expect_equal(ps[["height"]], 3 * 72, tolerance = 1e-3)
 
   expect_identical(attr(res, "page_rotation"), 0L)
 
   tr <- attr(res, "text_runs")
   expect_s3_class(tr, "tbl_df")
-  expect_named(tr, c("obj_index", "bounds_left", "bounds_bottom",
-                     "bounds_right", "bounds_top", "font_size", "text",
-                     "font_base_name", "font_family", "font_weight",
-                     "font_italic_angle", "font_is_embedded",
-                     "font_flags"))
+  expect_named(tr, c(
+    "obj_index", "bounds_left", "bounds_bottom",
+    "bounds_right", "bounds_top", "font_size", "text",
+    "font_base_name", "font_family", "font_weight",
+    "font_italic_angle", "font_is_embedded",
+    "font_flags"
+  ))
   expect_equal(nrow(tr), 1L)
-  expect_identical(tr$text[[1]], "Hello")  # populated by pdf_text_content
+  expect_identical(tr$text[[1]], "Hello") # populated by pdf_text_content
   expect_gt(tr$font_size[[1]], 0)
 })
 
@@ -55,18 +57,20 @@ test_that("rectangle path's rows carry the expected style + bbox", {
   expect_false(any(rect$close_figure[-nrow(rect)]))
 
   # Style: red border, lightblue fill (from build-fixtures.R).
-  expect_true(all(rect$stroke_red   == 255))
+  expect_true(all(rect$stroke_red == 255))
   expect_true(all(rect$stroke_green == 0))
-  expect_true(all(rect$stroke_blue  == 0))
-  expect_true(all(rect$fill_red     == 173))
-  expect_true(all(rect$fill_green   == 216))
-  expect_true(all(rect$fill_blue    == 230))
+  expect_true(all(rect$stroke_blue == 0))
+  expect_true(all(rect$fill_red == 173))
+  expect_true(all(rect$fill_green == 216))
+  expect_true(all(rect$fill_blue == 230))
 
   # Stroke width and bbox are constant across the path's rows.
   expect_equal(length(unique(rect$stroke_width)), 1L)
   expect_gt(rect$stroke_width[[1]], 0)
-  for (col in c("bounds_left", "bounds_bottom",
-                "bounds_right", "bounds_top")) {
+  for (col in c(
+    "bounds_left", "bounds_bottom",
+    "bounds_right", "bounds_top"
+  )) {
     expect_equal(length(unique(rect[[col]])), 1L)
   }
 })
@@ -77,7 +81,7 @@ test_that("pdf_extract_paths accepts an already-open pdfium_doc", {
 
   res <- pdf_extract_paths(doc, page_num = 1)
   expect_gt(nrow(res), 0L)
-  expect_true(is_open(doc))  # caller still owns the doc
+  expect_true(is_open(doc)) # caller still owns the doc
 })
 
 test_that("pdf_extract_paths refuses a closed doc", {
@@ -105,7 +109,7 @@ test_that("text_runs row matches the 'Hello' text object on shapes.pdf", {
   tr <- attr(res, "text_runs")
   expect_equal(nrow(tr), 1L)
   expect_true(tr$bounds_right > tr$bounds_left)
-  expect_true(tr$bounds_top   > tr$bounds_bottom)
+  expect_true(tr$bounds_top > tr$bounds_bottom)
   # The Cairo "Hello" text is em-size 1; the CTM does the visual
   # scaling. pdf_text_font_size docs explain this contract.
   expect_equal(tr$font_size, 1, tolerance = 1e-6)

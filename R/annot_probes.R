@@ -50,23 +50,16 @@
 #'   stream.
 #' @export
 pdf_annot_dict_value <- function(page, annotation_index, key,
-                                  page_num = 1L) {
-  if (!is.numeric(annotation_index) ||
-        length(annotation_index) != 1L ||
-        !is.finite(annotation_index) || annotation_index < 1L) {
-    stop("`annotation_index` must be a single positive integer.",
-         call. = FALSE)
-  }
-  if (!is.character(key) || length(key) != 1L || is.na(key) ||
-        !nzchar(key)) {
-    stop("`key` must be a single non-empty character string.",
-         call. = FALSE)
-  }
+                                 page_num = 1L) {
+  validate_positive_int(annotation_index, "annotation_index")
+  validate_nonempty_char(key, "key")
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
-  raw <- cpp_annot_dict_value(ph$page$ptr,
-                               as.integer(annotation_index - 1L),
-                               enc2utf8(key))
+  raw <- cpp_annot_dict_value(
+    ph$page$ptr,
+    as.integer(annotation_index - 1L),
+    enc2utf8(key)
+  )
   vs <- as.character(raw$value_string)
   if (length(vs) == 0L) vs <- NA_character_
   list(
@@ -98,22 +91,21 @@ pdf_annot_dict_value <- function(page, annotation_index, key,
 #' @seealso [pdf_annotations()], [pdf_annot_dict_value()].
 #' @export
 pdf_annot_appearance <- function(page, annotation_index,
-                                  mode = c("normal", "rollover",
-                                           "down"),
-                                  page_num = 1L) {
+                                 mode = c(
+                                   "normal", "rollover",
+                                   "down"
+                                 ),
+                                 page_num = 1L) {
   mode <- match.arg(mode)
-  if (!is.numeric(annotation_index) ||
-        length(annotation_index) != 1L ||
-        !is.finite(annotation_index) || annotation_index < 1L) {
-    stop("`annotation_index` must be a single positive integer.",
-         call. = FALSE)
-  }
+  validate_positive_int(annotation_index, "annotation_index")
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   code <- .pdfium_annot_appearance_modes[[mode]]
-  as.character(cpp_annot_appearance(ph$page$ptr,
-                                     as.integer(annotation_index - 1L),
-                                     as.integer(code)))
+  as.character(cpp_annot_appearance(
+    ph$page$ptr,
+    as.integer(annotation_index - 1L),
+    as.integer(code)
+  ))
 }
 
 #' Hit-test for a link annotation, returning its annotation index
@@ -145,8 +137,10 @@ pdf_link_annot_at_point <- function(page, x, y, page_num = 1L) {
   }
   ph <- as_open_page_pair(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
-  raw <- cpp_link_annot_at_point(ph$page$ptr,
-                                  as.numeric(x), as.numeric(y))
+  raw <- cpp_link_annot_at_point(
+    ph$page$ptr,
+    as.numeric(x), as.numeric(y)
+  )
   list(
     found            = as.logical(raw$found),
     annotation_index = as.integer(raw$annotation_index),
