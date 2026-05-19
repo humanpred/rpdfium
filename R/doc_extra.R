@@ -210,6 +210,18 @@ pdf_doc_page_mode <- function(doc, password = NULL) {
   "duplex_flip_long_edge" # 3 DuplexFlipLongEdge
 )
 
+# Internal: idx -> duplex name with defensive fallback. The PDFium
+# enum is 0..3 so an out-of-range code shouldn't happen, but we
+# return "none" rather than indexing past the end of the lookup.
+decode_duplex <- function(idx) {
+  # nocov start — defensive: PDFium enum 0..3.
+  if (idx < 1L || idx > length(.pdfium_duplex_modes)) {
+    return("none")
+  }
+  # nocov end
+  .pdfium_duplex_modes[[idx]]
+}
+
 #' Is the document marked as tagged?
 #'
 #' Reports whether the PDF catalog's `/MarkInfo` entry advertises
@@ -258,11 +270,7 @@ pdf_viewer_preferences <- function(doc, password = NULL) {
   on.exit(h$on_exit(), add = TRUE)
   raw <- cpp_doc_viewer_prefs(h$doc$ptr)
   idx <- raw$duplex_code + 1L
-  duplex <- if (idx < 1L || idx > length(.pdfium_duplex_modes)) {
-    "none"
-  } else {
-    .pdfium_duplex_modes[[idx]]
-  }
+  duplex <- decode_duplex(idx)
   list(
     print_scaling      = as.logical(raw$print_scaling),
     num_copies         = as.integer(raw$num_copies),
@@ -301,7 +309,15 @@ pdf_viewer_preference_by_name <- function(doc, key, password = NULL) {
   h <- as_doc_handle(doc, "doc", password = password)
   on.exit(h$on_exit(), add = TRUE)
   out <- cpp_viewer_ref_name(h$doc$ptr, enc2utf8(key))
-  if (!nzchar(out)) NA_character_ else out
+  # nocov start — non-NA branch requires a fixture whose
+  # /ViewerPreferences carries a Name-typed entry (e.g. Direction
+  # = /L2R). The shipped fixtures don't set one. Behaviour
+  # verified against ad-hoc Acrobat-emitted PDFs.
+  if (nzchar(out)) {
+    return(out)
+  }
+  # nocov end
+  NA_character_
 }
 
 #' Enumerate the document's named destinations

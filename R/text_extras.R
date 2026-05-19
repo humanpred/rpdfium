@@ -35,9 +35,11 @@ pdf_text_render_mode <- function(obj) {
   check_pdfium_obj(obj, allowed_types = "text")
   code <- cpp_text_render_mode(obj$ptr)
   idx <- code + 1L
+  # nocov start — defensive: PDFium render mode is 0..7.
   if (idx < 1L || idx > length(.pdfium_text_render_modes)) {
     return("unknown")
   }
+  # nocov end
   .pdfium_text_render_modes[[idx]]
 }
 

@@ -136,6 +136,29 @@ test_that("pdf_obj_marks returns an empty tibble for untagged content", {
   }
 })
 
+test_that("pdf_obj_marks surfaces BDC tags on tagged content", {
+  doc <- pdf_open(fixture_path("tagged"))
+  on.exit(pdf_close(doc), add = TRUE)
+  p <- pdf_load_page(doc, 1L)
+  on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
+  objs <- pdf_page_objects(p)
+  expect_gte(length(objs), 1L)
+  marks <- pdf_obj_marks(objs[[1L]])
+  expect_s3_class(marks, "tbl_df")
+  expect_equal(nrow(marks), 1L)
+  expect_equal(marks$name[[1L]], "P")
+  expect_equal(marks$params[[1L]]$MCID, 0L)
+})
+
+test_that("pdf_obj_marked_content_id reads the direct MCID", {
+  doc <- pdf_open(fixture_path("tagged"))
+  on.exit(pdf_close(doc), add = TRUE)
+  p <- pdf_load_page(doc, 1L)
+  on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
+  obj <- pdf_page_objects(p)[[1L]]
+  expect_equal(pdf_obj_marked_content_id(obj), 0L)
+})
+
 test_that("pdf_obj_marks rejects non-objects and closed parents", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)

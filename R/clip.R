@@ -89,9 +89,11 @@ pdf_obj_clip_path <- function(obj) {
   # (it's a pointer to the obj's `m_ClipPath` member, which exists
   # even when empty), so this branch is defensive against future
   # PDFium changes that might start returning NULL.
+  # nocov start
   if (is.null(ptr)) {
     return(NULL)
-  } # nocov
+  }
+  # nocov end
   n <- cpp_clip_path_count_paths(ptr)
   if (n == 0L) {
     return(NULL)

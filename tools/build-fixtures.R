@@ -667,13 +667,19 @@ local({
     out <- file.path(out_dir, "tagged.pdf")
     obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
 
-    # Page content stream: a single tagged span "Hi" emitted via
-    # BDC /MCID 0 ... EMC. We don't include a font; PDFium reads
-    # the structure tree from the catalog regardless of whether the
-    # page content stream actually paints visible glyphs.
+    # Page content stream: a tagged 50x50 stroked rectangle inside
+    # /P <</MCID 0>> BDC ... EMC, so PDFium sees one page object
+    # carrying marked-content ID 0. Used by pdf_obj_marks() /
+    # pdf_obj_marked_content_id() coverage tests.
     page_content <- paste(
+      "q",
       "/P <</MCID 0>> BDC",
+      "0.8 0.2 0.2 RG",
+      "1 w",
+      "50 50 100 100 re",
+      "S",
       "EMC",
+      "Q",
       sep = "\n"
     )
     page_content_bytes <- charToRaw(paste0(page_content, "\n"))

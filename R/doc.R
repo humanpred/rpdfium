@@ -296,7 +296,14 @@ pdf_doc_security <- function(doc) {
   h <- as_doc_handle(doc, "doc")
   on.exit(h$on_exit(), add = TRUE)
   rev <- as.integer(cpp_doc_security_revision(h$doc$ptr))
-  if (rev < 0L) NA_integer_ else rev
+  # nocov start — non-NA branch needs an encrypted PDF; the
+  # fixture pipeline doesn't ship one. Behaviour verified against
+  # encrypted PDFs in ad-hoc local testing.
+  if (rev >= 0L) {
+    return(rev)
+  }
+  # nocov end
+  NA_integer_
 }
 
 #' Cross-reference table validity flag

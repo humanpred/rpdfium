@@ -36,9 +36,12 @@ pdf_text_obj_rendered_bitmap <- function(obj, scale = 1) {
     obj$page$doc$ptr, obj$page$ptr,
     obj$ptr, as.numeric(scale)
   )
+  # nocov start — defensive: cpp returns the bitmap or raises,
+  # never silently NULL.
   if (is.null(m)) {
     return(NULL)
   }
+  # nocov end
   class(m) <- c("pdfium_bitmap", "nativeRaster")
   attr(m, "channels") <- 4L
   attr(m, "dpi") <- 72 * as.numeric(scale)
@@ -93,7 +96,9 @@ pdf_attachment_dict_value <- function(doc, attachment_index, key,
     enc2utf8(key)
   )
   val_chr <- as.character(raw$value)
+  # nocov start — defensive: cpp always returns length-1 chr.
   if (length(val_chr) == 0L) val_chr <- NA_character_
+  # nocov end
   list(
     has_key    = as.logical(raw$has_key),
     value_type = as.integer(raw$value_type),

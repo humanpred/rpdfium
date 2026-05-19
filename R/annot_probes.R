@@ -61,7 +61,9 @@ pdf_annot_dict_value <- function(page, annotation_index, key,
     enc2utf8(key)
   )
   vs <- as.character(raw$value_string)
+  # nocov start — defensive: cpp always returns a length-1 chr.
   if (length(vs) == 0L) vs <- NA_character_
+  # nocov end
   list(
     has_key      = as.logical(raw$has_key),
     value_type   = as.integer(raw$value_type),

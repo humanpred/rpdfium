@@ -66,6 +66,26 @@ test_that("pdf_link_annot_at_point returns found=FALSE when miss", {
   expect_true(is.na(out$annotation_index))
 })
 
+test_that("pdf_link_annot_at_point validates x and y", {
+  doc <- pdf_open(fixture_path("annotated"))
+  on.exit(pdf_close(doc), add = TRUE)
+  expect_error(pdf_link_annot_at_point(doc, NA, 10), "finite numeric")
+  expect_error(pdf_link_annot_at_point(doc, 10, NA), "finite numeric")
+  expect_error(pdf_link_annot_at_point(doc, "100", 10),
+               "finite numeric")
+  expect_error(pdf_link_annot_at_point(doc, 10, c(1, 2)),
+               "finite numeric")
+})
+
+test_that("pdf_annot_appearance validates inputs", {
+  doc <- pdf_open(fixture_path("annotated"))
+  on.exit(pdf_close(doc), add = TRUE)
+  expect_error(pdf_annot_appearance(doc, 0L), "positive integer")
+  expect_error(pdf_annot_appearance(doc, NA), "positive integer")
+  expect_error(pdf_annot_appearance(doc, 1L, mode = "bogus"),
+               "should be one of")
+})
+
 test_that("pdf_obj_marked_content_id returns NA for untagged content", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)

@@ -82,6 +82,24 @@ test_that("pdf_text_font_metrics returns ascent + descent", {
   expect_gt(m$ascent - m$descent, 12)
 })
 
+test_that("pdf_glyph_width validates obj type, glyph_code, font_size", {
+  bundle <- helper_text_obj()
+  on.exit(pdf_close(bundle$doc), add = TRUE)
+  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  expect_error(pdf_glyph_width("nope", 0x48L),
+               "must be a `pdfium_obj`")
+  expect_error(pdf_glyph_width(bundle$obj, -1L),
+               "non-negative integer")
+  expect_error(pdf_glyph_width(bundle$obj, NA),
+               "non-negative integer")
+  expect_error(pdf_glyph_width(bundle$obj, c(1L, 2L)),
+               "non-negative integer")
+  expect_error(pdf_glyph_width(bundle$obj, 0x48L, font_size = "12"),
+               "single numeric")
+  expect_error(pdf_glyph_width(bundle$obj, 0x48L, font_size = c(1, 2)),
+               "single numeric")
+})
+
 test_that("pdf_text_font_metrics validates font_size", {
   bundle <- helper_text_obj()
   on.exit(pdf_close(bundle$doc), add = TRUE)

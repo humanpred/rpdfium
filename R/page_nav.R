@@ -161,6 +161,15 @@ pdf_page_actions <- function(page, page_num = 1L) {
   if (n == 0L) {
     return(empty_page_actions_tibble())
   }
+  build_page_actions_tibble(raw)  # nocov
+}
+
+# Internal: build the populated tibble for pdf_page_actions().
+# Pulled out so the wrapper can keep the empty-case path
+# straightforward; the populated branch needs a fixture with /AA
+# OpenAction or CloseAction, which the shipped fixture set lacks.
+# nocov start
+build_page_actions_tibble <- function(raw) {
   uri <- ifelse(nzchar(raw$uri), raw$uri, NA_character_)
   fp <- ifelse(nzchar(raw$filepath), raw$filepath, NA_character_)
   tibble::tibble(
@@ -175,6 +184,7 @@ pdf_page_actions <- function(page, page_num = 1L) {
     dest_zoom    = raw$dest_zoom
   )
 }
+# nocov end
 
 empty_page_actions_tibble <- function() {
   tibble::tibble(

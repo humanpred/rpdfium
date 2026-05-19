@@ -111,6 +111,11 @@ test_that("pdf_page_size refuses closed handles and bad inputs", {
   pdf_close_page(page)
   expect_error(pdf_page_size(page), "Page has been closed")
   expect_error(pdf_page_size(42), "must be a `pdfium_page` or `pdfium_doc`")
+
+  doc2 <- pdf_open(pdf)
+  pdf_close(doc2)
+  expect_error(pdf_page_size(doc2, 1L),
+               "Document has been closed")
 })
 
 test_that("pdf_page_rotation returns 0/90/180/270 from a page or a doc", {

@@ -311,6 +311,32 @@ test_that("pdf_render_page_with_matrix validates inputs", {
     ),
     "length-4 numeric"
   )
+  # matrix() shape coercion paths.
+  expect_silent({
+    bmp <- pdf_render_page_with_matrix(doc,
+      matrix(c(1, 0, 0, 1, 0, 0), nrow = 3, ncol = 2, byrow = TRUE),
+      pixel_width = 50, pixel_height = 50
+    )
+    expect_s3_class(bmp, "pdfium_bitmap")
+  })
+  expect_error(
+    pdf_render_page_with_matrix(doc, matrix(0, nrow = 4, ncol = 4),
+      pixel_width = 50, pixel_height = 50
+    ),
+    "3x2, 2x3, or a length-6 vector"
+  )
+  expect_error(
+    pdf_render_page_with_matrix(doc, "not numeric",
+      pixel_width = 50, pixel_height = 50
+    ),
+    "length-6 finite numeric"
+  )
+  expect_error(
+    pdf_render_page_with_matrix(doc, c(1, 0, 0, 1, 0, 0),
+      pixel_width = c(50, 60), pixel_height = 50
+    ),
+    "positive integer"
+  )
 })
 
 test_that("pdf_render_to_png() validates file argument", {
