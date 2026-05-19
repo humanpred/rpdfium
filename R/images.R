@@ -220,3 +220,24 @@ pdf_image_filters <- function(obj) {
   check_image_obj(obj)
   cpp_image_filters(obj$ptr)
 }
+
+#' Decoded ICC color profile bytes for an embedded image
+#'
+#' Returns the raw bytes of the ICC color profile attached to the
+#' image's colour space, if any. Useful for callers that need to
+#' reproduce the colour rendering exactly (e.g. when re-encoding the
+#' image outside PDFium). Wraps
+#' `FPDFImageObj_GetIccProfileDataDecoded`.
+#'
+#' Most embedded images carry no ICC profile — they use a standard
+#' colour space (`/DeviceRGB`, `/DeviceGray`, etc.). This function
+#' returns `raw(0)` in that common case.
+#'
+#' @param obj A `pdfium_obj` of type `"image"`.
+#' @return A `raw` vector. Length zero when the image has no ICC
+#'   profile.
+#' @export
+pdf_image_icc_profile <- function(obj) {
+  check_image_obj(obj)
+  cpp_image_icc_profile(obj$ptr, obj$page$ptr)
+}

@@ -206,6 +206,27 @@ Rcpp::RawVector cpp_image_data(SEXP obj_ptr, bool decoded) {
   return out;
 }
 
+// [[Rcpp::export(name = "cpp_image_icc_profile")]]
+Rcpp::RawVector cpp_image_icc_profile(SEXP obj_ptr, SEXP page_ptr) {
+  FPDF_PAGEOBJECT obj = obj_from_ptr(obj_ptr);
+  if (TYPEOF(page_ptr) != EXTPTRSXP) {
+    Rcpp::stop("Expected an external pointer for the page.");
+  }
+  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
+  // Two-pass byte protocol. The first call (NULL buffer) populates
+  // `need` with the actual size required, returning FALSE.
+  size_t need = 0;
+  FPDFImageObj_GetIccProfileDataDecoded(obj, page, nullptr, 0, &need);
+  if (need == 0) return Rcpp::RawVector(0);
+  Rcpp::RawVector out(static_cast<R_xlen_t>(need));
+  size_t got = 0;
+  if (!FPDFImageObj_GetIccProfileDataDecoded(obj, page, &out[0], need,
+                                              &got)) {
+    return Rcpp::RawVector(0);
+  }
+  return out;
+}
+
 // [[Rcpp::export(name = "cpp_image_filters")]]
 Rcpp::CharacterVector cpp_image_filters(SEXP obj_ptr) {
   FPDF_PAGEOBJECT obj = obj_from_ptr(obj_ptr);

@@ -65,6 +65,10 @@ cpp_doc_viewer_prefs <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_viewer_prefs`, doc_ptr)
 }
 
+cpp_viewer_ref_name <- function(doc_ptr, key) {
+    .Call(`_pdfium_cpp_viewer_ref_name`, doc_ptr, key)
+}
+
 cpp_doc_named_dests <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_named_dests`, doc_ptr)
 }
@@ -135,6 +139,10 @@ cpp_image_get_rendered_bitmap <- function(doc_ptr, page_ptr, obj_ptr) {
 
 cpp_image_data <- function(obj_ptr, decoded) {
     .Call(`_pdfium_cpp_image_data`, obj_ptr, decoded)
+}
+
+cpp_image_icc_profile <- function(obj_ptr, page_ptr) {
+    .Call(`_pdfium_cpp_image_icc_profile`, obj_ptr, page_ptr)
 }
 
 cpp_image_filters <- function(obj_ptr) {

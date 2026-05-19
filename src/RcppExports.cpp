@@ -192,6 +192,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_viewer_ref_name
+std::string cpp_viewer_ref_name(SEXP doc_ptr, std::string key);
+RcppExport SEXP _pdfium_cpp_viewer_ref_name(SEXP doc_ptrSEXP, SEXP keySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type key(keySEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_viewer_ref_name(doc_ptr, key));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_doc_named_dests
 Rcpp::List cpp_doc_named_dests(SEXP doc_ptr);
 RcppExport SEXP _pdfium_cpp_doc_named_dests(SEXP doc_ptrSEXP) {
@@ -395,6 +407,18 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
     Rcpp::traits::input_parameter< bool >::type decoded(decodedSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_image_data(obj_ptr, decoded));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_image_icc_profile
+Rcpp::RawVector cpp_image_icc_profile(SEXP obj_ptr, SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_image_icc_profile(SEXP obj_ptrSEXP, SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_image_icc_profile(obj_ptr, page_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1092,6 +1116,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_doc_page_mode", (DL_FUNC) &_pdfium_cpp_doc_page_mode, 1},
     {"_pdfium_cpp_doc_is_tagged", (DL_FUNC) &_pdfium_cpp_doc_is_tagged, 1},
     {"_pdfium_cpp_doc_viewer_prefs", (DL_FUNC) &_pdfium_cpp_doc_viewer_prefs, 1},
+    {"_pdfium_cpp_viewer_ref_name", (DL_FUNC) &_pdfium_cpp_viewer_ref_name, 2},
     {"_pdfium_cpp_doc_named_dests", (DL_FUNC) &_pdfium_cpp_doc_named_dests, 1},
     {"_pdfium_cpp_doc_javascript", (DL_FUNC) &_pdfium_cpp_doc_javascript, 1},
     {"_pdfium_cpp_doc_security_revision", (DL_FUNC) &_pdfium_cpp_doc_security_revision, 1},
@@ -1110,6 +1135,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_image_get_bitmap", (DL_FUNC) &_pdfium_cpp_image_get_bitmap, 1},
     {"_pdfium_cpp_image_get_rendered_bitmap", (DL_FUNC) &_pdfium_cpp_image_get_rendered_bitmap, 3},
     {"_pdfium_cpp_image_data", (DL_FUNC) &_pdfium_cpp_image_data, 2},
+    {"_pdfium_cpp_image_icc_profile", (DL_FUNC) &_pdfium_cpp_image_icc_profile, 2},
     {"_pdfium_cpp_image_filters", (DL_FUNC) &_pdfium_cpp_image_filters, 1},
     {"_pdfium_cpp_init_library", (DL_FUNC) &_pdfium_cpp_init_library, 0},
     {"_pdfium_cpp_destroy_library", (DL_FUNC) &_pdfium_cpp_destroy_library, 0},

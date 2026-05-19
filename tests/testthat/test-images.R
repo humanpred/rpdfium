@@ -128,6 +128,17 @@ test_that("pdf_image_filters reports the Flate filter chain", {
   expect_identical(filters, "FlateDecode")
 })
 
+test_that("pdf_image_icc_profile returns raw(0) when no ICC profile is set", {
+  doc <- pdf_open(fixture_path("image"))
+  on.exit(pdf_close(doc), add = TRUE)
+  bundle <- image_obj(doc)
+  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+
+  out <- pdf_image_icc_profile(bundle$obj)
+  expect_type(out, "raw")
+  expect_equal(length(out), 0L)
+})
+
 test_that("image accessors reject non-image objects", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)

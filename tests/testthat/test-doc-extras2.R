@@ -85,3 +85,16 @@ test_that("pdf_doc_javascript accepts doc or path", {
   expect_identical(pdf_doc_javascript(doc),
                    pdf_doc_javascript(fixture_path("outline")))
 })
+
+test_that("pdf_viewer_preference_by_name returns NA when key absent", {
+  expect_true(is.na(
+    pdf_viewer_preference_by_name(fixture_path("shapes"), "Direction")))
+})
+
+test_that("pdf_viewer_preference_by_name validates key", {
+  expect_error(pdf_viewer_preference_by_name(fixture_path("shapes"), ""),
+               "non-empty character")
+  expect_error(pdf_viewer_preference_by_name(fixture_path("shapes"),
+                                              NA_character_),
+               "non-empty character")
+})

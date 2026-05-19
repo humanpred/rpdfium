@@ -264,6 +264,38 @@ pdf_viewer_preferences <- function(doc, password = NULL) {
   )
 }
 
+#' Look up a `/ViewerPreferences` name-typed entry by key
+#'
+#' PDFium's structured [pdf_viewer_preferences()] surfaces the
+#' commonly-used entries (print scaling, copies, duplex, page
+#' ranges). For other keys whose value is a `/Name` (e.g. `Direction`
+#' = `"L2R"`/`"R2L"`, `ViewArea` = `"MediaBox"`/`"CropBox"`, or
+#' arbitrary author-defined entries), use this by-key lookup.
+#' Wraps `FPDF_VIEWERREF_GetName`.
+#'
+#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param key The viewer-preferences dictionary key as a single
+#'   non-empty character string (ASCII PDF name, e.g.
+#'   `"Direction"`).
+#' @param password Optional password for encrypted PDFs when `doc`
+#'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
+#' @return Character scalar — the entry's name value (without the
+#'   leading slash), or `NA_character_` when the key is absent or
+#'   the value is not a `/Name`.
+#' @seealso [pdf_viewer_preferences()].
+#' @export
+pdf_viewer_preference_by_name <- function(doc, key, password = NULL) {
+  if (!is.character(key) || length(key) != 1L || is.na(key) ||
+        !nzchar(key)) {
+    stop("`key` must be a single non-empty character string.",
+         call. = FALSE)
+  }
+  h <- as_doc_handle(doc, "doc", password = password)
+  on.exit(h$on_exit(), add = TRUE)
+  out <- cpp_viewer_ref_name(h$doc$ptr, enc2utf8(key))
+  if (!nzchar(out)) NA_character_ else out
+}
+
 #' Enumerate the document's named destinations
 #'
 #' PDF authors can attach named "destinations" to specific page

@@ -116,6 +116,22 @@ Rcpp::List cpp_doc_viewer_prefs(SEXP doc_ptr) {
 // destination page index (which the R side bumps to 1-based).
 // Returns parallel vectors: $name (character), $page_index_zero
 // (integer; will become $page on the R side).
+// FPDF_VIEWERREF_GetName reads the value of a /ViewerPreferences
+// entry whose value is a name (e.g. /Direction = "L2R", /PageMode
+// = "UseNone"). Used by pdf_viewer_preference_by_name() for ad-hoc
+// lookups against keys pdf_viewer_preferences() doesn't surface.
+// [[Rcpp::export(name = "cpp_viewer_ref_name")]]
+std::string cpp_viewer_ref_name(SEXP doc_ptr, std::string key) {
+  FPDF_DOCUMENT doc = doc_from_ptr(doc_ptr);
+  unsigned long needed =
+      FPDF_VIEWERREF_GetName(doc, key.c_str(), nullptr, 0);
+  if (needed <= 1) return std::string();
+  std::vector<char> buf(needed);
+  FPDF_VIEWERREF_GetName(doc, key.c_str(), buf.data(), needed);
+  // Strip trailing NUL.
+  return std::string(buf.data(), needed - 1);
+}
+
 // [[Rcpp::export(name = "cpp_doc_named_dests")]]
 Rcpp::List cpp_doc_named_dests(SEXP doc_ptr) {
   FPDF_DOCUMENT doc = doc_from_ptr(doc_ptr);
