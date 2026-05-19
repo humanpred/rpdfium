@@ -32,6 +32,10 @@ file), or \code{"unsupported"}.
 \code{"embedded_goto"}; \code{NA} otherwise.
 \item \code{dest_page_num} integer - 1-based destination page within
 the current (or remote) document; \code{NA} when not resolvable.
+\item \code{quad_points} list-column - per-line quad sets for multi-line
+links. An N-by-8 numeric matrix with columns \verb{x1, y1, x2, y2, x3, y3, x4, y4} in PDF user space (one row per line),
+or \code{NULL} for links that carry no \verb{/QuadPoints} (single-rect
+links). Same shape as \code{pdf_annotations()$quad_points}.
 }
 
 Returns a 0-row tibble of the same schema when the page has no

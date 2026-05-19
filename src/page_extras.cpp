@@ -90,6 +90,7 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
   std::vector<std::string> uri;
   std::vector<std::string> filepath;
   std::vector<int>    dest_page;
+  Rcpp::List          quad_points;
 
   // FPDFLink_Enumerate iterates link annotations on the page. The
   // start_pos argument is an int in-out cursor PDFium updates.
@@ -128,6 +129,37 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
     uri.emplace_back(uri_text);
     filepath.emplace_back(fp_text);
     dest_page.push_back(dest_idx < 0 ? NA_INTEGER : dest_idx + 1);
+    // Per-line quad points for multi-line links (the same shape as
+    // FPDFAnnot_GetAttachmentPoints uses for highlights). Single-
+    // line links produce a 1-row 8-column matrix; absent quads
+    // come back as R NULL.
+    int n_quads = FPDFLink_CountQuadPoints(link);
+    if (n_quads <= 0) {
+      quad_points.push_back(R_NilValue);
+    } else {
+      Rcpp::NumericMatrix m(n_quads, 8);
+      bool any = false;
+      for (int qi = 0; qi < n_quads; ++qi) {
+        FS_QUADPOINTSF q;
+        if (FPDFLink_GetQuadPoints(link, qi, &q)) {
+          m(qi, 0) = q.x1; m(qi, 1) = q.y1;
+          m(qi, 2) = q.x2; m(qi, 3) = q.y2;
+          m(qi, 4) = q.x3; m(qi, 5) = q.y3;
+          m(qi, 6) = q.x4; m(qi, 7) = q.y4;
+          any = true;
+        } else {
+          for (int k = 0; k < 8; ++k) m(qi, k) = NA_REAL;
+        }
+      }
+      if (any) {
+        Rcpp::CharacterVector cn = {"x1", "y1", "x2", "y2",
+                                      "x3", "y3", "x4", "y4"};
+        Rcpp::colnames(m) = cn;
+        quad_points.push_back(m);
+      } else {
+        quad_points.push_back(R_NilValue);
+      }
+    }
   }
   return Rcpp::List::create(
       Rcpp::_["bounds_left"]   = left,
@@ -137,7 +169,8 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
       Rcpp::_["action_code"]   = action_code,
       Rcpp::_["uri"]           = uri,
       Rcpp::_["filepath"]      = filepath,
-      Rcpp::_["dest_page_num"] = dest_page);
+      Rcpp::_["dest_page_num"] = dest_page,
+      Rcpp::_["quad_points"]   = quad_points);
 }
 
 // [[Rcpp::export(name = "cpp_page_text_chars")]]
