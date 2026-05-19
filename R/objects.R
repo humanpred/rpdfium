@@ -195,6 +195,8 @@ pdfium_obj_type_name <- function(code) {
 # from a doc, the returned page carries a `.close_on_exit = TRUE`
 # attribute so the caller can close it on exit.
 as_open_page <- function(x, page_num = 1L) {
+  # `x` is the user-visible `page` argument in every public caller;
+  # surface that name in the assertion message.
   checkmate::assert_multi_class(
     x, c("pdfium_page", "pdfium_doc"),
     .var.name = "page"

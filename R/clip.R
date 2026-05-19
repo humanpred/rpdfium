@@ -8,8 +8,8 @@
 # pdfium_page on the R-side wrapper too so format/print can show
 # the containment chain.
 new_pdfium_clip_path <- function(ptr, page, source_obj_index, n_paths) {
-  checkmate::assert_class(ptr, "externalptr", .var.name = "ptr")
-  checkmate::assert_class(page, "pdfium_page", .var.name = "page")
+  checkmate::assert_class(ptr, "externalptr")
+  checkmate::assert_class(page, "pdfium_page")
   checkmate::assert_number(source_obj_index)
   checkmate::assert_number(n_paths)
   structure(
@@ -99,9 +99,7 @@ pdf_obj_clip_path <- function(obj) {
 #' @return Integer scalar.
 #' @export
 pdf_clip_path_count <- function(clip_path) {
-  checkmate::assert_class(clip_path, "pdfium_clip_path",
-    .var.name = "clip_path"
-  )
+  checkmate::assert_class(clip_path, "pdfium_clip_path")
   if (!is_open(clip_path$page)) {
     stop("Parent page has been closed; the clip path is no longer valid.",
       call. = FALSE
@@ -137,9 +135,7 @@ pdf_clip_path_count <- function(clip_path) {
 #'   regular page object's path.
 #' @export
 pdf_clip_path_segments <- function(clip_path) {
-  checkmate::assert_class(clip_path, "pdfium_clip_path",
-    .var.name = "clip_path"
-  )
+  checkmate::assert_class(clip_path, "pdfium_clip_path")
   if (!is_open(clip_path$page)) {
     stop("Parent page has been closed; the clip path is no longer valid.",
       call. = FALSE

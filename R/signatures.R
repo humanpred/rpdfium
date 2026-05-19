@@ -48,7 +48,7 @@
 #'   ranges, [pdf_parse_date()] for parsing the `time` column.
 #' @export
 pdf_signatures <- function(doc) {
-  h <- as_doc_handle(doc, "doc")
+  h <- as_doc_handle(doc)
   on.exit(h$on_exit(), add = TRUE)
   raw <- cpp_signatures_list(h$doc$ptr)
   tibble::tibble(
@@ -80,7 +80,7 @@ pdf_signatures <- function(doc) {
 #' @export
 pdf_signature_contents <- function(doc, signature_index = 1L) {
   checkmate::assert_count(signature_index, positive = TRUE)
-  h <- as_doc_handle(doc, "doc")
+  h <- as_doc_handle(doc)
   on.exit(h$on_exit(), add = TRUE)
   cpp_signature_contents(h$doc$ptr, as.integer(signature_index) - 1L)
 }
@@ -105,7 +105,7 @@ pdf_signature_contents <- function(doc, signature_index = 1L) {
 #' @export
 pdf_signature_byte_range <- function(doc, signature_index = 1L) {
   checkmate::assert_count(signature_index, positive = TRUE)
-  h <- as_doc_handle(doc, "doc")
+  h <- as_doc_handle(doc)
   on.exit(h$on_exit(), add = TRUE)
   cpp_signature_byte_range(h$doc$ptr, as.integer(signature_index) - 1L)
 }

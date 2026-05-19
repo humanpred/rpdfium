@@ -9,23 +9,6 @@
 # convenience for one-shot inspection: the doc is opened, the
 # accessor runs, and the doc is closed before returning.
 
-# Internal: accept either an open pdfium_doc or a character path,
-# return a (doc, on_exit) pair where `on_exit` is a closure the
-# caller invokes when finished. Centralises the path-or-doc
-# pattern used by pdf_page_count(), pdf_doc_info(), and the three
-# accessors below.
-as_doc_handle <- function(x, arg = "doc") {
-  if (is.character(x)) {
-    doc <- pdf_open(x)
-    return(list(doc = doc, on_exit = function() pdf_close(doc)))
-  }
-  checkmate::assert_class(x, "pdfium_doc", .var.name = arg)
-  if (!is_open(x)) {
-    stop("Document has been closed.", call. = FALSE)
-  }
-  list(doc = x, on_exit = function() invisible(NULL))
-}
-
 #' Read the bookmark outline (table of contents) of a PDF
 #'
 #' Returns a tibble row per bookmark, walking PDFium's outline tree
@@ -84,7 +67,7 @@ as_doc_handle <- function(x, arg = "doc") {
 #' if (nzchar(fixture)) pdf_bookmarks(fixture)
 #' @export
 pdf_bookmarks <- function(doc) {
-  h <- as_doc_handle(doc, "doc")
+  h <- as_doc_handle(doc)
   on.exit(h$on_exit(), add = TRUE)
   raw <- cpp_bookmarks(h$doc$ptr)
   page_num <- raw$page_num
@@ -136,7 +119,7 @@ pdf_bookmarks <- function(doc) {
 #' @export
 pdf_page_label <- function(doc, page_num = 1L) {
   checkmate::assert_count(page_num, positive = TRUE)
-  h <- as_doc_handle(doc, "doc")
+  h <- as_doc_handle(doc)
   on.exit(h$on_exit(), add = TRUE)
   cpp_page_label(h$doc$ptr, as.integer(page_num) - 1L)
 }
@@ -157,7 +140,7 @@ pdf_page_label <- function(doc, page_num = 1L) {
 #' if (nzchar(fixture)) pdf_page_labels(fixture)
 #' @export
 pdf_page_labels <- function(doc) {
-  h <- as_doc_handle(doc, "doc")
+  h <- as_doc_handle(doc)
   on.exit(h$on_exit(), add = TRUE)
   n <- cpp_page_count(h$doc$ptr)
   vapply(
@@ -215,7 +198,7 @@ pdf_page_labels <- function(doc) {
 #' @return A named logical vector with the eight flags listed above.
 #' @export
 pdf_doc_permissions <- function(doc) {
-  h <- as_doc_handle(doc, "doc")
+  h <- as_doc_handle(doc)
   on.exit(h$on_exit(), add = TRUE)
   # cpp_doc_permissions returns the raw unsigned 32-bit mask as a
   # double (R's integer cannot hold 0xFFFFFFFF). All documented
@@ -255,7 +238,7 @@ decode_perm_mask <- function(mask) {
 #' @seealso [pdf_doc_permissions()], [pdf_doc_security()].
 #' @export
 pdf_doc_user_permissions <- function(doc) {
-  h <- as_doc_handle(doc, "doc")
+  h <- as_doc_handle(doc)
   on.exit(h$on_exit(), add = TRUE)
   decode_perm_mask(cpp_doc_user_permissions(h$doc$ptr))
 }
@@ -282,7 +265,7 @@ pdf_doc_user_permissions <- function(doc) {
 #' @seealso [pdf_doc_permissions()], [pdf_doc_user_permissions()].
 #' @export
 pdf_doc_security <- function(doc) {
-  h <- as_doc_handle(doc, "doc")
+  h <- as_doc_handle(doc)
   on.exit(h$on_exit(), add = TRUE)
   rev <- as.integer(cpp_doc_security_revision(h$doc$ptr))
   # nocov start — non-NA branch needs an encrypted PDF; the
@@ -306,7 +289,7 @@ pdf_doc_security <- function(doc) {
 #' @return Logical scalar.
 #' @export
 pdf_doc_xref_valid <- function(doc) {
-  h <- as_doc_handle(doc, "doc")
+  h <- as_doc_handle(doc)
   on.exit(h$on_exit(), add = TRUE)
   as.logical(cpp_doc_xref_valid(h$doc$ptr))
 }
@@ -328,7 +311,7 @@ pdf_doc_xref_valid <- function(doc) {
 #'   2 GB).
 #' @export
 pdf_doc_trailer_ends <- function(doc) {
-  h <- as_doc_handle(doc, "doc")
+  h <- as_doc_handle(doc)
   on.exit(h$on_exit(), add = TRUE)
   cpp_doc_trailer_ends(h$doc$ptr)
 }

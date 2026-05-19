@@ -86,7 +86,7 @@ pdf_attachment_dict_value <- function(doc, attachment_index, key,
                                       password = NULL) {
   checkmate::assert_count(attachment_index, positive = TRUE)
   checkmate::assert_string(key, min.chars = 1L)
-  h <- as_doc_handle(doc, "doc", password = password)
+  h <- as_doc_handle(doc, password = password)
   on.exit(h$on_exit(), add = TRUE)
   raw <- cpp_attachment_dict_value(
     h$doc$ptr,

@@ -42,21 +42,6 @@
   "redact" # 28 FPDF_ANNOT_REDACT
 )
 
-# Internal helper: doc-or-path (defined locally per PR-stacking
-# convention; rebase against phase-6-tier2-cleanup will replace
-# this with the canonical helper from R/doc.R).
-as_doc_handle <- function(x, arg = "doc") {
-  if (is.character(x)) {
-    doc <- pdf_open(x)
-    return(list(doc = doc, on_exit = function() pdf_close(doc)))
-  }
-  checkmate::assert_class(x, "pdfium_doc", .var.name = arg)
-  if (!is_open(x)) {
-    stop("Document has been closed.", call. = FALSE)
-  }
-  list(doc = x, on_exit = function() invisible(NULL))
-}
-
 # PDF Annotation flag bit positions (PDF spec 12.5.3, Table 165).
 # Indexed by name; value is the 1-based bit position. The decoded
 # columns surface the six bits that matter to the typical "read
@@ -173,7 +158,7 @@ annot_flag_decode <- function(flags, bit) {
 #' @seealso [pdf_form_fields()] for AcroForm-specific accessors.
 #' @export
 pdf_annotations <- function(page, page_num = 1L) {
-  page_h <- as_open_annot_page(page, page_num)
+  page_h <- as_open_page_pair(page, page_num)
   on.exit(if (page_h$close_on_exit) pdf_close_page(page_h$page),
     add = TRUE
   )
@@ -239,23 +224,4 @@ annotation_subtype_name <- function(codes) {
     codes < length(.pdfium_annot_subtypes)
   out[ok] <- .pdfium_annot_subtypes[codes[ok] + 1L]
   out
-}
-
-# Internal: accept either an open pdfium_page or a pdfium_doc (in
-# which case load `page_num`). Returns (page, close_on_exit) so
-# the caller can decide whether to free.
-as_open_annot_page <- function(page, page_num) {
-  checkmate::assert_multi_class(
-    page, c("pdfium_page", "pdfium_doc"),
-    .var.name = "page"
-  )
-  if (inherits(page, "pdfium_page")) {
-    if (!is_open(page)) {
-      stop("Page has been closed.", call. = FALSE)
-    }
-    return(list(page = page, close_on_exit = FALSE))
-  }
-  # `page` is a pdfium_doc — load `page_num` and arrange for close.
-  p <- pdf_load_page(page, page_num)
-  list(page = p, close_on_exit = TRUE)
 }

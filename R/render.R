@@ -211,10 +211,7 @@ validate_clip_rect <- function(clip_rect) {
   if (is.null(clip_rect)) {
     return(numeric(0))
   }
-  checkmate::assert_numeric(clip_rect,
-    len = 4L,
-    .var.name = "clip_rect"
-  )
+  checkmate::assert_numeric(clip_rect, len = 4L)
   as.numeric(clip_rect)
 }
 

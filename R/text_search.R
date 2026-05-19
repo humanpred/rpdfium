@@ -71,7 +71,7 @@ pdf_text_search <- function(doc, query,
                             password = NULL) {
   validate_text_search_args(query, case_sensitive, whole_word, consecutive)
 
-  h <- as_doc_handle(doc, "doc", password = password)
+  h <- as_doc_handle(doc, password = password)
   on.exit(h$on_exit(), add = TRUE)
 
   n <- cpp_page_count(h$doc$ptr)

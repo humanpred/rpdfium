@@ -126,7 +126,7 @@ form_field_flag_decode <- function(flags, bit) {
 #'   highlights, ink, etc.
 #' @export
 pdf_form_fields <- function(doc) {
-  h <- as_doc_handle(doc, "doc")
+  h <- as_doc_handle(doc)
   on.exit(h$on_exit(), add = TRUE)
   raw <- cpp_form_fields_list(h$doc$ptr)
   type_name <- form_field_type_name(raw$field_type)

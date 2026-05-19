@@ -186,7 +186,7 @@ pdf_obj_marked_content_id <- function(obj) {
 #'   names).
 #' @export
 pdf_doc_focusable_subtypes <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, "doc", password = password)
+  h <- as_doc_handle(doc, password = password)
   on.exit(h$on_exit(), add = TRUE)
   codes <- cpp_doc_focusable_subtypes(h$doc$ptr)
   annotation_subtype_name(codes)

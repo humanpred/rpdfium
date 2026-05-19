@@ -9,7 +9,7 @@
 #' @keywords internal
 #' @noRd
 new_pdfium_doc <- function(ptr, path) {
-  checkmate::assert_class(ptr, "externalptr", .var.name = "ptr")
+  checkmate::assert_class(ptr, "externalptr")
   checkmate::assert_string(path)
   structure(
     list(ptr = ptr, path = path),
@@ -33,7 +33,7 @@ is_open <- function(x) {
   if (inherits(x, "pdfium_obj")) {
     return(is_open(x$page))
   }
-  checkmate::assert_class(x, "pdfium_handle", .var.name = "x")
+  checkmate::assert_class(x, "pdfium_handle")
   cpp_handle_is_valid(x$ptr)
 }
 
@@ -63,8 +63,8 @@ print.pdfium_doc <- function(x, ...) {
 #' @keywords internal
 #' @noRd
 new_pdfium_page <- function(ptr, doc, index) {
-  checkmate::assert_class(ptr, "externalptr", .var.name = "ptr")
-  checkmate::assert_class(doc, "pdfium_doc", .var.name = "doc")
+  checkmate::assert_class(ptr, "externalptr")
+  checkmate::assert_class(doc, "pdfium_doc")
   checkmate::assert_number(index)
   structure(
     list(ptr = ptr, doc = doc, index = as.integer(index)),
@@ -126,13 +126,11 @@ print.pdfium_page <- function(x, ...) {
 #' @keywords internal
 #' @noRd
 new_pdfium_obj <- function(ptr, page, index, type, parent_form = NULL) {
-  checkmate::assert_class(ptr, "externalptr", .var.name = "ptr")
-  checkmate::assert_class(page, "pdfium_page", .var.name = "page")
+  checkmate::assert_class(ptr, "externalptr")
+  checkmate::assert_class(page, "pdfium_page")
   checkmate::assert_number(index)
   checkmate::assert_string(type)
-  checkmate::assert_class(parent_form, "pdfium_obj",
-    null.ok = TRUE, .var.name = "parent_form"
-  )
+  checkmate::assert_class(parent_form, "pdfium_obj", null.ok = TRUE)
   structure(
     list(
       ptr = ptr, page = page, index = as.integer(index), type = type,

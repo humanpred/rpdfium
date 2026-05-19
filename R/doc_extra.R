@@ -3,23 +3,6 @@
 # doc-level functions, and surfaces a single PDFium fact about
 # the document.
 
-# Internal: doc-or-path handle helper. Same shape as the helpers
-# defined in the open PR branches that ship attachment / signature
-# / annotation accessors. Duplicated locally per the PR-stacking
-# convention used while those PRs are in review; the rebase will
-# fold every copy into a single canonical helper.
-as_doc_handle <- function(x, arg = "doc", password = NULL) {
-  if (is.character(x)) {
-    doc <- pdf_open(x, password = password)
-    return(list(doc = doc, on_exit = function() pdf_close(doc)))
-  }
-  checkmate::assert_class(x, "pdfium_doc", .var.name = arg)
-  if (!is_open(x)) {
-    stop("Document has been closed.", call. = FALSE)
-  }
-  list(doc = x, on_exit = function() invisible(NULL))
-}
-
 #' Read every page's text in one call
 #'
 #' Convenience wrapper that returns the document's text content
@@ -45,7 +28,7 @@ as_doc_handle <- function(x, arg = "doc", password = NULL) {
 #' if (nzchar(fixture)) pdf_text(fixture)
 #' @export
 pdf_text <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, "doc", password = password)
+  h <- as_doc_handle(doc, password = password)
   on.exit(h$on_exit(), add = TRUE)
   n <- cpp_page_count(h$doc$ptr)
   vapply(seq_len(n), function(i) {
@@ -77,7 +60,7 @@ pdf_text <- function(doc, password = NULL) {
 #' @seealso [pdf_text_runs()], [pdf_text_font()].
 #' @export
 pdf_fonts <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, "doc", password = password)
+  h <- as_doc_handle(doc, password = password)
   on.exit(h$on_exit(), add = TRUE)
   n <- cpp_page_count(h$doc$ptr)
   all_runs <- list()
@@ -149,7 +132,7 @@ pdf_file_id <- function(doc, id_type = c("permanent", "changing"),
                         password = NULL) {
   id_type <- match.arg(id_type)
   type_code <- if (identical(id_type, "permanent")) 0L else 1L
-  h <- as_doc_handle(doc, "doc", password = password)
+  h <- as_doc_handle(doc, password = password)
   on.exit(h$on_exit(), add = TRUE)
   cpp_doc_file_id(h$doc$ptr, type_code)
 }
@@ -181,7 +164,7 @@ pdf_file_id <- function(doc, id_type = c("permanent", "changing"),
 #'   `"unknown"` (PDFium couldn't determine the entry).
 #' @export
 pdf_doc_page_mode <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, "doc", password = password)
+  h <- as_doc_handle(doc, password = password)
   on.exit(h$on_exit(), add = TRUE)
   code <- cpp_doc_page_mode(h$doc$ptr)
   # PDFium's -1 sentinel maps to "unknown" (index 1 in the lookup).
@@ -231,7 +214,7 @@ decode_duplex <- function(idx) {
 #' @return Logical scalar.
 #' @export
 pdf_doc_is_tagged <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, "doc", password = password)
+  h <- as_doc_handle(doc, password = password)
   on.exit(h$on_exit(), add = TRUE)
   cpp_doc_is_tagged(h$doc$ptr)
 }
@@ -261,7 +244,7 @@ pdf_doc_is_tagged <- function(doc, password = NULL) {
 #'     author suggests printing; empty when unspecified.
 #' @export
 pdf_viewer_preferences <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, "doc", password = password)
+  h <- as_doc_handle(doc, password = password)
   on.exit(h$on_exit(), add = TRUE)
   raw <- cpp_doc_viewer_prefs(h$doc$ptr)
   idx <- raw$duplex_code + 1L
@@ -296,7 +279,7 @@ pdf_viewer_preferences <- function(doc, password = NULL) {
 #' @export
 pdf_viewer_preference_by_name <- function(doc, key, password = NULL) {
   checkmate::assert_string(key, min.chars = 1L)
-  h <- as_doc_handle(doc, "doc", password = password)
+  h <- as_doc_handle(doc, password = password)
   on.exit(h$on_exit(), add = TRUE)
   out <- cpp_viewer_ref_name(h$doc$ptr, enc2utf8(key))
   # nocov start — non-NA branch requires a fixture whose
@@ -337,7 +320,7 @@ pdf_viewer_preference_by_name <- function(doc, key, password = NULL) {
 #'     `NA` otherwise.
 #' @export
 pdf_named_dests <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, "doc", password = password)
+  h <- as_doc_handle(doc, password = password)
   on.exit(h$on_exit(), add = TRUE)
   raw <- cpp_doc_named_dests(h$doc$ptr)
   page <- raw$page_index_zero
@@ -371,7 +354,7 @@ pdf_named_dests <- function(doc, password = NULL) {
 #'   are present.
 #' @export
 pdf_doc_javascript <- function(doc, password = NULL) {
-  h <- as_doc_handle(doc, "doc", password = password)
+  h <- as_doc_handle(doc, password = password)
   on.exit(h$on_exit(), add = TRUE)
   raw <- cpp_doc_javascript(h$doc$ptr)
   tibble::tibble(name = raw$name, script = raw$script)

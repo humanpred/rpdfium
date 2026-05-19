@@ -30,7 +30,7 @@
 #' @export
 pdf_named_dest_by_name <- function(doc, name, password = NULL) {
   checkmate::assert_string(name, min.chars = 1L)
-  h <- as_doc_handle(doc, "doc", password = password)
+  h <- as_doc_handle(doc, password = password)
   on.exit(h$on_exit(), add = TRUE)
   raw <- cpp_named_dest_by_name(h$doc$ptr, enc2utf8(name))
   list(
@@ -63,7 +63,7 @@ pdf_named_dest_by_name <- function(doc, name, password = NULL) {
 #' @export
 pdf_bookmark_find <- function(doc, title, password = NULL) {
   checkmate::assert_string(title, min.chars = 1L)
-  h <- as_doc_handle(doc, "doc", password = password)
+  h <- as_doc_handle(doc, password = password)
   on.exit(h$on_exit(), add = TRUE)
   idx <- cpp_bookmark_find(h$doc$ptr, enc2utf8(title))
   if (idx < 0L) NA_integer_ else as.integer(idx)

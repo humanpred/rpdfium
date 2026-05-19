@@ -6,25 +6,6 @@
 # combination, following the same convention as
 # pdf_render_page() / pdf_text_runs() / pdf_annotations().
 
-# Internal: resolve a page-or-doc argument into an open page +
-# close-on-exit flag. Same pattern as
-# as_open_annot_page in R/annotations.R (open PR C); the rebase
-# will dedupe.
-as_open_page_pair <- function(page, page_num) {
-  checkmate::assert_multi_class(
-    page, c("pdfium_page", "pdfium_doc"),
-    .var.name = "page"
-  )
-  if (inherits(page, "pdfium_page")) {
-    if (!is_open(page)) stop("Page has been closed.", call. = FALSE)
-    return(list(page = page, close_on_exit = FALSE))
-  }
-  # `page` is a pdfium_doc — load `page_num` and arrange for close.
-  if (!is_open(page)) stop("Document has been closed.", call. = FALSE)
-  p <- pdf_load_page(page, page_num)
-  list(page = p, close_on_exit = TRUE)
-}
-
 #' Read a page's bounding box
 #'
 #' PDF pages can carry up to five named boxes:

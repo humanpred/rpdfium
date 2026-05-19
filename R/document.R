@@ -106,7 +106,7 @@ validate_pdf_open_path <- function(path) {
 #' @return Invisibly returns `doc` with its underlying pointer marked closed.
 #' @export
 pdf_close <- function(doc) {
-  checkmate::assert_class(doc, "pdfium_doc", .var.name = "doc")
+  checkmate::assert_class(doc, "pdfium_doc")
   cpp_close_document(doc$ptr)
   invisible(doc)
 }
@@ -136,7 +136,7 @@ pdf_page_count <- function(doc, password = NULL) {
     on.exit(pdf_close(handle), add = TRUE)
     return(cpp_page_count(handle$ptr))
   }
-  checkmate::assert_class(doc, "pdfium_doc", .var.name = "doc")
+  checkmate::assert_class(doc, "pdfium_doc")
   if (!is_open(doc)) {
     stop("Document has been closed.", call. = FALSE)
   }
@@ -169,9 +169,7 @@ pdf_page_count <- function(doc, password = NULL) {
 #' }
 #' @export
 pdf_doc_meta <- function(doc, tag) {
-  checkmate::assert_class(doc, "pdfium_doc",
-    .var.name = "doc"
-  )
+  checkmate::assert_class(doc, "pdfium_doc")
   if (!is_open(doc)) stop("Document has been closed.", call. = FALSE)
   checkmate::assert_string(tag, min.chars = 1L)
   cpp_doc_meta_text(doc$ptr, tag)
@@ -221,7 +219,7 @@ pdf_doc_info <- function(doc, password = NULL) {
     on.exit(pdf_close(handle), add = TRUE)
     return(pdf_doc_info(handle))
   }
-  checkmate::assert_class(doc, "pdfium_doc", .var.name = "doc")
+  checkmate::assert_class(doc, "pdfium_doc")
   if (!is_open(doc)) stop("Document has been closed.", call. = FALSE)
 
   raw <- cpp_doc_info(doc$ptr)

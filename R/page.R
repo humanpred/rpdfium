@@ -24,7 +24,7 @@
 #' }
 #' @export
 pdf_load_page <- function(doc, page_num = 1L) {
-  checkmate::assert_class(doc, "pdfium_doc", .var.name = "doc")
+  checkmate::assert_class(doc, "pdfium_doc")
   if (!is_open(doc)) {
     stop("Document has been closed.", call. = FALSE)
   }
@@ -50,7 +50,7 @@ pdf_load_page <- function(doc, page_num = 1L) {
 #' @return Invisibly returns `page` with its underlying pointer marked closed.
 #' @export
 pdf_close_page <- function(page) {
-  checkmate::assert_class(page, "pdfium_page", .var.name = "page")
+  checkmate::assert_class(page, "pdfium_page")
   cpp_close_page(page$ptr)
   invisible(page)
 }
@@ -87,10 +87,7 @@ pdf_close_page <- function(page) {
 #' }
 #' @export
 pdf_page_size <- function(page, page_num = 1L) {
-  checkmate::assert_multi_class(
-    page, c("pdfium_page", "pdfium_doc"),
-    .var.name = "page"
-  )
+  checkmate::assert_multi_class(page, c("pdfium_page", "pdfium_doc"))
   if (inherits(page, "pdfium_page")) {
     if (!is_open(page)) stop("Page has been closed.", call. = FALSE)
     return(cpp_page_size(page$ptr))
@@ -133,10 +130,7 @@ pdf_page_size <- function(page, page_num = 1L) {
 #' }
 #' @export
 pdf_page_rotation <- function(page, page_num = 1L) {
-  checkmate::assert_multi_class(
-    page, c("pdfium_page", "pdfium_doc"),
-    .var.name = "page"
-  )
+  checkmate::assert_multi_class(page, c("pdfium_page", "pdfium_doc"))
   if (inherits(page, "pdfium_page")) {
     if (!is_open(page)) stop("Page has been closed.", call. = FALSE)
     return(cpp_page_rotation(page$ptr))
