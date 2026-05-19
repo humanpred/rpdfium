@@ -349,6 +349,10 @@ cpp_render_page <- function(page_ptr, pixel_width, pixel_height, rotation_code, 
     .Call(`_pdfium_cpp_render_page`, page_ptr, pixel_width, pixel_height, rotation_code, render_flags, background_argb, fill_background)
 }
 
+cpp_render_page_with_matrix <- function(page_ptr, pixel_width, pixel_height, matrix6, clip4, render_flags, background_argb, fill_background) {
+    .Call(`_pdfium_cpp_render_page_with_matrix`, page_ptr, pixel_width, pixel_height, matrix6, clip4, render_flags, background_argb, fill_background)
+}
+
 cpp_signature_count <- function(doc_ptr) {
     .Call(`_pdfium_cpp_signature_count`, doc_ptr)
 }

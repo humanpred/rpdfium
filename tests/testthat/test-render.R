@@ -234,6 +234,50 @@ test_that("pdf_render_to_png() writes a valid PNG", {
   expect_equal(dim(arr), c(216L, 288L, 4L))
 })
 
+test_that("pdf_render_page_with_matrix renders at the requested size", {
+  doc <- pdf_open(fixture_path("shapes"))
+  on.exit(pdf_close(doc), add = TRUE)
+  m <- c(2, 0, 0, 2, 0, 0)
+  bmp <- pdf_render_page_with_matrix(doc, m,
+                                      pixel_width = 200,
+                                      pixel_height = 150)
+  expect_s3_class(bmp, "pdfium_bitmap")
+  expect_equal(dim(bmp), c(150L, 200L))
+})
+
+test_that("pdf_render_page_with_matrix accepts clip_rect", {
+  doc <- pdf_open(fixture_path("shapes"))
+  on.exit(pdf_close(doc), add = TRUE)
+  bmp <- pdf_render_page_with_matrix(doc, c(1, 0, 0, 1, 0, 0),
+                                      pixel_width = 100,
+                                      pixel_height = 100,
+                                      clip_rect = c(10, 10, 50, 50))
+  expect_s3_class(bmp, "pdfium_bitmap")
+  expect_equal(dim(bmp), c(100L, 100L))
+})
+
+test_that("pdf_render_page_with_matrix validates inputs", {
+  doc <- pdf_open(fixture_path("shapes"))
+  on.exit(pdf_close(doc), add = TRUE)
+  expect_error(pdf_render_page_with_matrix(doc, c(1, 2),
+                                            pixel_width = 100,
+                                            pixel_height = 100),
+               "length-6")
+  expect_error(pdf_render_page_with_matrix(doc, rep(NA_real_, 6),
+                                            pixel_width = 100,
+                                            pixel_height = 100),
+               "finite numeric")
+  expect_error(pdf_render_page_with_matrix(doc, c(1, 0, 0, 1, 0, 0),
+                                            pixel_width = 0,
+                                            pixel_height = 100),
+               "positive integer")
+  expect_error(pdf_render_page_with_matrix(doc, c(1, 0, 0, 1, 0, 0),
+                                            pixel_width = 100,
+                                            pixel_height = 100,
+                                            clip_rect = c(1, 2, 3)),
+               "length-4 numeric")
+})
+
 test_that("pdf_render_to_png() validates file argument", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)

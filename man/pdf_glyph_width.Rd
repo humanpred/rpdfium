@@ -4,7 +4,7 @@
 \alias{pdf_glyph_width}
 \title{Width of a glyph in a text page-object's font}
 \usage{
-pdf_glyph_width(obj, glyph_code, font_size = NA)
+pdf_glyph_width(obj, glyph_code, font_size = NA_real_)
 }
 \arguments{
 \item{obj}{A \code{pdfium_obj} of type \code{"text"}.}

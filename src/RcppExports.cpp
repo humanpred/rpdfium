@@ -1009,6 +1009,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_render_page_with_matrix
+Rcpp::IntegerMatrix cpp_render_page_with_matrix(SEXP page_ptr, int pixel_width, int pixel_height, Rcpp::NumericVector matrix6, Rcpp::NumericVector clip4, int render_flags, int background_argb, bool fill_background);
+RcppExport SEXP _pdfium_cpp_render_page_with_matrix(SEXP page_ptrSEXP, SEXP pixel_widthSEXP, SEXP pixel_heightSEXP, SEXP matrix6SEXP, SEXP clip4SEXP, SEXP render_flagsSEXP, SEXP background_argbSEXP, SEXP fill_backgroundSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type pixel_width(pixel_widthSEXP);
+    Rcpp::traits::input_parameter< int >::type pixel_height(pixel_heightSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type matrix6(matrix6SEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type clip4(clip4SEXP);
+    Rcpp::traits::input_parameter< int >::type render_flags(render_flagsSEXP);
+    Rcpp::traits::input_parameter< int >::type background_argb(background_argbSEXP);
+    Rcpp::traits::input_parameter< bool >::type fill_background(fill_backgroundSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_render_page_with_matrix(page_ptr, pixel_width, pixel_height, matrix6, clip4, render_flags, background_argb, fill_background));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_signature_count
 int cpp_signature_count(SEXP doc_ptr);
 RcppExport SEXP _pdfium_cpp_signature_count(SEXP doc_ptrSEXP) {
@@ -1275,6 +1293,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_path_segment_count", (DL_FUNC) &_pdfium_cpp_path_segment_count, 1},
     {"_pdfium_cpp_path_segments", (DL_FUNC) &_pdfium_cpp_path_segments, 1},
     {"_pdfium_cpp_render_page", (DL_FUNC) &_pdfium_cpp_render_page, 7},
+    {"_pdfium_cpp_render_page_with_matrix", (DL_FUNC) &_pdfium_cpp_render_page_with_matrix, 8},
     {"_pdfium_cpp_signature_count", (DL_FUNC) &_pdfium_cpp_signature_count, 1},
     {"_pdfium_cpp_signatures_list", (DL_FUNC) &_pdfium_cpp_signatures_list, 1},
     {"_pdfium_cpp_signature_contents", (DL_FUNC) &_pdfium_cpp_signature_contents, 2},
