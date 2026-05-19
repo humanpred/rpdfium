@@ -169,6 +169,14 @@ cpp_obj_rotated_bounds <- function(obj_ptr) {
     .Call(`_pdfium_cpp_obj_rotated_bounds`, obj_ptr)
 }
 
+cpp_path_draw_mode <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_path_draw_mode`, obj_ptr)
+}
+
+cpp_obj_marks_list <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_marks_list`, obj_ptr)
+}
+
 cpp_page_object_count <- function(page_ptr) {
     .Call(`_pdfium_cpp_page_object_count`, page_ptr)
 }

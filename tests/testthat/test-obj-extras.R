@@ -79,6 +79,65 @@ test_that("the new accessors all reject bad inputs", {
   }
 })
 
+test_that("pdf_path_draw_mode classifies stroke / fill / clip-only paths", {
+  doc <- pdf_open(fixture_path("shapes"))
+  on.exit(pdf_close(doc), add = TRUE)
+  p <- pdf_load_page(doc, 1L)
+  on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
+  paths <- Filter(function(o) o$type == "path", pdf_page_objects(p))
+  expect_gt(length(paths), 0L)
+  for (path_obj in paths) {
+    m <- pdf_path_draw_mode(path_obj)
+    expect_named(m, c("fill_mode", "fill_mode_code", "stroke"))
+    expect_true(m$fill_mode %in%
+                  c("none", "even_odd", "winding", NA_character_))
+    expect_true(m$fill_mode_code %in% c(0L, 1L, 2L, NA_integer_))
+    expect_true(is.logical(m$stroke) && length(m$stroke) == 1L)
+  }
+  # shapes.pdf carries at least one path that is both filled
+  # (winding) and stroked.
+  modes <- vapply(paths, function(o) pdf_path_draw_mode(o)$fill_mode,
+                  character(1L))
+  strokes <- vapply(paths, function(o) pdf_path_draw_mode(o)$stroke,
+                    logical(1L))
+  expect_true(any(modes == "winding" & strokes))
+})
+
+test_that("pdf_path_draw_mode rejects non-path objects and closed pages", {
+  doc <- pdf_open(fixture_path("shapes"))
+  on.exit(pdf_close(doc), add = TRUE)
+  p <- pdf_load_page(doc, 1L)
+  objs <- pdf_page_objects(p)
+  path_obj <- Filter(function(o) o$type == "path", objs)[[1L]]
+  expect_error(pdf_path_draw_mode("nope"), "must be a `pdfium_obj`")
+  pdf_close_page(p)
+  expect_error(pdf_path_draw_mode(path_obj),
+               "Parent page has been closed")
+})
+
+test_that("pdf_obj_marks returns an empty tibble for untagged content", {
+  doc <- pdf_open(fixture_path("shapes"))
+  on.exit(pdf_close(doc), add = TRUE)
+  p <- pdf_load_page(doc, 1L)
+  on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
+  for (obj in pdf_page_objects(p)) {
+    res <- pdf_obj_marks(obj)
+    expect_s3_class(res, "tbl_df")
+    expect_equal(nrow(res), 0L)
+    expect_named(res, c("mark_index", "name", "params"))
+  }
+})
+
+test_that("pdf_obj_marks rejects non-objects and closed parents", {
+  doc <- pdf_open(fixture_path("shapes"))
+  on.exit(pdf_close(doc), add = TRUE)
+  p <- pdf_load_page(doc, 1L)
+  obj <- pdf_page_objects(p)[[1L]]
+  expect_error(pdf_obj_marks("nope"), "must be a `pdfium_obj`")
+  pdf_close_page(p)
+  expect_error(pdf_obj_marks(obj), "Parent page has been closed")
+})
+
 test_that("accessors refuse a closed parent page", {
   doc <- pdf_open(fixture_path("shapes"))
   on.exit(pdf_close(doc), add = TRUE)

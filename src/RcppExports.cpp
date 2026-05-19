@@ -481,6 +481,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_path_draw_mode
+Rcpp::List cpp_path_draw_mode(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_path_draw_mode(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_path_draw_mode(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_obj_marks_list
+Rcpp::List cpp_obj_marks_list(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_marks_list(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_marks_list(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_page_object_count
 int cpp_page_object_count(SEXP page_ptr);
 RcppExport SEXP _pdfium_cpp_page_object_count(SEXP page_ptrSEXP) {
@@ -962,6 +984,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_obj_has_transparency", (DL_FUNC) &_pdfium_cpp_obj_has_transparency, 1},
     {"_pdfium_cpp_obj_is_active", (DL_FUNC) &_pdfium_cpp_obj_is_active, 1},
     {"_pdfium_cpp_obj_rotated_bounds", (DL_FUNC) &_pdfium_cpp_obj_rotated_bounds, 1},
+    {"_pdfium_cpp_path_draw_mode", (DL_FUNC) &_pdfium_cpp_path_draw_mode, 1},
+    {"_pdfium_cpp_obj_marks_list", (DL_FUNC) &_pdfium_cpp_obj_marks_list, 1},
     {"_pdfium_cpp_page_object_count", (DL_FUNC) &_pdfium_cpp_page_object_count, 1},
     {"_pdfium_cpp_page_get_object", (DL_FUNC) &_pdfium_cpp_page_get_object, 2},
     {"_pdfium_cpp_obj_type", (DL_FUNC) &_pdfium_cpp_obj_type, 1},
