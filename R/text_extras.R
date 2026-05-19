@@ -79,7 +79,7 @@ pdf_text_render_mode <- function(obj) {
 #'   [pdf_text_render_mode()] (per-text-object render mode).
 #' @export
 pdf_text_colors <- function(page, page_num = 1L) {
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   raw <- cpp_page_text_colors(ph$page$ptr)
   tibble::tibble(

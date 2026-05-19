@@ -53,7 +53,7 @@ pdf_annot_dict_value <- function(page, annotation_index, key,
                                  page_num = 1L) {
   checkmate::assert_count(annotation_index, positive = TRUE)
   checkmate::assert_string(key, min.chars = 1L)
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   raw <- cpp_annot_dict_value(
     ph$page$ptr,
@@ -100,7 +100,7 @@ pdf_annot_appearance <- function(page, annotation_index,
                                  page_num = 1L) {
   mode <- match.arg(mode)
   checkmate::assert_count(annotation_index, positive = TRUE)
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   code <- .pdfium_annot_appearance_modes[[mode]]
   as.character(cpp_annot_appearance(
@@ -133,7 +133,7 @@ pdf_annot_appearance <- function(page, annotation_index,
 pdf_link_annot_at_point <- function(page, x, y, page_num = 1L) {
   checkmate::assert_number(x, finite = TRUE)
   checkmate::assert_number(y, finite = TRUE)
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   raw <- cpp_link_annot_at_point(
     ph$page$ptr,

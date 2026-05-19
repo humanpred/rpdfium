@@ -82,7 +82,7 @@ pdfium_dest_view_name <- function(codes) {
 pdf_link_at_point <- function(page, x, y, page_num = 1L) {
   checkmate::assert_number(x, finite = TRUE)
   checkmate::assert_number(y, finite = TRUE)
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   doc_ptr <- ph$page$doc$ptr
   raw <- cpp_link_at_point(
@@ -149,7 +149,7 @@ empty_link_at_point_tibble <- function() {
 #'     as in `pdf_link_at_point()`.
 #' @export
 pdf_page_actions <- function(page, page_num = 1L) {
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   doc_ptr <- ph$page$doc$ptr
   raw <- cpp_page_aactions(doc_ptr, ph$page$ptr)

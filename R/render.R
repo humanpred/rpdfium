@@ -77,17 +77,15 @@ pdf_render_page <- function(page,
     "270" = 3L
   )
 
-  page <- as_open_page(page, page_num)
-  if (isTRUE(attr(page, ".close_on_exit"))) {
-    on.exit(pdf_close_page(page), add = TRUE)
-  }
+  ph <- as_open_page(page, page_num)
+  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
 
-  dims <- compute_render_pixels(page$ptr, dpi, rot_code)
+  dims <- compute_render_pixels(ph$page$ptr, dpi, rot_code)
   bg <- parse_bitmap_background(background)
   flags <- render_flags_bitmask(annotations)
 
   data <- cpp_render_page(
-    page$ptr, dims$width, dims$height, rot_code, flags,
+    ph$page$ptr, dims$width, dims$height, rot_code, flags,
     background_argb = bg$argb,
     fill_background = bg$fill
   )
@@ -95,8 +93,8 @@ pdf_render_page <- function(page,
   new_pdfium_bitmap(
     data,
     dpi              = as.numeric(dpi),
-    source_page      = page$index,
-    source_path      = page$doc$path,
+    source_page      = ph$page$index,
+    source_path      = ph$page$doc$path,
     rotation_applied = as.integer(rotation)
   )
 }
@@ -156,15 +154,13 @@ pdf_render_page_with_matrix <- function(page,
   checkmate::assert_flag(annotations)
   clip_vec <- validate_clip_rect(clip_rect)
 
-  page <- as_open_page(page, page_num)
-  if (isTRUE(attr(page, ".close_on_exit"))) {
-    on.exit(pdf_close_page(page), add = TRUE)
-  }
+  ph <- as_open_page(page, page_num)
+  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   bg <- parse_bitmap_background(background)
   flags <- render_flags_bitmask(annotations)
 
   data <- cpp_render_page_with_matrix(
-    page$ptr,
+    ph$page$ptr,
     as.integer(pixel_width), as.integer(pixel_height),
     as.numeric(matrix),
     clip_vec,
@@ -176,8 +172,8 @@ pdf_render_page_with_matrix <- function(page,
   new_pdfium_bitmap(
     data,
     dpi              = NA_real_, # matrix path has no single DPI
-    source_page      = page$index,
-    source_path      = page$doc$path,
+    source_page      = ph$page$index,
+    source_path      = ph$page$doc$path,
     rotation_applied = 0L
   )
 }

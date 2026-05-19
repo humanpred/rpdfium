@@ -112,11 +112,9 @@ pdf_text_content <- function(obj) {
 #' }
 #' @export
 pdf_text_runs <- function(page, page_num = 1L) {
-  page <- as_open_page(page, page_num)
-  if (isTRUE(attr(page, ".close_on_exit"))) {
-    on.exit(pdf_close_page(page), add = TRUE)
-  }
-  raw <- cpp_page_text_runs(page$ptr)
+  ph <- as_open_page(page, page_num)
+  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
+  raw <- cpp_page_text_runs(ph$page$ptr)
   # `obj_index` is the page-object index PDFium reports (1-based,
   # spans all page objects on the page — paths, images, text). The
   # column was previously called `text_index` but that name collided

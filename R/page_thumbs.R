@@ -41,7 +41,7 @@
 #' @export
 pdf_page_thumbnail <- function(page, page_num = 1L, decoded = TRUE) {
   checkmate::assert_flag(decoded)
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   if (decoded) {
     cpp_page_thumbnail_decoded(ph$page$ptr)
@@ -87,7 +87,7 @@ pdf_page_thumbnail <- function(page, page_num = 1L, decoded = TRUE) {
 #'   [pdf_text_search()] for arbitrary string search.
 #' @export
 pdf_text_weblinks <- function(page, page_num = 1L) {
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   raw <- cpp_page_weblinks(ph$page$ptr)
   n <- length(raw$url)

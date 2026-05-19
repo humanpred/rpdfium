@@ -94,7 +94,7 @@ pdf_bookmark_find <- function(doc, title, password = NULL) {
 pdf_form_field_at_point <- function(page, x, y, page_num = 1L) {
   checkmate::assert_number(x, finite = TRUE)
   checkmate::assert_number(y, finite = TRUE)
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   raw <- cpp_form_field_at_point(
     ph$page$doc$ptr, ph$page$ptr,

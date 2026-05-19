@@ -43,17 +43,16 @@
 #' @export
 pdf_page_objects <- function(page, page_num = 1L, recursive = FALSE) {
   checkmate::assert_flag(recursive)
-  page <- as_open_page(page, page_num)
-  on_exit_close <- attr(page, ".close_on_exit")
-  if (isTRUE(on_exit_close)) on.exit(pdf_close_page(page), add = TRUE)
+  ph <- as_open_page(page, page_num)
+  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
 
-  n <- cpp_page_object_count(page$ptr)
+  n <- cpp_page_object_count(ph$page$ptr)
   out <- vector("list", n)
   for (i in seq_len(n)) {
-    obj_ptr <- cpp_page_get_object(page$ptr, i - 1L)
+    obj_ptr <- cpp_page_get_object(ph$page$ptr, i - 1L)
     type_code <- cpp_obj_type(obj_ptr)
     type_name <- pdfium_obj_type_name(type_code)
-    out[[i]] <- new_pdfium_obj(obj_ptr, page, i, type_name)
+    out[[i]] <- new_pdfium_obj(obj_ptr, ph$page, i, type_name)
   }
   if (!recursive) {
     return(out)
@@ -188,26 +187,4 @@ pdfium_obj_type_name <- function(code) {
   } else {
     .pdfium_obj_type_names[[idx]]
   }
-}
-
-# Internal: resolve a page argument that may be a pdfium_page or a
-# pdfium_doc + page_num into an open page. When opened transparently
-# from a doc, the returned page carries a `.close_on_exit = TRUE`
-# attribute so the caller can close it on exit.
-as_open_page <- function(x, page_num = 1L) {
-  # `x` is the user-visible `page` argument in every public caller;
-  # surface that name in the assertion message.
-  checkmate::assert_multi_class(
-    x, c("pdfium_page", "pdfium_doc"),
-    .var.name = "page"
-  )
-  if (inherits(x, "pdfium_page")) {
-    if (!is_open(x)) stop("Page has been closed.", call. = FALSE)
-    attr(x, ".close_on_exit") <- FALSE
-    return(x)
-  }
-  # `x` is a pdfium_doc — load `page_num` and arrange for close.
-  p <- pdf_load_page(x, page_num)
-  attr(p, ".close_on_exit") <- TRUE
-  p
 }

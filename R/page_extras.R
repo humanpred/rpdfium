@@ -41,7 +41,7 @@ pdf_page_box <- function(page, page_num = 1L,
                            "trim", "art"
                          )) {
   box <- match.arg(box)
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   cpp_page_box(ph$page$ptr, box)
 }
@@ -116,7 +116,7 @@ pdf_page_box <- function(page, page_num = 1L,
 #' @seealso [pdf_text_runs()], [pdf_text()].
 #' @export
 pdf_text_chars <- function(page, page_num = 1L) {
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   raw <- cpp_page_text_chars(ph$page$ptr)
   font <- cpp_text_char_font_info(ph$page$ptr)
@@ -173,7 +173,7 @@ pdf_text_char_at_point <- function(page, x, y, tolerance = 2,
   checkmate::assert_number(x, finite = TRUE)
   checkmate::assert_number(y, finite = TRUE)
   tolerance <- validate_char_at_point_tolerance(tolerance)
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   idx0 <- cpp_text_char_at_pos(
     ph$page$ptr,
@@ -217,7 +217,7 @@ pdf_text_char_at_point <- function(page, x, y, tolerance = 2,
 #' @export
 pdf_text_index_from_char <- function(page, char_index, page_num = 1L) {
   checkmate::assert_int(char_index)
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   out <- cpp_text_text_index_from_char(
     ph$page$ptr,
@@ -231,7 +231,7 @@ pdf_text_index_from_char <- function(page, char_index, page_num = 1L) {
 pdf_text_char_from_text_index <- function(page, text_index,
                                           page_num = 1L) {
   checkmate::assert_int(text_index)
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   out <- cpp_text_char_index_from_text(
     ph$page$ptr,
@@ -287,7 +287,7 @@ pdf_text_char_from_text_index <- function(page, text_index,
 #' link annotations.
 #' @export
 pdf_page_links <- function(page, page_num = 1L) {
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   # The link enumerator needs the doc handle for action / dest
   # resolution. Pull it off the page's parent reference.

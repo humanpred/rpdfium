@@ -74,7 +74,7 @@
 #'   document level.
 #' @export
 pdf_structure_tree <- function(page, page_num = 1L) {
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   raw <- cpp_struct_tree_page(ph$page$ptr)
   n <- length(raw$type)

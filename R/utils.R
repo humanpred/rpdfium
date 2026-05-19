@@ -31,12 +31,11 @@ as_doc_handle <- function(x, arg = "doc", password = NULL) {
 }
 
 # Internal: resolve a page-or-doc argument into an open page plus a
-# `close_on_exit` flag the caller uses to decide whether to free
-# what it got back. The two-shape page argument (already-open page
-# or doc-plus-index) is the convention used by every page-level
-# wrapper that doesn't need the `.close_on_exit` attribute form
-# from R/objects.R::as_open_page.
-as_open_page_pair <- function(page, page_num) {
+# `close_on_exit` flag the caller uses to decide whether to free what
+# it got back. The two-shape page argument (already-open page or
+# doc-plus-index) is the convention used by every page-level wrapper
+# in the package.
+as_open_page <- function(page, page_num = 1L) {
   checkmate::assert_multi_class(page, c("pdfium_page", "pdfium_doc"))
   if (inherits(page, "pdfium_page")) {
     if (!is_open(page)) stop("Page has been closed.", call. = FALSE)

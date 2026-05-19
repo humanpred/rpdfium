@@ -126,7 +126,7 @@ pdf_attachment_dict_value <- function(doc, attachment_index, key,
 #' @export
 pdf_text_char_obj_index <- function(page, char_index, page_num = 1L) {
   checkmate::assert_count(char_index, positive = TRUE)
-  ph <- as_open_page_pair(page, page_num)
+  ph <- as_open_page(page, page_num)
   on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
   idx <- cpp_text_char_obj_index(
     ph$page$ptr,

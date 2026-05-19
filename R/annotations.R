@@ -158,11 +158,9 @@ annot_flag_decode <- function(flags, bit) {
 #' @seealso [pdf_form_fields()] for AcroForm-specific accessors.
 #' @export
 pdf_annotations <- function(page, page_num = 1L) {
-  page_h <- as_open_page_pair(page, page_num)
-  on.exit(if (page_h$close_on_exit) pdf_close_page(page_h$page),
-    add = TRUE
-  )
-  raw <- cpp_annots_list(page_h$page$doc$ptr, page_h$page$ptr)
+  ph <- as_open_page(page, page_num)
+  on.exit(if (ph$close_on_exit) pdf_close_page(ph$page), add = TRUE)
+  raw <- cpp_annots_list(ph$page$doc$ptr, ph$page$ptr)
   flags <- as.integer(raw$flags)
   decode <- function(bit_name) {
     annot_flag_decode(flags, .pdfium_annot_flag_bits[[bit_name]])
