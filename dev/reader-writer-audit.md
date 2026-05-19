@@ -479,6 +479,45 @@ column types or row counts):
 
 All other readers pass the audit unchanged.
 
+## Tier 3 readers landed in 0.1.0
+
+The "Tier 3" section originally documented several PDFium readers
+as deferred to v0.2.0. After a refresh pass driven by the
+"reconstructing challenging character mappings" use case, all but a
+small genuinely-niche residue have landed in v0.1.0:
+
+| Reader added | Wraps | Use case |
+|---|---|---|
+| `pdf_glyph_path()` | `FPDFFont_GetGlyphPath` + glyph-segment walk | Glyph outline reconstruction for ToUnicode-CMap auditing |
+| `pdf_glyph_width()` | `FPDFFont_GetGlyphWidth` | Layout / advance-width spot-checks |
+| `pdf_text_font_metrics()` | `FPDFFont_GetAscent` / `GetDescent` | Font ascent + descent at a given size |
+| `pdf_text_chars()$char_font_name`, `$char_font_flags` | `FPDFText_GetFontInfo` | Per-character font info (catches PDFs that switch fonts within a run) |
+| `pdf_render_page_with_matrix()` | `FPDF_RenderPageBitmapWithMatrix` | Crop-and-zoom rendering, shear, custom projections |
+| `pdf_annot_dict_value()` | `FPDFAnnot_HasKey` + `GetValueType` + `GetStringValue` + `GetNumberValue` | Generic by-key annotation-dict probe |
+| `pdf_annot_appearance()` | `FPDFAnnot_GetAP` | Annotation `/AP` appearance-stream content per appearance mode |
+| `pdf_link_annot_at_point()` | `FPDFLink_GetLinkAtPoint` + `FPDFLink_GetAnnot` | Hit-test that returns the underlying annotation_index |
+| `pdf_obj_marked_content_id()` | `FPDFPageObj_GetMarkedContentID` | Fast-path single-int direct MCID for a page object |
+| `pdf_doc_focusable_subtypes()` | `FPDFAnnot_GetFocusableSubtypes*` | Tab-focus annotation subtypes for round-tripping the writer setter |
+| `pdf_structure_tree()$attributes` recurses arrays | `FPDF_StructElement_Attr_CountChildren` + `GetChildAtIndex` | Nested arrays (`/BBox`, `/RowSpan`, ...) come back as R lists |
+
+### Still deferred — and why
+
+These reader symbols intentionally do NOT land in v0.1.0:
+
+| Deferred symbol | Reason |
+|---|---|
+| `FPDFAnnot_GetObject` | Returns an embedded page-object handle from a stamp / FreeText annotation. Useful in principle, but requires wrapping the handle as a child object whose parent is the annotation — a small S3-class change that fits the v0.2.0 mutation work better. |
+| `FPDFAnnot_IsSupportedSubtype` / `IsObjectSupportedSubtype` | Viewer-UI capability checks. Returns whether PDFium's reference viewer can render this subtype; not useful for tabular workflows. |
+| `FPDFAvail_*` (streaming) | Incremental loading from network sources. The `pdfium` package's "open a local file" core workflow doesn't benefit; the streaming API would only matter for an HTTP-backed wrapper, which is out of scope. |
+| `FPDF_GetDefaultTTFMapEntry`, `FPDF_FreeDefaultSystemFontInfo` | Internal font-resolution tables that PDFium uses for fallback glyph rendering. Not interpretable at the R level without exposing PDFium's full font-substitution machinery. |
+| `FPDF_RenderPageBitmapWithColorScheme_Start` | Progressive rendering with a custom palette (used for "dark mode" PDF viewers). Niche; users wanting custom colours can post-process the bitmap from `pdf_render_page()` array-wise. |
+| `FPDFPage_TransFormWithClip` | Mutation — fits the v0.2.0 plan. |
+| `FPDF_StructElement_GetParent` | Already addressable via `pdf_structure_tree()$parent_index`. |
+| `FPDF_StructElement_GetStringAttribute` | Already addressable via filtering `pdf_structure_tree()$attributes` on the desired key. |
+| `FPDF_StructElement_GetChildMarkedContentID` | Per-child MCID detail. The element-level `mcid` / `mcid_count` columns already aggregate; the per-K-child distinction is rarely meaningful for downstream consumers. |
+
+Everything else PDFium exposes as a reader is wrapped.
+
 ## Helpers the writer layer will need
 
 * `pdfium_annot_subtype_code(name)` / `pdfium_annot_subtype_name(code)`
