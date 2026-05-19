@@ -351,6 +351,55 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_text_obj_glyph_path
+Rcpp::List cpp_text_obj_glyph_path(SEXP obj_ptr, int glyph_code, double font_size);
+RcppExport SEXP _pdfium_cpp_text_obj_glyph_path(SEXP obj_ptrSEXP, SEXP glyph_codeSEXP, SEXP font_sizeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type glyph_code(glyph_codeSEXP);
+    Rcpp::traits::input_parameter< double >::type font_size(font_sizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_obj_glyph_path(obj_ptr, glyph_code, font_size));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_text_obj_glyph_width
+double cpp_text_obj_glyph_width(SEXP obj_ptr, int glyph_code, double font_size);
+RcppExport SEXP _pdfium_cpp_text_obj_glyph_width(SEXP obj_ptrSEXP, SEXP glyph_codeSEXP, SEXP font_sizeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type glyph_code(glyph_codeSEXP);
+    Rcpp::traits::input_parameter< double >::type font_size(font_sizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_obj_glyph_width(obj_ptr, glyph_code, font_size));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_text_obj_font_metrics
+Rcpp::List cpp_text_obj_font_metrics(SEXP obj_ptr, double font_size);
+RcppExport SEXP _pdfium_cpp_text_obj_font_metrics(SEXP obj_ptrSEXP, SEXP font_sizeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type font_size(font_sizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_obj_font_metrics(obj_ptr, font_size));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_text_char_font_info
+Rcpp::List cpp_text_char_font_info(SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_text_char_font_info(SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_char_font_info(page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_image_metadata
 Rcpp::List cpp_image_metadata(SEXP obj_ptr, SEXP page_ptr);
 RcppExport SEXP _pdfium_cpp_image_metadata(SEXP obj_ptrSEXP, SEXP page_ptrSEXP) {
@@ -1169,6 +1218,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_form_fields_list", (DL_FUNC) &_pdfium_cpp_form_fields_list, 1},
     {"_pdfium_cpp_form_object_count", (DL_FUNC) &_pdfium_cpp_form_object_count, 1},
     {"_pdfium_cpp_form_get_object", (DL_FUNC) &_pdfium_cpp_form_get_object, 3},
+    {"_pdfium_cpp_text_obj_glyph_path", (DL_FUNC) &_pdfium_cpp_text_obj_glyph_path, 3},
+    {"_pdfium_cpp_text_obj_glyph_width", (DL_FUNC) &_pdfium_cpp_text_obj_glyph_width, 3},
+    {"_pdfium_cpp_text_obj_font_metrics", (DL_FUNC) &_pdfium_cpp_text_obj_font_metrics, 2},
+    {"_pdfium_cpp_text_char_font_info", (DL_FUNC) &_pdfium_cpp_text_char_font_info, 1},
     {"_pdfium_cpp_image_metadata", (DL_FUNC) &_pdfium_cpp_image_metadata, 2},
     {"_pdfium_cpp_image_pixel_size", (DL_FUNC) &_pdfium_cpp_image_pixel_size, 1},
     {"_pdfium_cpp_image_get_bitmap", (DL_FUNC) &_pdfium_cpp_image_get_bitmap, 1},

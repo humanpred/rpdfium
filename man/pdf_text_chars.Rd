@@ -47,6 +47,15 @@ fallback rather than the intended character).
 text string (i.e. the linear \code{pdf_text()} output) for this
 character, or \code{NA} for synthesised whitespace and other
 characters that don't appear in the extracted text.
+\item \code{char_font_name} character - the font name PDFium reports
+for this specific character (via \code{FPDFText_GetFontInfo}).
+Per-character because pages can mix fonts within a single
+text run after PDFium re-flows characters during extraction.
+\item \code{char_font_flags} integer - the PDF Font Descriptor \verb{/Flags}
+bitmask for this character's font (PDF spec Table 121).
+Useful for detecting \verb{/Symbolic} (bit 3) or
+\verb{/AllCap} (bit 17) fonts whose ToUnicode mapping may be
+unreliable.
 }
 
 Returns a 0-row tibble of the same schema when the page has no

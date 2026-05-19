@@ -121,6 +121,22 @@ cpp_form_get_object <- function(form_ptr, page_ptr, index_zero_based) {
     .Call(`_pdfium_cpp_form_get_object`, form_ptr, page_ptr, index_zero_based)
 }
 
+cpp_text_obj_glyph_path <- function(obj_ptr, glyph_code, font_size) {
+    .Call(`_pdfium_cpp_text_obj_glyph_path`, obj_ptr, glyph_code, font_size)
+}
+
+cpp_text_obj_glyph_width <- function(obj_ptr, glyph_code, font_size) {
+    .Call(`_pdfium_cpp_text_obj_glyph_width`, obj_ptr, glyph_code, font_size)
+}
+
+cpp_text_obj_font_metrics <- function(obj_ptr, font_size) {
+    .Call(`_pdfium_cpp_text_obj_font_metrics`, obj_ptr, font_size)
+}
+
+cpp_text_char_font_info <- function(page_ptr) {
+    .Call(`_pdfium_cpp_text_char_font_info`, page_ptr)
+}
+
 cpp_image_metadata <- function(obj_ptr, page_ptr) {
     .Call(`_pdfium_cpp_image_metadata`, obj_ptr, page_ptr)
 }

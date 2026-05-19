@@ -183,7 +183,8 @@ test_that("pdf_text_chars returns one row per character with bounds + flags", {
                         "origin_x", "origin_y",
                         "loose_left", "loose_bottom",
                         "loose_right", "loose_top",
-                        "unicode_map_error", "text_index"))
+                        "unicode_map_error", "text_index",
+                        "char_font_name", "char_font_flags"))
   expect_type(chars$codepoint,    "integer")
   expect_type(chars$char,         "character")
   expect_type(chars$is_generated, "logical")
