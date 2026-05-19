@@ -10,10 +10,31 @@ test_that("pdf_form_fields returns 0 rows when the doc has no AcroForm", {
   expect_equal(nrow(res), 0L)
   expect_named(res, c("field_index", "page_num", "field_type",
                       "field_flags", "is_readonly", "is_required",
-                      "is_no_export", "is_checked", "name",
-                      "alternate_name", "value", "bounds_left",
-                      "bounds_bottom", "bounds_right", "bounds_top",
-                      "options"))
+                      "is_no_export", "is_checked",
+                      "control_count", "control_index",
+                      "name", "alternate_name", "value",
+                      "export_value",
+                      "bounds_left", "bounds_bottom", "bounds_right",
+                      "bounds_top", "options",
+                      "is_option_selected", "additional_actions_js"))
+})
+
+test_that("pdf_form_fields exposes control_count/index + additional_actions_js shape", {
+  res <- pdf_form_fields(fixture_path("annotated"))
+  expect_equal(nrow(res), 2L)
+  # Both fields are single-widget — control_count == 1, index == 0.
+  expect_identical(res$control_count, c(1L, 1L))
+  expect_identical(res$control_index, c(0L, 0L))
+  # is_option_selected is empty for non-choice fields.
+  expect_true(all(vapply(res$is_option_selected, length,
+                          integer(1L)) == 0L))
+  # additional_actions_js: length-4 named character vec per row.
+  expect_true(all(vapply(res$additional_actions_js, length,
+                          integer(1L)) == 4L))
+  expect_identical(names(res$additional_actions_js[[1L]]),
+                   c("key_stroke", "format", "validate", "calculate"))
+  expect_true(all(vapply(res$additional_actions_js,
+                          function(x) all(x == ""), logical(1L))))
 })
 
 test_that("pdf_form_fields reports the documented text field", {

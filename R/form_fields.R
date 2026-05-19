@@ -79,19 +79,44 @@ form_field_flag_decode <- function(flags, bit) {
 #'   * `is_checked` logical - current state of the widget;
 #'     `TRUE` / `FALSE` for `checkbox` / `radiobutton` fields,
 #'     `NA` for every other field type.
+#'   * `control_count` integer - total number of widgets in this
+#'     field's control group (≥ 1; `> 1` for radio button groups
+#'     with multiple physical widgets). `NA` if PDFium reports
+#'     failure.
+#'   * `control_index` integer - 0-based position of this row's
+#'     widget within its control group. For a checkbox or a
+#'     standalone widget this is `0`. `NA` if PDFium reports
+#'     failure.
 #'   * `name` character - fully qualified field name, the
 #'     period-joined dotted path PDFium reports (e.g.
 #'     `"address.city"`).
 #'   * `alternate_name` character - the field's user-facing
 #'     label (the `/TU` entry), shown by viewers as a tooltip.
-#'   * `value` character - the field's current value as a
-#'     string (text fields), the selected option label
-#'     (combo/listbox), or the export value (check / radio).
+#'   * `value` character - the field's current display value.
+#'     For text fields this is the entered text. For combo /
+#'     listbox fields this is the *label* of the selected
+#'     option (use `export_value` for the underlying export
+#'     name). For checkbox / radio fields this is the
+#'     appearance-state name ("Off" or the on-state name).
+#'   * `export_value` character - the field's export value
+#'     (`/V`). Same as `value` for text fields. For buttons,
+#'     the value that gets submitted in form data (e.g. "Yes"
+#'     for a checkbox, or the radio's on-state name).
 #'   * `bounds_left`, `bounds_bottom`, `bounds_right`,
 #'     `bounds_top` - widget rectangle in PDF user space.
 #'   * `options` list-column of character vectors - the choice
 #'     labels for `combobox` and `listbox` fields; empty
 #'     character vector for other types.
+#'   * `is_option_selected` list-column of logical vectors,
+#'     one element per option (matches `options`). `TRUE` when
+#'     the option is currently selected. Empty for non-choice
+#'     fields.
+#'   * `additional_actions_js` list-column of length-4 character
+#'     vectors named `c("key_stroke", "format", "validate",
+#'     "calculate")`. Each element is the JavaScript source
+#'     string PDFium reports for the corresponding trigger
+#'     event, or `""` when the trigger has no JS handler.
+#'     Surfaced read-only here; v0.2.0 may expose a writer.
 #'
 #' Returns a 0-row tibble of the same schema when the document
 #' has no AcroForm dictionary.
@@ -122,6 +147,10 @@ pdf_form_fields <- function(doc) {
     form_field_flag_decode(field_flags,
                            .pdfium_field_flag_bits[[bit_name]])
   }
+  control_count <- as.integer(raw$control_count)
+  control_count[control_count < 0L] <- NA_integer_
+  control_index <- as.integer(raw$control_index)
+  control_index[control_index < 0L] <- NA_integer_
   tibble::tibble(
     field_index    = seq_along(type_name),
     page_num       = as.integer(raw$page_num),
@@ -131,14 +160,19 @@ pdf_form_fields <- function(doc) {
     is_required    = decode("is_required"),
     is_no_export   = decode("is_no_export"),
     is_checked     = is_checked_lgl,
+    control_count  = control_count,
+    control_index  = control_index,
     name           = raw$name,
     alternate_name = raw$alternate_name,
     value          = raw$value,
+    export_value   = raw$export_value,
     bounds_left    = raw$bounds_left,
     bounds_bottom  = raw$bounds_bottom,
     bounds_right   = raw$bounds_right,
     bounds_top     = raw$bounds_top,
-    options        = raw$options
+    options        = raw$options,
+    is_option_selected    = raw$is_option_selected,
+    additional_actions_js = raw$additional_actions_js
   )
 }
 
