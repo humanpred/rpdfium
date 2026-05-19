@@ -381,3 +381,15 @@ cpp_text_search_page <- function(page_ptr, query, match_case, match_whole_word, 
     .Call(`_pdfium_cpp_text_search_page`, page_ptr, query, match_case, match_whole_word, consecutive)
 }
 
+cpp_text_obj_rendered_bitmap <- function(doc_ptr, page_ptr, obj_ptr, scale) {
+    .Call(`_pdfium_cpp_text_obj_rendered_bitmap`, doc_ptr, page_ptr, obj_ptr, scale)
+}
+
+cpp_attachment_dict_value <- function(doc_ptr, index_zero, key) {
+    .Call(`_pdfium_cpp_attachment_dict_value`, doc_ptr, index_zero, key)
+}
+
+cpp_text_char_obj_index <- function(page_ptr, char_index_zero) {
+    .Call(`_pdfium_cpp_text_char_obj_index`, page_ptr, char_index_zero)
+}
+

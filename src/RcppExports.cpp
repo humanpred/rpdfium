@@ -1098,6 +1098,45 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_text_obj_rendered_bitmap
+SEXP cpp_text_obj_rendered_bitmap(SEXP doc_ptr, SEXP page_ptr, SEXP obj_ptr, double scale);
+RcppExport SEXP _pdfium_cpp_text_obj_rendered_bitmap(SEXP doc_ptrSEXP, SEXP page_ptrSEXP, SEXP obj_ptrSEXP, SEXP scaleSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type scale(scaleSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_obj_rendered_bitmap(doc_ptr, page_ptr, obj_ptr, scale));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_attachment_dict_value
+Rcpp::List cpp_attachment_dict_value(SEXP doc_ptr, int index_zero, std::string key);
+RcppExport SEXP _pdfium_cpp_attachment_dict_value(SEXP doc_ptrSEXP, SEXP index_zeroSEXP, SEXP keySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type index_zero(index_zeroSEXP);
+    Rcpp::traits::input_parameter< std::string >::type key(keySEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_attachment_dict_value(doc_ptr, index_zero, key));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_text_char_obj_index
+int cpp_text_char_obj_index(SEXP page_ptr, int char_index_zero);
+RcppExport SEXP _pdfium_cpp_text_char_obj_index(SEXP page_ptrSEXP, SEXP char_index_zeroSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type char_index_zero(char_index_zeroSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_char_obj_index(page_ptr, char_index_zero));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_annot_count", (DL_FUNC) &_pdfium_cpp_annot_count, 1},
@@ -1195,6 +1234,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_text_render_mode", (DL_FUNC) &_pdfium_cpp_text_render_mode, 1},
     {"_pdfium_cpp_page_text_colors", (DL_FUNC) &_pdfium_cpp_page_text_colors, 1},
     {"_pdfium_cpp_text_search_page", (DL_FUNC) &_pdfium_cpp_text_search_page, 5},
+    {"_pdfium_cpp_text_obj_rendered_bitmap", (DL_FUNC) &_pdfium_cpp_text_obj_rendered_bitmap, 4},
+    {"_pdfium_cpp_attachment_dict_value", (DL_FUNC) &_pdfium_cpp_attachment_dict_value, 3},
+    {"_pdfium_cpp_text_char_obj_index", (DL_FUNC) &_pdfium_cpp_text_char_obj_index, 2},
     {NULL, NULL, 0}
 };
 
