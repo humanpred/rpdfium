@@ -5,8 +5,8 @@ cpp_annot_count <- function(page_ptr) {
     .Call(`_pdfium_cpp_annot_count`, page_ptr)
 }
 
-cpp_annots_list <- function(page_ptr) {
-    .Call(`_pdfium_cpp_annots_list`, page_ptr)
+cpp_annots_list <- function(doc_ptr, page_ptr) {
+    .Call(`_pdfium_cpp_annots_list`, doc_ptr, page_ptr)
 }
 
 cpp_attachment_count <- function(doc_ptr) {

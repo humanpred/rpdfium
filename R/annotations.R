@@ -154,6 +154,21 @@ annot_flag_decode <- function(flags, bit) {
 #'     `NULL` for non-ink annotations. One element per ink
 #'     stroke; a single-stroke ink annotation produces a length-1
 #'     list.
+#'   * `font_color_red`, `font_color_green`, `font_color_blue`
+#'     numeric - the annotation's text-fill color (`/DA` "g"/"rg"/
+#'     "k" operands) in 0..1. Meaningful for FreeText / Widget
+#'     subtypes that carry inline text; `NA` for others.
+#'   * `font_size` numeric - the text-fill font size from `/DA`;
+#'     `NA` when the annotation doesn't carry variable text.
+#'   * `popup_index` integer - 1-based `annotation_index` of the
+#'     linked `/Popup` annotation on the same page (for
+#'     sticky-note + popup pairs); `NA` when none.
+#'   * `irt_index` integer - 1-based `annotation_index` of the
+#'     `/IRT` (in-reply-to) annotation for comment threads;
+#'     `NA` when none.
+#'   * `file_attachment_name` character - the attachment name
+#'     for `fileattachment`-subtype annotations; `NA` for other
+#'     subtypes.
 #'
 #' Returns a 0-row tibble of the same schema when the page has
 #' no annotations.
@@ -164,7 +179,7 @@ pdf_annotations <- function(page, page_num = 1L) {
   page_h <- as_open_annot_page(page, page_num)
   on.exit(if (page_h$close_on_exit) pdf_close_page(page_h$page),
           add = TRUE)
-  raw <- cpp_annots_list(page_h$page$ptr)
+  raw <- cpp_annots_list(page_h$page$doc$ptr, page_h$page$ptr)
   flags <- as.integer(raw$flags)
   decode <- function(bit_name) {
     annot_flag_decode(flags, .pdfium_annot_flag_bits[[bit_name]])
@@ -198,7 +213,14 @@ pdf_annotations <- function(page, page_num = 1L) {
     border_width     = raw$border_width,
     quad_points      = raw$quad_points,
     vertices         = raw$vertices,
-    ink_paths        = raw$ink_paths
+    ink_paths        = raw$ink_paths,
+    font_color_red   = raw$font_color_red,
+    font_color_green = raw$font_color_green,
+    font_color_blue  = raw$font_color_blue,
+    font_size        = raw$font_size,
+    popup_index      = as.integer(raw$popup_index),
+    irt_index        = as.integer(raw$irt_index),
+    file_attachment_name = as.character(raw$file_attachment_name)
   )
 }
 

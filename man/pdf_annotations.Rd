@@ -68,6 +68,21 @@ stroke paths, each an N-by-2 numeric matrix \verb{x, y}.
 \code{NULL} for non-ink annotations. One element per ink
 stroke; a single-stroke ink annotation produces a length-1
 list.
+\item \code{font_color_red}, \code{font_color_green}, \code{font_color_blue}
+numeric - the annotation's text-fill color (\verb{/DA} "g"/"rg"/
+"k" operands) in 0..1. Meaningful for FreeText / Widget
+subtypes that carry inline text; \code{NA} for others.
+\item \code{font_size} numeric - the text-fill font size from \verb{/DA};
+\code{NA} when the annotation doesn't carry variable text.
+\item \code{popup_index} integer - 1-based \code{annotation_index} of the
+linked \verb{/Popup} annotation on the same page (for
+sticky-note + popup pairs); \code{NA} when none.
+\item \code{irt_index} integer - 1-based \code{annotation_index} of the
+\verb{/IRT} (in-reply-to) annotation for comment threads;
+\code{NA} when none.
+\item \code{file_attachment_name} character - the attachment name
+for \code{fileattachment}-subtype annotations; \code{NA} for other
+subtypes.
 }
 
 Returns a 0-row tibble of the same schema when the page has

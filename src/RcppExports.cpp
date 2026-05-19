@@ -22,13 +22,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_annots_list
-Rcpp::List cpp_annots_list(SEXP page_ptr);
-RcppExport SEXP _pdfium_cpp_annots_list(SEXP page_ptrSEXP) {
+Rcpp::List cpp_annots_list(SEXP doc_ptr, SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_annots_list(SEXP doc_ptrSEXP, SEXP page_ptrSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_annots_list(page_ptr));
+    rcpp_result_gen = Rcpp::wrap(cpp_annots_list(doc_ptr, page_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1038,7 +1039,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_annot_count", (DL_FUNC) &_pdfium_cpp_annot_count, 1},
-    {"_pdfium_cpp_annots_list", (DL_FUNC) &_pdfium_cpp_annots_list, 1},
+    {"_pdfium_cpp_annots_list", (DL_FUNC) &_pdfium_cpp_annots_list, 2},
     {"_pdfium_cpp_attachment_count", (DL_FUNC) &_pdfium_cpp_attachment_count, 1},
     {"_pdfium_cpp_attachments_list", (DL_FUNC) &_pdfium_cpp_attachments_list, 1},
     {"_pdfium_cpp_attachment_data", (DL_FUNC) &_pdfium_cpp_attachment_data, 2},

@@ -24,7 +24,11 @@ test_that("pdf_annotations returns 0 rows for a page with no annots", {
                       "color_alpha", "interior_red", "interior_green",
                       "interior_blue", "interior_alpha",
                       "border_width",
-                      "quad_points", "vertices", "ink_paths"))
+                      "quad_points", "vertices", "ink_paths",
+                      "font_color_red", "font_color_green",
+                      "font_color_blue", "font_size",
+                      "popup_index", "irt_index",
+                      "file_attachment_name"))
 })
 
 test_that("pdf_annotations populates quad_points / vertices / ink_paths", {
