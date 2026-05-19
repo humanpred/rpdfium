@@ -483,6 +483,44 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_named_dest_by_name
+Rcpp::List cpp_named_dest_by_name(SEXP doc_ptr, std::string name);
+RcppExport SEXP _pdfium_cpp_named_dest_by_name(SEXP doc_ptrSEXP, SEXP nameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type name(nameSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_named_dest_by_name(doc_ptr, name));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_bookmark_find
+int cpp_bookmark_find(SEXP doc_ptr, std::string title_utf8);
+RcppExport SEXP _pdfium_cpp_bookmark_find(SEXP doc_ptrSEXP, SEXP title_utf8SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type title_utf8(title_utf8SEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_bookmark_find(doc_ptr, title_utf8));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_form_field_at_point
+Rcpp::List cpp_form_field_at_point(SEXP doc_ptr, SEXP page_ptr, double x, double y);
+RcppExport SEXP _pdfium_cpp_form_field_at_point(SEXP doc_ptrSEXP, SEXP page_ptrSEXP, SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_form_field_at_point(doc_ptr, page_ptr, x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_obj_line_cap
 int cpp_obj_line_cap(SEXP obj_ptr);
 RcppExport SEXP _pdfium_cpp_obj_line_cap(SEXP obj_ptrSEXP) {
@@ -1080,6 +1118,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_close_document", (DL_FUNC) &_pdfium_cpp_close_document, 1},
     {"_pdfium_cpp_handle_is_valid", (DL_FUNC) &_pdfium_cpp_handle_is_valid, 1},
     {"_pdfium_cpp_page_count", (DL_FUNC) &_pdfium_cpp_page_count, 1},
+    {"_pdfium_cpp_named_dest_by_name", (DL_FUNC) &_pdfium_cpp_named_dest_by_name, 2},
+    {"_pdfium_cpp_bookmark_find", (DL_FUNC) &_pdfium_cpp_bookmark_find, 2},
+    {"_pdfium_cpp_form_field_at_point", (DL_FUNC) &_pdfium_cpp_form_field_at_point, 4},
     {"_pdfium_cpp_obj_line_cap", (DL_FUNC) &_pdfium_cpp_obj_line_cap, 1},
     {"_pdfium_cpp_obj_line_join", (DL_FUNC) &_pdfium_cpp_obj_line_join, 1},
     {"_pdfium_cpp_obj_has_transparency", (DL_FUNC) &_pdfium_cpp_obj_has_transparency, 1},

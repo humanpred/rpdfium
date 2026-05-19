@@ -169,6 +169,18 @@ cpp_page_count <- function(ptr) {
     .Call(`_pdfium_cpp_page_count`, ptr)
 }
 
+cpp_named_dest_by_name <- function(doc_ptr, name) {
+    .Call(`_pdfium_cpp_named_dest_by_name`, doc_ptr, name)
+}
+
+cpp_bookmark_find <- function(doc_ptr, title_utf8) {
+    .Call(`_pdfium_cpp_bookmark_find`, doc_ptr, title_utf8)
+}
+
+cpp_form_field_at_point <- function(doc_ptr, page_ptr, x, y) {
+    .Call(`_pdfium_cpp_form_field_at_point`, doc_ptr, page_ptr, x, y)
+}
+
 cpp_obj_line_cap <- function(obj_ptr) {
     .Call(`_pdfium_cpp_obj_line_cap`, obj_ptr)
 }
