@@ -135,3 +135,36 @@ test_that("pdf_doc_permissions() rejects closed docs", {
   pdf_close(doc)
   expect_error(pdf_doc_permissions(doc), "Document has been closed")
 })
+
+# pdf_doc_security / user_permissions / xref_valid / trailer_ends ---
+
+test_that("pdf_doc_security returns NA for unencrypted PDFs", {
+  expect_true(is.na(pdf_doc_security(fixture_path("shapes"))))
+  expect_true(is.na(pdf_doc_security(fixture_path("outline"))))
+})
+
+test_that("pdf_doc_user_permissions matches pdf_doc_permissions when unencrypted", {
+  expect_identical(pdf_doc_user_permissions(fixture_path("shapes")),
+                   pdf_doc_permissions(fixture_path("shapes")))
+})
+
+test_that("pdf_doc_xref_valid is TRUE for PDFium-built fixtures", {
+  expect_true(pdf_doc_xref_valid(fixture_path("shapes")))
+  expect_true(pdf_doc_xref_valid(fixture_path("outline")))
+})
+
+test_that("pdf_doc_trailer_ends returns at least one offset per PDF", {
+  ends <- pdf_doc_trailer_ends(fixture_path("shapes"))
+  expect_type(ends, "integer")
+  expect_gte(length(ends), 1L)
+  expect_true(all(ends > 0L))
+})
+
+test_that("doc-health helpers reject closed docs", {
+  doc <- pdf_open(fixture_path("shapes"))
+  pdf_close(doc)
+  for (fn in list(pdf_doc_security, pdf_doc_user_permissions,
+                   pdf_doc_xref_valid, pdf_doc_trailer_ends)) {
+    expect_error(fn(doc), "Document has been closed")
+  }
+})

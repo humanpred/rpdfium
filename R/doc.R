@@ -229,10 +229,103 @@ pdf_doc_permissions <- function(doc) {
   # gives 0xFFFF -- every flag is set, every operation allowed,
   # which is the correct contract.
   mask <- cpp_doc_permissions(h$doc$ptr)
+  decode_perm_mask(mask)
+}
+
+# Internal: shared low-16-bit decode used by pdf_doc_permissions()
+# and pdf_doc_user_permissions().
+decode_perm_mask <- function(mask) {
   low16 <- as.integer(mask %% 65536)
   vapply(
     .pdfium_permission_bits,
     function(b) bitwAnd(low16, bitwShiftL(1L, b - 1L)) != 0L,
     logical(1L)
   )
+}
+
+#' User-level document permissions
+#'
+#' Returns the *user* subset of the document's permission bitmask
+#' (the bits that apply to a user who opened the PDF without the
+#' owner password). Same shape as [pdf_doc_permissions()] — a named
+#' logical vector with one entry per permission flag — but with
+#' owner-only operations cleared. Wraps `FPDF_GetDocUserPermissions`.
+#'
+#' For unencrypted PDFs, every flag is `TRUE`.
+#'
+#' @inheritParams pdf_doc_permissions
+#' @return Named logical vector. Same names as
+#'   [pdf_doc_permissions()].
+#' @seealso [pdf_doc_permissions()], [pdf_doc_security()].
+#' @export
+pdf_doc_user_permissions <- function(doc) {
+  h <- as_doc_handle(doc, "doc")
+  on.exit(h$on_exit(), add = TRUE)
+  decode_perm_mask(cpp_doc_user_permissions(h$doc$ptr))
+}
+
+#' Document security handler revision
+#'
+#' Returns the PDF security handler revision used by the document:
+#'
+#' * `NA` — unencrypted (PDFium reports `-1`, mapped to `NA` here).
+#' * `2` — original 40-bit RC4 (PDF 1.1).
+#' * `3` — 128-bit RC4 (PDF 1.4).
+#' * `4` — AES (PDF 1.6).
+#' * `5` — AES-256, Adobe Extension Level 3 (PDF 1.7).
+#' * `6` — AES-256 (PDF 2.0).
+#'
+#' Wraps `FPDF_GetSecurityHandlerRevision`. Useful when classifying
+#' PDFs as "encrypted vs not" and when reporting the encryption
+#' strength to downstream tools — combine with [pdf_doc_permissions()]
+#' to know whether a viewer would let a user print/copy/edit.
+#'
+#' @inheritParams pdf_doc_permissions
+#' @return Integer scalar. `NA` for unencrypted PDFs; one of
+#'   `2`, `3`, `4`, `5`, `6` otherwise.
+#' @seealso [pdf_doc_permissions()], [pdf_doc_user_permissions()].
+#' @export
+pdf_doc_security <- function(doc) {
+  h <- as_doc_handle(doc, "doc")
+  on.exit(h$on_exit(), add = TRUE)
+  rev <- as.integer(cpp_doc_security_revision(h$doc$ptr))
+  if (rev < 0L) NA_integer_ else rev
+}
+
+#' Cross-reference table validity flag
+#'
+#' Returns `TRUE` when the document's `/XRef` table is structurally
+#' valid as PDFium found it, or `FALSE` when PDFium had to rebuild
+#' it from scratch (a sign of a damaged or non-conforming PDF).
+#' Wraps `FPDF_DocumentHasValidCrossReferenceTable`.
+#'
+#' @inheritParams pdf_doc_permissions
+#' @return Logical scalar.
+#' @export
+pdf_doc_xref_valid <- function(doc) {
+  h <- as_doc_handle(doc, "doc")
+  on.exit(h$on_exit(), add = TRUE)
+  as.logical(cpp_doc_xref_valid(h$doc$ptr))
+}
+
+#' Byte offsets of every `%%EOF` trailer marker
+#'
+#' Returns one integer per trailer end-of-file marker in the source
+#' bytes. A clean single-revision PDF reports one value. Incremental
+#' updates append additional bodies / xref tables and trailers, each
+#' marked by another `%%EOF`. Wraps `FPDF_GetTrailerEnds`.
+#'
+#' Useful for incremental-update analysis, signature byte-range
+#' validation, and PDF repair workflows.
+#'
+#' @inheritParams pdf_doc_permissions
+#' @return Integer vector of byte offsets (one per trailer). Empty
+#'   when PDFium reports none. Returns `NA` for any offset that
+#'   exceeds R's 32-bit signed integer range (files larger than
+#'   2 GB).
+#' @export
+pdf_doc_trailer_ends <- function(doc) {
+  h <- as_doc_handle(doc, "doc")
+  on.exit(h$on_exit(), add = TRUE)
+  cpp_doc_trailer_ends(h$doc$ptr)
 }

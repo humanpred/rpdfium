@@ -97,9 +97,12 @@ pdf_page_size <- function(page, page_num = 1L) {
     return(cpp_page_size(page$ptr))
   }
   if (inherits(page, "pdfium_doc")) {
-    p <- pdf_load_page(page, page_num)
-    on.exit(pdf_close_page(p), add = TRUE)
-    return(cpp_page_size(p$ptr))
+    if (!is_open(page)) stop("Document has been closed.", call. = FALSE)
+    # Fast path: FPDF_GetPageSizeByIndexF reports the page's media
+    # extents without loading the page object, which is much
+    # cheaper than pdf_load_page + cpp_page_size for callers
+    # iterating dimensions across many pages.
+    return(cpp_doc_page_size_by_index(page$ptr, as.integer(page_num - 1L)))
   }
   stop("`page` must be a `pdfium_page` or `pdfium_doc`.", call. = FALSE)
 }

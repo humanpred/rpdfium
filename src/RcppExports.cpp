@@ -213,6 +213,62 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_doc_security_revision
+int cpp_doc_security_revision(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_doc_security_revision(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_doc_security_revision(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_doc_user_permissions
+double cpp_doc_user_permissions(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_doc_user_permissions(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_doc_user_permissions(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_doc_xref_valid
+bool cpp_doc_xref_valid(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_doc_xref_valid(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_doc_xref_valid(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_doc_trailer_ends
+Rcpp::IntegerVector cpp_doc_trailer_ends(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_doc_trailer_ends(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_doc_trailer_ends(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_doc_page_size_by_index
+Rcpp::NumericVector cpp_doc_page_size_by_index(SEXP doc_ptr, int page_index_zero);
+RcppExport SEXP _pdfium_cpp_doc_page_size_by_index(SEXP doc_ptrSEXP, SEXP page_index_zeroSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type page_index_zero(page_index_zeroSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_doc_page_size_by_index(doc_ptr, page_index_zero));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_doc_meta_text
 SEXP cpp_doc_meta_text(SEXP doc_ptr, std::string tag);
 RcppExport SEXP _pdfium_cpp_doc_meta_text(SEXP doc_ptrSEXP, SEXP tagSEXP) {
@@ -999,6 +1055,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_doc_viewer_prefs", (DL_FUNC) &_pdfium_cpp_doc_viewer_prefs, 1},
     {"_pdfium_cpp_doc_named_dests", (DL_FUNC) &_pdfium_cpp_doc_named_dests, 1},
     {"_pdfium_cpp_doc_javascript", (DL_FUNC) &_pdfium_cpp_doc_javascript, 1},
+    {"_pdfium_cpp_doc_security_revision", (DL_FUNC) &_pdfium_cpp_doc_security_revision, 1},
+    {"_pdfium_cpp_doc_user_permissions", (DL_FUNC) &_pdfium_cpp_doc_user_permissions, 1},
+    {"_pdfium_cpp_doc_xref_valid", (DL_FUNC) &_pdfium_cpp_doc_xref_valid, 1},
+    {"_pdfium_cpp_doc_trailer_ends", (DL_FUNC) &_pdfium_cpp_doc_trailer_ends, 1},
+    {"_pdfium_cpp_doc_page_size_by_index", (DL_FUNC) &_pdfium_cpp_doc_page_size_by_index, 2},
     {"_pdfium_cpp_doc_meta_text", (DL_FUNC) &_pdfium_cpp_doc_meta_text, 2},
     {"_pdfium_cpp_doc_info", (DL_FUNC) &_pdfium_cpp_doc_info, 1},
     {"_pdfium_cpp_doc_file_version", (DL_FUNC) &_pdfium_cpp_doc_file_version, 1},

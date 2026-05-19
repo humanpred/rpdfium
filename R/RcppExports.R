@@ -73,6 +73,26 @@ cpp_doc_javascript <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_javascript`, doc_ptr)
 }
 
+cpp_doc_security_revision <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_doc_security_revision`, doc_ptr)
+}
+
+cpp_doc_user_permissions <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_doc_user_permissions`, doc_ptr)
+}
+
+cpp_doc_xref_valid <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_doc_xref_valid`, doc_ptr)
+}
+
+cpp_doc_trailer_ends <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_doc_trailer_ends`, doc_ptr)
+}
+
+cpp_doc_page_size_by_index <- function(doc_ptr, page_index_zero) {
+    .Call(`_pdfium_cpp_doc_page_size_by_index`, doc_ptr, page_index_zero)
+}
+
 cpp_doc_meta_text <- function(doc_ptr, tag) {
     .Call(`_pdfium_cpp_doc_meta_text`, doc_ptr, tag)
 }
