@@ -87,8 +87,11 @@ pdf_text_content <- function(obj) {
 #' @param page_num One-based page index. Only used when `page` is a
 #'   `pdfium_doc`. Ignored otherwise.
 #' @return A tibble with columns:
-#'   * `text_index` - 1-based page-object index (so this row is the
-#'     `text_index`-th object returned by [pdf_page_objects()])
+#'   * `obj_index` - 1-based page-object index (so this row is the
+#'     `obj_index`-th object returned by [pdf_page_objects()]).
+#'     Renamed from `text_index` in the v0.1.0 reader/writer audit
+#'     to avoid colliding with `pdf_text_chars()$text_index`, which
+#'     is the *extractable-text* offset.
 #'   * `bounds_left`, `bounds_bottom`, `bounds_right`, `bounds_top`
 #'     - the object's bounding box in PDF points
 #'   * `font_size` - typographic em size; multiply by the text
@@ -111,8 +114,14 @@ pdf_text_runs <- function(page, page_num = 1L) {
     on.exit(pdf_close_page(page), add = TRUE)
   }
   raw <- cpp_page_text_runs(page$ptr)
+  # `obj_index` is the page-object index PDFium reports (1-based,
+  # spans all page objects on the page — paths, images, text). The
+  # column was previously called `text_index` but that name collided
+  # with `pdf_text_chars()$text_index` (the *extractable-text*
+  # offset). Renamed during the v0.1.0 reader/writer audit; see
+  # dev/reader-writer-audit.md.
   tibble::tibble(
-    text_index        = raw$text_index,
+    obj_index         = raw$text_index,
     bounds_left       = raw$bounds_left,
     bounds_bottom     = raw$bounds_bottom,
     bounds_right      = raw$bounds_right,

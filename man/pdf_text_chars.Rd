@@ -30,6 +30,23 @@ synthesised between positioned glyphs (the source PDF
 does not carry a character there; PDFium infers one for
 text-extraction consumers).
 \item \code{is_hyphen} logical - \code{TRUE} for end-of-line soft hyphens.
+\item \code{origin_x}, \code{origin_y} - the character's glyph origin point
+in PDF user space (\code{FPDFText_GetCharOrigin}). Distinct from
+the bounding-box corners; for many fonts the origin is at
+the baseline left of the glyph.
+\item \code{loose_left}, \code{loose_bottom}, \code{loose_right}, \code{loose_top} -
+the "loose" bounding box covering the entire glyph cell
+(font ascent / descent included), not just the glyph
+outline. Use these when you need consistent line heights;
+use \verb{bounds_*} for the tight glyph extent.
+\item \code{unicode_map_error} logical - \code{TRUE} when PDFium detected
+that the character's ToUnicode CMap is malformed for this
+glyph (the codepoint reported may be the PDF's `
+fallback rather than the intended character).
+\item \code{text_index} integer - 0-based position in the \emph{extractable}
+text string (i.e. the linear \code{pdf_text()} output) for this
+character, or \code{NA} for synthesised whitespace and other
+characters that don't appear in the extracted text.
 }
 
 Returns a 0-row tibble of the same schema when the page has no

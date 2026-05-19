@@ -122,17 +122,77 @@ test_that("password= flows through path-shortcut wrappers", {
 
 # pdf_text_chars -------------------------------------------------
 
+test_that("pdf_text_char_at_point hits a known glyph in shapes.pdf", {
+  doc <- pdf_open(fixture_path("shapes"))
+  on.exit(pdf_close(doc), add = TRUE)
+  chars <- pdf_text_chars(doc, page_num = 1L)
+  visible <- chars[!chars$is_generated, ]
+  # Pick the centre of the first visible char's bounding box.
+  cx <- (visible$bounds_left[[1L]] + visible$bounds_right[[1L]]) / 2
+  cy <- (visible$bounds_bottom[[1L]] + visible$bounds_top[[1L]]) / 2
+  idx <- pdf_text_char_at_point(doc, cx, cy, page_num = 1L)
+  expect_type(idx, "integer")
+  expect_equal(idx, visible$char_index[[1L]])
+})
+
+test_that("pdf_text_char_at_point returns NA when no glyph is near", {
+  doc <- pdf_open(fixture_path("shapes"))
+  on.exit(pdf_close(doc), add = TRUE)
+  # Sample a corner well outside any character.
+  expect_true(is.na(pdf_text_char_at_point(doc, -100, -100,
+                                            page_num = 1L)))
+})
+
+test_that("text-index <-> char-index round trip is consistent", {
+  doc <- pdf_open(fixture_path("shapes"))
+  on.exit(pdf_close(doc), add = TRUE)
+  chars <- pdf_text_chars(doc, page_num = 1L)
+  # Walk every char that has a non-NA text_index; round-tripping
+  # back through cpp's GetCharIndexFromTextIndex should land on
+  # the same char_index.
+  for (i in seq_len(nrow(chars))) {
+    ti <- chars$text_index[[i]]
+    if (is.na(ti)) next
+    ti_helper <- pdf_text_index_from_char(doc, chars$char_index[[i]],
+                                           page_num = 1L)
+    expect_equal(ti_helper, ti)
+    ci_back <- pdf_text_char_from_text_index(doc, ti, page_num = 1L)
+    expect_equal(ci_back, chars$char_index[[i]])
+  }
+})
+
+test_that("pdf_text_char_at_point / index helpers validate inputs", {
+  doc <- pdf_open(fixture_path("shapes"))
+  on.exit(pdf_close(doc), add = TRUE)
+  expect_error(pdf_text_char_at_point(doc, NA, 1), "finite numeric")
+  expect_error(pdf_text_char_at_point(doc, 1, NA), "finite numeric")
+  expect_error(pdf_text_char_at_point(doc, 1, 1, tolerance = NA),
+               "finite numeric")
+  expect_error(pdf_text_index_from_char(doc, NA), "finite integer")
+  expect_error(pdf_text_char_from_text_index(doc, NA),
+               "finite integer")
+})
+
 test_that("pdf_text_chars returns one row per character with bounds + flags", {
   chars <- pdf_text_chars(pdf_open(fixture_path("shapes")), page_num = 1L)
   expect_s3_class(chars, "tbl_df")
   expect_named(chars, c("char_index", "codepoint", "char",
                         "bounds_left", "bounds_bottom",
                         "bounds_right", "bounds_top",
-                        "font_size", "is_generated", "is_hyphen"))
+                        "font_size", "is_generated", "is_hyphen",
+                        "origin_x", "origin_y",
+                        "loose_left", "loose_bottom",
+                        "loose_right", "loose_top",
+                        "unicode_map_error", "text_index"))
   expect_type(chars$codepoint,    "integer")
   expect_type(chars$char,         "character")
   expect_type(chars$is_generated, "logical")
   expect_type(chars$is_hyphen,    "logical")
+  expect_type(chars$origin_x,     "double")
+  expect_type(chars$origin_y,     "double")
+  expect_type(chars$loose_left,   "double")
+  expect_type(chars$unicode_map_error, "logical")
+  expect_type(chars$text_index,   "integer")
   # The fixture text is "Hello" - 5 visible chars.
   visible <- chars[!chars$is_generated, ]
   expect_gte(nrow(visible), 5L)

@@ -249,6 +249,18 @@ cpp_page_text_chars <- function(page_ptr) {
     .Call(`_pdfium_cpp_page_text_chars`, page_ptr)
 }
 
+cpp_text_char_at_pos <- function(page_ptr, x, y, x_tol, y_tol) {
+    .Call(`_pdfium_cpp_text_char_at_pos`, page_ptr, x, y, x_tol, y_tol)
+}
+
+cpp_text_text_index_from_char <- function(page_ptr, char_index) {
+    .Call(`_pdfium_cpp_text_text_index_from_char`, page_ptr, char_index)
+}
+
+cpp_text_char_index_from_text <- function(page_ptr, text_index) {
+    .Call(`_pdfium_cpp_text_char_index_from_text`, page_ptr, text_index)
+}
+
 cpp_link_at_point <- function(doc_ptr, page_ptr, x, y) {
     .Call(`_pdfium_cpp_link_at_point`, doc_ptr, page_ptr, x, y)
 }

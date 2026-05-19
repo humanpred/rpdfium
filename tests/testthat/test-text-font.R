@@ -88,7 +88,7 @@ test_that("pdf_text_font refuses objects whose parent page has closed", {
 
 test_that("pdf_text_runs now includes font_* columns", {
   res <- pdf_text_runs(pdf_open(fixture_path("unicode")))
-  expect_named(res, c("text_index", "bounds_left", "bounds_bottom",
+  expect_named(res, c("obj_index", "bounds_left", "bounds_bottom",
                       "bounds_right", "bounds_top", "font_size", "text",
                       "font_base_name", "font_family", "font_weight",
                       "font_italic_angle", "font_is_embedded",

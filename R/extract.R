@@ -138,7 +138,7 @@ empty_paths_tibble <- function() {
 # returned object).
 empty_text_runs_tibble <- function() {
   tibble::tibble(
-    text_index    = integer(),
+    obj_index     = integer(),
     bounds_left   = double(),
     bounds_bottom = double(),
     bounds_right  = double(),

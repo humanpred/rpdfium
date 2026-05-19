@@ -704,6 +704,45 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_text_char_at_pos
+int cpp_text_char_at_pos(SEXP page_ptr, double x, double y, double x_tol, double y_tol);
+RcppExport SEXP _pdfium_cpp_text_char_at_pos(SEXP page_ptrSEXP, SEXP xSEXP, SEXP ySEXP, SEXP x_tolSEXP, SEXP y_tolSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type y(ySEXP);
+    Rcpp::traits::input_parameter< double >::type x_tol(x_tolSEXP);
+    Rcpp::traits::input_parameter< double >::type y_tol(y_tolSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_char_at_pos(page_ptr, x, y, x_tol, y_tol));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_text_text_index_from_char
+int cpp_text_text_index_from_char(SEXP page_ptr, int char_index);
+RcppExport SEXP _pdfium_cpp_text_text_index_from_char(SEXP page_ptrSEXP, SEXP char_indexSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type char_index(char_indexSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_text_index_from_char(page_ptr, char_index));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_text_char_index_from_text
+int cpp_text_char_index_from_text(SEXP page_ptr, int text_index);
+RcppExport SEXP _pdfium_cpp_text_char_index_from_text(SEXP page_ptrSEXP, SEXP text_indexSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type text_index(text_indexSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_char_index_from_text(page_ptr, text_index));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_link_at_point
 Rcpp::List cpp_link_at_point(SEXP doc_ptr, SEXP page_ptr, double x, double y);
 RcppExport SEXP _pdfium_cpp_link_at_point(SEXP doc_ptrSEXP, SEXP page_ptrSEXP, SEXP xSEXP, SEXP ySEXP) {
@@ -1004,6 +1043,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_page_box", (DL_FUNC) &_pdfium_cpp_page_box, 2},
     {"_pdfium_cpp_page_links", (DL_FUNC) &_pdfium_cpp_page_links, 2},
     {"_pdfium_cpp_page_text_chars", (DL_FUNC) &_pdfium_cpp_page_text_chars, 1},
+    {"_pdfium_cpp_text_char_at_pos", (DL_FUNC) &_pdfium_cpp_text_char_at_pos, 5},
+    {"_pdfium_cpp_text_text_index_from_char", (DL_FUNC) &_pdfium_cpp_text_text_index_from_char, 2},
+    {"_pdfium_cpp_text_char_index_from_text", (DL_FUNC) &_pdfium_cpp_text_char_index_from_text, 2},
     {"_pdfium_cpp_link_at_point", (DL_FUNC) &_pdfium_cpp_link_at_point, 4},
     {"_pdfium_cpp_page_aactions", (DL_FUNC) &_pdfium_cpp_page_aactions, 2},
     {"_pdfium_cpp_page_thumbnail_raw", (DL_FUNC) &_pdfium_cpp_page_thumbnail_raw, 1},

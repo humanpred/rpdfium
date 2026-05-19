@@ -18,6 +18,7 @@
 #include <vector>
 #include "fpdfview.h"
 #include "fpdf_doc.h"
+#include "fpdf_searchex.h"
 #include "fpdf_text.h"
 #include "fpdf_transformpage.h"
 #include "action_helpers.h"
@@ -154,6 +155,11 @@ Rcpp::List cpp_page_text_chars(SEXP page_ptr) {
   Rcpp::NumericVector font_size(n);
   Rcpp::LogicalVector is_generated(n);
   Rcpp::LogicalVector is_hyphen(n);
+  Rcpp::NumericVector origin_x(n), origin_y(n);
+  Rcpp::NumericVector loose_left(n), loose_bottom(n),
+                       loose_right(n), loose_top(n);
+  Rcpp::LogicalVector unicode_map_error(n);
+  Rcpp::IntegerVector text_index(n);
   for (int i = 0; i < n; ++i) {
     unsigned int cp = FPDFText_GetUnicode(tp, i);
     codepoint[i] = static_cast<int>(cp);
@@ -192,6 +198,30 @@ Rcpp::List cpp_page_text_chars(SEXP page_ptr) {
     font_size[i]    = FPDFText_GetFontSize(tp, i);
     is_generated[i] = (FPDFText_IsGenerated(tp, i) != 0);
     is_hyphen[i]    = (FPDFText_IsHyphen(tp, i) != 0);
+    double ox = 0, oy = 0;
+    if (FPDFText_GetCharOrigin(tp, i, &ox, &oy)) {
+      origin_x[i] = ox; origin_y[i] = oy;
+    } else {
+      origin_x[i] = NA_REAL; origin_y[i] = NA_REAL;
+    }
+    FS_RECTF lr;
+    if (FPDFText_GetLooseCharBox(tp, i, &lr)) {
+      loose_left[i] = lr.left;
+      loose_bottom[i] = lr.bottom;
+      loose_right[i] = lr.right;
+      loose_top[i] = lr.top;
+    } else {
+      loose_left[i] = loose_bottom[i] = loose_right[i] =
+          loose_top[i] = NA_REAL;
+    }
+    int err = FPDFText_HasUnicodeMapError(tp, i);
+    unicode_map_error[i] = (err < 0) ? NA_LOGICAL : (err != 0);
+    // FPDFText_GetTextIndexFromCharIndex returns -1 when the
+    // character doesn't appear in the text page's "linear" text
+    // (e.g. PDFium-synthesised whitespace). The R wrapper maps
+    // negative values to NA_integer_.
+    int ti = FPDFText_GetTextIndexFromCharIndex(tp, i);
+    text_index[i] = (ti < 0) ? NA_INTEGER : ti;
   }
   FPDFText_ClosePage(tp);
   return Rcpp::List::create(
@@ -203,5 +233,51 @@ Rcpp::List cpp_page_text_chars(SEXP page_ptr) {
       Rcpp::_["bounds_top"]   = top,
       Rcpp::_["font_size"]    = font_size,
       Rcpp::_["is_generated"] = is_generated,
-      Rcpp::_["is_hyphen"]    = is_hyphen);
+      Rcpp::_["is_hyphen"]    = is_hyphen,
+      Rcpp::_["origin_x"]     = origin_x,
+      Rcpp::_["origin_y"]     = origin_y,
+      Rcpp::_["loose_left"]   = loose_left,
+      Rcpp::_["loose_bottom"] = loose_bottom,
+      Rcpp::_["loose_right"]  = loose_right,
+      Rcpp::_["loose_top"]    = loose_top,
+      Rcpp::_["unicode_map_error"] = unicode_map_error,
+      Rcpp::_["text_index"]   = text_index);
+}
+
+// Hit-test: look up the 0-based character index at (x, y) in PDF
+// user-space points, within xy_tolerance. Returns -1 when no char
+// is near.
+// [[Rcpp::export(name = "cpp_text_char_at_pos")]]
+int cpp_text_char_at_pos(SEXP page_ptr, double x, double y,
+                          double x_tol, double y_tol) {
+  FPDF_PAGE page = page_from_ptr(page_ptr);
+  FPDF_TEXTPAGE tp = FPDFText_LoadPage(page);
+  if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");
+  int idx = FPDFText_GetCharIndexAtPos(tp, x, y, x_tol, y_tol);
+  FPDFText_ClosePage(tp);
+  return idx;
+}
+
+// Bidirectional index conversion. char_index <-> text_index, where
+// char_index is the position in PDFium's "all characters" list
+// (including synthesised whitespace) and text_index is the position
+// in the "extractable text" string.
+// [[Rcpp::export(name = "cpp_text_text_index_from_char")]]
+int cpp_text_text_index_from_char(SEXP page_ptr, int char_index) {
+  FPDF_PAGE page = page_from_ptr(page_ptr);
+  FPDF_TEXTPAGE tp = FPDFText_LoadPage(page);
+  if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");
+  int idx = FPDFText_GetTextIndexFromCharIndex(tp, char_index);
+  FPDFText_ClosePage(tp);
+  return idx;
+}
+
+// [[Rcpp::export(name = "cpp_text_char_index_from_text")]]
+int cpp_text_char_index_from_text(SEXP page_ptr, int text_index) {
+  FPDF_PAGE page = page_from_ptr(page_ptr);
+  FPDF_TEXTPAGE tp = FPDFText_LoadPage(page);
+  if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");
+  int idx = FPDFText_GetCharIndexFromTextIndex(tp, text_index);
+  FPDFText_ClosePage(tp);
+  return idx;
 }
