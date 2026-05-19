@@ -55,6 +55,17 @@
 #'     element references; `0` for elements without content,
 #'     `1` for the simple `/K N` case, `>1` for elements that
 #'     span several content tags.
+#'   * `obj_type` character - the element's `/Type` entry
+#'     (typically `"StructElem"`; empty when not set).
+#'   * `attributes` list-column - a named list of the element's
+#'     structural attributes (PDF spec table 354+), with R-typed
+#'     values: logical for `/O /Layout /BBox`-like booleans,
+#'     numeric for `/RowSpan` / `/ColSpan` / `/StartIndent`,
+#'     character for `/Placement` / `/TextAlign` /
+#'     `/Lang`-style names. Empty list when the element has no
+#'     `/A` attribute objects. Aggregated across all attribute
+#'     dictionaries on the element (PDF's nested attribute-class
+#'     layout is flattened to a single namespace).
 #'
 #' Returns a 0-row tibble of the same schema when the page has
 #' no associated structure tree (typical for untagged PDFs).
@@ -73,13 +84,15 @@ pdf_structure_tree <- function(page, page_num = 1L) {
     parent_index  = as.integer(raw$parent_index),
     level         = as.integer(raw$level),
     type          = as.character(raw$type),
+    obj_type      = as.character(raw$obj_type),
     title         = as.character(raw$title),
     lang          = as.character(raw$lang),
     alt_text      = as.character(raw$alt_text),
     actual_text   = as.character(raw$actual_text),
     id            = as.character(raw$id),
     mcid          = as.integer(raw$mcid),
-    mcid_count    = as.integer(raw$mcid_count)
+    mcid_count    = as.integer(raw$mcid_count),
+    attributes    = raw$attributes
   )
 }
 
@@ -91,12 +104,14 @@ empty_structure_tree_tibble <- function() {
     parent_index  = integer(),
     level         = integer(),
     type          = character(),
+    obj_type      = character(),
     title         = character(),
     lang          = character(),
     alt_text      = character(),
     actual_text   = character(),
     id            = character(),
     mcid          = integer(),
-    mcid_count    = integer()
+    mcid_count    = integer(),
+    attributes    = list()
   )
 }

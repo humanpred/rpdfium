@@ -12,8 +12,9 @@ test_that("pdf_structure_tree returns 0 rows for an untagged PDF", {
     expect_s3_class(out, "tbl_df")
     expect_equal(nrow(out), 0L)
     expect_named(out, c("element_index", "parent_index", "level",
-                        "type", "title", "lang", "alt_text",
-                        "actual_text", "id", "mcid", "mcid_count"))
+                        "type", "obj_type", "title", "lang",
+                        "alt_text", "actual_text", "id",
+                        "mcid", "mcid_count", "attributes"))
   }
 })
 

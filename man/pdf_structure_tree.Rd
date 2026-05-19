@@ -43,6 +43,17 @@ content of its own (typical for container elements like
 element references; \code{0} for elements without content,
 \code{1} for the simple \verb{/K N} case, \verb{>1} for elements that
 span several content tags.
+\item \code{obj_type} character - the element's \verb{/Type} entry
+(typically \code{"StructElem"}; empty when not set).
+\item \code{attributes} list-column - a named list of the element's
+structural attributes (PDF spec table 354+), with R-typed
+values: logical for \verb{/O /Layout /BBox}-like booleans,
+numeric for \verb{/RowSpan} / \verb{/ColSpan} / \verb{/StartIndent},
+character for \verb{/Placement} / \verb{/TextAlign} /
+\verb{/Lang}-style names. Empty list when the element has no
+\verb{/A} attribute objects. Aggregated across all attribute
+dictionaries on the element (PDF's nested attribute-class
+layout is flattened to a single namespace).
 }
 
 Returns a 0-row tibble of the same schema when the page has
