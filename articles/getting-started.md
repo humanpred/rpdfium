@@ -30,7 +30,7 @@ library(pdfium)
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
   package = "pdfium"
 )
-doc <- pdf_open(fixture)
+doc <- pdf_doc_open(fixture)
 doc
 #> <pdfium_doc [open] /home/runner/work/_temp/Library/pdfium/extdata/fixtures/shapes.pdf>
 ```
@@ -40,7 +40,7 @@ R’s garbage collector calls `FPDF_CloseDocument` when the handle becomes
 unreachable, so you don’t *have* to close it explicitly — but for large
 documents or when you need to delete the source file afterward (Windows
 blocks deletion of open files), close it yourself with
-[`pdf_close()`](https://humanpred.github.io/rpdfium/reference/pdf_close.md):
+[`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md):
 
 ``` r
 
@@ -99,12 +99,12 @@ pdf_parse_date(c("D:20240115123045Z", "D:2024"))
 
 ## Pages and page objects
 
-A page is loaded with `pdf_load_page(doc, page_num)`. The returned
+A page is loaded with `pdf_page_load(doc, page_num)`. The returned
 handle carries a reference to its parent doc so GC ordering is safe:
 
 ``` r
 
-page <- pdf_load_page(doc, 1L)
+page <- pdf_page_load(doc, 1L)
 pdf_page_size(doc, 1L) # width and height in PDF points
 #>  width height 
 #>    288    216
@@ -312,13 +312,13 @@ For object-type-specific extraction, see:
 
 ``` r
 
-pdf_close_page(page)
-pdf_close(doc)
+pdf_page_close(page)
+pdf_doc_close(doc)
 ```
 
-[`pdf_close()`](https://humanpred.github.io/rpdfium/reference/pdf_close.md)
+[`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md)
 and
-[`pdf_close_page()`](https://humanpred.github.io/rpdfium/reference/pdf_close_page.md)
+[`pdf_page_close()`](https://humanpred.github.io/rpdfium/reference/pdf_page_close.md)
 are idempotent — calling them more than once is a no-op. R’s GC also
 runs the finalisers automatically when handles become unreachable. The
 [architecture](https://humanpred.github.io/rpdfium/articles/architecture.md)

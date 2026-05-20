@@ -8,7 +8,7 @@ font metadata, image metadata, and page rendering.
 ## Where to start
 
 Open a document with
-[`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md)
+[`pdf_doc_open()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_open.md)
 and inspect basic facts with
 [`pdf_page_count()`](https://humanpred.github.io/rpdfium/reference/pdf_page_count.md).
 Higher-level helpers (path extraction, text runs, rendering) arrive in

@@ -22,7 +22,7 @@ fixture <- system.file("extdata", "fixtures", "shapes.pdf",
 
 ``` r
 
-doc <- pdf_open(fixture)
+doc <- pdf_doc_open(fixture)
 bmp <- pdf_render_page(doc, dpi = 96)
 bmp # a one-line summary
 #> <pdfium_bitmap 384x288 @ 96 dpi, page 1 of shapes.pdf>
@@ -145,8 +145,8 @@ raw image data with the same `pdfium_bitmap` shape:
 img_fixture <- system.file("extdata", "fixtures", "image.pdf",
   package = "pdfium"
 )
-img_doc <- pdf_open(img_fixture)
-img_page <- pdf_load_page(img_doc, 1L)
+img_doc <- pdf_doc_open(img_fixture)
+img_page <- pdf_page_load(img_doc, 1L)
 imgs <- Filter(function(o) o$type == "image", pdf_page_objects(img_page))
 
 # Decoded source-pixel bitmap (no CTM applied).
@@ -183,7 +183,7 @@ for the full enumeration of common decoders.
 
 ``` r
 
-pdf_close_page(img_page)
-pdf_close(img_doc)
-pdf_close(doc)
+pdf_page_close(img_page)
+pdf_doc_close(img_doc)
+pdf_doc_close(doc)
 ```

@@ -72,16 +72,16 @@
 <p><code>pdfium</code> exposes text at the level of <em>text runs</em> —
 the contiguous runs of glyphs that share a font, size, and rendering
 state. Each run carries its bounding box, the Unicode content, and font
-metadata. Where <code>pdftools::pdf_text()</code> returns plain strings,
-<code>pdfium</code> lets you connect each character to where it sits on
-the page and what font drew it.</p>
+metadata. Where <code>pdftools::pdf_doc_text()</code> returns plain
+strings, <code>pdfium</code> lets you connect each character to where it
+sits on the page and what font drew it.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/humanpred/rpdfium" class="external-link">pdfium</a></span><span class="op">)</span></span>
 <span><span class="va">fixture</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"fixtures"</span>, <span class="st">"unicode.pdf"</span>,</span>
 <span>  package <span class="op">=</span> <span class="st">"pdfium"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_open.html">pdf_open</a></span><span class="op">(</span><span class="va">fixture</span><span class="op">)</span></span>
-<span><span class="va">page</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_load_page.html">pdf_load_page</a></span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1L</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_doc_open.html">pdf_doc_open</a></span><span class="op">(</span><span class="va">fixture</span><span class="op">)</span></span>
+<span><span class="va">page</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_page_load.html">pdf_page_load</a></span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1L</span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="whole-page-extraction">Whole-page extraction<a class="anchor" aria-label="anchor" href="#whole-page-extraction"></a>
 </h2>
@@ -205,8 +205,8 @@ schema.</p>
 <h2 id="cleanup">Cleanup<a class="anchor" aria-label="anchor" href="#cleanup"></a>
 </h2>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/pdf_close_page.html">pdf_close_page</a></span><span class="op">(</span><span class="va">page</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/pdf_close.html">pdf_close</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pdf_page_close.html">pdf_page_close</a></span><span class="op">(</span><span class="va">page</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/pdf_doc_close.html">pdf_doc_close</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span></span></code></pre></div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

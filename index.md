@@ -47,10 +47,10 @@ remotes::install_github("humanpred/rpdfium")
 
 library(pdfium)
 
-doc <- pdf_open(system.file("extdata", "fixtures", "minimal.pdf",
+doc <- pdf_doc_open(system.file("extdata", "fixtures", "minimal.pdf",
                             package = "pdfium"))
 pdf_page_count(doc)
-pdf_close(doc)
+pdf_doc_close(doc)
 ```
 
 More examples ship in the vignettes

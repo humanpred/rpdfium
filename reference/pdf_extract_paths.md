@@ -18,7 +18,7 @@ pdf_extract_paths(doc, page_num = 1L, password = NULL)
 
   Either a character scalar path to a PDF file, or an already-open
   `pdfium_doc` returned by
-  [`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md).
+  [`pdf_doc_open()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_open.md).
   When `doc` is a character path the document is opened and closed
   internally.
 

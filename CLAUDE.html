@@ -62,6 +62,35 @@
 <li>R wrappers validate inputs and own error messages. The C++ layer assumes arguments are already validated; it raises <code>Rcpp::stop</code> only for invariants that shouldn’t normally trip.</li>
 </ul></div>
 <div class="section level2">
+<h2 id="naming--accessors-vs-verbs">Naming — accessors vs. verbs<a class="anchor" aria-label="anchor" href="#naming--accessors-vs-verbs"></a></h2>
+<p>See <a href="dev/decisions/ADR-019-naming-conventions.html">ADR-019</a> for the rationale and the full table. The short version, in priority order:</p>
+<ol style="list-style-type: decimal"><li>
+<p><strong>Accessors are object-first.</strong> If the function reads or sets an attribute of a specific PDFium object (doc, page, obj, path, text, image, annot, form_field, attachment, signature, bookmark, …), the name starts with the object’s short name:</p>
+<pre><code>pdf_&lt;object&gt;_&lt;attribute&gt;()          # reader
+pdf_&lt;object&gt;_set_&lt;attribute&gt;()      # setter
+pdf_&lt;object&gt;_new()                  # constructor (fresh instance)
+pdf_&lt;object&gt;_open()                 # constructor (from external source)
+pdf_&lt;object&gt;_load()                 # constructor (by index from parent)
+pdf_&lt;object&gt;_close()                # release handle
+pdf_&lt;object&gt;_delete()               # remove from parent</code></pre>
+<p>Examples: <code>pdf_doc_open</code>, <code>pdf_doc_close</code>, <code>pdf_doc_info</code>, <code>pdf_page_load</code>, <code>pdf_page_close</code>, <code>pdf_page_size</code>, <code>pdf_page_set_rotation</code>, <code>pdf_obj_bounds</code>, <code>pdf_path_segments</code>.</p>
+</li>
+<li>
+<p><strong>Verbs / actions are verb-first.</strong> If the function performs an action — render, extract, merge, parse, search — that doesn’t naturally belong to one object’s attribute namespace, the name starts with the verb:</p>
+<pre><code>pdf_&lt;verb&gt;()
+pdf_&lt;verb&gt;_&lt;modifier&gt;()
+pdf_&lt;verb&gt;_&lt;object&gt;()              # plural object name when the
+                                   # verb acts on a collection</code></pre>
+<p>Examples: <code>pdf_render_page</code>, <code>pdf_render_to_png</code>, <code>pdf_extract_paths</code>, <code>pdf_docs_merge</code>, <code>pdf_n_up</code>, <code>pdf_parse_date</code>.</p>
+</li>
+<li>
+<p><strong>At-point hit testers</strong> use a spatial-query suffix:</p>
+<pre><code>pdf_&lt;thing&gt;_at_point(parent, x, y, ...)</code></pre>
+<p>Examples: <code>pdf_link_at_point</code>, <code>pdf_link_annot_at_point</code>, <code>pdf_form_field_at_point</code>, <code>pdf_text_char_at_point</code>.</p>
+</li>
+</ol><p>When you add a function, pick the convention by asking: <em>does this function read or set an attribute of one PDFium object?</em> If yes, object-first. If it performs an action across multiple objects or is a pure utility, verb-first.</p>
+</div>
+<div class="section level2">
 <h2 id="argument-validation--use-checkmate">Argument validation — use <code>checkmate</code>
 <a class="anchor" aria-label="anchor" href="#argument-validation--use-checkmate"></a></h2>
 <p>See <a href="dev/decisions/ADR-010-checkmate-for-argument-validation.html">ADR-010</a> for the rationale. The short version:</p>
@@ -74,9 +103,9 @@
 <div class="section level2">
 <h2 id="memory-model--the-rule-that-bites-if-you-forget-it">Memory model — the rule that bites if you forget it<a class="anchor" aria-label="anchor" href="#memory-model--the-rule-that-bites-if-you-forget-it"></a></h2>
 <ul><li>Every PDFium handle (<code>FPDF_DOCUMENT</code>, <code>FPDF_PAGE</code>, etc.) lives behind an R <code>externalptr</code> with a C finalizer registered via <code>R_RegisterCFinalizerEx(..., TRUE)</code>.</li>
-<li>The finalizer is the <strong>only</strong> path that calls <code>FPDF_*Close*</code>. After it runs, it calls <code>R_ClearExternalPtr</code> so the pointer reads as NULL on subsequent access. This makes <code><a href="reference/pdf_close.html">pdf_close()</a></code> safely idempotent.</li>
+<li>The finalizer is the <strong>only</strong> path that calls <code>FPDF_*Close*</code>. After it runs, it calls <code>R_ClearExternalPtr</code> so the pointer reads as NULL on subsequent access. This makes <code><a href="reference/pdf_doc_close.html">pdf_doc_close()</a></code> safely idempotent.</li>
 <li>Children (pages, page objects) hold an R-level reference to their parent (doc, page) so GC can’t reclaim the parent before the child. Always set the parent into the <code>prot</code> slot of the child’s externalptr.</li>
-<li>Automatic close on GC works — see <code>vignettes/architecture.Rmd</code>. But for large documents or platform-sensitive code (Windows file-handle blocking deletion), call <code><a href="reference/pdf_close.html">pdf_close()</a></code> explicitly.</li>
+<li>Automatic close on GC works — see <code>vignettes/architecture.Rmd</code>. But for large documents or platform-sensitive code (Windows file-handle blocking deletion), call <code><a href="reference/pdf_doc_close.html">pdf_doc_close()</a></code> explicitly.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="testing--must-be-safe-under-parallel-execution">Testing — must be safe under parallel execution<a class="anchor" aria-label="anchor" href="#testing--must-be-safe-under-parallel-execution"></a></h2>
@@ -139,9 +168,9 @@
 <div class="section level2">
 <h2 id="pre-commit-hooks">Pre-commit hooks<a class="anchor" aria-label="anchor" href="#pre-commit-hooks"></a></h2>
 <p>Install once per fresh clone or worktree before your first commit:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">--user</span> pre-commit</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="ex">pre-commit</span> install</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="ex">pre-commit</span> install <span class="at">--hook-type</span> pre-push</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">--user</span> pre-commit</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="ex">pre-commit</span> install</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="ex">pre-commit</span> install <span class="at">--hook-type</span> pre-push</span></code></pre></div>
 <p>The <code>pre-commit</code> stage runs fast checks (lint, parsable, format). The <code>pre-push</code> stage adds full lint, roxygen regen, and parallel tests. CI re-runs the full configuration so a missed local install still gets caught — but local installation gives the fastest feedback.</p>
 </div>
 <div class="section level2">

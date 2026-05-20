@@ -45,11 +45,11 @@ fixture <- system.file("extdata", "fixtures", "shapes.pdf",
   package = "pdfium"
 )
 if (nzchar(fixture)) {
-  doc <- pdf_open(fixture)
-  p <- pdf_load_page(doc, 1)
+  doc <- pdf_doc_open(fixture)
+  p <- pdf_page_load(doc, 1)
   path_obj <- Filter(\(o) o$type == "path", pdf_page_objects(p))[[1]]
   pdf_path_stroke(path_obj)
-  pdf_close_page(p)
-  pdf_close(doc)
+  pdf_page_close(p)
+  pdf_doc_close(doc)
 }
 ```

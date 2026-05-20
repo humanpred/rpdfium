@@ -19,7 +19,7 @@ pdf_text_runs(page, page_num = 1L)
 - page:
 
   A `pdfium_page` from
-  [`pdf_load_page()`](https://humanpred.github.io/rpdfium/reference/pdf_load_page.md),
+  [`pdf_page_load()`](https://humanpred.github.io/rpdfium/reference/pdf_page_load.md),
   or a `pdfium_doc` (in which case the first page is loaded and closed
   automatically).
 
@@ -66,8 +66,8 @@ fixture <- system.file("extdata", "fixtures", "unicode.pdf",
   package = "pdfium"
 )
 if (nzchar(fixture)) {
-  doc <- pdf_open(fixture)
+  doc <- pdf_doc_open(fixture)
   pdf_text_runs(doc, 1)
-  pdf_close(doc)
+  pdf_doc_close(doc)
 }
 ```

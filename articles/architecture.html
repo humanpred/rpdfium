@@ -80,7 +80,7 @@ source tree.</p>
 <pre><code>R user
   │
   ▼
-R API           pdf_open(), pdf_close(), pdf_page_count(), ...
+R API           pdf_doc_open(), pdf_doc_close(), pdf_page_count(), ...
   │             S3 classes: pdfium_doc, pdfium_page, pdfium_obj
   ▼
 Rcpp glue       internal cpp_* helpers; you should never see them
@@ -99,7 +99,7 @@ objects for handles). You only ever interact with the R API.</p>
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inspect</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">path</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_open.html">pdf_open</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span>
+<span>  <span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_doc_open.html">pdf_doc_open</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="../reference/pdf_page_count.html">pdf_page_count</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span></span>
 <span>  <span class="co"># `doc` goes out of scope here.</span></span>
 <span>  <span class="co"># R's GC will eventually finalize it and call FPDF_CloseDocument.</span></span>
@@ -115,12 +115,12 @@ exhaust process memory before the GC catches up. In that case, close
 explicitly:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inspect</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">path</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_open.html">pdf_open</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/on.exit.html" class="external-link">on.exit</a></span><span class="op">(</span><span class="fu"><a href="../reference/pdf_close.html">pdf_close</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span>, add <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_doc_open.html">pdf_doc_open</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/on.exit.html" class="external-link">on.exit</a></span><span class="op">(</span><span class="fu"><a href="../reference/pdf_doc_close.html">pdf_doc_close</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span>, add <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="../reference/pdf_page_count.html">pdf_page_count</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p><code><a href="../reference/pdf_close.html">pdf_close()</a></code> is <strong>idempotent</strong>: calling it
-twice is a no-op. The finalizer notices the handle has already been
+<p><code><a href="../reference/pdf_doc_close.html">pdf_doc_close()</a></code> is <strong>idempotent</strong>: calling
+it twice is a no-op. The finalizer notices the handle has already been
 closed and skips its own close call. You can safely combine explicit
 close with the automatic fallback.</p>
 </div>
@@ -129,12 +129,12 @@ close with the automatic fallback.</p>
 </h2>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">load_page</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">path</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_open.html">pdf_open</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span>
-<span>  <span class="va">page</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_load_page.html">pdf_load_page</a></span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># available in Phase 1+</span></span>
-<span>  <span class="fu"><a href="../reference/pdf_close.html">pdf_close</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span> <span class="co"># this is fine</span></span>
+<span>  <span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_doc_open.html">pdf_doc_open</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span>
+<span>  <span class="va">page</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_page_load.html">pdf_page_load</a></span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># available in Phase 1+</span></span>
+<span>  <span class="fu"><a href="../reference/pdf_doc_close.html">pdf_doc_close</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span> <span class="co"># this is fine</span></span>
 <span>  <span class="va">page</span> <span class="co"># still usable here</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p>When you call <code>pdf_load_page(doc, ...)</code>, the returned
+<p>When you call <code>pdf_page_load(doc, ...)</code>, the returned
 <code>pdfium_page</code> holds an internal reference to its parent
 <code>pdfium_doc</code>. Even if you drop your reference to
 <code>doc</code> (or explicitly close it), the page stays valid until
@@ -173,7 +173,8 @@ installing.</p>
 <ul>
 <li>
 <strong>Holding many documents at once.</strong> GC is
-non-deterministic; close explicitly with <code><a href="../reference/pdf_close.html">pdf_close()</a></code>.</li>
+non-deterministic; close explicitly with
+<code><a href="../reference/pdf_doc_close.html">pdf_doc_close()</a></code>.</li>
 <li>
 <strong>Deleting an open PDF on Windows.</strong> Windows blocks
 deletion of files held by open handles. Close the document first, then

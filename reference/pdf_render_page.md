@@ -31,7 +31,7 @@ pdf_render_page(
 - page:
 
   A `pdfium_page` from
-  [`pdf_load_page()`](https://humanpred.github.io/rpdfium/reference/pdf_load_page.md),
+  [`pdf_page_load()`](https://humanpred.github.io/rpdfium/reference/pdf_page_load.md),
   or a `pdfium_doc` (the page given by `page_num` will be loaded and
   closed internally).
 
@@ -90,7 +90,7 @@ fixture <- system.file("extdata", "fixtures", "shapes.pdf",
   package = "pdfium"
 )
 if (nzchar(fixture)) {
-  bmp <- pdf_render_page(pdf_open(fixture), dpi = 96)
+  bmp <- pdf_render_page(pdf_doc_open(fixture), dpi = 96)
   bmp # human summary
   if (interactive()) plot(bmp) # render to the active device
 }

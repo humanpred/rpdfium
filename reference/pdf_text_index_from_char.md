@@ -4,7 +4,7 @@ PDFium's text page surfaces two parallel views of the page's text: the
 full *character* list (positioned glyphs including PDFium-synthesised
 whitespace between them), and the *extractable text* string (only
 characters that appear in
-[`pdf_text()`](https://humanpred.github.io/rpdfium/reference/pdf_text.md)'s
+[`pdf_doc_text()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_text.md)'s
 output). These helpers translate between the two indexing systems.
 
 ## Usage
@@ -20,7 +20,7 @@ pdf_text_char_from_text_index(page, text_index, page_num = 1L)
 - page:
 
   A `pdfium_page` from
-  [`pdf_load_page()`](https://humanpred.github.io/rpdfium/reference/pdf_load_page.md),
+  [`pdf_page_load()`](https://humanpred.github.io/rpdfium/reference/pdf_page_load.md),
   or a `pdfium_doc`.
 
 - char_index:
@@ -57,5 +57,5 @@ Wraps `FPDFText_GetTextIndexFromCharIndex` /
 ## See also
 
 [`pdf_text_chars()`](https://humanpred.github.io/rpdfium/reference/pdf_text_chars.md),
-[`pdf_text()`](https://humanpred.github.io/rpdfium/reference/pdf_text.md),
+[`pdf_doc_text()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_text.md),
 [`pdf_text_search()`](https://humanpred.github.io/rpdfium/reference/pdf_text_search.md).

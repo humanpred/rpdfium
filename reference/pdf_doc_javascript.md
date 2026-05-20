@@ -17,7 +17,7 @@ pdf_doc_javascript(doc, password = NULL)
 - doc:
 
   A `pdfium_doc` from
-  [`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md),
+  [`pdf_doc_open()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_open.md),
   or a character path.
 
 - password:

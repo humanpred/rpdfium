@@ -47,10 +47,10 @@ remotes::install_github("humanpred/rpdfium")
 
 library(pdfium)
 
-doc <- pdf_open(system.file("extdata", "fixtures", "minimal.pdf",
+doc <- pdf_doc_open(system.file("extdata", "fixtures", "minimal.pdf",
                             package = "pdfium"))
 pdf_page_count(doc)
-pdf_close(doc)
+pdf_doc_close(doc)
 ```
 
 More examples ship in the vignettes
@@ -68,10 +68,10 @@ and is *not* distributed in the source tarball — see
 
 ## Documents
 
-- [`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md)
+- [`pdf_doc_open()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_open.md)
   : Open a PDF document
 
-- [`pdf_close()`](https://humanpred.github.io/rpdfium/reference/pdf_close.md)
+- [`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md)
   : Close a PDF document
 
 - [`pdf_page_count()`](https://humanpred.github.io/rpdfium/reference/pdf_page_count.md)
@@ -86,13 +86,13 @@ and is *not* distributed in the source tarball — see
 - [`pdf_parse_date()`](https://humanpred.github.io/rpdfium/reference/pdf_parse_date.md)
   : Parse a PDF date string into POSIXct
 
-- [`pdf_text()`](https://humanpred.github.io/rpdfium/reference/pdf_text.md)
+- [`pdf_doc_text()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_text.md)
   : Read every page's text in one call
 
-- [`pdf_fonts()`](https://humanpred.github.io/rpdfium/reference/pdf_fonts.md)
+- [`pdf_doc_fonts()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_fonts.md)
   : Document-level rollup of every embedded / referenced font
 
-- [`pdf_file_id()`](https://humanpred.github.io/rpdfium/reference/pdf_file_id.md)
+- [`pdf_doc_file_id()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_file_id.md)
   : Read the document's file identifier from its trailer
 
 - [`pdf_doc_page_mode()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_page_mode.md)
@@ -124,24 +124,24 @@ and is *not* distributed in the source tarball — see
 - [`pdf_doc_focusable_subtypes()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_focusable_subtypes.md)
   : Annotation subtypes registered as keyboard-focusable
 
-- [`pdf_viewer_preferences()`](https://humanpred.github.io/rpdfium/reference/pdf_viewer_preferences.md)
+- [`pdf_doc_viewer_preferences()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_viewer_preferences.md)
   : Read the document's viewer preferences
 
-- [`pdf_viewer_preference_by_name()`](https://humanpred.github.io/rpdfium/reference/pdf_viewer_preference_by_name.md)
+- [`pdf_doc_viewer_preference_by_name()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_viewer_preference_by_name.md)
   :
 
   Look up a `/ViewerPreferences` name-typed entry by key
 
-- [`pdf_named_dests()`](https://humanpred.github.io/rpdfium/reference/pdf_named_dests.md)
+- [`pdf_doc_named_dests()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_named_dests.md)
   : Enumerate the document's named destinations
 
-- [`pdf_named_dest_by_name()`](https://humanpred.github.io/rpdfium/reference/pdf_named_dest_by_name.md)
+- [`pdf_doc_named_dest_by_name()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_named_dest_by_name.md)
   : Resolve a named destination by name
 
-- [`pdf_bookmarks()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmarks.md)
+- [`pdf_doc_bookmarks()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_bookmarks.md)
   : Read the bookmark outline (table of contents) of a PDF
 
-- [`pdf_bookmark_find()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_find.md)
+- [`pdf_doc_bookmark_find()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_bookmark_find.md)
   : Find a bookmark by its title
 
 - [`pdf_page_label()`](https://humanpred.github.io/rpdfium/reference/pdf_page_label.md)
@@ -170,9 +170,9 @@ and is *not* distributed in the source tarball — see
 
 ## Pages
 
-- [`pdf_load_page()`](https://humanpred.github.io/rpdfium/reference/pdf_load_page.md)
+- [`pdf_page_load()`](https://humanpred.github.io/rpdfium/reference/pdf_page_load.md)
   : Load a single page from an open PDF document
-- [`pdf_close_page()`](https://humanpred.github.io/rpdfium/reference/pdf_close_page.md)
+- [`pdf_page_close()`](https://humanpred.github.io/rpdfium/reference/pdf_page_close.md)
   : Close a page handle
 - [`pdf_page_size()`](https://humanpred.github.io/rpdfium/reference/pdf_page_size.md)
   : Page dimensions in PDF points
@@ -365,7 +365,7 @@ to enable these. See ADRs 011-018 for the writer-surface conventions.
   : Delete a page from the document
 - [`pdf_pages_reorder()`](https://humanpred.github.io/rpdfium/reference/pdf_pages_reorder.md)
   : Reorder pages
-- [`pdf_merge()`](https://humanpred.github.io/rpdfium/reference/pdf_merge.md)
+- [`pdf_docs_merge()`](https://humanpred.github.io/rpdfium/reference/pdf_docs_merge.md)
   : Merge documents into a new PDF
 - [`pdf_n_up()`](https://humanpred.github.io/rpdfium/reference/pdf_n_up.md)
   : Combine N pages of a document into one

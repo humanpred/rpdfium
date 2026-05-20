@@ -23,7 +23,7 @@ pdf_text_search(
 - doc:
 
   A `pdfium_doc` from
-  [`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md),
+  [`pdf_doc_open()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_open.md),
   or a character path.
 
 - query:
@@ -95,7 +95,7 @@ over `start_char:(start_char + char_count - 1)`.
 
 ## See also
 
-[`pdf_text()`](https://humanpred.github.io/rpdfium/reference/pdf_text.md)
+[`pdf_doc_text()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_text.md)
 for whole-page text,
 [`pdf_text_runs()`](https://humanpred.github.io/rpdfium/reference/pdf_text_runs.md)
 for per-text-object structure,

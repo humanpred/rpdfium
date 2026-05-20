@@ -76,7 +76,7 @@ positioned glyphs) and end-of-line "soft" hyphens. Wraps
 
 
 <dl><dt id="arg-page">page<a class="anchor" aria-label="anchor" href="#arg-page"></a></dt>
-<dd><p>A <code>pdfium_page</code> from <code><a href="pdf_load_page.html">pdf_load_page()</a></code>, or a
+<dd><p>A <code>pdfium_page</code> from <code><a href="pdf_page_load.html">pdf_page_load()</a></code>, or a
 <code>pdfium_doc</code>.</p></dd>
 
 
@@ -115,7 +115,7 @@ that the character's ToUnicode CMap is malformed for this
 glyph (the codepoint reported may be the PDF's `
 fallback rather than the intended character).</p></li>
 <li><p><code>text_index</code> integer - 0-based position in the <em>extractable</em>
-text string (i.e. the linear <code><a href="pdf_text.html">pdf_text()</a></code> output) for this
+text string (i.e. the linear <code><a href="pdf_doc_text.html">pdf_doc_text()</a></code> output) for this
 character, or <code>NA</code> for synthesised whitespace and other
 characters that don't appear in the extracted text.</p></li>
 <li><p><code>char_font_name</code> character - the font name PDFium reports
@@ -133,15 +133,15 @@ text.</p>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>This is the per-character analog of <code><a href="pdf_text_runs.html">pdf_text_runs()</a></code>
-(per-text-object) and <code><a href="pdf_text.html">pdf_text()</a></code> (per-page). The three
-coexist: use <code><a href="pdf_text.html">pdf_text()</a></code> when you just want the strings,
+(per-text-object) and <code><a href="pdf_doc_text.html">pdf_doc_text()</a></code> (per-page). The three
+coexist: use <code><a href="pdf_doc_text.html">pdf_doc_text()</a></code> when you just want the strings,
 <code><a href="pdf_text_runs.html">pdf_text_runs()</a></code> for object-level positions, and
 <code>pdf_text_chars()</code> when you need glyph-level geometry (e.g.
 word segmentation, character-by-character layout analysis).</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="pdf_text_runs.html">pdf_text_runs()</a></code>, <code><a href="pdf_text.html">pdf_text()</a></code>.</p></div>
+    <div class="dont-index"><p><code><a href="pdf_text_runs.html">pdf_text_runs()</a></code>, <code><a href="pdf_doc_text.html">pdf_doc_text()</a></code>.</p></div>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

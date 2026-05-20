@@ -15,7 +15,7 @@ pdf_page_label(doc, page_num = 1L)
 - doc:
 
   A `pdfium_doc` from
-  [`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md),
+  [`pdf_doc_open()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_open.md),
   or a character path.
 
 - page_num:
@@ -33,4 +33,4 @@ contract is "may be empty").
 
 [`pdf_page_labels()`](https://humanpred.github.io/rpdfium/reference/pdf_page_labels.md)
 for every page's label at once,
-[`pdf_bookmarks()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmarks.md).
+[`pdf_doc_bookmarks()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_bookmarks.md).

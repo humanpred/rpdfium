@@ -81,12 +81,12 @@
 <span class="r-in"><span>  package <span class="op">=</span> <span class="st">"pdfium"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nzchar</a></span><span class="op">(</span><span class="va">fixture</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="pdf_open.html">pdf_open</a></span><span class="op">(</span><span class="va">fixture</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="pdf_load_page.html">pdf_load_page</a></span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="pdf_doc_open.html">pdf_doc_open</a></span><span class="op">(</span><span class="va">fixture</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="pdf_page_load.html">pdf_page_load</a></span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="va">path_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/funprog.html" class="external-link">Filter</a></span><span class="op">(</span>\<span class="op">(</span><span class="va">o</span><span class="op">)</span> <span class="va">o</span><span class="op">$</span><span class="va">type</span> <span class="op">==</span> <span class="st">"path"</span>, <span class="fu"><a href="pdf_page_objects.html">pdf_page_objects</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span></span></span>
 <span class="r-in"><span>  <span class="fu">pdf_path_fill</span><span class="op">(</span><span class="va">path_obj</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="pdf_close_page.html">pdf_close_page</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="pdf_close.html">pdf_close</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="pdf_page_close.html">pdf_page_close</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="pdf_doc_close.html">pdf_doc_close</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 </code></pre></div>
     </div>

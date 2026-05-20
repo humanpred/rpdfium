@@ -25,7 +25,7 @@ pdf_save_to_raw(
 - doc:
 
   A `pdfium_doc` from
-  [`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md)
+  [`pdf_doc_open()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_open.md)
   or
   [`pdf_doc_new()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_new.md).
 

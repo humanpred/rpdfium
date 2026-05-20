@@ -25,7 +25,7 @@ pdf_render_to_png(
 - page:
 
   A `pdfium_page` from
-  [`pdf_load_page()`](https://humanpred.github.io/rpdfium/reference/pdf_load_page.md),
+  [`pdf_page_load()`](https://humanpred.github.io/rpdfium/reference/pdf_page_load.md),
   or a `pdfium_doc` (the page given by `page_num` will be loaded and
   closed internally).
 
@@ -76,7 +76,7 @@ fixture <- system.file("extdata", "fixtures", "shapes.pdf",
 )
 if (nzchar(fixture) && requireNamespace("png", quietly = TRUE)) {
   out <- tempfile(fileext = ".png")
-  pdf_render_to_png(pdf_open(fixture), file = out, dpi = 96)
+  pdf_render_to_png(pdf_doc_open(fixture), file = out, dpi = 96)
   file.exists(out)
 }
 #> [1] TRUE

@@ -22,7 +22,7 @@ pdf_annot_appearance(
 - page:
 
   A `pdfium_page` from
-  [`pdf_load_page()`](https://humanpred.github.io/rpdfium/reference/pdf_load_page.md),
+  [`pdf_page_load()`](https://humanpred.github.io/rpdfium/reference/pdf_page_load.md),
   or a `pdfium_doc`.
 
 - annotation_index:

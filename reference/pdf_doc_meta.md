@@ -18,7 +18,7 @@ pdf_doc_meta(doc, tag)
 - doc:
 
   A `pdfium_doc` from
-  [`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md).
+  [`pdf_doc_open()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_open.md).
 
 - tag:
 
@@ -41,8 +41,8 @@ fixture <- system.file("extdata", "fixtures", "shapes.pdf",
   package = "pdfium"
 )
 if (nzchar(fixture)) {
-  doc <- pdf_open(fixture)
+  doc <- pdf_doc_open(fixture)
   pdf_doc_meta(doc, "Producer")
-  pdf_close(doc)
+  pdf_doc_close(doc)
 }
 ```

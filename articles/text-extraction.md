@@ -3,8 +3,9 @@
 `pdfium` exposes text at the level of *text runs* — the contiguous runs
 of glyphs that share a font, size, and rendering state. Each run carries
 its bounding box, the Unicode content, and font metadata. Where
-`pdftools::pdf_text()` returns plain strings, `pdfium` lets you connect
-each character to where it sits on the page and what font drew it.
+`pdftools::pdf_doc_text()` returns plain strings, `pdfium` lets you
+connect each character to where it sits on the page and what font drew
+it.
 
 ``` r
 
@@ -12,8 +13,8 @@ library(pdfium)
 fixture <- system.file("extdata", "fixtures", "unicode.pdf",
   package = "pdfium"
 )
-doc <- pdf_open(fixture)
-page <- pdf_load_page(doc, 1L)
+doc <- pdf_doc_open(fixture)
+page <- pdf_page_load(doc, 1L)
 ```
 
 ## Whole-page extraction
@@ -133,6 +134,6 @@ vignette for the schema.
 
 ``` r
 
-pdf_close_page(page)
-pdf_close(doc)
+pdf_page_close(page)
+pdf_doc_close(doc)
 ```

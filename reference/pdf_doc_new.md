@@ -31,5 +31,5 @@ pdf_page_new(doc, 1, 612, 792)
 #> <pdfium_page [open] page 1 of <new>>
 tmp <- tempfile(fileext = ".pdf")
 pdf_save(doc, tmp)
-pdf_close(doc)
+pdf_doc_close(doc)
 ```

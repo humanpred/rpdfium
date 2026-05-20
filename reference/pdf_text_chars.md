@@ -19,7 +19,7 @@ pdf_text_chars(page, page_num = 1L)
 - page:
 
   A `pdfium_page` from
-  [`pdf_load_page()`](https://humanpred.github.io/rpdfium/reference/pdf_load_page.md),
+  [`pdf_page_load()`](https://humanpred.github.io/rpdfium/reference/pdf_page_load.md),
   or a `pdfium_doc`.
 
 - page_num:
@@ -68,7 +68,7 @@ A tibble with columns:
 
 - `text_index` integer - 0-based position in the *extractable* text
   string (i.e. the linear
-  [`pdf_text()`](https://humanpred.github.io/rpdfium/reference/pdf_text.md)
+  [`pdf_doc_text()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_text.md)
   output) for this character, or `NA` for synthesised whitespace and
   other characters that don't appear in the extracted text.
 
@@ -89,9 +89,9 @@ Returns a 0-row tibble of the same schema when the page has no text.
 This is the per-character analog of
 [`pdf_text_runs()`](https://humanpred.github.io/rpdfium/reference/pdf_text_runs.md)
 (per-text-object) and
-[`pdf_text()`](https://humanpred.github.io/rpdfium/reference/pdf_text.md)
+[`pdf_doc_text()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_text.md)
 (per-page). The three coexist: use
-[`pdf_text()`](https://humanpred.github.io/rpdfium/reference/pdf_text.md)
+[`pdf_doc_text()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_text.md)
 when you just want the strings,
 [`pdf_text_runs()`](https://humanpred.github.io/rpdfium/reference/pdf_text_runs.md)
 for object-level positions, and `pdf_text_chars()` when you need
@@ -101,4 +101,4 @@ layout analysis).
 ## See also
 
 [`pdf_text_runs()`](https://humanpred.github.io/rpdfium/reference/pdf_text_runs.md),
-[`pdf_text()`](https://humanpred.github.io/rpdfium/reference/pdf_text.md).
+[`pdf_doc_text()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_text.md).

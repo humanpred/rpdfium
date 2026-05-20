@@ -57,14 +57,14 @@ fixture <- system.file("extdata", "fixtures", "form_xobject.pdf",
   package = "pdfium"
 )
 if (nzchar(fixture)) {
-  doc <- pdf_open(fixture)
-  page <- pdf_load_page(doc, 1L)
+  doc <- pdf_doc_open(fixture)
+  page <- pdf_page_load(doc, 1L)
   forms <- Filter(function(o) o$type == "form", pdf_page_objects(page))
   if (length(forms) > 0L) {
     nested <- pdf_form_objects(forms[[1L]])
     length(nested)
   }
-  pdf_close_page(page)
-  pdf_close(doc)
+  pdf_page_close(page)
+  pdf_doc_close(doc)
 }
 ```

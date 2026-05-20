@@ -15,7 +15,7 @@ pdf_page_set_rotation(page, degrees, page_num = 1L)
 - page:
 
   A `pdfium_page` from
-  [`pdf_load_page()`](https://humanpred.github.io/rpdfium/reference/pdf_load_page.md),
+  [`pdf_page_load()`](https://humanpred.github.io/rpdfium/reference/pdf_page_load.md),
   or a `pdfium_doc` (in which case `page_num` selects the page).
 
 - degrees:
@@ -36,7 +36,7 @@ Invisibly returns the parent `pdfium_doc` so calls can be chained with
 
 Polymorphic in `page`: accepts either an already-loaded `pdfium_page`
 from
-[`pdf_load_page()`](https://humanpred.github.io/rpdfium/reference/pdf_load_page.md)
+[`pdf_page_load()`](https://humanpred.github.io/rpdfium/reference/pdf_page_load.md)
 (with `readwrite = TRUE` on the parent doc) or a `pdfium_doc` plus
 `page_num`.
 

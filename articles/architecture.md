@@ -10,7 +10,7 @@ bump procedure), see `dev/architecture.md` in the source tree.
     R user
       │
       ▼
-    R API           pdf_open(), pdf_close(), pdf_page_count(), ...
+    R API           pdf_doc_open(), pdf_doc_close(), pdf_page_count(), ...
       │             S3 classes: pdfium_doc, pdfium_page, pdfium_obj
       ▼
     Rcpp glue       internal cpp_* helpers; you should never see them
@@ -30,7 +30,7 @@ objects for handles). You only ever interact with the R API.
 ``` r
 
 inspect <- function(path) {
-  doc <- pdf_open(path)
+  doc <- pdf_doc_open(path)
   pdf_page_count(doc)
   # `doc` goes out of scope here.
   # R's GC will eventually finalize it and call FPDF_CloseDocument.
@@ -50,13 +50,13 @@ before the GC catches up. In that case, close explicitly:
 ``` r
 
 inspect <- function(path) {
-  doc <- pdf_open(path)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(path)
+  on.exit(pdf_doc_close(doc), add = TRUE)
   pdf_page_count(doc)
 }
 ```
 
-[`pdf_close()`](https://humanpred.github.io/rpdfium/reference/pdf_close.md)
+[`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md)
 is **idempotent**: calling it twice is a no-op. The finalizer notices
 the handle has already been closed and skips its own close call. You can
 safely combine explicit close with the automatic fallback.
@@ -66,14 +66,14 @@ safely combine explicit close with the automatic fallback.
 ``` r
 
 load_page <- function(path) {
-  doc <- pdf_open(path)
-  page <- pdf_load_page(doc, 1) # available in Phase 1+
-  pdf_close(doc) # this is fine
+  doc <- pdf_doc_open(path)
+  page <- pdf_page_load(doc, 1) # available in Phase 1+
+  pdf_doc_close(doc) # this is fine
   page # still usable here
 }
 ```
 
-When you call `pdf_load_page(doc, ...)`, the returned `pdfium_page`
+When you call `pdf_page_load(doc, ...)`, the returned `pdfium_page`
 holds an internal reference to its parent `pdfium_doc`. Even if you drop
 your reference to `doc` (or explicitly close it), the page stays valid
 until the page object itself is collected. The underlying PDFium
@@ -106,7 +106,7 @@ your machine has no internet access at install time, set
 
 - **Holding many documents at once.** GC is non-deterministic; close
   explicitly with
-  [`pdf_close()`](https://humanpred.github.io/rpdfium/reference/pdf_close.md).
+  [`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md).
 - **Deleting an open PDF on Windows.** Windows blocks deletion of files
   held by open handles. Close the document first, then delete.
 - **Using a closed handle.** Functions that take a `pdfium_doc` raise an

@@ -1,7 +1,7 @@
 # Save a PDF document to disk
 
 Serialises an in-memory `pdfium_doc` (typically produced by
-[`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md)
+[`pdf_doc_open()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_open.md)
 with `readwrite = TRUE` and one or more mutators) to a file. Wraps
 `FPDF_SaveAsCopy` and `FPDF_SaveWithVersion`.
 
@@ -23,7 +23,7 @@ pdf_save(
 - doc:
 
   A `pdfium_doc` from
-  [`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md)
+  [`pdf_doc_open()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_open.md)
   or
   [`pdf_doc_new()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_new.md).
 
@@ -72,7 +72,7 @@ xref table, etc.) without modifying its content.
 
 [`pdf_save_to_raw()`](https://humanpred.github.io/rpdfium/reference/pdf_save_to_raw.md)
 for in-memory output;
-[`pdf_open()`](https://humanpred.github.io/rpdfium/reference/pdf_open.md)
+[`pdf_doc_open()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_open.md)
 for the read side;
 [`pdf_doc_new()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_new.md)
 for a fresh document.

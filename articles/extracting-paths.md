@@ -20,8 +20,8 @@ The lowest-level entry point is `pdf_path_segments(obj)` on a single
 
 ``` r
 
-doc <- pdf_open(fixture)
-page <- pdf_load_page(doc, 1L)
+doc <- pdf_doc_open(fixture)
+page <- pdf_page_load(doc, 1L)
 paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
 length(paths)
 #> [1] 4
@@ -192,6 +192,6 @@ range(red_paths$y)
 
 ``` r
 
-pdf_close_page(page)
-pdf_close(doc)
+pdf_page_close(page)
+pdf_doc_close(doc)
 ```
