@@ -99,7 +99,8 @@ Path bounding box (constant across rows of one path):
 
 ``` r
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   paths <- pdf_extract_paths(fixture, page_num = 1)
   head(paths)
@@ -107,9 +108,9 @@ if (nzchar(fixture)) {
   attr(paths, "text_runs")
 }
 #> # A tibble: 1 × 13
-#>   text_index bounds_left bounds_bottom bounds_right bounds_top font_size text 
-#>        <int>       <dbl>         <dbl>        <dbl>      <dbl>     <dbl> <chr>
-#> 1          5        129.          103.         159.       114.         1 Hello
+#>   obj_index bounds_left bounds_bottom bounds_right bounds_top font_size text 
+#>       <int>       <dbl>         <dbl>        <dbl>      <dbl>     <dbl> <chr>
+#> 1         5        129.          103.         159.       114.         1 Hello
 #> # ℹ 6 more variables: font_base_name <chr>, font_family <chr>,
 #> #   font_weight <int>, font_italic_angle <int>, font_is_embedded <lgl>,
 #> #   font_flags <int>

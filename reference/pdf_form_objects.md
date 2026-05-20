@@ -54,7 +54,8 @@ for the form's own transformation matrix.
 
 ``` r
 fixture <- system.file("extdata", "fixtures", "form_xobject.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   doc <- pdf_open(fixture)
   page <- pdf_load_page(doc, 1L)
@@ -63,6 +64,7 @@ if (nzchar(fixture)) {
     nested <- pdf_form_objects(forms[[1L]])
     length(nested)
   }
-  pdf_close_page(page); pdf_close(doc)
+  pdf_close_page(page)
+  pdf_close(doc)
 }
 ```

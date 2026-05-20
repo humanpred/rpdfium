@@ -28,7 +28,8 @@ library(pdfium)
 ``` r
 
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 doc <- pdf_open(fixture)
 doc
 #> <pdfium_doc [open] /home/runner/work/_temp/Library/pdfium/extdata/fixtures/shapes.pdf>
@@ -73,7 +74,7 @@ entry, and POSIXct parses of the two date fields. The shape mirrors
 info <- pdf_doc_info(doc)
 info$page_count
 #> [1] 1
-info$file_version       # PDFium reports 10 * major + minor (17 = PDF 1.7)
+info$file_version # PDFium reports 10 * major + minor (17 = PDF 1.7)
 #> [1] 17
 info$producer
 #> [1] "cairo 1.18.0 (https://cairographics.org)"
@@ -104,10 +105,10 @@ handle carries a reference to its parent doc so GC ordering is safe:
 ``` r
 
 page <- pdf_load_page(doc, 1L)
-pdf_page_size(doc, 1L)        # width and height in PDF points
+pdf_page_size(doc, 1L) # width and height in PDF points
 #>  width height 
 #>    288    216
-pdf_page_rotation(doc, 1L)    # 0, 90, 180, or 270 degrees
+pdf_page_rotation(doc, 1L) # 0, 90, 180, or 270 degrees
 #> [1] 0
 ```
 
@@ -243,9 +244,9 @@ with positions, font sizes, and font metadata:
 runs <- pdf_text_runs(page)
 runs
 #> # A tibble: 1 × 13
-#>   text_index bounds_left bounds_bottom bounds_right bounds_top font_size text 
-#>        <int>       <dbl>         <dbl>        <dbl>      <dbl>     <dbl> <chr>
-#> 1          5        129.          103.         159.       114.         1 Hello
+#>   obj_index bounds_left bounds_bottom bounds_right bounds_top font_size text 
+#>       <int>       <dbl>         <dbl>        <dbl>      <dbl>     <dbl> <chr>
+#> 1         5        129.          103.         159.       114.         1 Hello
 #> # ℹ 6 more variables: font_base_name <chr>, font_family <chr>,
 #> #   font_weight <int>, font_italic_angle <int>, font_is_embedded <lgl>,
 #> #   font_flags <int>
@@ -266,7 +267,7 @@ To rasterise a page, `pdf_render_page(page_or_doc, dpi)` returns a
 bmp <- pdf_render_page(doc, dpi = 96)
 bmp
 #> <pdfium_bitmap 384x288 @ 96 dpi, page 1 of shapes.pdf>
-dim(bmp)        # height, width
+dim(bmp) # height, width
 #> [1] 288 384
 ```
 
@@ -278,9 +279,9 @@ Three converters produce other common shapes:
 
 ``` r
 
-arr <- as.array(bmp)        # 3D [H, W, 4] doubles in 0..1, like png::writePNG
-ras <- as.raster(bmp)       # base R "raster" class, hex-color matrix
-mat <- as.matrix(bmp)       # plain character matrix
+arr <- as.array(bmp) # 3D [H, W, 4] doubles in 0..1, like png::writePNG
+ras <- as.raster(bmp) # base R "raster" class, hex-color matrix
+mat <- as.matrix(bmp) # plain character matrix
 ```
 
 The save helper `pdf_render_to_png(file, ...)` writes the bitmap

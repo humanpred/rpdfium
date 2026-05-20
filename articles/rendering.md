@@ -14,7 +14,8 @@ packages expect.
 
 library(pdfium)
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 ```
 
 ## A first render
@@ -23,12 +24,12 @@ fixture <- system.file("extdata", "fixtures", "shapes.pdf",
 
 doc <- pdf_open(fixture)
 bmp <- pdf_render_page(doc, dpi = 96)
-bmp                                   # a one-line summary
+bmp # a one-line summary
 #> <pdfium_bitmap 384x288 @ 96 dpi, page 1 of shapes.pdf>
-dim(bmp)                              # height, width in pixels
+dim(bmp) # height, width in pixels
 #> [1] 288 384
 
-plot(bmp)                             # uses plot.pdfium_bitmap()
+plot(bmp) # uses plot.pdfium_bitmap()
 ```
 
 ![](rendering_files/figure-html/unnamed-chunk-2-1.png)
@@ -47,7 +48,7 @@ pixels. At `dpi = 144`, the same page is 576 × 432.
 
 ``` r
 
-dim(pdf_render_page(doc, dpi =  72))
+dim(pdf_render_page(doc, dpi = 72))
 #> [1] 216 288
 dim(pdf_render_page(doc, dpi = 144))
 #> [1] 432 576
@@ -61,12 +62,12 @@ understands, or `NA` for transparent:
 
 ``` r
 
-bmp_red   <- pdf_render_page(doc, dpi = 72, background = "red")
+bmp_red <- pdf_render_page(doc, dpi = 72, background = "red")
 bmp_trans <- pdf_render_page(doc, dpi = 72, background = NA)
 
-bmp_red[1L,  1L]                      # top-left pixel
+bmp_red[1L, 1L] # top-left pixel
 #> [1] -1
-bmp_trans[1L, 1L]                     # depends on whether page content covers
+bmp_trans[1L, 1L] # depends on whether page content covers
 #> [1] -1
 ```
 
@@ -77,9 +78,9 @@ attribute. Rotating 90 or 270 swaps the bitmap’s width and height:
 
 ``` r
 
-dim(pdf_render_page(doc, dpi = 72, rotation =   0))
+dim(pdf_render_page(doc, dpi = 72, rotation = 0))
 #> [1] 216 288
-dim(pdf_render_page(doc, dpi = 72, rotation =  90))
+dim(pdf_render_page(doc, dpi = 72, rotation = 90))
 #> [1] 288 216
 dim(pdf_render_page(doc, dpi = 72, rotation = 180))
 #> [1] 216 288
@@ -142,7 +143,8 @@ raw image data with the same `pdfium_bitmap` shape:
 ``` r
 
 img_fixture <- system.file("extdata", "fixtures", "image.pdf",
-                           package = "pdfium")
+  package = "pdfium"
+)
 img_doc <- pdf_open(img_fixture)
 img_page <- pdf_load_page(img_doc, 1L)
 imgs <- Filter(function(o) o$type == "image", pdf_page_objects(img_page))
@@ -181,6 +183,7 @@ for the full enumeration of common decoders.
 
 ``` r
 
-pdf_close_page(img_page); pdf_close(img_doc)
+pdf_close_page(img_page)
+pdf_close(img_doc)
 pdf_close(doc)
 ```

@@ -10,7 +10,8 @@ each character to where it sits on the page and what font drew it.
 
 library(pdfium)
 fixture <- system.file("extdata", "fixtures", "unicode.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 doc <- pdf_open(fixture)
 page <- pdf_load_page(doc, 1L)
 ```
@@ -25,13 +26,13 @@ page, with content + position + font in a single tibble:
 runs <- pdf_text_runs(page)
 runs
 #> # A tibble: 5 × 13
-#>   text_index bounds_left bounds_bottom bounds_right bounds_top font_size text 
-#>        <int>       <dbl>         <dbl>        <dbl>      <dbl>     <dbl> <chr>
-#> 1          2        130.          171.         158.       180.         1 Hello
-#> 2          3        129.          137.         158.       146.         1 world
-#> 3          4        126.          103.         138.       114.         1 pd   
-#> 4          5        140.          105.         145.       114.         1 fi   
-#> 5          6        146.          105.         162.       112.         1 um   
+#>   obj_index bounds_left bounds_bottom bounds_right bounds_top font_size text 
+#>       <int>       <dbl>         <dbl>        <dbl>      <dbl>     <dbl> <chr>
+#> 1         2        130.          171.         158.       180.         1 Hello
+#> 2         3        129.          137.         158.       146.         1 world
+#> 3         4        126.          103.         138.       114.         1 pd   
+#> 4         5        140.          105.         145.       114.         1 fi   
+#> 5         6        146.          105.         162.       112.         1 um   
 #> # ℹ 6 more variables: font_base_name <chr>, font_family <chr>,
 #> #   font_weight <int>, font_italic_angle <int>, font_is_embedded <lgl>,
 #> #   font_flags <int>
@@ -69,11 +70,11 @@ texts <- Filter(function(o) o$type == "text", pdf_page_objects(page))
 length(texts)
 #> [1] 5
 
-pdf_text_content(texts[[1L]])       # the Unicode string
+pdf_text_content(texts[[1L]]) # the Unicode string
 #> [1] "Hello"
-pdf_text_font_size(texts[[1L]])     # font size in user-space points
+pdf_text_font_size(texts[[1L]]) # font size in user-space points
 #> [1] 1
-str(pdf_text_font(texts[[1L]]))     # named list of font metadata
+str(pdf_text_font(texts[[1L]])) # named list of font metadata
 #> List of 6
 #>  $ font_base_name   : chr "NimbusSans-Regular"
 #>  $ font_family      : chr "Nimbus Sans"

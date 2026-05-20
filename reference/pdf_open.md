@@ -10,7 +10,7 @@ explicitly when you need deterministic release.
 ## Usage
 
 ``` r
-pdf_open(path = NULL, source = NULL, password = NULL)
+pdf_open(path = NULL, source = NULL, password = NULL, readwrite = FALSE)
 ```
 
 ## Arguments
@@ -32,6 +32,18 @@ pdf_open(path = NULL, source = NULL, password = NULL)
   Optional password for encrypted PDFs. `NULL` (the default) passes no
   password to PDFium.
 
+- readwrite:
+
+  Logical. If `TRUE`, the document is opened in read-write mode and
+  every mutator function
+  ([`pdf_save()`](https://humanpred.github.io/rpdfium/reference/pdf_save.md),
+  [`pdf_page_set_rotation()`](https://humanpred.github.io/rpdfium/reference/pdf_page_set_rotation.md),
+  the `pdf_*_set_*()` family, annotation authoring, form filling, …)
+  will accept it. Defaults `FALSE` — a read-only handle that refuses
+  mutations with a clear error message. See ADR-012 in `dev/decisions/`.
+  PDFium itself has no read/write distinction; the flag is the R
+  wrapper's safety net against accidental edits inside long pipelines.
+
 ## Value
 
 A `pdfium_doc` object.
@@ -51,7 +63,8 @@ into RAM. Exactly one of `path` or `source` must be provided.
 
 ``` r
 fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   doc <- pdf_open(fixture)
   pdf_page_count(doc)

@@ -62,7 +62,7 @@ release.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pdf_open</span><span class="op">(</span>path <span class="op">=</span> <span class="cn">NULL</span>, source <span class="op">=</span> <span class="cn">NULL</span>, password <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pdf_open</span><span class="op">(</span>path <span class="op">=</span> <span class="cn">NULL</span>, source <span class="op">=</span> <span class="cn">NULL</span>, password <span class="op">=</span> <span class="cn">NULL</span>, readwrite <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -86,6 +86,18 @@ Mutually exclusive with <code>path</code>.</p></dd>
 <dd><p>Optional password for encrypted PDFs. <code>NULL</code>
 (the default) passes no password to PDFium.</p></dd>
 
+
+<dt id="arg-readwrite">readwrite<a class="anchor" aria-label="anchor" href="#arg-readwrite"></a></dt>
+<dd><p>Logical. If <code>TRUE</code>, the document is opened in
+read-write mode and every mutator function (<code><a href="pdf_save.html">pdf_save()</a></code>,
+<code><a href="pdf_page_set_rotation.html">pdf_page_set_rotation()</a></code>, the <code>pdf_*_set_*()</code> family,
+annotation authoring, form filling, …) will accept it.
+Defaults <code>FALSE</code> — a read-only handle that refuses mutations
+with a clear error message. See ADR-012 in
+<code>dev/decisions/</code>. PDFium itself has no read/write distinction;
+the flag is the R wrapper's safety net against accidental
+edits inside long pipelines.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -105,7 +117,8 @@ with <code><a href="https://rdrr.io/r/base/readBin.html" class="external-link">r
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">fixture</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"fixtures"</span>, <span class="st">"minimal.pdf"</span>,</span></span>
-<span class="r-in"><span>                       package <span class="op">=</span> <span class="st">"pdfium"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  package <span class="op">=</span> <span class="st">"pdfium"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nzchar</a></span><span class="op">(</span><span class="va">fixture</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span>  <span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu">pdf_open</span><span class="op">(</span><span class="va">fixture</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="pdf_page_count.html">pdf_page_count</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span></span></span>

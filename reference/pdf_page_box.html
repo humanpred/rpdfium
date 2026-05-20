@@ -94,10 +94,13 @@ a <code>pdfium_doc</code>. Ignored otherwise.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A named numeric vector with elements <code>left</code>, <code>bottom</code>,
-<code>right</code>, <code>top</code> (PDF user-space points). When the requested
-box is not declared in the PDF, PDFium falls back per the
-spec (e.g. CropBox -&gt; MediaBox if absent); when no fallback
-exists, every element is <code>NA</code>.</p>
+<code>right</code>, <code>top</code> (PDF user-space points). Every element is
+<code>NA</code> when the requested box is not declared on the page.
+Note that per the PDF spec a viewer falls back from a
+missing CropBox / BleedBox / TrimBox / ArtBox to the
+MediaBox, but <code>pdf_page_box()</code> does not - if you want the
+"what would render" rectangle, call <code>pdf_page_box()</code> for
+<code>"media"</code> after testing whether a more specific box exists.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

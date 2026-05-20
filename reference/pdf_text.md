@@ -44,7 +44,8 @@ for run-level structure (font, bounding box).
 
 ``` r
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) pdf_text(fixture)
 #> [1] "Hello"
 ```

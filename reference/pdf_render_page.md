@@ -2,11 +2,12 @@
 
 Rasterises one page of a PDF document via PDFium and returns a
 `pdfium_bitmap` object (an integer matrix that inherits from base R's
-`nativeRaster` class). The object can be passed directly to
-[`graphics::rasterImage()`](https://rdrr.io/r/graphics/rasterImage.html),
-[`grid::rasterGrob()`](https://rdrr.io/r/grid/grid.raster.html), or
-[`graphics::plot()`](https://rdrr.io/r/graphics/plot.default.html)
-without conversion. Conversion helpers
+`nativeRaster` class). Use
+[`graphics::plot()`](https://rdrr.io/r/graphics/plot.default.html) for
+an immediate-display path (the S3 method here routes through
+[`grid::grid.raster()`](https://rdrr.io/r/grid/grid.raster.html) on a
+3-D RGBA array, the one R-engine combination that renders
+pixel-for-pixel correctly across platforms). Conversion helpers
 ([`as.raster.pdfium_bitmap()`](https://humanpred.github.io/rpdfium/reference/as.raster.pdfium_bitmap.md),
 [`as.array.pdfium_bitmap()`](https://humanpred.github.io/rpdfium/reference/as.array.pdfium_bitmap.md),
 [`as.matrix.pdfium_bitmap()`](https://humanpred.github.io/rpdfium/reference/as.matrix.pdfium_bitmap.md))
@@ -86,10 +87,11 @@ for the source page's dimensions.
 
 ``` r
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   bmp <- pdf_render_page(pdf_open(fixture), dpi = 96)
-  bmp                                # human summary
-  if (interactive()) plot(bmp)       # render to the active device
+  bmp # human summary
+  if (interactive()) plot(bmp) # render to the active device
 }
 ```

@@ -4,8 +4,8 @@ Returns one tibble row per link annotation on the page, with the link's
 bounding rectangle and the action it carries (target page for internal
 links, URL for external links). Wraps `FPDFLink_Enumerate` plus the
 per-link `FPDFLink_GetAnnotRect`, `FPDFLink_GetAction` / `_GetDest`,
-`FPDFAction_GetType`, `FPDFAction_GetURIPath`, and
-`FPDFDest_GetDestPageIndex`.
+`FPDFAction_GetType`, `FPDFAction_GetURIPath`, `FPDFAction_GetFilePath`,
+and `FPDFDest_GetDestPageIndex`.
 
 ## Usage
 
@@ -37,13 +37,31 @@ A tibble with columns:
 
 - `action_type` character - one of `"goto"` (jump within the document),
   `"remote_goto"` (jump to a remote PDF), `"uri"` (open a URL),
-  `"launch"` (launch an external file or application), `"unsupported"`.
+  `"launch"` (launch an external file or application), `"embedded_goto"`
+  (jump into an embedded file), or `"unsupported"`.
 
-- `uri` character - non-empty for `action_type == "uri"`; the target
-  URL.
+- `uri` character - the target URL when `action_type == "uri"`; `NA`
+  otherwise.
 
-- `dest_page_num` integer - non-NA for `goto` / `remote_goto`; the
-  1-based destination page within the current (or remote) document.
+- `filepath` character - the external file path when `action_type` is
+  `"remote_goto"` / `"launch"` / `"embedded_goto"`; `NA` otherwise.
+
+- `dest_page_num` integer - 1-based destination page within the current
+  (or remote) document; `NA` when not resolvable.
+
+- `dest_view` character - destination view mode (`"xyz"`, `"fit"`,
+  `"fith"`, `"fitv"`, `"fitr"`, `"fitb"`, `"fitbh"`, `"fitbv"`,
+  `"unknown"`).
+
+- `dest_x`, `dest_y`, `dest_zoom` numeric - explicit point and zoom for
+  XYZ destinations / scroll offsets for the Fit\* variants; `NA` for
+  components the destination doesn't set.
+
+- `quad_points` list-column - per-line quad sets for multi-line links.
+  An N-by-8 numeric matrix with columns `x1, y1, x2, y2, x3, y3, x4, y4`
+  in PDF user space (one row per line), or `NULL` for links that carry
+  no `/QuadPoints` (single-rect links). Same shape as
+  `pdf_annotations()$quad_points`.
 
 Returns a 0-row tibble of the same schema when the page has no link
 annotations.

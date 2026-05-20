@@ -9,7 +9,8 @@ through the path API end-to-end.
 
 library(pdfium)
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 ```
 
 ## Per-page-object access
@@ -176,8 +177,8 @@ endpoints.
 
 red_paths <- all_paths[
   !is.na(all_paths$stroke_red) &
-    all_paths$stroke_red   > 200 &
-    all_paths$stroke_green <  50,
+    all_paths$stroke_red > 200 &
+    all_paths$stroke_green < 50,
 ]
 nrow(red_paths)
 #> [1] 5

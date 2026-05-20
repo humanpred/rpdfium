@@ -84,23 +84,52 @@ path.</p></dd>
 <code>"listbox"</code>, <code>"textfield"</code>, <code>"signature"</code>, or one of the
 XFA variants (<code>"xfa_*"</code>); <code>"unknown"</code> for non-AcroForm
 widgets PDFium can't classify.</p></li>
-<li><p><code>field_flags</code> integer - PDF form-field flags bitmask
+<li><p><code>field_flags</code> integer - raw PDF form-field flags bitmask
 (bit 1 = ReadOnly, bit 2 = Required, bit 3 = NoExport,
 bit 13 = Password for textfields, bit 16 = MultiLine for
 textfields, etc.; see PDF spec Table 226).</p></li>
+<li><p><code>is_readonly</code>, <code>is_required</code>, <code>is_no_export</code> logical -
+decoded universal flag bits (bits 1, 2, 3) for convenience.</p></li>
+<li><p><code>is_checked</code> logical - current state of the widget;
+<code>TRUE</code> / <code>FALSE</code> for <code>checkbox</code> / <code>radiobutton</code> fields,
+<code>NA</code> for every other field type.</p></li>
+<li><p><code>control_count</code> integer - total number of widgets in this
+field's control group (≥ 1; <code>&gt; 1</code> for radio button groups
+with multiple physical widgets). <code>NA</code> if PDFium reports
+failure.</p></li>
+<li><p><code>control_index</code> integer - 0-based position of this row's
+widget within its control group. For a checkbox or a
+standalone widget this is <code>0</code>. <code>NA</code> if PDFium reports
+failure.</p></li>
 <li><p><code>name</code> character - fully qualified field name, the
 period-joined dotted path PDFium reports (e.g.
 <code>"address.city"</code>).</p></li>
 <li><p><code>alternate_name</code> character - the field's user-facing
 label (the <code>/TU</code> entry), shown by viewers as a tooltip.</p></li>
-<li><p><code>value</code> character - the field's current value as a
-string (text fields), the selected option label
-(combo/listbox), or the export value (check / radio).</p></li>
+<li><p><code>value</code> character - the field's current display value.
+For text fields this is the entered text. For combo /
+listbox fields this is the <em>label</em> of the selected
+option (use <code>export_value</code> for the underlying export
+name). For checkbox / radio fields this is the
+appearance-state name ("Off" or the on-state name).</p></li>
+<li><p><code>export_value</code> character - the field's export value
+(<code>/V</code>). Same as <code>value</code> for text fields. For buttons,
+the value that gets submitted in form data (e.g. "Yes"
+for a checkbox, or the radio's on-state name).</p></li>
 <li><p><code>bounds_left</code>, <code>bounds_bottom</code>, <code>bounds_right</code>,
 <code>bounds_top</code> - widget rectangle in PDF user space.</p></li>
 <li><p><code>options</code> list-column of character vectors - the choice
 labels for <code>combobox</code> and <code>listbox</code> fields; empty
 character vector for other types.</p></li>
+<li><p><code>is_option_selected</code> list-column of logical vectors,
+one element per option (matches <code>options</code>). <code>TRUE</code> when
+the option is currently selected. Empty for non-choice
+fields.</p></li>
+<li><p><code>additional_actions_js</code> list-column of length-4 character
+vectors named <code>c("key_stroke", "format", "validate", "calculate")</code>. Each element is the JavaScript source
+string PDFium reports for the corresponding trigger
+event, or <code>""</code> when the trigger has no JS handler.
+Surfaced read-only here; v0.2.0 may expose a writer.</p></li>
 </ul><p>Returns a 0-row tibble of the same schema when the document
 has no AcroForm dictionary.</p>
     </div>
@@ -108,8 +137,9 @@ has no AcroForm dictionary.</p>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Wraps <code>FPDFDOC_InitFormFillEnvironment</code>,
 <code>FPDFDOC_ExitFormFillEnvironment</code>, the
-<code>FPDFAnnot_GetFormField*</code> family, and <code>FPDFAnnot_GetOption*</code>
-for choice-list options.</p>
+<code>FPDFAnnot_GetFormField*</code> family, <code>FPDFAnnot_IsChecked</code> for the
+check/radio state, and <code>FPDFAnnot_GetOption*</code> for choice-list
+options.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

@@ -32,7 +32,8 @@ for a single page.
 
 ``` r
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) pdf_page_labels(fixture)
 #> [1] ""
 ```

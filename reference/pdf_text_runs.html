@@ -85,8 +85,11 @@ closed automatically).</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A tibble with columns:</p><ul><li><p><code>text_index</code> - 1-based page-object index (so this row is the
-<code>text_index</code>-th object returned by <code><a href="pdf_page_objects.html">pdf_page_objects()</a></code>)</p></li>
+    <p>A tibble with columns:</p><ul><li><p><code>obj_index</code> - 1-based page-object index (so this row is the
+<code>obj_index</code>-th object returned by <code><a href="pdf_page_objects.html">pdf_page_objects()</a></code>).
+Renamed from <code>text_index</code> in the v0.1.0 reader/writer audit
+to avoid colliding with <code>pdf_text_chars()$text_index</code>, which
+is the <em>extractable-text</em> offset.</p></li>
 <li><p><code>bounds_left</code>, <code>bounds_bottom</code>, <code>bounds_right</code>, <code>bounds_top</code></p><ul><li><p>the object's bounding box in PDF points</p></li>
 </ul></li>
 <li><p><code>font_size</code> - typographic em size; multiply by the text
@@ -106,7 +109,8 @@ produced by <code><a href="pdf_extract_paths.html">pdf_extract_paths()</a></code
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">fixture</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"fixtures"</span>, <span class="st">"unicode.pdf"</span>,</span></span>
-<span class="r-in"><span>                       package <span class="op">=</span> <span class="st">"pdfium"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  package <span class="op">=</span> <span class="st">"pdfium"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nchar.html" class="external-link">nzchar</a></span><span class="op">(</span><span class="va">fixture</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span>  <span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="pdf_open.html">pdf_open</a></span><span class="op">(</span><span class="va">fixture</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu">pdf_text_runs</span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1</span><span class="op">)</span></span></span>

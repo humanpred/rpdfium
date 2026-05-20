@@ -38,7 +38,8 @@ and file version.
 
 ``` r
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   doc <- pdf_open(fixture)
   pdf_doc_meta(doc, "Producer")

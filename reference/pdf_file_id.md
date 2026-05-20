@@ -45,7 +45,8 @@ at all).
 
 ``` r
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) pdf_file_id(fixture)
 #> raw(0)
 ```

@@ -67,9 +67,9 @@ safely combine explicit close with the automatic fallback.
 
 load_page <- function(path) {
   doc <- pdf_open(path)
-  page <- pdf_load_page(doc, 1)   # available in Phase 1+
-  pdf_close(doc)                  # this is fine
-  page                            # still usable here
+  page <- pdf_load_page(doc, 1) # available in Phase 1+
+  pdf_close(doc) # this is fine
+  page # still usable here
 }
 ```
 

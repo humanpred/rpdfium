@@ -39,9 +39,12 @@ pdf_page_box(
 ## Value
 
 A named numeric vector with elements `left`, `bottom`, `right`, `top`
-(PDF user-space points). When the requested box is not declared in the
-PDF, PDFium falls back per the spec (e.g. CropBox -\> MediaBox if
-absent); when no fallback exists, every element is `NA`.
+(PDF user-space points). Every element is `NA` when the requested box is
+not declared on the page. Note that per the PDF spec a viewer falls back
+from a missing CropBox / BleedBox / TrimBox / ArtBox to the MediaBox,
+but `pdf_page_box()` does not - if you want the "what would render"
+rectangle, call `pdf_page_box()` for `"media"` after testing whether a
+more specific box exists.
 
 ## Details
 

@@ -48,7 +48,8 @@ attachments.
 
 ``` r
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) pdf_attachments(fixture)
 #> # A tibble: 0 × 4
 #> # ℹ 4 variables: attachment_index <int>, name <chr>, mime_type <chr>,

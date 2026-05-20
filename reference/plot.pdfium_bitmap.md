@@ -76,7 +76,8 @@ padding.
 
 ``` r
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture) && interactive()) {
   bmp <- pdf_render_page(pdf_open(fixture), dpi = 96)
   plot(bmp)

@@ -4,14 +4,14 @@ the link's bounding rectangle and the action it carries
 (target page for internal links, URL for external links).
 Wraps FPDFLink_Enumerate plus the per-link
 FPDFLink_GetAnnotRect, FPDFLink_GetAction / _GetDest,
-FPDFAction_GetType, FPDFAction_GetURIPath, and
-FPDFDest_GetDestPageIndex."><meta property="og:description" content="Returns one tibble row per link annotation on the page, with
+FPDFAction_GetType, FPDFAction_GetURIPath,
+FPDFAction_GetFilePath, and FPDFDest_GetDestPageIndex."><meta property="og:description" content="Returns one tibble row per link annotation on the page, with
 the link's bounding rectangle and the action it carries
 (target page for internal links, URL for external links).
 Wraps FPDFLink_Enumerate plus the per-link
 FPDFLink_GetAnnotRect, FPDFLink_GetAction / _GetDest,
-FPDFAction_GetType, FPDFAction_GetURIPath, and
-FPDFDest_GetDestPageIndex."></head><body>
+FPDFAction_GetType, FPDFAction_GetURIPath,
+FPDFAction_GetFilePath, and FPDFDest_GetDestPageIndex."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -59,8 +59,8 @@ the link's bounding rectangle and the action it carries
 (target page for internal links, URL for external links).
 Wraps <code>FPDFLink_Enumerate</code> plus the per-link
 <code>FPDFLink_GetAnnotRect</code>, <code>FPDFLink_GetAction</code> / <code>_GetDest</code>,
-<code>FPDFAction_GetType</code>, <code>FPDFAction_GetURIPath</code>, and
-<code>FPDFDest_GetDestPageIndex</code>.</p>
+<code>FPDFAction_GetType</code>, <code>FPDFAction_GetURIPath</code>,
+<code>FPDFAction_GetFilePath</code>, and <code>FPDFDest_GetDestPageIndex</code>.</p>
     </div>
 
     <div class="section level2">
@@ -91,12 +91,25 @@ link table.</p></li>
 <li><p><code>action_type</code> character - one of <code>"goto"</code> (jump within
 the document), <code>"remote_goto"</code> (jump to a remote PDF),
 <code>"uri"</code> (open a URL), <code>"launch"</code> (launch an external file
-or application), <code>"unsupported"</code>.</p></li>
-<li><p><code>uri</code> character - non-empty for <code>action_type == "uri"</code>;
-the target URL.</p></li>
-<li><p><code>dest_page_num</code> integer - non-NA for <code>goto</code> /
-<code>remote_goto</code>; the 1-based destination page within the
-current (or remote) document.</p></li>
+or application), <code>"embedded_goto"</code> (jump into an embedded
+file), or <code>"unsupported"</code>.</p></li>
+<li><p><code>uri</code> character - the target URL when
+<code>action_type == "uri"</code>; <code>NA</code> otherwise.</p></li>
+<li><p><code>filepath</code> character - the external file path when
+<code>action_type</code> is <code>"remote_goto"</code> / <code>"launch"</code> /
+<code>"embedded_goto"</code>; <code>NA</code> otherwise.</p></li>
+<li><p><code>dest_page_num</code> integer - 1-based destination page within
+the current (or remote) document; <code>NA</code> when not resolvable.</p></li>
+<li><p><code>dest_view</code> character - destination view mode (<code>"xyz"</code>,
+<code>"fit"</code>, <code>"fith"</code>, <code>"fitv"</code>, <code>"fitr"</code>, <code>"fitb"</code>, <code>"fitbh"</code>,
+<code>"fitbv"</code>, <code>"unknown"</code>).</p></li>
+<li><p><code>dest_x</code>, <code>dest_y</code>, <code>dest_zoom</code> numeric - explicit point and
+zoom for XYZ destinations / scroll offsets for the Fit*
+variants; <code>NA</code> for components the destination doesn't set.</p></li>
+<li><p><code>quad_points</code> list-column - per-line quad sets for multi-line
+links. An N-by-8 numeric matrix with columns <code>x1, y1, x2, y2, x3, y3, x4, y4</code> in PDF user space (one row per line),
+or <code>NULL</code> for links that carry no <code>/QuadPoints</code> (single-rect
+links). Same shape as <code>pdf_annotations()$quad_points</code>.</p></li>
 </ul><p>Returns a 0-row tibble of the same schema when the page has no
 link annotations.</p>
     </div>

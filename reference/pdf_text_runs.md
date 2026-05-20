@@ -32,9 +32,12 @@ pdf_text_runs(page, page_num = 1L)
 
 A tibble with columns:
 
-- `text_index` - 1-based page-object index (so this row is the
-  `text_index`-th object returned by
-  [`pdf_page_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_page_objects.md))
+- `obj_index` - 1-based page-object index (so this row is the
+  `obj_index`-th object returned by
+  [`pdf_page_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_page_objects.md)).
+  Renamed from `text_index` in the v0.1.0 reader/writer audit to avoid
+  colliding with `pdf_text_chars()$text_index`, which is the
+  *extractable-text* offset.
 
 - `bounds_left`, `bounds_bottom`, `bounds_right`, `bounds_top`
 
@@ -60,7 +63,8 @@ by
 
 ``` r
 fixture <- system.file("extdata", "fixtures", "unicode.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   doc <- pdf_open(fixture)
   pdf_text_runs(doc, 1)

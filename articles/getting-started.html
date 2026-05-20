@@ -87,7 +87,8 @@ deeper into <a href="extracting-paths.html">paths</a>, <a href="text-extraction.
 </h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fixture</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"fixtures"</span>, <span class="st">"shapes.pdf"</span>,</span>
-<span>                       package <span class="op">=</span> <span class="st">"pdfium"</span><span class="op">)</span></span>
+<span>  package <span class="op">=</span> <span class="st">"pdfium"</span></span>
+<span><span class="op">)</span></span>
 <span><span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_open.html">pdf_open</a></span><span class="op">(</span><span class="va">fixture</span><span class="op">)</span></span>
 <span><span class="va">doc</span></span>
 <span><span class="co">#&gt; &lt;pdfium_doc [open] /home/runner/work/_temp/Library/pdfium/extdata/fixtures/shapes.pdf&gt;</span></span></code></pre></div>
@@ -120,7 +121,7 @@ porting:</p>
 <code class="sourceCode R"><span><span class="va">info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_doc_info.html">pdf_doc_info</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span></span>
 <span><span class="va">info</span><span class="op">$</span><span class="va">page_count</span></span>
 <span><span class="co">#&gt; [1] 1</span></span>
-<span><span class="va">info</span><span class="op">$</span><span class="va">file_version</span>       <span class="co"># PDFium reports 10 * major + minor (17 = PDF 1.7)</span></span>
+<span><span class="va">info</span><span class="op">$</span><span class="va">file_version</span> <span class="co"># PDFium reports 10 * major + minor (17 = PDF 1.7)</span></span>
 <span><span class="co">#&gt; [1] 17</span></span>
 <span><span class="va">info</span><span class="op">$</span><span class="va">producer</span></span>
 <span><span class="co">#&gt; [1] "cairo 1.18.0 (https://cairographics.org)"</span></span>
@@ -148,10 +149,10 @@ returned handle carries a reference to its parent doc so GC ordering is
 safe:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">page</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_load_page.html">pdf_load_page</a></span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1L</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/pdf_page_size.html">pdf_page_size</a></span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1L</span><span class="op">)</span>        <span class="co"># width and height in PDF points</span></span>
+<span><span class="fu"><a href="../reference/pdf_page_size.html">pdf_page_size</a></span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1L</span><span class="op">)</span> <span class="co"># width and height in PDF points</span></span>
 <span><span class="co">#&gt;  width height </span></span>
 <span><span class="co">#&gt;    288    216</span></span>
-<span><span class="fu"><a href="../reference/pdf_page_rotation.html">pdf_page_rotation</a></span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1L</span><span class="op">)</span>    <span class="co"># 0, 90, 180, or 270 degrees</span></span>
+<span><span class="fu"><a href="../reference/pdf_page_rotation.html">pdf_page_rotation</a></span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1L</span><span class="op">)</span> <span class="co"># 0, 90, 180, or 270 degrees</span></span>
 <span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
 <p>Every drawable element on a page is a <em>page object</em>.
 <code><a href="../reference/pdf_page_objects.html">pdf_page_objects()</a></code> returns them as a list of typed
@@ -260,9 +261,9 @@ metadata:</p>
 <code class="sourceCode R"><span><span class="va">runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_text_runs.html">pdf_text_runs</a></span><span class="op">(</span><span class="va">page</span><span class="op">)</span></span>
 <span><span class="va">runs</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 13</span></span></span>
-<span><span class="co">#&gt;   text_index bounds_left bounds_bottom bounds_right bounds_top font_size text </span></span>
-<span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>          5        129.          103.         159.       114.         1 Hello</span></span>
+<span><span class="co">#&gt;   obj_index bounds_left bounds_bottom bounds_right bounds_top font_size text </span></span>
+<span><span class="co">#&gt;       <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>         5        129.          103.         159.       114.         1 Hello</span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 6 more variables: font_base_name &lt;chr&gt;, font_family &lt;chr&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   font_weight &lt;int&gt;, font_italic_angle &lt;int&gt;, font_is_embedded &lt;lgl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   font_flags &lt;int&gt;</span></span></span></code></pre></div>
@@ -280,16 +281,16 @@ returns a <code>pdfium_bitmap</code> object that inherits from base R’s
 <code class="sourceCode R"><span><span class="va">bmp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_render_page.html">pdf_render_page</a></span><span class="op">(</span><span class="va">doc</span>, dpi <span class="op">=</span> <span class="fl">96</span><span class="op">)</span></span>
 <span><span class="va">bmp</span></span>
 <span><span class="co">#&gt; &lt;pdfium_bitmap 384x288 @ 96 dpi, page 1 of shapes.pdf&gt;</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">bmp</span><span class="op">)</span>        <span class="co"># height, width</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">bmp</span><span class="op">)</span> <span class="co"># height, width</span></span>
 <span><span class="co">#&gt; [1] 288 384</span></span></code></pre></div>
 <p><code>pdfium_bitmap</code> is directly usable by
 <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">graphics::plot()</a></code>, <code><a href="https://rdrr.io/r/graphics/rasterImage.html" class="external-link">graphics::rasterImage()</a></code>, and
 <code><a href="https://rdrr.io/r/grid/grid.raster.html" class="external-link">grid::rasterGrob()</a></code>. Three converters produce other common
 shapes:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">arr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/array.html" class="external-link">as.array</a></span><span class="op">(</span><span class="va">bmp</span><span class="op">)</span>        <span class="co"># 3D [H, W, 4] doubles in 0..1, like png::writePNG</span></span>
-<span><span class="va">ras</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/as.raster.html" class="external-link">as.raster</a></span><span class="op">(</span><span class="va">bmp</span><span class="op">)</span>       <span class="co"># base R "raster" class, hex-color matrix</span></span>
-<span><span class="va">mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">bmp</span><span class="op">)</span>       <span class="co"># plain character matrix</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">arr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/array.html" class="external-link">as.array</a></span><span class="op">(</span><span class="va">bmp</span><span class="op">)</span> <span class="co"># 3D [H, W, 4] doubles in 0..1, like png::writePNG</span></span>
+<span><span class="va">ras</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/grDevices/as.raster.html" class="external-link">as.raster</a></span><span class="op">(</span><span class="va">bmp</span><span class="op">)</span> <span class="co"># base R "raster" class, hex-color matrix</span></span>
+<span><span class="va">mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">bmp</span><span class="op">)</span> <span class="co"># plain character matrix</span></span></code></pre></div>
 <p>The save helper <code>pdf_render_to_png(file, ...)</code> writes the
 bitmap straight to a PNG file via the <code>png</code> package (a
 Suggests dependency).</p>

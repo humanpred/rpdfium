@@ -101,6 +101,32 @@ synthesised between positioned glyphs (the source PDF
 does not carry a character there; PDFium infers one for
 text-extraction consumers).</p></li>
 <li><p><code>is_hyphen</code> logical - <code>TRUE</code> for end-of-line soft hyphens.</p></li>
+<li><p><code>origin_x</code>, <code>origin_y</code> - the character's glyph origin point
+in PDF user space (<code>FPDFText_GetCharOrigin</code>). Distinct from
+the bounding-box corners; for many fonts the origin is at
+the baseline left of the glyph.</p></li>
+<li><p><code>loose_left</code>, <code>loose_bottom</code>, <code>loose_right</code>, <code>loose_top</code> -
+the "loose" bounding box covering the entire glyph cell
+(font ascent / descent included), not just the glyph
+outline. Use these when you need consistent line heights;
+use <code>bounds_*</code> for the tight glyph extent.</p></li>
+<li><p><code>unicode_map_error</code> logical - <code>TRUE</code> when PDFium detected
+that the character's ToUnicode CMap is malformed for this
+glyph (the codepoint reported may be the PDF's `
+fallback rather than the intended character).</p></li>
+<li><p><code>text_index</code> integer - 0-based position in the <em>extractable</em>
+text string (i.e. the linear <code><a href="pdf_text.html">pdf_text()</a></code> output) for this
+character, or <code>NA</code> for synthesised whitespace and other
+characters that don't appear in the extracted text.</p></li>
+<li><p><code>char_font_name</code> character - the font name PDFium reports
+for this specific character (via <code>FPDFText_GetFontInfo</code>).
+Per-character because pages can mix fonts within a single
+text run after PDFium re-flows characters during extraction.</p></li>
+<li><p><code>char_font_flags</code> integer - the PDF Font Descriptor <code>/Flags</code>
+bitmask for this character's font (PDF spec Table 121).
+Useful for detecting <code>/Symbolic</code> (bit 3) or
+<code>/AllCap</code> (bit 17) fonts whose ToUnicode mapping may be
+unreliable.</p></li>
 </ul><p>Returns a 0-row tibble of the same schema when the page has no
 text.</p>
     </div>

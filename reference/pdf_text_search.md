@@ -106,7 +106,8 @@ for per-character positions.
 
 ``` r
 fixture <- system.file("extdata", "fixtures", "unicode.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   pdf_text_search(fixture, "Hello")
   pdf_text_search(fixture, "WORLD", case_sensitive = FALSE)

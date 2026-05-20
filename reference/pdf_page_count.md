@@ -31,7 +31,8 @@ An integer scalar — the page count.
 
 ``` r
 fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   pdf_page_count(fixture)
 }

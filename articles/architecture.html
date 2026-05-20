@@ -130,9 +130,9 @@ close with the automatic fallback.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">load_page</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">path</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_open.html">pdf_open</a></span><span class="op">(</span><span class="va">path</span><span class="op">)</span></span>
-<span>  <span class="va">page</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_load_page.html">pdf_load_page</a></span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1</span><span class="op">)</span>   <span class="co"># available in Phase 1+</span></span>
-<span>  <span class="fu"><a href="../reference/pdf_close.html">pdf_close</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span>                  <span class="co"># this is fine</span></span>
-<span>  <span class="va">page</span>                            <span class="co"># still usable here</span></span>
+<span>  <span class="va">page</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_load_page.html">pdf_load_page</a></span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1</span><span class="op">)</span> <span class="co"># available in Phase 1+</span></span>
+<span>  <span class="fu"><a href="../reference/pdf_close.html">pdf_close</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span> <span class="co"># this is fine</span></span>
+<span>  <span class="va">page</span> <span class="co"># still usable here</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>When you call <code>pdf_load_page(doc, ...)</code>, the returned
 <code>pdfium_page</code> holds an internal reference to its parent

@@ -2,8 +2,9 @@
 
 Returns a tibble row per bookmark, walking PDFium's outline tree
 depth-first. Each row carries the bookmark's title, its position in the
-hierarchy, and the page it points to (or `NA` when the bookmark uses an
-action — URI, launch — rather than a destination).
+hierarchy, the page it points to (when resolvable), and the action it
+carries (URI, launch, remote_goto, embedded_goto, or the typical
+goto-within-this-document).
 
 ## Usage
 
@@ -34,7 +35,25 @@ A tibble with columns:
 - `title` character - the bookmark's display text, UTF-8.
 
 - `page_num` integer - 1-based destination page number, or `NA` when the
-  bookmark has no page destination.
+  bookmark has no resolvable page destination (e.g. for URI / launch
+  actions, or unresolvable dests).
+
+- `action_type` character - one of `"goto"`, `"remote_goto"`, `"uri"`,
+  `"launch"`, `"embedded_goto"`.
+
+- `uri` character - the action's target URL when `action_type == "uri"`;
+  `NA` otherwise.
+
+- `filepath` character - the external file path when `action_type` is
+  `"remote_goto"` / `"launch"` / `"embedded_goto"`; `NA` otherwise.
+
+- `dest_view` character - the destination view mode (one of `"xyz"`,
+  `"fit"`, `"fith"`, `"fitv"`, `"fitr"`, `"fitb"`, `"fitbh"`, `"fitbv"`,
+  `"unknown"`).
+
+- `dest_x`, `dest_y`, `dest_zoom` numeric - the explicit point / zoom
+  for XYZ destinations and the line offset for FitH / FitV / FitBH /
+  FitBV. `NA` for components the destination doesn't specify.
 
 Returns a 0-row tibble of the same schema when the document has no
 outline.
@@ -48,21 +67,30 @@ parent is the row whose `bookmark_index` matches its `parent_index`. The
 entries only").
 
 Wraps `FPDFBookmark_GetFirstChild`, `FPDFBookmark_GetNextSibling`,
-`FPDFBookmark_GetTitle`, `FPDFBookmark_GetDest`, and
-`FPDFDest_GetDestPageIndex`.
+`FPDFBookmark_GetTitle`, `FPDFBookmark_GetDest`,
+`FPDFBookmark_GetAction`, `FPDFAction_GetType` / `FPDFAction_GetURIPath`
+/ `FPDFAction_GetFilePath`, and `FPDFDest_GetDestPageIndex`.
 
 ## See also
 
 [`pdf_page_labels()`](https://humanpred.github.io/rpdfium/reference/pdf_page_labels.md)
-for logical page numbering.
+for logical page numbering,
+[`pdf_page_links()`](https://humanpred.github.io/rpdfium/reference/pdf_page_links.md)
+for clickable link annotations on a page.
 
 ## Examples
 
 ``` r
-fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+fixture <- system.file("extdata", "fixtures", "outline.pdf",
+  package = "pdfium"
+)
 if (nzchar(fixture)) pdf_bookmarks(fixture)
-#> # A tibble: 0 × 5
-#> # ℹ 5 variables: bookmark_index <int>, parent_index <int>, level <int>,
-#> #   title <chr>, page_num <int>
+#> # A tibble: 3 × 12
+#>   bookmark_index parent_index level title    page_num action_type uri   filepath
+#>            <int>        <int> <int> <chr>       <int> <chr>       <chr> <chr>   
+#> 1              1            0     1 Chapter…        1 goto        NA    NA      
+#> 2              2            1     2 Section…        1 goto        NA    NA      
+#> 3              3            1     2 Section…        2 goto        NA    NA      
+#> # ℹ 4 more variables: dest_view <chr>, dest_x <dbl>, dest_y <dbl>,
+#> #   dest_zoom <dbl>
 ```

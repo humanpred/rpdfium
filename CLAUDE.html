@@ -62,6 +62,16 @@
 <li>R wrappers validate inputs and own error messages. The C++ layer assumes arguments are already validated; it raises <code>Rcpp::stop</code> only for invariants that shouldn’t normally trip.</li>
 </ul></div>
 <div class="section level2">
+<h2 id="argument-validation--use-checkmate">Argument validation — use <code>checkmate</code>
+<a class="anchor" aria-label="anchor" href="#argument-validation--use-checkmate"></a></h2>
+<p>See <a href="dev/decisions/ADR-010-checkmate-for-argument-validation.html">ADR-010</a> for the rationale. The short version:</p>
+<ul><li>
+<strong>All new R-side validation</strong> must use <code>checkmate::assert_*</code> (e.g. <code>assert_count</code>, <code>assert_string</code>, <code>assert_number</code>, <code>assert_matrix</code>, <code>assert_multi_class</code>). Do <strong>not</strong> hand-roll <code>is.numeric(x) &amp;&amp; length(x) == 1L &amp;&amp; ...</code> chains — they trip <code>cyclocomp_linter</code> and produce inconsistent error messages.</li>
+<li>Reach for <code>assert_*</code> (the <code><a href="https://rdrr.io/r/base/stop.html" class="external-link">stop()</a></code>-raising form), not <code>check_*</code> / <code>test_*</code>. Keeps error semantics aligned with the rest of the API.</li>
+<li>pdfium-specific assertions that have no single-call checkmate equivalent (e.g. “must be <code>pdfium_page</code> OR <code>pdfium_doc</code>”, “must be an open page handle”) get a small wrapper in <code>R/utils.R</code> that itself calls <code>checkmate::assert_*</code> for the shape parts.</li>
+<li>In tests, target the argument-name portion of checkmate’s standard message (e.g. <code>regexp = "Assertion on 'x' failed"</code>) rather than matching exact phrasing — checkmate’s wording can shift between versions without churning the test suite.</li>
+</ul></div>
+<div class="section level2">
 <h2 id="memory-model--the-rule-that-bites-if-you-forget-it">Memory model — the rule that bites if you forget it<a class="anchor" aria-label="anchor" href="#memory-model--the-rule-that-bites-if-you-forget-it"></a></h2>
 <ul><li>Every PDFium handle (<code>FPDF_DOCUMENT</code>, <code>FPDF_PAGE</code>, etc.) lives behind an R <code>externalptr</code> with a C finalizer registered via <code>R_RegisterCFinalizerEx(..., TRUE)</code>.</li>
 <li>The finalizer is the <strong>only</strong> path that calls <code>FPDF_*Close*</code>. After it runs, it calls <code>R_ClearExternalPtr</code> so the pointer reads as NULL on subsequent access. This makes <code><a href="reference/pdf_close.html">pdf_close()</a></code> safely idempotent.</li>
