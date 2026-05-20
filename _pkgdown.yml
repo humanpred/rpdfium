@@ -256,3 +256,15 @@ reference:
       - pdf_text_set_render_mode
       - pdf_obj_add_mark
       - pdf_obj_remove_mark
+  - title: Path geometry
+    desc: >
+      Appenders for path page-objects. PDFium's public API is
+      append-only — there is no segment-removal or -replacement
+      symbol. To "rebuild" geometry, compose these with Phase 5's
+      `pdf_path_new()` (forthcoming).
+    contents:
+      - pdf_path_move_to
+      - pdf_path_line_to
+      - pdf_path_bezier_to
+      - pdf_path_close
+      - pdf_path_append

@@ -609,6 +609,22 @@ cpp_page_weblinks <- function(page_ptr) {
     .Call(`_pdfium_cpp_page_weblinks`, page_ptr)
 }
 
+cpp_path_move_to <- function(obj_ptr, x, y) {
+    .Call(`_pdfium_cpp_path_move_to`, obj_ptr, x, y)
+}
+
+cpp_path_line_to <- function(obj_ptr, x, y) {
+    .Call(`_pdfium_cpp_path_line_to`, obj_ptr, x, y)
+}
+
+cpp_path_bezier_to <- function(obj_ptr, x1, y1, x2, y2, x3, y3) {
+    .Call(`_pdfium_cpp_path_bezier_to`, obj_ptr, x1, y1, x2, y2, x3, y3)
+}
+
+cpp_path_close <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_path_close`, obj_ptr)
+}
+
 cpp_path_segment_count <- function(obj_ptr) {
     .Call(`_pdfium_cpp_path_segment_count`, obj_ptr)
 }
