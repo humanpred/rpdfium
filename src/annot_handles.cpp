@@ -17,30 +17,29 @@
 #include <vector>
 #include "fpdfview.h"
 #include "fpdf_annot.h"
+#include "fpdf_attachment.h"
 #include "fpdf_formfill.h"
+#include "handle_validation.h"
 #include "utf16.h"
 
 namespace {
 
 FPDF_ANNOTATION annot_from_ptr(SEXP annot_ptr) {
-  if (TYPEOF(annot_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the annotation.");
-  }
-  FPDF_ANNOTATION annot =
-      static_cast<FPDF_ANNOTATION>(R_ExternalPtrAddr(annot_ptr));
-  if (annot == nullptr) {
-    Rcpp::stop("Annotation handle is NULL (closed?).");
-  }
-  return annot;
+  // Annot has its own finalizer (FPDFPage_CloseAnnot); its prot
+  // slot pins the parent page externalptr. When the page closes,
+  // the page externalptr's address goes NULL — that's the signal
+  // the annot's underlying memory has been freed (the annot
+  // belongs to the page, even though the annot finalizer is what
+  // calls FPDFPage_CloseAnnot).
+  return static_cast<FPDF_ANNOTATION>(
+      pdfium_r::validate_handle(annot_ptr, "Annotation",
+                                  /*require_prot_alive=*/true));
 }
 
 FPDF_PAGE page_from_ptr_local(SEXP page_ptr) {
-  if (TYPEOF(page_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the page.");
-  }
-  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
-  if (page == nullptr) Rcpp::stop("Page handle is closed.");
-  return page;
+  return static_cast<FPDF_PAGE>(
+      pdfium_r::validate_handle(page_ptr, "Page",
+                                  /*require_prot_alive=*/false));
 }
 
 void finalize_annot(SEXP ptr) {
@@ -188,4 +187,160 @@ Rcpp::NumericVector cpp_annot_font_color(SEXP annot_ptr, SEXP doc_ptr) {
 // [[Rcpp::export(name = "cpp_annot_has_attachment_points")]]
 bool cpp_annot_has_attachment_points(SEXP annot_ptr) {
   return FPDFAnnot_HasAttachmentPoints(annot_from_ptr(annot_ptr));
+}
+
+// [[Rcpp::export(name = "cpp_annot_quad_points_handle")]]
+SEXP cpp_annot_quad_points_handle(SEXP annot_ptr) {
+  FPDF_ANNOTATION annot = annot_from_ptr(annot_ptr);
+  if (!FPDFAnnot_HasAttachmentPoints(annot)) return R_NilValue;
+  size_t n = FPDFAnnot_CountAttachmentPoints(annot);
+  if (n == 0) return R_NilValue;
+  Rcpp::NumericMatrix m(static_cast<int>(n), 8);
+  for (size_t i = 0; i < n; ++i) {
+    FS_QUADPOINTSF q;
+    if (!FPDFAnnot_GetAttachmentPoints(annot, i, &q)) {
+      for (int k = 0; k < 8; ++k) {
+        m(static_cast<int>(i), k) = NA_REAL;
+      }
+      continue;
+    }
+    m(static_cast<int>(i), 0) = q.x1;
+    m(static_cast<int>(i), 1) = q.y1;
+    m(static_cast<int>(i), 2) = q.x2;
+    m(static_cast<int>(i), 3) = q.y2;
+    m(static_cast<int>(i), 4) = q.x3;
+    m(static_cast<int>(i), 5) = q.y3;
+    m(static_cast<int>(i), 6) = q.x4;
+    m(static_cast<int>(i), 7) = q.y4;
+  }
+  Rcpp::CharacterVector cn = {"x1", "y1", "x2", "y2",
+                                "x3", "y3", "x4", "y4"};
+  Rcpp::colnames(m) = cn;
+  return m;
+}
+
+// [[Rcpp::export(name = "cpp_annot_vertices_handle")]]
+SEXP cpp_annot_vertices_handle(SEXP annot_ptr) {
+  FPDF_ANNOTATION annot = annot_from_ptr(annot_ptr);
+  unsigned long n = FPDFAnnot_GetVertices(annot, nullptr, 0);
+  if (n == 0) return R_NilValue;
+  std::vector<FS_POINTF> buf(n);
+  if (FPDFAnnot_GetVertices(annot, buf.data(), n) != n) {
+    return R_NilValue;
+  }
+  Rcpp::NumericMatrix m(static_cast<int>(n), 2);
+  for (unsigned long i = 0; i < n; ++i) {
+    m(static_cast<int>(i), 0) = buf[i].x;
+    m(static_cast<int>(i), 1) = buf[i].y;
+  }
+  Rcpp::CharacterVector cn = {"x", "y"};
+  Rcpp::colnames(m) = cn;
+  return m;
+}
+
+// [[Rcpp::export(name = "cpp_annot_ink_paths_handle")]]
+SEXP cpp_annot_ink_paths_handle(SEXP annot_ptr) {
+  FPDF_ANNOTATION annot = annot_from_ptr(annot_ptr);
+  unsigned long n_paths = FPDFAnnot_GetInkListCount(annot);
+  if (n_paths == 0) return R_NilValue;
+  Rcpp::List out(n_paths);
+  for (unsigned long p = 0; p < n_paths; ++p) {
+    unsigned long n = FPDFAnnot_GetInkListPath(annot, p, nullptr, 0);
+    if (n == 0) {
+      out[p] = Rcpp::NumericMatrix(0, 2);
+      continue;
+    }
+    std::vector<FS_POINTF> buf(n);
+    FPDFAnnot_GetInkListPath(annot, p, buf.data(), n);
+    Rcpp::NumericMatrix m(static_cast<int>(n), 2);
+    for (unsigned long i = 0; i < n; ++i) {
+      m(static_cast<int>(i), 0) = buf[i].x;
+      m(static_cast<int>(i), 1) = buf[i].y;
+    }
+    Rcpp::CharacterVector cn = {"x", "y"};
+    Rcpp::colnames(m) = cn;
+    out[p] = m;
+  }
+  return out;
+}
+
+// Resolve a linked annotation (Popup, IRT) and return BOTH:
+//   * a fresh externalptr with a finalizer (FPDFPage_CloseAnnot),
+//   * the 1-based index of that annot on the page.
+// `key` is the linked-annot dict name (`"Popup"` or `"IRT"`).
+// `page_ptr` is needed because resolving the index requires walking
+// the page's annots to compare pointers (PDFium has no direct
+// "index of an annotation" API).
+// [[Rcpp::export(name = "cpp_annot_linked_handle")]]
+Rcpp::List cpp_annot_linked_handle(SEXP annot_ptr, SEXP page_ptr,
+                                    std::string key) {
+  FPDF_ANNOTATION annot = annot_from_ptr(annot_ptr);
+  FPDF_PAGE page = page_from_ptr_local(page_ptr);
+  FPDF_ANNOTATION linked =
+      FPDFAnnot_GetLinkedAnnot(annot, key.c_str());
+  if (linked == nullptr) {
+    return Rcpp::List::create(
+        Rcpp::_["found"]  = false,
+        Rcpp::_["handle"] = R_NilValue,
+        Rcpp::_["index"]  = NA_INTEGER);
+  }
+  // Walk page annots to find the index — PDFium has no index-of API.
+  int found_idx = -1;
+  int n = FPDFPage_GetAnnotCount(page);
+  for (int i = 0; i < n; ++i) {
+    FPDF_ANNOTATION cand = FPDFPage_GetAnnot(page, i);
+    if (cand == nullptr) continue;
+    bool match = (cand == linked);
+    FPDFPage_CloseAnnot(cand);
+    if (match) {
+      found_idx = i + 1;
+      break;
+    }
+  }
+  // The walk above yielded a fresh handle. We close it and re-mint
+  // one via the same FPDFPage_GetAnnot path so the externalptr's
+  // ownership story matches cpp_annot_get().
+  FPDFPage_CloseAnnot(linked);
+  if (found_idx < 0) {
+    return Rcpp::List::create(
+        Rcpp::_["found"]  = true,
+        Rcpp::_["handle"] = R_NilValue,
+        Rcpp::_["index"]  = NA_INTEGER);
+  }
+  FPDF_ANNOTATION fresh = FPDFPage_GetAnnot(page, found_idx - 1);
+  if (fresh == nullptr) {
+    return Rcpp::List::create(
+        Rcpp::_["found"]  = true,
+        Rcpp::_["handle"] = R_NilValue,
+        Rcpp::_["index"]  = found_idx);
+  }
+  SEXP ptr = PROTECT(R_MakeExternalPtr(fresh, R_NilValue, page_ptr));
+  R_RegisterCFinalizerEx(ptr, finalize_annot,
+                          static_cast<Rboolean>(TRUE));
+  UNPROTECT(1);
+  return Rcpp::List::create(
+      Rcpp::_["found"]  = true,
+      Rcpp::_["handle"] = ptr,
+      Rcpp::_["index"]  = found_idx);
+}
+
+// File-attachment annotation payload: returns the attached file's
+// name string. The doc owns the FPDF_ATTACHMENT (it lives in the
+// doc's /EmbeddedFiles), so the R wrapper can hand the same name
+// to the doc-level attachment lookup if needed.
+// [[Rcpp::export(name = "cpp_annot_file_attachment_name_handle")]]
+std::string cpp_annot_file_attachment_name_handle(SEXP annot_ptr) {
+  FPDF_ANNOTATION annot = annot_from_ptr(annot_ptr);
+  if (FPDFAnnot_GetSubtype(annot) != FPDF_ANNOT_FILEATTACHMENT) {
+    return std::string();
+  }
+  FPDF_ATTACHMENT att = FPDFAnnot_GetFileAttachment(annot);
+  if (att == nullptr) return std::string();
+  unsigned long needed = FPDFAttachment_GetName(att, nullptr, 0);
+  if (needed <= 2) return std::string();
+  std::vector<unsigned short> buf(needed / 2);
+  FPDFAttachment_GetName(att, reinterpret_cast<FPDF_WCHAR*>(buf.data()),
+                          needed);
+  size_t wchars = (needed >= 2 ? needed / 2 - 1 : needed / 2);
+  return pdfium_r::utf16le_to_utf8(buf.data(), wchars);
 }

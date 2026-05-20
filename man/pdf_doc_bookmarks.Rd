@@ -2,7 +2,7 @@
 % Please edit documentation in R/doc.R
 \name{pdf_doc_bookmarks}
 \alias{pdf_doc_bookmarks}
-\title{Read the bookmark outline (table of contents) of a PDF}
+\title{List the bookmark outline (table of contents) of a PDF}
 \usage{
 pdf_doc_bookmarks(doc)
 }
@@ -10,49 +10,26 @@ pdf_doc_bookmarks(doc)
 \item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}}, or a character path.}
 }
 \value{
-A tibble with columns:
-\itemize{
-\item \code{bookmark_index} integer - 1-based pre-order index across the
-entire outline tree.
-\item \code{parent_index} integer - \code{bookmark_index} of the parent
-entry, or \code{0} for top-level bookmarks.
-\item \code{level} integer - 1-based nesting depth.
-\item \code{title} character - the bookmark's display text, UTF-8.
-\item \code{page_num} integer - 1-based destination page number, or
-\code{NA} when the bookmark has no resolvable page destination
-(e.g. for URI / launch actions, or unresolvable dests).
-\item \code{action_type} character - one of \code{"goto"}, \code{"remote_goto"},
-\code{"uri"}, \code{"launch"}, \code{"embedded_goto"}.
-\item \code{uri} character - the action's target URL when
-\code{action_type == "uri"}; \code{NA} otherwise.
-\item \code{filepath} character - the external file path when
-\code{action_type} is \code{"remote_goto"} / \code{"launch"} /
-\code{"embedded_goto"}; \code{NA} otherwise.
-\item \code{dest_view} character - the destination view mode (one of
-\code{"xyz"}, \code{"fit"}, \code{"fith"}, \code{"fitv"}, \code{"fitr"}, \code{"fitb"},
-\code{"fitbh"}, \code{"fitbv"}, \code{"unknown"}).
-\item \code{dest_x}, \code{dest_y}, \code{dest_zoom} numeric - the explicit point
-/ zoom for XYZ destinations and the line offset for
-FitH / FitV / FitBH / FitBV. \code{NA} for components the
-destination doesn't specify.
-}
-
-Returns a 0-row tibble of the same schema when the document has
-no outline.
+A \code{pdfium_bookmark_list} (empty if no outline).
 }
 \description{
-Returns a tibble row per bookmark, walking PDFium's outline tree
-depth-first. Each row carries the bookmark's title, its position
-in the hierarchy, the page it points to (when resolvable), and the
-action it carries (URI, launch, remote_goto, embedded_goto, or
-the typical goto-within-this-document).
+Returns a \code{pdfium_bookmark_list} — a list of \code{pdfium_bookmark}
+handles, one per bookmark in the document's outline tree, walked
+depth-first. Per-attribute getters
+(\code{\link[=pdf_bookmark_title]{pdf_bookmark_title()}}, \code{\link[=pdf_bookmark_page_num]{pdf_bookmark_page_num()}},
+\code{\link[=pdf_bookmark_action_type]{pdf_bookmark_action_type()}}, \code{\link[=pdf_bookmark_uri]{pdf_bookmark_uri()}},
+\code{\link[=pdf_bookmark_filepath]{pdf_bookmark_filepath()}}, \code{\link[=pdf_bookmark_dest_view]{pdf_bookmark_dest_view()}},
+\code{\link[=pdf_bookmark_dest_x]{pdf_bookmark_dest_x()}}, \code{\link[=pdf_bookmark_dest_y]{pdf_bookmark_dest_y()}},
+\code{\link[=pdf_bookmark_dest_zoom]{pdf_bookmark_dest_zoom()}}) operate on a single handle.
 }
 \details{
-The tree structure is recoverable from the \code{parent_index} column
-alone: top-level bookmarks have \code{parent_index == 0}, and every
-other bookmark's parent is the row whose \code{bookmark_index} matches
-its \code{parent_index}. The \code{level} column is a convenience for
-filtering ("show me chapter-level entries only").
+The list is flat; the tree shape is recovered from each handle's
+\code{parent_index} field. Top-level bookmarks have \code{parent_index == 0};
+every other bookmark's parent is the entry whose \code{index} matches
+its \code{parent_index}. \code{level} is the 1-based nesting depth.
+
+Use \code{tibble::as_tibble(pdf_doc_bookmarks(doc))} for the tibble
+view.
 
 Wraps \code{FPDFBookmark_GetFirstChild}, \code{FPDFBookmark_GetNextSibling},
 \code{FPDFBookmark_GetTitle}, \code{FPDFBookmark_GetDest},
@@ -68,5 +45,6 @@ if (nzchar(fixture)) pdf_doc_bookmarks(fixture)
 }
 \seealso{
 \code{\link[=pdf_page_labels]{pdf_page_labels()}} for logical page numbering,
-\code{\link[=pdf_page_links]{pdf_page_links()}} for clickable link annotations on a page.
+\code{\link[=pdf_page_links]{pdf_page_links()}} for clickable link annotations on a page,
+\code{\link[=pdf_parse_date]{pdf_parse_date()}} for parsing date-shaped action strings.
 }

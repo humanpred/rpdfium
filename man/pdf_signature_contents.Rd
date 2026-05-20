@@ -4,13 +4,10 @@
 \alias{pdf_signature_contents}
 \title{Read the raw bytes of a PDF signature's contents blob}
 \usage{
-pdf_signature_contents(doc, signature_index = 1L)
+pdf_signature_contents(sig)
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}}, or a character path.}
-
-\item{signature_index}{One-based signature index (default \code{1}),
-as listed by \code{\link[=pdf_signatures]{pdf_signatures()}}.}
+\item{sig}{A \code{pdfium_signature} handle from \code{\link[=pdf_signatures]{pdf_signatures()}}.}
 }
 \value{
 A raw vector of the signature blob.
@@ -26,5 +23,5 @@ library to actually verify the signature (e.g.
 Wraps \code{FPDFSignatureObj_GetContents}.
 }
 \seealso{
-\code{\link[=pdf_signatures]{pdf_signatures()}}, \code{\link[=pdf_signature_byte_range]{pdf_signature_byte_range()}}.
+\code{\link[=pdf_signature_byte_range]{pdf_signature_byte_range()}}.
 }

@@ -4,27 +4,24 @@
 \alias{pdf_attachment_data}
 \title{Read the raw bytes of an embedded file attachment}
 \usage{
-pdf_attachment_data(doc, attachment_index = 1L)
+pdf_attachment_data(att)
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}}, or a character path.}
-
-\item{attachment_index}{One-based index of the attachment in
-the document's attachment table.}
+\item{att}{A \code{pdfium_attachment} handle from
+\code{\link[=pdf_attachments]{pdf_attachments()}}.}
 }
 \value{
 A raw vector of file bytes.
 }
 \description{
-Returns the decompressed file contents of the attachment at
-\code{attachment_index} (1-based, as listed by \code{\link[=pdf_attachments]{pdf_attachments()}}).
+Returns the decompressed file contents of the attachment.
 Wraps \code{FPDFAttachment_GetFile}.
 }
 \details{
-Use the returned raw vector directly with
-\code{\link[=writeBin]{writeBin()}} to save the embedded file to disk without
-re-encoding, or pass it to a downstream parser
-(e.g. \code{xml2::read_xml(rawToChar(bytes))} for XML attachments).
+Use the returned raw vector directly with \code{\link[=writeBin]{writeBin()}} to save
+the embedded file to disk without re-encoding, or pass it to a
+downstream parser (e.g. \code{xml2::read_xml(rawToChar(bytes))} for
+XML attachments).
 }
 \seealso{
 \code{\link[=pdf_attachments]{pdf_attachments()}}.

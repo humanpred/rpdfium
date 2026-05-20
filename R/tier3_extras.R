@@ -3,10 +3,12 @@
 #
 # - pdf_text_obj_rendered_bitmap renders a single text page-object
 #   at the requested scale.
-# - pdf_attachment_dict_value does ad-hoc lookups of an
-#   attachment-dictionary entry.
 # - pdf_text_char_obj_index reverse-maps a char-index to a
 #   page-object-index.
+#
+# (Note: pdf_attachment_dict_value previously lived here too but
+# moved to R/attachments.R when attachments switched to a
+# handle-based reader in ADR-017 / Phase 2.5c.)
 
 #' Rendered bitmap of a single text page-object
 #'
@@ -51,57 +53,8 @@ pdf_text_obj_rendered_bitmap <- function(obj, scale = 1) {
 # `||` like dplyr's coalesce; avoids importing rlang.
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
-#' Look up an attachment-dictionary entry by key
-#'
-#' PDF attachments carry a `/Params` dictionary with metadata about
-#' the embedded file (size, modification date, checksums, MIME
-#' type, custom keys). [pdf_attachments()] surfaces the common
-#' entries; this function reads an arbitrary key. Wraps
-#' `FPDFAttachment_HasKey` + `FPDFAttachment_GetValueType` +
-#' `FPDFAttachment_GetStringValue`.
-#'
-#' Only string- and name-typed values are returned as character
-#' scalars. For numeric / boolean / dict values the function
-#' reports `has_key = TRUE` and `value_type` accordingly but
-#' `value = NA_character_` (use [pdf_attachments()] for the
-#' structured size/date/checksum readouts).
-#'
-#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
-#' @param attachment_index One-based index into the attachment list.
-#' @param key The attachment-dict key as a single non-empty
-#'   character string (e.g. `"Subtype"`, `"AFRelationship"`).
-#' @param password Optional password for encrypted PDFs when `doc`
-#'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
-#' @return A list:
-#'   * `has_key` (logical) — `TRUE` when the attachment dict
-#'     contains the key.
-#'   * `value_type` (integer) — PDFium's `FPDF_OBJECT_*` enum
-#'     value (`0`=unknown, `1`=boolean, `2`=number, `3`=string,
-#'     `4`=name, ...). `NA` when the key is absent.
-#'   * `value` (character) — the string / name value;
-#'     `NA_character_` when the value is not string-typed.
-#' @seealso [pdf_attachments()].
-#' @export
-pdf_attachment_dict_value <- function(doc, attachment_index, key,
-                                      password = NULL) {
-  checkmate::assert_count(attachment_index, positive = TRUE)
-  key <- assert_pdf_key(key)
-  doc <- as_open_doc(doc, password = password)
-  raw <- cpp_attachment_dict_value(
-    doc$ptr,
-    as.integer(attachment_index - 1L),
-    key
-  )
-  val_chr <- as.character(raw$value)
-  # nocov start — defensive: cpp always returns length-1 chr.
-  if (length(val_chr) == 0L) val_chr <- NA_character_
-  # nocov end
-  list(
-    has_key    = as.logical(raw$has_key),
-    value_type = as.integer(raw$value_type),
-    value      = val_chr[[1L]]
-  )
-}
+# `pdf_attachment_dict_value()` moved to R/attachments.R — it now
+# takes a `pdfium_attachment` handle (see ADR-017 / Phase 2.5c).
 
 #' Reverse-map a character index to its page-object index
 #'

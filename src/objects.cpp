@@ -20,28 +20,32 @@
 #include <vector>
 #include "fpdfview.h"
 #include "fpdf_edit.h"
+#include "handle_validation.h"
+
+namespace {
+
+inline FPDF_PAGE objs_page_from_ptr(SEXP page_ptr) {
+  return static_cast<FPDF_PAGE>(
+      pdfium_r::validate_handle(page_ptr, "Page",
+                                  /*require_prot_alive=*/false));
+}
+
+inline FPDF_PAGEOBJECT objs_obj_from_ptr(SEXP obj_ptr) {
+  return static_cast<FPDF_PAGEOBJECT>(
+      pdfium_r::validate_handle(obj_ptr, "Page-object",
+                                  /*require_prot_alive=*/true));
+}
+
+}  // namespace
 
 // [[Rcpp::export(name = "cpp_page_object_count")]]
 int cpp_page_object_count(SEXP page_ptr) {
-  if (TYPEOF(page_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer.");
-  }
-  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
-  if (page == nullptr) {
-    Rcpp::stop("Page handle is closed.");
-  }
-  return FPDFPage_CountObjects(page);
+  return FPDFPage_CountObjects(objs_page_from_ptr(page_ptr));
 }
 
 // [[Rcpp::export(name = "cpp_page_get_object")]]
 SEXP cpp_page_get_object(SEXP page_ptr, int index_zero_based) {
-  if (TYPEOF(page_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the page.");
-  }
-  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
-  if (page == nullptr) {
-    Rcpp::stop("Page handle is closed.");
-  }
+  FPDF_PAGE page = objs_page_from_ptr(page_ptr);
   FPDF_PAGEOBJECT obj = FPDFPage_GetObject(page, index_zero_based);
   if (obj == nullptr) {
     Rcpp::stop("FPDFPage_GetObject returned NULL for object index %d",
@@ -55,25 +59,12 @@ SEXP cpp_page_get_object(SEXP page_ptr, int index_zero_based) {
 
 // [[Rcpp::export(name = "cpp_obj_type")]]
 int cpp_obj_type(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer.");
-  }
-  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) {
-    Rcpp::stop("Page-object handle is closed.");
-  }
-  return FPDFPageObj_GetType(obj);
+  return FPDFPageObj_GetType(objs_obj_from_ptr(obj_ptr));
 }
 
 // [[Rcpp::export(name = "cpp_obj_bounds")]]
 Rcpp::NumericVector cpp_obj_bounds(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer.");
-  }
-  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) {
-    Rcpp::stop("Page-object handle is closed.");
-  }
+  FPDF_PAGEOBJECT obj = objs_obj_from_ptr(obj_ptr);
   float left = 0.0f, bottom = 0.0f, right = 0.0f, top = 0.0f;
   FPDF_BOOL ok = FPDFPageObj_GetBounds(obj, &left, &bottom, &right, &top);
   if (!ok) Rcpp::stop("FPDFPageObj_GetBounds failed for this object.");
@@ -117,27 +108,21 @@ Rcpp::NumericVector pageobj_color(
 
 // [[Rcpp::export(name = "cpp_obj_stroke_color")]]
 Rcpp::NumericVector cpp_obj_stroke_color(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
-  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
-  return pageobj_color(obj, FPDFPageObj_GetStrokeColor,
+  return pageobj_color(objs_obj_from_ptr(obj_ptr),
+                       FPDFPageObj_GetStrokeColor,
                        "FPDFPageObj_GetStrokeColor");
 }
 
 // [[Rcpp::export(name = "cpp_obj_fill_color")]]
 Rcpp::NumericVector cpp_obj_fill_color(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
-  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
-  return pageobj_color(obj, FPDFPageObj_GetFillColor,
+  return pageobj_color(objs_obj_from_ptr(obj_ptr),
+                       FPDFPageObj_GetFillColor,
                        "FPDFPageObj_GetFillColor");
 }
 
 // [[Rcpp::export(name = "cpp_obj_stroke_width")]]
 double cpp_obj_stroke_width(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
-  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+  FPDF_PAGEOBJECT obj = objs_obj_from_ptr(obj_ptr);
   float width = 0.0f;
   FPDF_BOOL ok = FPDFPageObj_GetStrokeWidth(obj, &width);
   if (!ok) return NA_REAL;
@@ -146,9 +131,7 @@ double cpp_obj_stroke_width(SEXP obj_ptr) {
 
 // [[Rcpp::export(name = "cpp_obj_matrix")]]
 Rcpp::NumericVector cpp_obj_matrix(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
-  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+  FPDF_PAGEOBJECT obj = objs_obj_from_ptr(obj_ptr);
   FS_MATRIX m;
   FPDF_BOOL ok = FPDFPageObj_GetMatrix(obj, &m);
   if (!ok) Rcpp::stop("FPDFPageObj_GetMatrix failed for this object.");
@@ -164,17 +147,12 @@ Rcpp::NumericVector cpp_obj_matrix(SEXP obj_ptr) {
 
 // [[Rcpp::export(name = "cpp_obj_dash_count")]]
 int cpp_obj_dash_count(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
-  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
-  return FPDFPageObj_GetDashCount(obj);
+  return FPDFPageObj_GetDashCount(objs_obj_from_ptr(obj_ptr));
 }
 
 // [[Rcpp::export(name = "cpp_obj_dash_array")]]
 Rcpp::NumericVector cpp_obj_dash_array(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
-  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+  FPDF_PAGEOBJECT obj = objs_obj_from_ptr(obj_ptr);
   int n = FPDFPageObj_GetDashCount(obj);
   if (n <= 0) return Rcpp::NumericVector(0);
   std::vector<float> buf(static_cast<size_t>(n), 0.0f);
@@ -188,9 +166,7 @@ Rcpp::NumericVector cpp_obj_dash_array(SEXP obj_ptr) {
 
 // [[Rcpp::export(name = "cpp_obj_dash_phase")]]
 double cpp_obj_dash_phase(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
-  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+  FPDF_PAGEOBJECT obj = objs_obj_from_ptr(obj_ptr);
   float phase = 0.0f;
   FPDF_BOOL ok = FPDFPageObj_GetDashPhase(obj, &phase);
   if (!ok) return NA_REAL;

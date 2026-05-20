@@ -21,37 +21,27 @@
 #include "fpdf_doc.h"
 #include "fpdf_edit.h"
 #include "fpdf_formfill.h"
+#include "handle_validation.h"
 #include "utf16.h"
 
 namespace {
 
 FPDF_DOCUMENT ap_doc_from_ptr(SEXP doc_ptr) {
-  if (TYPEOF(doc_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the document.");
-  }
-  FPDF_DOCUMENT doc =
-      static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr));
-  if (doc == nullptr) Rcpp::stop("Document handle is closed.");
-  return doc;
+  return static_cast<FPDF_DOCUMENT>(
+      pdfium_r::validate_handle(doc_ptr, "Document",
+                                  /*require_prot_alive=*/false));
 }
 
 FPDF_PAGE ap_page_from_ptr(SEXP page_ptr) {
-  if (TYPEOF(page_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the page.");
-  }
-  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
-  if (page == nullptr) Rcpp::stop("Page handle is closed.");
-  return page;
+  return static_cast<FPDF_PAGE>(
+      pdfium_r::validate_handle(page_ptr, "Page",
+                                  /*require_prot_alive=*/false));
 }
 
 FPDF_PAGEOBJECT ap_obj_from_ptr(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the page object.");
-  }
-  FPDF_PAGEOBJECT obj =
-      static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page object handle is closed.");
-  return obj;
+  return static_cast<FPDF_PAGEOBJECT>(
+      pdfium_r::validate_handle(obj_ptr, "Page-object",
+                                  /*require_prot_alive=*/true));
 }
 
 }  // namespace
@@ -236,4 +226,42 @@ Rcpp::IntegerVector cpp_doc_focusable_subtypes(SEXP doc_ptr) {
   for (int i = 0; i < n; ++i) out[i] = static_cast<int>(codes[i]);
   FPDFDOC_ExitFormFillEnvironment(form);
   return out;
+}
+
+// Force PDFium to regenerate the appearance stream on every
+// annotation of the page. Called from render paths after
+// flush_page_if_dirty so any annotation mutated since load is
+// visible in the rendered bitmap, even when downstream consumers
+// cache /AP and skip reconciliation (Acrobat, MuPDF). The trick:
+// FPDFAnnot_SetRect to the annotation's current rect is a no-op
+// for the rect value itself but flips PDFium's "AP needs regen"
+// flag, so the next render rebuilds the stream from the live
+// dict. Returns the number of annotations refreshed.
+//
+// Cost: one FPDFPage_GetAnnot + GetRect + SetRect + CloseAnnot per
+// annotation, plus the actual regen during render. For typical
+// docs (< 100 annots/page) the overhead is dominated by the
+// rasterization itself.
+//
+// Pages with no annotations short-circuit at the count check.
+// [[Rcpp::export(name = "cpp_page_refresh_annot_aps")]]
+int cpp_page_refresh_annot_aps(SEXP page_ptr) {
+  FPDF_PAGE page = ap_page_from_ptr(page_ptr);
+  int n = FPDFPage_GetAnnotCount(page);
+  if (n <= 0) return 0;
+  int refreshed = 0;
+  for (int i = 0; i < n; ++i) {
+    FPDF_ANNOTATION a = FPDFPage_GetAnnot(page, i);
+    if (a == nullptr) continue;
+    FS_RECTF r;
+    if (FPDFAnnot_GetRect(a, &r)) {
+      // Set the rect to itself. PDFium treats the call as a
+      // mutation and flips the AP-dirty flag even though the
+      // observable rect is unchanged.
+      FPDFAnnot_SetRect(a, &r);
+      ++refreshed;
+    }
+    FPDFPage_CloseAnnot(a);
+  }
+  return refreshed;
 }

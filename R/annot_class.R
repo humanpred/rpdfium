@@ -260,3 +260,114 @@ as_pdfium_annot_list <- function(x) {
        "or a tibble produced by `as_tibble(pdf_annotations(page))`.",
        call. = FALSE)
 }
+
+#' Annotation quad points (attachment points)
+#'
+#' Returns an `N x 8` numeric matrix of quad-point coordinates
+#' (`x1, y1, x2, y2, x3, y3, x4, y4` columns; one row per quad),
+#' or `NULL` when the annotation has no attachment points (most
+#' annotation types).
+#'
+#' Wraps `FPDFAnnot_HasAttachmentPoints` +
+#' `FPDFAnnot_CountAttachmentPoints` + `FPDFAnnot_GetAttachmentPoints`.
+#'
+#' @param annot A `pdfium_annot` handle from [pdf_annotations()] or
+#'   [pdf_annot_at()].
+#' @return Numeric matrix or `NULL`.
+#' @export
+pdf_annot_quad_points <- function(annot) {
+  check_annot(annot)
+  cpp_annot_quad_points_handle(annot$ptr)
+}
+
+#' Annotation vertices (polygon / polyline)
+#'
+#' Returns an `N x 2` numeric matrix (columns `x`, `y`) of the
+#' annotation's `/Vertices` entry, or `NULL` when absent. Wraps
+#' `FPDFAnnot_GetVertices`.
+#'
+#' @inheritParams pdf_annot_quad_points
+#' @return Numeric matrix or `NULL`.
+#' @export
+pdf_annot_vertices <- function(annot) {
+  check_annot(annot)
+  cpp_annot_vertices_handle(annot$ptr)
+}
+
+#' Annotation ink paths (ink strokes)
+#'
+#' Returns a list of `N x 2` numeric matrices, one per stroke in
+#' an ink annotation's `/InkList`, or `NULL` when the annotation
+#' is not an ink type. Wraps `FPDFAnnot_GetInkListCount` +
+#' `FPDFAnnot_GetInkListPath`.
+#'
+#' @inheritParams pdf_annot_quad_points
+#' @return List of numeric matrices or `NULL`.
+#' @export
+pdf_annot_ink_paths <- function(annot) {
+  check_annot(annot)
+  cpp_annot_ink_paths_handle(annot$ptr)
+}
+
+# Internal: resolve a linked-annot key ("Popup" or "IRT") to a
+# pdfium_annot handle or NULL.
+linked_annot_handle <- function(annot, key) {
+  raw <- cpp_annot_linked_handle(annot$ptr, annot$page$ptr, key)
+  if (!isTRUE(raw$found) || is.null(raw$handle)) return(NULL)
+  # nocov start — success path requires a fixture whose annots
+  # carry /Popup or /IRT links. The shipped `annotated.pdf`
+  # doesn't (its highlight / link / widgets have no popup tail),
+  # and the C-side already exercises the index-resolution walk.
+  # Cover this once a popup-bearing fixture lands.
+  new_pdfium_annot(raw$handle, annot$page,
+                    as.integer(raw$index))
+  # nocov end
+}
+
+#' Annotation popup (`/Popup` linked annot)
+#'
+#' Returns the popup annotation linked from this annotation's
+#' `/Popup` entry as a fresh `pdfium_annot` handle, or `NULL` when
+#' the annotation does not carry one. Wraps
+#' `FPDFAnnot_GetLinkedAnnot("Popup")`.
+#'
+#' @inheritParams pdf_annot_quad_points
+#' @return A `pdfium_annot` handle or `NULL`.
+#' @seealso [pdf_annot_in_reply_to()].
+#' @export
+pdf_annot_popup <- function(annot) {
+  check_annot(annot)
+  linked_annot_handle(annot, "Popup")
+}
+
+#' Annotation reply-to (`/IRT` linked annot)
+#'
+#' Returns the annotation this one replies to (its `/IRT`
+#' "in reply to" target) as a `pdfium_annot` handle, or `NULL`
+#' when this annotation is not a reply. Wraps
+#' `FPDFAnnot_GetLinkedAnnot("IRT")`.
+#'
+#' @inheritParams pdf_annot_quad_points
+#' @return A `pdfium_annot` handle or `NULL`.
+#' @seealso [pdf_annot_popup()].
+#' @export
+pdf_annot_in_reply_to <- function(annot) {
+  check_annot(annot)
+  linked_annot_handle(annot, "IRT")
+}
+
+#' Name of the file attached to a file-attachment annotation
+#'
+#' For annotations of subtype `"fileattachment"`, returns the
+#' attached file's name (UTF-8) — the same value that surfaces in
+#' the `file_attachment_name` column of `as_tibble(pdf_annotations())`.
+#' Empty string for any other annotation subtype. Wraps
+#' `FPDFAnnot_GetFileAttachment` + `FPDFAttachment_GetName`.
+#'
+#' @inheritParams pdf_annot_quad_points
+#' @return Character scalar.
+#' @export
+pdf_annot_file_attachment_name <- function(annot) {
+  check_annot(annot)
+  cpp_annot_file_attachment_name_handle(annot$ptr)
+}

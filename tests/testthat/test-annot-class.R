@@ -172,3 +172,72 @@ test_that("per-attribute readers reject non-annot input", {
   expect_error(pdf_annot_subtype("not-an-annot"), "Assertion on")
   expect_error(pdf_annot_bounds(42), "Assertion on")
 })
+
+# Per-handle geometry / linked-annot getters -------------------------
+
+test_that("pdf_annot_quad_points returns the highlight's quad", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  annots <- pdf_annotations(doc, page_num = 1L)
+  types <- vapply(annots, pdf_annot_subtype, character(1L))
+  hl <- annots[types == "highlight"][[1L]]
+  qp <- pdf_annot_quad_points(hl)
+  expect_true(is.matrix(qp))
+  expect_equal(ncol(qp), 8L)
+  expect_equal(nrow(qp), 1L)
+  expect_identical(
+    colnames(qp),
+    c("x1", "y1", "x2", "y2", "x3", "y3", "x4", "y4")
+  )
+})
+
+test_that("pdf_annot_quad_points returns NULL for annots without quads", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  annots <- pdf_annotations(doc, page_num = 1L)
+  types <- vapply(annots, pdf_annot_subtype, character(1L))
+  text <- annots[types == "text"][[1L]]
+  expect_null(pdf_annot_quad_points(text))
+})
+
+test_that("pdf_annot_vertices is NULL for non-polygon annots", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  annots <- pdf_annotations(doc, page_num = 1L)
+  for (a in annots) expect_null(pdf_annot_vertices(a))
+})
+
+test_that("pdf_annot_ink_paths is NULL for non-ink annots", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  annots <- pdf_annotations(doc, page_num = 1L)
+  for (a in annots) expect_null(pdf_annot_ink_paths(a))
+})
+
+test_that("pdf_annot_popup / pdf_annot_in_reply_to are NULL when unlinked", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  annots <- pdf_annotations(doc, page_num = 1L)
+  for (a in annots) {
+    expect_null(pdf_annot_popup(a))
+    expect_null(pdf_annot_in_reply_to(a))
+  }
+})
+
+test_that("pdf_annot_file_attachment_name is empty for non-attachment annots", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  annots <- pdf_annotations(doc, page_num = 1L)
+  for (a in annots) {
+    expect_identical(pdf_annot_file_attachment_name(a), "")
+  }
+})
+
+test_that("annot geometry getters reject non-annot input", {
+  expect_error(pdf_annot_quad_points("nope"), "Assertion on")
+  expect_error(pdf_annot_vertices(42), "Assertion on")
+  expect_error(pdf_annot_ink_paths(NULL), "Assertion on")
+  expect_error(pdf_annot_popup(0L), "Assertion on")
+  expect_error(pdf_annot_in_reply_to(0L), "Assertion on")
+  expect_error(pdf_annot_file_attachment_name(0L), "Assertion on")
+})

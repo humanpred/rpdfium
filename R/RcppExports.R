@@ -41,6 +41,26 @@ cpp_annot_has_attachment_points <- function(annot_ptr) {
     .Call(`_pdfium_cpp_annot_has_attachment_points`, annot_ptr)
 }
 
+cpp_annot_quad_points_handle <- function(annot_ptr) {
+    .Call(`_pdfium_cpp_annot_quad_points_handle`, annot_ptr)
+}
+
+cpp_annot_vertices_handle <- function(annot_ptr) {
+    .Call(`_pdfium_cpp_annot_vertices_handle`, annot_ptr)
+}
+
+cpp_annot_ink_paths_handle <- function(annot_ptr) {
+    .Call(`_pdfium_cpp_annot_ink_paths_handle`, annot_ptr)
+}
+
+cpp_annot_linked_handle <- function(annot_ptr, page_ptr, key) {
+    .Call(`_pdfium_cpp_annot_linked_handle`, annot_ptr, page_ptr, key)
+}
+
+cpp_annot_file_attachment_name_handle <- function(annot_ptr) {
+    .Call(`_pdfium_cpp_annot_file_attachment_name_handle`, annot_ptr)
+}
+
 cpp_annot_dict_value <- function(page_ptr, annot_index_zero, key) {
     .Call(`_pdfium_cpp_annot_dict_value`, page_ptr, annot_index_zero, key)
 }
@@ -61,12 +81,44 @@ cpp_doc_focusable_subtypes <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_focusable_subtypes`, doc_ptr)
 }
 
+cpp_page_refresh_annot_aps <- function(page_ptr) {
+    .Call(`_pdfium_cpp_page_refresh_annot_aps`, page_ptr)
+}
+
 cpp_annot_count <- function(page_ptr) {
     .Call(`_pdfium_cpp_annot_count`, page_ptr)
 }
 
 cpp_annots_list <- function(doc_ptr, page_ptr) {
     .Call(`_pdfium_cpp_annots_list`, doc_ptr, page_ptr)
+}
+
+cpp_attachment_get <- function(doc_ptr, index_zero_based) {
+    .Call(`_pdfium_cpp_attachment_get`, doc_ptr, index_zero_based)
+}
+
+cpp_attachment_name <- function(att_ptr) {
+    .Call(`_pdfium_cpp_attachment_name`, att_ptr)
+}
+
+cpp_attachment_subtype <- function(att_ptr) {
+    .Call(`_pdfium_cpp_attachment_subtype`, att_ptr)
+}
+
+cpp_attachment_size_bytes <- function(att_ptr) {
+    .Call(`_pdfium_cpp_attachment_size_bytes`, att_ptr)
+}
+
+cpp_attachment_data_handle <- function(att_ptr) {
+    .Call(`_pdfium_cpp_attachment_data_handle`, att_ptr)
+}
+
+cpp_attachment_has_key_handle <- function(att_ptr, key) {
+    .Call(`_pdfium_cpp_attachment_has_key_handle`, att_ptr, key)
+}
+
+cpp_attachment_dict_value_handle <- function(att_ptr, key) {
+    .Call(`_pdfium_cpp_attachment_dict_value_handle`, att_ptr, key)
 }
 
 cpp_attachment_count <- function(doc_ptr) {
@@ -79,6 +131,18 @@ cpp_attachments_list <- function(doc_ptr) {
 
 cpp_attachment_data <- function(doc_ptr, index_zero) {
     .Call(`_pdfium_cpp_attachment_data`, doc_ptr, index_zero)
+}
+
+cpp_bookmark_handles <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_bookmark_handles`, doc_ptr)
+}
+
+cpp_bookmark_title_handle <- function(bm_ptr) {
+    .Call(`_pdfium_cpp_bookmark_title_handle`, bm_ptr)
+}
+
+cpp_bookmark_action_handle <- function(bm_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_bookmark_action_handle`, bm_ptr, doc_ptr)
 }
 
 cpp_obj_get_clip_path <- function(obj_ptr, page_ptr) {
@@ -95,10 +159,6 @@ cpp_clip_path_count_segments <- function(clip_ptr, path_index_zero) {
 
 cpp_clip_path_segments_df <- function(clip_ptr) {
     .Call(`_pdfium_cpp_clip_path_segments_df`, clip_ptr)
-}
-
-cpp_bookmarks <- function(doc_ptr) {
-    .Call(`_pdfium_cpp_bookmarks`, doc_ptr)
 }
 
 cpp_page_label <- function(doc_ptr, page_index_zero) {
@@ -171,6 +231,50 @@ cpp_doc_file_version <- function(doc_ptr) {
 
 cpp_form_field_handles <- function(doc_ptr) {
     .Call(`_pdfium_cpp_form_field_handles`, doc_ptr)
+}
+
+cpp_form_field_name_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_name_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_alternate_name_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_alternate_name_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_value_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_value_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_export_value_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_export_value_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_flags_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_flags_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_is_checked_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_is_checked_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_control_count_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_control_count_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_control_index_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_control_index_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_options_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_options_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_is_option_selected_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_is_option_selected_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_additional_actions_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_additional_actions_handle`, annot_ptr, doc_ptr)
 }
 
 cpp_form_fields_list <- function(doc_ptr) {
@@ -301,8 +405,8 @@ cpp_named_dest_by_name <- function(doc_ptr, name) {
     .Call(`_pdfium_cpp_named_dest_by_name`, doc_ptr, name)
 }
 
-cpp_bookmark_find <- function(doc_ptr, title_utf8) {
-    .Call(`_pdfium_cpp_bookmark_find`, doc_ptr, title_utf8)
+cpp_bookmark_find_handle <- function(doc_ptr, title_utf8) {
+    .Call(`_pdfium_cpp_bookmark_find_handle`, doc_ptr, title_utf8)
 }
 
 cpp_form_field_at_point <- function(doc_ptr, page_ptr, x, y) {
@@ -463,6 +567,34 @@ cpp_save_to_file <- function(doc_ptr, path, flags, version) {
 
 cpp_save_to_raw <- function(doc_ptr, flags, version) {
     .Call(`_pdfium_cpp_save_to_raw`, doc_ptr, flags, version)
+}
+
+cpp_signature_get <- function(doc_ptr, index_zero_based) {
+    .Call(`_pdfium_cpp_signature_get`, doc_ptr, index_zero_based)
+}
+
+cpp_signature_sub_filter_handle <- function(sig_ptr) {
+    .Call(`_pdfium_cpp_signature_sub_filter_handle`, sig_ptr)
+}
+
+cpp_signature_reason_handle <- function(sig_ptr) {
+    .Call(`_pdfium_cpp_signature_reason_handle`, sig_ptr)
+}
+
+cpp_signature_time_handle <- function(sig_ptr) {
+    .Call(`_pdfium_cpp_signature_time_handle`, sig_ptr)
+}
+
+cpp_signature_docmdp_handle <- function(sig_ptr) {
+    .Call(`_pdfium_cpp_signature_docmdp_handle`, sig_ptr)
+}
+
+cpp_signature_contents_handle <- function(sig_ptr) {
+    .Call(`_pdfium_cpp_signature_contents_handle`, sig_ptr)
+}
+
+cpp_signature_byte_range_handle <- function(sig_ptr) {
+    .Call(`_pdfium_cpp_signature_byte_range_handle`, sig_ptr)
 }
 
 cpp_signature_count <- function(doc_ptr) {

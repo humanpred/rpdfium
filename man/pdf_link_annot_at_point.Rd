@@ -2,7 +2,7 @@
 % Please edit documentation in R/annot_probes.R
 \name{pdf_link_annot_at_point}
 \alias{pdf_link_annot_at_point}
-\title{Hit-test for a link annotation, returning its annotation index}
+\title{Hit-test for a link annotation, returning the annotation handle}
 \usage{
 pdf_link_annot_at_point(page, x, y, page_num = 1L)
 }
@@ -17,24 +17,20 @@ and closed internally).}
 \code{pdfium_doc}. Ignored otherwise.}
 }
 \value{
-A list with three fields:
-\itemize{
-\item \code{found} (logical) — \code{TRUE} when a link is under the point.
-\item \code{annotation_index} (integer) — 1-based same-page annotation
-index of the underlying link annotation; \code{NA} when no link
-is found.
-\item \code{z_order} (integer) — the link's Z-order on the page;
-\code{NA} when no link is found.
-}
+A \code{pdfium_annot} handle, or \code{NULL} when no link annotation
+is under the point.
 }
 \description{
 Companion to \code{\link[=pdf_link_at_point]{pdf_link_at_point()}} (which surfaces the link's
-action / destination / URI) — this one returns the
-page-scoped annotation index of the underlying link annotation
-so the caller can hand it to \code{\link[=pdf_annot_dict_value]{pdf_annot_dict_value()}} /
-\code{\link[=pdf_annot_appearance]{pdf_annot_appearance()}} / \code{\link[=pdf_annotations]{pdf_annotations()}} for the full
-structural readout. Wraps \code{FPDFLink_GetLinkAtPoint} +
-\code{FPDFLink_GetAnnot}.
+action / destination / URI) — this one returns the underlying
+link \code{pdfium_annot} handle (or \code{NULL} when nothing's there) so
+the caller can hand it to per-annotation getters
+(\code{\link[=pdf_annot_subtype]{pdf_annot_subtype()}}, \code{\link[=pdf_annot_dict_value]{pdf_annot_dict_value()}},
+\code{\link[=pdf_annot_appearance]{pdf_annot_appearance()}}, ...) or splice it back into
+\code{\link[=as_pdfium_annot_list]{as_pdfium_annot_list()}}. Wraps \code{FPDFLink_GetLinkAtPoint} +
+\code{FPDFLink_GetAnnot}, then re-loads the annotation through
+\code{\link[=pdf_annotations]{pdf_annotations()}}'s shared shim so the handle owns its own
+lifetime.
 }
 \seealso{
 \code{\link[=pdf_link_at_point]{pdf_link_at_point()}}, \code{\link[=pdf_annotations]{pdf_annotations()}}.

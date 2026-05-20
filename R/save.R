@@ -244,6 +244,66 @@ flush_dirty_pages <- function(doc) {
   invisible(NULL)
 }
 
+# Internal: flush a single page if its index is in the doc's dirty
+# set. Called by render paths so a freshly-mutated page renders
+# what's actually been written (PDFium otherwise reads from the
+# parsed content stream, not the in-memory edits). Idempotent —
+# clearing the dirty mark prevents repeat work on subsequent
+# renders.
+flush_page_if_dirty <- function(page) {
+  doc <- page$doc
+  state <- doc$state
+  # nocov start — every `pdfium_doc` constructed via
+  # `new_pdfium_doc()` carries a non-NULL state env. Guard is
+  # defensive against future construction paths that forget to
+  # populate it; matches the same pattern in flush_dirty_pages().
+  if (is.null(state)) return(invisible(NULL))
+  # nocov end
+  dirty <- state$dirty_pages
+  if (!page$index %in% dirty) return(invisible(NULL))
+  cpp_page_generate_content(page$ptr)
+  state$dirty_pages <- setdiff(dirty, page$index)
+  invisible(NULL)
+}
+
+#' Force-flush a page's pending content edits
+#'
+#' Runs PDFium's `FPDFPage_GenerateContent` on `page`, persisting
+#' every page-object / annotation / form-field mutation that has
+#' accumulated since the page was loaded into the page's content
+#' stream. The render paths ([pdf_render_page()],
+#' [pdf_render_page_with_matrix()]) and [pdf_save()] all flush
+#' automatically; calling `pdf_page_flush()` explicitly is useful
+#' when a downstream tool peeks at the in-memory PDF (e.g. via
+#' [pdf_save_to_raw()] with intermediate inspection) and you want
+#' the latest edits to be visible without round-tripping through
+#' disk.
+#'
+#' The function is idempotent: calling it on a clean page is a
+#' no-op. After the flush the page is removed from the document's
+#' dirty-pages set, so subsequent renders won't redundantly
+#' re-flush.
+#'
+#' @param page A `pdfium_page` from [pdf_page_load()].
+#' @return The input `page`, invisibly.
+#' @seealso [pdf_save()], [pdf_render_page()].
+#' @export
+pdf_page_flush <- function(page) {
+  checkmate::assert_class(page, "pdfium_page")
+  if (!is_open(page)) {
+    stop("Page has been closed.", call. = FALSE)
+  }
+  cpp_page_generate_content(page$ptr)
+  # If the page lives in a doc with mutation state, clear its
+  # dirty mark too — the explicit flush satisfies what
+  # flush_dirty_pages() would have done at save time.
+  state <- page$doc$state
+  if (!is.null(state)) {
+    state$dirty_pages <- setdiff(state$dirty_pages, page$index)
+  }
+  invisible(page)
+}
+
 # Internal: append `page_num` to the doc's dirty-pages set. Mutators
 # on a page (path setters, annotation setters, etc.) call this so
 # pdf_save() can later call FPDFPage_GenerateContent before

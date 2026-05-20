@@ -14,28 +14,26 @@
 #include <Rcpp.h>
 #include "fpdfview.h"
 #include "fpdf_edit.h"
+#include "handle_validation.h"
+
+namespace {
+
+inline FPDF_PAGEOBJECT paths_obj_from_ptr(SEXP obj_ptr) {
+  return static_cast<FPDF_PAGEOBJECT>(
+      pdfium_r::validate_handle(obj_ptr, "Page-object",
+                                  /*require_prot_alive=*/true));
+}
+
+}  // namespace
 
 // [[Rcpp::export(name = "cpp_path_segment_count")]]
 int cpp_path_segment_count(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer.");
-  }
-  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) {
-    Rcpp::stop("Page-object handle is closed.");
-  }
-  return FPDFPath_CountSegments(obj);
+  return FPDFPath_CountSegments(paths_obj_from_ptr(obj_ptr));
 }
 
 // [[Rcpp::export(name = "cpp_path_segments")]]
 Rcpp::List cpp_path_segments(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer.");
-  }
-  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) {
-    Rcpp::stop("Page-object handle is closed.");
-  }
+  FPDF_PAGEOBJECT obj = paths_obj_from_ptr(obj_ptr);
   int n = FPDFPath_CountSegments(obj);
   Rcpp::IntegerVector type(n);
   Rcpp::NumericVector x(n);

@@ -1,4 +1,4 @@
-test_that("pdf_page_objects returns a list of pdfium_obj", {
+test_that("pdf_page_objects returns a pdfium_obj_list", {
   # Cairo's blank page from minimal.pdf produces a single page-bounds
   # path. That's a useful smoke-test for the typical (non-empty) shape.
   pdf <- fixture_path("minimal")
@@ -9,8 +9,136 @@ test_that("pdf_page_objects returns a list of pdfium_obj", {
   on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   objs <- pdf_page_objects(page)
+  expect_s3_class(objs, "pdfium_obj_list")
   expect_type(objs, "list")
   for (o in objs) expect_s3_class(o, "pdfium_obj")
+})
+
+test_that("pdf_page_objects tibble view carries bbox + flag columns + handle/source", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+
+  tbl <- tibble::as_tibble(pdf_page_objects(page))
+  expect_s3_class(tbl, "tbl_df")
+  expect_named(tbl, c(
+    "object_index", "type", "bbox_left", "bbox_bottom",
+    "bbox_right", "bbox_top", "has_transparency", "is_active",
+    "parent_form_index", "handle", "source"
+  ))
+  expect_gt(nrow(tbl), 0L)
+  expect_type(tbl$object_index, "integer")
+  expect_type(tbl$type, "character")
+  expect_type(tbl$bbox_left, "double")
+  expect_type(tbl$has_transparency, "logical")
+  expect_type(tbl$is_active, "logical")
+  expect_true(all(is.na(tbl$parent_form_index)))
+})
+
+test_that("pdf_page_objects tibble view is empty for an empty page", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 100, height = 100)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+
+  objs <- pdf_page_objects(page)
+  expect_s3_class(objs, "pdfium_obj_list")
+  expect_length(objs, 0L)
+  tbl <- tibble::as_tibble(objs)
+  expect_s3_class(tbl, "tbl_df")
+  expect_equal(nrow(tbl), 0L)
+  expect_named(tbl, c(
+    "object_index", "type", "bbox_left", "bbox_bottom",
+    "bbox_right", "bbox_top", "has_transparency", "is_active",
+    "parent_form_index", "handle", "source"
+  ))
+})
+
+test_that("as_pdfium_obj_list round-trips from tibble", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+
+  objs <- pdf_page_objects(page)
+  tbl <- tibble::as_tibble(objs)
+  back <- as_pdfium_obj_list(tbl)
+  expect_s3_class(back, "pdfium_obj_list")
+  expect_identical(back[[1L]]$ptr, objs[[1L]]$ptr)
+})
+
+test_that("as_pdfium_obj_list is a no-op on existing wrappers", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  objs <- pdf_page_objects(page)
+  expect_identical(as_pdfium_obj_list(objs), objs)
+})
+
+test_that("as_pdfium_obj_list accepts a plain list of handles", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  objs <- pdf_page_objects(page)
+  plain <- unclass(objs)
+  back <- as_pdfium_obj_list(plain)
+  expect_s3_class(back, "pdfium_obj_list")
+})
+
+test_that("as_pdfium_obj_list errors on unrecognised input", {
+  expect_error(as_pdfium_obj_list("nope"),
+               "must be a .pdfium_obj_list.")
+  expect_error(
+    as_pdfium_obj_list(tibble::tibble(handle = list(),
+                                       source = list())),
+    "zero-row"
+  )
+})
+
+test_that("pdfium_obj_list print shows count and entries", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  objs <- pdf_page_objects(page)
+  txt <- capture.output(print(objs))
+  expect_true(any(grepl(sprintf("%d object\\(s\\)", length(objs)), txt)))
+})
+
+test_that("pdfium_obj_list print truncates beyond 5 entries", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  objs <- pdf_page_objects(page)
+  # Synthesize a longer list by replicating handles; the truncation
+  # logic is index-driven so the replicated handles exercise the
+  # "... and N more" branch.
+  many <- structure(
+    rep(unclass(objs), 6L),
+    source = attr(objs, "source"),
+    class = c("pdfium_obj_list", "list")
+  )
+  txt <- capture.output(print(many))
+  expect_true(any(grepl("more", txt)))
+})
+
+test_that("tibble view of recursive page_objects populates parent_form_index", {
+  doc <- pdf_doc_open(fixture_path("form_xobject"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+
+  recurs <- pdf_page_objects(page, recursive = TRUE)
+  tbl <- tibble::as_tibble(recurs)
+  # Top-level objects: parent_form_index is NA. Nested objects:
+  # parent_form_index is the parent form's object_index.
+  expect_true(any(is.na(tbl$parent_form_index)))
+  expect_true(any(!is.na(tbl$parent_form_index)))
+  expect_type(tbl$parent_form_index, "integer")
 })
 
 test_that("pdf_page_objects enumerates path + text on the shapes fixture", {

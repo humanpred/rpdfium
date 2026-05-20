@@ -23,20 +23,25 @@ objects carry the same \code{parent_form} slot that
 the tree from the flat list. Default \code{FALSE}.}
 }
 \value{
-A list (possibly empty) of \code{pdfium_obj} objects.
+A \code{pdfium_obj_list} (possibly empty).
 }
 \description{
-Returns a list of \code{pdfium_obj} handles - one per drawing primitive on
-the page, in PDFium's z-order (back to front). Each element carries
-its type ("path", "text", "image", "form", "shading", "unknown"),
-a 1-based index within the page, and an internal pointer suitable
-for passing to downstream object queries.
+Returns a \code{pdfium_obj_list} — a list of \code{pdfium_obj} handles, one
+per drawing primitive on the page in PDFium's z-order (back to
+front). Each handle carries its type (\code{"path"}, \code{"text"},
+\code{"image"}, \code{"form"}, \code{"shading"}, \code{"unknown"}), a 1-based index
+within the page, and an internal pointer for downstream queries.
 }
 \details{
-Page objects do not own their own lifetime - they remain valid only
-as long as the parent \code{pdfium_page} is open. The handle's internal
-parent reference keeps the page (and transitively the document)
-alive for as long as you hold the object, but calling
+Use \code{tibble::as_tibble(pdf_page_objects(p))} for the tibble view
+(one row per object with \verb{bbox_*} / \code{has_transparency} /
+\code{is_active} columns plus \code{handle} and \code{source} list-cols, per
+ADR-017).
+
+Page objects do not own their own lifetime — they remain valid
+only as long as the parent \code{pdfium_page} is open. The handle's
+internal parent reference keeps the page (and transitively the
+document) alive for as long as you hold the object, but calling
 \code{\link[=pdf_page_close]{pdf_page_close()}} explicitly invalidates all returned objects.
 }
 \examples{
@@ -54,5 +59,6 @@ if (nzchar(fixture)) {
 }
 }
 \seealso{
-\code{\link[=pdf_obj_type]{pdf_obj_type()}}, \code{\link[=pdf_form_objects]{pdf_form_objects()}}
+\code{\link[=pdf_obj_type]{pdf_obj_type()}}, \code{\link[=pdf_form_objects]{pdf_form_objects()}},
+\code{\link[=as_tibble.pdfium_obj_list]{as_tibble.pdfium_obj_list()}}.
 }

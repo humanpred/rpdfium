@@ -100,39 +100,43 @@ pdf_annot_appearance <- function(annot,
   ))
 }
 
-#' Hit-test for a link annotation, returning its annotation index
+#' Hit-test for a link annotation, returning the annotation handle
 #'
 #' Companion to [pdf_link_at_point()] (which surfaces the link's
-#' action / destination / URI) — this one returns the
-#' page-scoped annotation index of the underlying link annotation
-#' so the caller can hand it to [pdf_annot_dict_value()] /
-#' [pdf_annot_appearance()] / [pdf_annotations()] for the full
-#' structural readout. Wraps `FPDFLink_GetLinkAtPoint` +
-#' `FPDFLink_GetAnnot`.
+#' action / destination / URI) — this one returns the underlying
+#' link `pdfium_annot` handle (or `NULL` when nothing's there) so
+#' the caller can hand it to per-annotation getters
+#' ([pdf_annot_subtype()], [pdf_annot_dict_value()],
+#' [pdf_annot_appearance()], ...) or splice it back into
+#' [as_pdfium_annot_list()]. Wraps `FPDFLink_GetLinkAtPoint` +
+#' `FPDFLink_GetAnnot`, then re-loads the annotation through
+#' [pdf_annotations()]'s shared shim so the handle owns its own
+#' lifetime.
 #'
 #' @inheritParams pdf_link_at_point
-#' @return A list with three fields:
-#'   * `found` (logical) — `TRUE` when a link is under the point.
-#'   * `annotation_index` (integer) — 1-based same-page annotation
-#'     index of the underlying link annotation; `NA` when no link
-#'     is found.
-#'   * `z_order` (integer) — the link's Z-order on the page;
-#'     `NA` when no link is found.
+#' @return A `pdfium_annot` handle, or `NULL` when no link annotation
+#'   is under the point.
 #' @seealso [pdf_link_at_point()], [pdf_annotations()].
 #' @export
 pdf_link_annot_at_point <- function(page, x, y, page_num = 1L) {
   checkmate::assert_number(x, finite = TRUE)
   checkmate::assert_number(y, finite = TRUE)
-  page <- as_open_page(page, page_num)
+  page <- as_open_page(page, page_num, defer_close = FALSE)
   raw <- cpp_link_annot_at_point(
     page$ptr,
     as.numeric(x), as.numeric(y)
   )
-  list(
-    found            = as.logical(raw$found),
-    annotation_index = as.integer(raw$annotation_index),
-    z_order          = as.integer(raw$z_order)
-  )
+  if (!isTRUE(as.logical(raw$found))) return(NULL)
+  idx <- as.integer(raw$annotation_index)
+  # nocov start — defensive: the C-side resolves found=TRUE links
+  # via a page-annot walk that always finds the index. NA here
+  # would require a PDFium build where FPDFLink_GetAnnot returns
+  # an annot whose rect / subtype don't match anything on the
+  # page, which the shipped fixtures don't exercise.
+  if (is.na(idx)) return(NULL)
+  # nocov end
+  ptr <- cpp_annot_get(page$ptr, idx - 1L)
+  new_pdfium_annot(ptr, page, idx)
 }
 
 #' Direct marked-content ID for a page object

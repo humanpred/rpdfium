@@ -48,6 +48,21 @@ is_open <- function(x) {
     # open. Either being dead makes the annot unusable.
     return(cpp_handle_is_valid(x$ptr) && is_open(x$page))
   }
+  if (inherits(x, "pdfium_attachment")) {
+    # Attachment has no finalizer; PDFium owns its memory via the
+    # parent doc. The externalptr stays valid as long as the doc
+    # does. `is_open(doc)` is the authoritative check.
+    return(cpp_handle_is_valid(x$ptr) && is_open(x$doc))
+  }
+  if (inherits(x, "pdfium_signature")) {
+    # Same lifetime model as attachment: doc-owned, no finalizer.
+    return(cpp_handle_is_valid(x$ptr) && is_open(x$doc))
+  }
+  if (inherits(x, "pdfium_bookmark")) {
+    # Same lifetime model as attachment / signature: doc-owned, no
+    # finalizer. The externalptr is valid as long as the doc is.
+    return(cpp_handle_is_valid(x$ptr) && is_open(x$doc))
+  }
   checkmate::assert_class(x, "pdfium_handle")
   cpp_handle_is_valid(x$ptr)
 }
@@ -174,6 +189,37 @@ format.pdfium_obj <- function(x, ...) {
 #' @export
 print.pdfium_obj <- function(x, ...) {
   cat(format(x, ...), "\n", sep = "")
+  invisible(x)
+}
+
+# Internal: list wrapper.
+new_pdfium_obj_list <- function(objs, page) {
+  checkmate::assert_list(objs, types = c("pdfium_obj", "NULL"))
+  checkmate::assert_class(page, "pdfium_page")
+  structure(
+    objs,
+    source = page,
+    class = c("pdfium_obj_list", "list")
+  )
+}
+
+#' @export
+format.pdfium_obj_list <- function(x, ...) {
+  sprintf("<pdfium_obj_list: %d object(s)>", length(x))
+}
+
+#' @export
+print.pdfium_obj_list <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  if (length(x) > 0L) {
+    n_show <- min(5L, length(x))
+    for (i in seq_len(n_show)) {
+      cat("  [[", i, "]] ", format(x[[i]]), "\n", sep = "")
+    }
+    if (length(x) > n_show) {
+      cat("  ... and ", length(x) - n_show, " more.\n", sep = "")
+    }
+  }
   invisible(x)
 }
 
@@ -328,6 +374,223 @@ format.pdfium_form_field_list <- function(x, ...) {
 
 #' @export
 print.pdfium_form_field_list <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  if (length(x) > 0L) {
+    n_show <- min(5L, length(x))
+    for (i in seq_len(n_show)) {
+      cat("  [[", i, "]] ", format(x[[i]]), "\n", sep = "")
+    }
+    if (length(x) > n_show) {
+      cat("  ... and ", length(x) - n_show, " more.\n", sep = "")
+    }
+  }
+  invisible(x)
+}
+
+#' Construct a `pdfium_attachment` from an FPDF_ATTACHMENT handle
+#'
+#' Internal helper. PDFium has no documented attachment-close
+#' function — attachments are owned by their parent
+#' `FPDF_DOCUMENT`, so the externalptr has no finalizer; the
+#' `prot` slot pins the parent doc.
+#'
+#' @param ptr Externalptr to an FPDF_ATTACHMENT.
+#' @param doc Parent `pdfium_doc`.
+#' @param index One-based attachment index.
+#' @return An object of class `c("pdfium_attachment", "pdfium_handle")`.
+#' @keywords internal
+#' @noRd
+new_pdfium_attachment <- function(ptr, doc, index) {
+  checkmate::assert_class(ptr, "externalptr")
+  checkmate::assert_class(doc, "pdfium_doc")
+  checkmate::assert_number(index)
+  structure(
+    list(ptr = ptr, doc = doc, index = as.integer(index)),
+    class = c("pdfium_attachment", "pdfium_handle")
+  )
+}
+
+#' @export
+format.pdfium_attachment <- function(x, ...) {
+  state <- if (is_open(x)) "open" else "closed"
+  nm <- tryCatch(cpp_attachment_name(x$ptr),
+                 error = function(e) "?")
+  sprintf("<pdfium_attachment [%s] %s, idx %d>", state, nm, x$index)
+}
+
+#' @export
+print.pdfium_attachment <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  invisible(x)
+}
+
+# Internal: list wrapper.
+new_pdfium_attachment_list <- function(handles, doc) {
+  checkmate::assert_list(handles,
+                         types = c("pdfium_attachment", "NULL"))
+  checkmate::assert_class(doc, "pdfium_doc")
+  structure(
+    handles,
+    source = doc,
+    class = c("pdfium_attachment_list", "list")
+  )
+}
+
+#' @export
+format.pdfium_attachment_list <- function(x, ...) {
+  sprintf("<pdfium_attachment_list: %d attachment(s)>", length(x))
+}
+
+#' @export
+print.pdfium_attachment_list <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  if (length(x) > 0L) {
+    n_show <- min(5L, length(x))
+    for (i in seq_len(n_show)) {
+      cat("  [[", i, "]] ", format(x[[i]]), "\n", sep = "")
+    }
+    if (length(x) > n_show) {
+      cat("  ... and ", length(x) - n_show, " more.\n", sep = "")
+    }
+  }
+  invisible(x)
+}
+
+#' Construct a `pdfium_signature` from an FPDF_SIGNATURE handle
+#'
+#' Internal helper. PDFium owns the signature via the parent
+#' `FPDF_DOCUMENT`; the externalptr has no finalizer, and the
+#' `prot` slot pins the doc.
+#'
+#' @param ptr Externalptr to FPDF_SIGNATURE.
+#' @param doc Parent `pdfium_doc`.
+#' @param index One-based signature index.
+#' @keywords internal
+#' @noRd
+new_pdfium_signature <- function(ptr, doc, index) {
+  checkmate::assert_class(ptr, "externalptr")
+  checkmate::assert_class(doc, "pdfium_doc")
+  checkmate::assert_number(index)
+  structure(
+    list(ptr = ptr, doc = doc, index = as.integer(index)),
+    class = c("pdfium_signature", "pdfium_handle")
+  )
+}
+
+#' @export
+format.pdfium_signature <- function(x, ...) {
+  state <- if (is_open(x)) "open" else "closed"
+  sf <- tryCatch(cpp_signature_sub_filter_handle(x$ptr),
+                 error = function(e) "?")
+  sprintf("<pdfium_signature [%s] %s, idx %d>", state, sf, x$index)
+}
+
+#' @export
+print.pdfium_signature <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  invisible(x)
+}
+
+# Internal: list wrapper.
+new_pdfium_signature_list <- function(handles, doc) {
+  checkmate::assert_list(handles,
+                         types = c("pdfium_signature", "NULL"))
+  checkmate::assert_class(doc, "pdfium_doc")
+  structure(
+    handles,
+    source = doc,
+    class = c("pdfium_signature_list", "list")
+  )
+}
+
+#' @export
+format.pdfium_signature_list <- function(x, ...) {
+  sprintf("<pdfium_signature_list: %d signature(s)>", length(x))
+}
+
+#' @export
+print.pdfium_signature_list <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  if (length(x) > 0L) {
+    n_show <- min(5L, length(x))
+    for (i in seq_len(n_show)) {
+      cat("  [[", i, "]] ", format(x[[i]]), "\n", sep = "")
+    }
+    if (length(x) > n_show) {
+      cat("  ... and ", length(x) - n_show, " more.\n", sep = "")
+    }
+  }
+  invisible(x)
+}
+
+#' Construct a `pdfium_bookmark` from an FPDF_BOOKMARK handle
+#'
+#' Internal helper. PDFium owns the bookmark via the parent
+#' `FPDF_DOCUMENT`; the externalptr has no finalizer, and the
+#' `prot` slot pins the doc. `parent_index` and `level` are
+#' structural fields captured during the depth-first walk in
+#' `cpp_bookmark_handles`; PDFium does not expose them directly.
+#'
+#' @param ptr Externalptr to FPDF_BOOKMARK.
+#' @param doc Parent `pdfium_doc`.
+#' @param index One-based pre-order index across the outline tree.
+#' @param parent_index One-based `index` of the parent bookmark, or
+#'   `0` for top-level bookmarks.
+#' @param level One-based nesting depth.
+#' @keywords internal
+#' @noRd
+new_pdfium_bookmark <- function(ptr, doc, index, parent_index, level) {
+  checkmate::assert_class(ptr, "externalptr")
+  checkmate::assert_class(doc, "pdfium_doc")
+  checkmate::assert_number(index)
+  checkmate::assert_number(parent_index)
+  checkmate::assert_number(level)
+  structure(
+    list(
+      ptr          = ptr,
+      doc          = doc,
+      index        = as.integer(index),
+      parent_index = as.integer(parent_index),
+      level        = as.integer(level)
+    ),
+    class = c("pdfium_bookmark", "pdfium_handle")
+  )
+}
+
+#' @export
+format.pdfium_bookmark <- function(x, ...) {
+  state <- if (is_open(x)) "open" else "closed"
+  title <- tryCatch(cpp_bookmark_title_handle(x$ptr),
+                    error = function(e) "?")
+  sprintf("<pdfium_bookmark [%s] %s, idx %d, level %d>",
+          state, title, x$index, x$level)
+}
+
+#' @export
+print.pdfium_bookmark <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  invisible(x)
+}
+
+# Internal: list wrapper.
+new_pdfium_bookmark_list <- function(handles, doc) {
+  checkmate::assert_list(handles,
+                         types = c("pdfium_bookmark", "NULL"))
+  checkmate::assert_class(doc, "pdfium_doc")
+  structure(
+    handles,
+    source = doc,
+    class = c("pdfium_bookmark_list", "list")
+  )
+}
+
+#' @export
+format.pdfium_bookmark_list <- function(x, ...) {
+  sprintf("<pdfium_bookmark_list: %d bookmark(s)>", length(x))
+}
+
+#' @export
+print.pdfium_bookmark_list <- function(x, ...) {
   cat(format(x, ...), "\n", sep = "")
   if (length(x) > 0L) {
     n_show <- min(5L, length(x))

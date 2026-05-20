@@ -54,13 +54,37 @@ reference:
   - title: Attachments
     contents:
       - pdf_attachments
+      - as_pdfium_attachment_list
+      - as_tibble.pdfium_attachment_list
+      - pdf_attachment_name
+      - pdf_attachment_mime_type
+      - pdf_attachment_size_bytes
       - pdf_attachment_data
       - pdf_attachment_dict_value
   - title: Signatures
     contents:
       - pdf_signatures
+      - as_pdfium_signature_list
+      - as_tibble.pdfium_signature_list
+      - pdf_signature_sub_filter
+      - pdf_signature_reason
+      - pdf_signature_time
+      - pdf_signature_doc_mdp_permission
       - pdf_signature_contents
       - pdf_signature_byte_range
+  - title: Bookmarks
+    contents:
+      - as_pdfium_bookmark_list
+      - as_tibble.pdfium_bookmark_list
+      - pdf_bookmark_title
+      - pdf_bookmark_page_num
+      - pdf_bookmark_action_type
+      - pdf_bookmark_uri
+      - pdf_bookmark_filepath
+      - pdf_bookmark_dest_view
+      - pdf_bookmark_dest_x
+      - pdf_bookmark_dest_y
+      - pdf_bookmark_dest_zoom
   - title: Pages
     contents:
       - pdf_page_load
@@ -96,15 +120,35 @@ reference:
       - pdf_annot_font_color
       - pdf_annot_dict_value
       - pdf_annot_appearance
+      - pdf_annot_quad_points
+      - pdf_annot_vertices
+      - pdf_annot_ink_paths
+      - pdf_annot_popup
+      - pdf_annot_in_reply_to
+      - pdf_annot_file_attachment_name
       - pdf_form_fields
       - as_pdfium_form_field_list
       - as_tibble.pdfium_form_field_list
       - pdf_form_field_type
       - pdf_form_field_type_code
       - pdf_form_field_page_num
+      - pdf_form_field_name
+      - pdf_form_field_alternate_name
+      - pdf_form_field_value
+      - pdf_form_field_export_value
+      - pdf_form_field_flags
+      - pdf_form_field_flags_decoded
+      - pdf_form_field_is_checked
+      - pdf_form_field_control_count
+      - pdf_form_field_control_index
+      - pdf_form_field_options
+      - pdf_form_field_is_option_selected
+      - pdf_form_field_additional_actions_js
   - title: Page objects
     contents:
       - pdf_page_objects
+      - as_pdfium_obj_list
+      - as_tibble.pdfium_obj_list
       - pdf_obj_type
       - pdf_obj_bounds
       - pdf_obj_rotated_bounds
@@ -191,3 +235,4 @@ reference:
       - pdf_page_set_rotation
       - pdf_page_set_box
       - pdf_doc_set_language
+      - pdf_page_flush

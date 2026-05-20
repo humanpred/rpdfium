@@ -19,18 +19,15 @@
 #include <vector>
 #include "fpdfview.h"
 #include "fpdf_edit.h"
+#include "handle_validation.h"
 #include "utf16.h"
 
 namespace {
 
 FPDF_PAGEOBJECT marks_obj_from_ptr(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the page object.");
-  }
-  FPDF_PAGEOBJECT obj =
-      static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page object handle is closed.");
-  return obj;
+  return static_cast<FPDF_PAGEOBJECT>(
+      pdfium_r::validate_handle(obj_ptr, "Page-object",
+                                  /*require_prot_alive=*/true));
 }
 
 // Read a UTF-16LE mark name. PDFium's GetName signature splits the

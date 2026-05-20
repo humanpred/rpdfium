@@ -1,15 +1,20 @@
 #' Enumerate the objects on a page
 #'
-#' Returns a list of `pdfium_obj` handles - one per drawing primitive on
-#' the page, in PDFium's z-order (back to front). Each element carries
-#' its type ("path", "text", "image", "form", "shading", "unknown"),
-#' a 1-based index within the page, and an internal pointer suitable
-#' for passing to downstream object queries.
+#' Returns a `pdfium_obj_list` — a list of `pdfium_obj` handles, one
+#' per drawing primitive on the page in PDFium's z-order (back to
+#' front). Each handle carries its type (`"path"`, `"text"`,
+#' `"image"`, `"form"`, `"shading"`, `"unknown"`), a 1-based index
+#' within the page, and an internal pointer for downstream queries.
 #'
-#' Page objects do not own their own lifetime - they remain valid only
-#' as long as the parent `pdfium_page` is open. The handle's internal
-#' parent reference keeps the page (and transitively the document)
-#' alive for as long as you hold the object, but calling
+#' Use `tibble::as_tibble(pdf_page_objects(p))` for the tibble view
+#' (one row per object with `bbox_*` / `has_transparency` /
+#' `is_active` columns plus `handle` and `source` list-cols, per
+#' ADR-017).
+#'
+#' Page objects do not own their own lifetime — they remain valid
+#' only as long as the parent `pdfium_page` is open. The handle's
+#' internal parent reference keeps the page (and transitively the
+#' document) alive for as long as you hold the object, but calling
 #' [pdf_page_close()] explicitly invalidates all returned objects.
 #'
 #' @param page A `pdfium_page` from [pdf_page_load()], or a `pdfium_doc`
@@ -24,9 +29,10 @@
 #'   objects carry the same `parent_form` slot that
 #'   `pdf_form_objects()` would set, so callers can reconstruct
 #'   the tree from the flat list. Default `FALSE`.
-#' @return A list (possibly empty) of `pdfium_obj` objects.
+#' @return A `pdfium_obj_list` (possibly empty).
 #'
-#' @seealso [pdf_obj_type()], [pdf_form_objects()]
+#' @seealso [pdf_obj_type()], [pdf_form_objects()],
+#'   [as_tibble.pdfium_obj_list()].
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
 #'   package = "pdfium"
@@ -43,7 +49,7 @@
 #' @export
 pdf_page_objects <- function(page, page_num = 1L, recursive = FALSE) {
   checkmate::assert_flag(recursive)
-  page <- as_open_page(page, page_num)
+  page <- as_open_page(page, page_num, defer_close = FALSE)
 
   n <- cpp_page_object_count(page$ptr)
   out <- vector("list", n)
@@ -53,10 +59,100 @@ pdf_page_objects <- function(page, page_num = 1L, recursive = FALSE) {
     type_name <- pdfium_obj_type_name(type_code)
     out[[i]] <- new_pdfium_obj(obj_ptr, page, i, type_name)
   }
-  if (!recursive) {
-    return(out)
+  if (recursive) {
+    out <- flatten_page_objs_recursive(out)
   }
-  flatten_page_objs_recursive(out)
+  new_pdfium_obj_list(out, page)
+}
+
+#' Tibble view of a `pdfium_obj_list`
+#'
+#' Walks each page-object handle and reads its type, axis-aligned
+#' bounds, transparency / active flags, and (for nested objects)
+#' parent-form index into a tibble. Adds `handle` and `source`
+#' list-columns (ADR-017).
+#'
+#' @param x A `pdfium_obj_list` from [pdf_page_objects()].
+#' @param ... Unused (S3 generic compatibility).
+#' @return A tibble with columns `object_index`, `type`,
+#'   `bbox_left`, `bbox_bottom`, `bbox_right`, `bbox_top`,
+#'   `has_transparency`, `is_active`, `parent_form_index`,
+#'   `handle`, `source`.
+#' @importFrom tibble as_tibble
+#' @method as_tibble pdfium_obj_list
+#' @export
+as_tibble.pdfium_obj_list <- function(x, ...) {
+  src_page <- attr(x, "source")
+  if (length(x) == 0L) {
+    return(empty_obj_tibble())
+  }
+  bounds_list <- lapply(x, function(o) cpp_obj_bounds(o$ptr))
+  bbox <- do.call(rbind, bounds_list)
+  parent_idx <- vapply(x, function(o) {
+    if (is.null(o$parent_form)) NA_integer_ else o$parent_form$index
+  }, integer(1L))
+  tibble::tibble(
+    object_index      = vapply(x, `[[`, integer(1L), "index"),
+    type              = vapply(x, `[[`, character(1L), "type"),
+    bbox_left         = bbox[, "left"],
+    bbox_bottom       = bbox[, "bottom"],
+    bbox_right        = bbox[, "right"],
+    bbox_top          = bbox[, "top"],
+    has_transparency  = vapply(
+      x, function(o) cpp_obj_has_transparency(o$ptr), logical(1L)
+    ),
+    is_active         = vapply(
+      x, function(o) cpp_obj_is_active(o$ptr), logical(1L)
+    ),
+    parent_form_index = parent_idx,
+    handle            = unclass(x),
+    source            = rep(list(src_page), length(x))
+  )
+}
+
+empty_obj_tibble <- function() {
+  tibble::tibble(
+    object_index      = integer(),
+    type              = character(),
+    bbox_left         = numeric(),
+    bbox_bottom       = numeric(),
+    bbox_right        = numeric(),
+    bbox_top          = numeric(),
+    has_transparency  = logical(),
+    is_active         = logical(),
+    parent_form_index = integer(),
+    handle            = list(),
+    source            = list()
+  )
+}
+
+#' Coerce input to a `pdfium_obj_list`
+#'
+#' Reverse companion to [as_tibble.pdfium_obj_list()].
+#'
+#' @param x Either a `pdfium_obj_list`, a list of `pdfium_obj`
+#'   handles, or a tibble with a `handle` list-column.
+#' @return A `pdfium_obj_list`.
+#' @export
+as_pdfium_obj_list <- function(x) {
+  if (inherits(x, "pdfium_obj_list")) return(x)
+  if (is.list(x) && length(x) > 0L &&
+      all(vapply(x, inherits, logical(1L), "pdfium_obj"))) {
+    src_page <- x[[1L]]$page
+    return(new_pdfium_obj_list(x, src_page))
+  }
+  if (tibble::is_tibble(x) && "handle" %in% names(x)) {
+    handles <- x$handle
+    if (length(handles) == 0L) {
+      stop("Cannot rebuild a `pdfium_obj_list` from a zero-row ",
+           "tibble (source page unknown).", call. = FALSE)
+    }
+    src_page <- x$source[[1L]]
+    return(new_pdfium_obj_list(handles, src_page))
+  }
+  stop("`x` must be a `pdfium_obj_list`, a list of `pdfium_obj`, ",
+       "or a tibble produced by `as_tibble(pdf_page_objects(p))`.",
+       call. = FALSE)
 }
 
 # Internal: depth-first flatten that descends into form objects.
