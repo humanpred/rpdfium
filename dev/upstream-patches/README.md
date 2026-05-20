@@ -56,6 +56,12 @@ but the format-patch was generated on top of the Bezier branch):
 * `fpdfsdk/fpdf_edittext.cpp` — thin implementation right after
   `FPDFTextObj_GetFontSize`. Sets the new size on the text-state
   and calls `SetDirty(true)` so the content stream regenerates.
+* `fpdfsdk/fpdf_view_c_api_test.c` — `CHK(FPDFTextObj_SetFontSize)`
+  entry between `FPDFTextObj_GetTextRenderMode` and
+  `FPDFTextObj_SetTextRenderMode` (alphabetical). PDFium's
+  `api_check.py` presubmit walks this file against the public
+  headers and rejects any new export that's missing here —
+  forgotten in the original patchset and added on amend.
 * `fpdfsdk/fpdf_edit_embeddertest.cpp` — new
   `FPDFEditEmbedderTest::SetFontSize` exercising the round-trip
   (12 → 24 → 0), the negative-size and null-handle rejection

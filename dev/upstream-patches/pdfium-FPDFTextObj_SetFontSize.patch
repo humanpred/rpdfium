@@ -1,4 +1,4 @@
-From 50c177c42a43f842f4bfec99acdb32198915d835 Mon Sep 17 00:00:00 2001
+From 7c37ee582960c5809838dbc8004e4a73c230c40b Mon Sep 17 00:00:00 2001
 From: Bill Denney <wdenney@humanpredictions.com>
 Date: Wed, 20 May 2026 18:43:14 +0000
 Subject: [PATCH] Add FPDFTextObj_SetFontSize public API
@@ -60,8 +60,9 @@ Change-Id: Iabcdef1234567890abcdef1234567890abcdef12
 ---
  fpdfsdk/fpdf_edit_embeddertest.cpp | 30 ++++++++++++++++++++++++++++++
  fpdfsdk/fpdf_edittext.cpp          | 12 ++++++++++++
+ fpdfsdk/fpdf_view_c_api_test.c     |  1 +
  public/fpdf_edit.h                 | 13 +++++++++++++
- 3 files changed, 55 insertions(+)
+ 4 files changed, 56 insertions(+)
 
 diff --git a/fpdfsdk/fpdf_edit_embeddertest.cpp b/fpdfsdk/fpdf_edit_embeddertest.cpp
 index e3d063b..6e48019 100644
@@ -127,6 +128,18 @@ index eb06dd7..017414f 100644
  FPDF_EXPORT unsigned long FPDF_CALLCONV
  FPDFTextObj_GetText(FPDF_PAGEOBJECT text_object,
                      FPDF_TEXTPAGE text_page,
+diff --git a/fpdfsdk/fpdf_view_c_api_test.c b/fpdfsdk/fpdf_view_c_api_test.c
+index 3cc4c08..f3a8eb5 100644
+--- a/fpdfsdk/fpdf_view_c_api_test.c
++++ b/fpdfsdk/fpdf_view_c_api_test.c
+@@ -275,6 +275,7 @@ int CheckPDFiumCApi() {
+     CHK(FPDFTextObj_GetRenderedBitmap);
+     CHK(FPDFTextObj_GetText);
+     CHK(FPDFTextObj_GetTextRenderMode);
++    CHK(FPDFTextObj_SetFontSize);
+     CHK(FPDFTextObj_SetTextRenderMode);
+     CHK(FPDFText_LoadCidType2Font);
+     CHK(FPDFText_LoadFont);
 diff --git a/public/fpdf_edit.h b/public/fpdf_edit.h
 index 9d232db..85ada85 100644
 --- a/public/fpdf_edit.h
