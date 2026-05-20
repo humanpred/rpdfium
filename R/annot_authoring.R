@@ -98,7 +98,7 @@ pdf_annot_new <- function(page, subtype, bounds = NULL) {
 #' gone from the page's `/Annots` array, the underlying
 #' `FPDF_ANNOTATION` is destroyed, and the R handle's externalptr
 #' is cleared so further `pdf_annot_*` calls on it error cleanly
-#' via [is_open()].
+#' via the package's `is_open()` predicate.
 #'
 #' Page-scoped indices on other annotation handles shift after a
 #' deletion; re-fetch via [pdf_annotations()] if you need fresh

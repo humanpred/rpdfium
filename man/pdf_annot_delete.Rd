@@ -18,7 +18,7 @@ Wraps \code{FPDFPage_RemoveAnnot}. After the call, the annotation is
 gone from the page's \verb{/Annots} array, the underlying
 \code{FPDF_ANNOTATION} is destroyed, and the R handle's externalptr
 is cleared so further \verb{pdf_annot_*} calls on it error cleanly
-via \code{\link[=is_open]{is_open()}}.
+via the package's \code{is_open()} predicate.
 }
 \details{
 Page-scoped indices on other annotation handles shift after a
