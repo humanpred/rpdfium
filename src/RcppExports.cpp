@@ -377,6 +377,66 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_attachment_new
+SEXP cpp_attachment_new(SEXP doc_ptr, std::string name_utf8);
+RcppExport SEXP _pdfium_cpp_attachment_new(SEXP doc_ptrSEXP, SEXP name_utf8SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type name_utf8(name_utf8SEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_attachment_new(doc_ptr, name_utf8));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_attachment_delete
+bool cpp_attachment_delete(SEXP doc_ptr, int index_zero_based);
+RcppExport SEXP _pdfium_cpp_attachment_delete(SEXP doc_ptrSEXP, SEXP index_zero_basedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type index_zero_based(index_zero_basedSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_attachment_delete(doc_ptr, index_zero_based));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_attachment_clear_ptr
+void cpp_attachment_clear_ptr(SEXP att_ptr);
+RcppExport SEXP _pdfium_cpp_attachment_clear_ptr(SEXP att_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type att_ptr(att_ptrSEXP);
+    cpp_attachment_clear_ptr(att_ptr);
+    return R_NilValue;
+END_RCPP
+}
+// cpp_attachment_set_dict_value
+bool cpp_attachment_set_dict_value(SEXP att_ptr, std::string key, std::string value_utf8);
+RcppExport SEXP _pdfium_cpp_attachment_set_dict_value(SEXP att_ptrSEXP, SEXP keySEXP, SEXP value_utf8SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type att_ptr(att_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type key(keySEXP);
+    Rcpp::traits::input_parameter< std::string >::type value_utf8(value_utf8SEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_attachment_set_dict_value(att_ptr, key, value_utf8));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_attachment_set_data
+bool cpp_attachment_set_data(SEXP att_ptr, SEXP doc_ptr, Rcpp::RawVector contents);
+RcppExport SEXP _pdfium_cpp_attachment_set_data(SEXP att_ptrSEXP, SEXP doc_ptrSEXP, SEXP contentsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type att_ptr(att_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< Rcpp::RawVector >::type contents(contentsSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_attachment_set_data(att_ptr, doc_ptr, contents));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_attachment_get
 SEXP cpp_attachment_get(SEXP doc_ptr, int index_zero_based);
 RcppExport SEXP _pdfium_cpp_attachment_get(SEXP doc_ptrSEXP, SEXP index_zero_basedSEXP) {
@@ -2396,6 +2456,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_annot_append_quad", (DL_FUNC) &_pdfium_cpp_annot_append_quad, 9},
     {"_pdfium_cpp_annot_count", (DL_FUNC) &_pdfium_cpp_annot_count, 1},
     {"_pdfium_cpp_annots_list", (DL_FUNC) &_pdfium_cpp_annots_list, 2},
+    {"_pdfium_cpp_attachment_new", (DL_FUNC) &_pdfium_cpp_attachment_new, 2},
+    {"_pdfium_cpp_attachment_delete", (DL_FUNC) &_pdfium_cpp_attachment_delete, 2},
+    {"_pdfium_cpp_attachment_clear_ptr", (DL_FUNC) &_pdfium_cpp_attachment_clear_ptr, 1},
+    {"_pdfium_cpp_attachment_set_dict_value", (DL_FUNC) &_pdfium_cpp_attachment_set_dict_value, 3},
+    {"_pdfium_cpp_attachment_set_data", (DL_FUNC) &_pdfium_cpp_attachment_set_data, 3},
     {"_pdfium_cpp_attachment_get", (DL_FUNC) &_pdfium_cpp_attachment_get, 2},
     {"_pdfium_cpp_attachment_name", (DL_FUNC) &_pdfium_cpp_attachment_name, 1},
     {"_pdfium_cpp_attachment_subtype", (DL_FUNC) &_pdfium_cpp_attachment_subtype, 1},

@@ -315,3 +315,16 @@ reference:
       - pdf_form_field_clear
       - pdf_form_reset
       - pdf_page_flatten
+  - title: Attachment authoring
+    desc: >
+      Add, delete, and mutate the document's embedded-file
+      attachments. The natural sequence for a fresh attachment is
+      `pdf_attachment_new()` → `pdf_attachment_set_data()` (to
+      populate the file bytes and materialise the `/Params` subdict)
+      → `pdf_attachment_set_dict_value()` (for any extra dictionary
+      metadata).
+    contents:
+      - pdf_attachment_new
+      - pdf_attachment_delete
+      - pdf_attachment_set_dict_value
+      - pdf_attachment_set_data

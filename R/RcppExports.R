@@ -121,6 +121,26 @@ cpp_annots_list <- function(doc_ptr, page_ptr) {
     .Call(`_pdfium_cpp_annots_list`, doc_ptr, page_ptr)
 }
 
+cpp_attachment_new <- function(doc_ptr, name_utf8) {
+    .Call(`_pdfium_cpp_attachment_new`, doc_ptr, name_utf8)
+}
+
+cpp_attachment_delete <- function(doc_ptr, index_zero_based) {
+    .Call(`_pdfium_cpp_attachment_delete`, doc_ptr, index_zero_based)
+}
+
+cpp_attachment_clear_ptr <- function(att_ptr) {
+    invisible(.Call(`_pdfium_cpp_attachment_clear_ptr`, att_ptr))
+}
+
+cpp_attachment_set_dict_value <- function(att_ptr, key, value_utf8) {
+    .Call(`_pdfium_cpp_attachment_set_dict_value`, att_ptr, key, value_utf8)
+}
+
+cpp_attachment_set_data <- function(att_ptr, doc_ptr, contents) {
+    .Call(`_pdfium_cpp_attachment_set_data`, att_ptr, doc_ptr, contents)
+}
+
 cpp_attachment_get <- function(doc_ptr, index_zero_based) {
     .Call(`_pdfium_cpp_attachment_get`, doc_ptr, index_zero_based)
 }
