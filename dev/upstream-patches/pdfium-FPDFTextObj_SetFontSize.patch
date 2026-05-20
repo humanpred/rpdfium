@@ -1,4 +1,4 @@
-From b883b658645796b24cccb4bdcd05d7a9af90bb27 Mon Sep 17 00:00:00 2001
+From 624bd4ecc5ce3672e10eeaa4a24f4db427d042c9 Mon Sep 17 00:00:00 2001
 From: Bill Denney <wdenney@humanpredictions.com>
 Date: Wed, 20 May 2026 18:43:14 +0000
 Subject: [PATCH] Add FPDFTextObj_SetFontSize public API
@@ -56,6 +56,7 @@ asymmetry in that surface. Closing this gap lets the binding
 ship pdf_text_set_font_size() without the inline CreateTextObj
 workaround.
 
+Bug: 515079553
 Change-Id: Iabcdef1234567890abcdef1234567890abcdef12
 ---
  fpdfsdk/fpdf_edit_embeddertest.cpp | 64 ++++++++++++++++++++++++++++++
