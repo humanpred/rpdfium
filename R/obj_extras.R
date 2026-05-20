@@ -11,7 +11,12 @@
 check_pdfium_obj <- function(obj, allowed_types = NULL, arg = "obj") {
   checkmate::assert_class(obj, "pdfium_obj", .var.name = arg)
   if (!is_open(obj)) {
-    stop("Parent page has been closed; object handle is no longer valid.",
+    # Two ways this trips: parent page closed (most common), OR the
+    # obj was explicitly deleted via `pdf_obj_delete()`. The message
+    # leads with the page-closed framing for back-compatibility with
+    # existing tests; the parenthetical covers the deletion case.
+    stop("Parent page has been closed; object handle is no longer ",
+         "valid (or the object was deleted via pdf_obj_delete()).",
       call. = FALSE
     )
   }
