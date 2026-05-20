@@ -192,6 +192,37 @@ print.pdfium_obj <- function(x, ...) {
   invisible(x)
 }
 
+# Internal: list wrapper.
+new_pdfium_obj_list <- function(objs, page) {
+  checkmate::assert_list(objs, types = c("pdfium_obj", "NULL"))
+  checkmate::assert_class(page, "pdfium_page")
+  structure(
+    objs,
+    source = page,
+    class = c("pdfium_obj_list", "list")
+  )
+}
+
+#' @export
+format.pdfium_obj_list <- function(x, ...) {
+  sprintf("<pdfium_obj_list: %d object(s)>", length(x))
+}
+
+#' @export
+print.pdfium_obj_list <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  if (length(x) > 0L) {
+    n_show <- min(5L, length(x))
+    for (i in seq_len(n_show)) {
+      cat("  [[", i, "]] ", format(x[[i]]), "\n", sep = "")
+    }
+    if (length(x) > n_show) {
+      cat("  ... and ", length(x) - n_show, " more.\n", sep = "")
+    }
+  }
+  invisible(x)
+}
+
 #' Construct a `pdfium_annot` from an external pointer
 #'
 #' Internal helper. The `FPDF_ANNOTATION` handle has its own

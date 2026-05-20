@@ -129,6 +129,8 @@ reference:
   - title: Page objects
     contents:
       - pdf_page_objects
+      - as_pdfium_obj_list
+      - as_tibble.pdfium_obj_list
       - pdf_obj_type
       - pdf_obj_bounds
       - pdf_obj_rotated_bounds
