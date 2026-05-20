@@ -14,7 +14,7 @@ metadata, and page rendering.
 \section{Where to start}{
 
 
-Open a document with \code{\link[=pdf_open]{pdf_open()}} and inspect basic facts with
+Open a document with \code{\link[=pdf_doc_open]{pdf_doc_open()}} and inspect basic facts with
 \code{\link[=pdf_page_count]{pdf_page_count()}}. Higher-level helpers (path extraction, text runs,
 rendering) arrive in subsequent releases.
 }

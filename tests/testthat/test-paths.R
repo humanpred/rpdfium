@@ -2,11 +2,11 @@ test_that("pdf_path_segments validates inputs and refuses non-path objects", {
   expect_error(pdf_path_segments("not an obj"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   objs <- pdf_page_objects(page)
   text_obj <- Filter(function(o) o$type == "text", objs)[[1]]
@@ -18,15 +18,15 @@ test_that("pdf_path_segments validates inputs and refuses non-path objects", {
 
 test_that("pdf_path_segments refuses objects whose parent page has closed", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
+  page <- pdf_page_load(doc, 1)
   path_obj <- Filter(
     function(o) o$type == "path",
     pdf_page_objects(page)
   )[[1]]
-  pdf_close_page(page)
+  pdf_page_close(page)
   expect_error(
     pdf_path_segments(path_obj),
     "Parent page has been closed"
@@ -35,11 +35,11 @@ test_that("pdf_path_segments refuses objects whose parent page has closed", {
 
 test_that("pdf_path_segments returns a tibble with the documented schema", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   expect_gte(length(paths), 3L) # rect + 2 line segments at minimum
@@ -62,11 +62,11 @@ test_that("pdf_path_segments returns a tibble with the documented schema", {
 
 test_that("rectangle path matches expected M / L / L / L / L+close pattern", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   # The user-drawn rectangle is the second path object (after Cairo's
@@ -87,11 +87,11 @@ test_that("rectangle path matches expected M / L / L / L / L+close pattern", {
 
 test_that("simple line segment path is M + L (no close)", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   line <- paths[[3]] # first diagonal line segment
@@ -115,11 +115,11 @@ test_that("unknown segment type codes map to 'unknown' safely", {
 
 test_that("cpp_path_segment_count is exposed at C++ level (test exists for cov)", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   rect <- paths[[2]]

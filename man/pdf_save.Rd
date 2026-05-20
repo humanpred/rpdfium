@@ -14,7 +14,7 @@ pdf_save(
 )
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}} or \code{\link[=pdf_doc_new]{pdf_doc_new()}}.}
+\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}} or \code{\link[=pdf_doc_new]{pdf_doc_new()}}.}
 
 \item{file}{Destination path. The directory must exist.}
 
@@ -40,7 +40,7 @@ Invisibly returns \code{file}, the path written to.
 }
 \description{
 Serialises an in-memory \code{pdfium_doc} (typically produced by
-\code{\link[=pdf_open]{pdf_open()}} with \code{readwrite = TRUE} and one or more mutators)
+\code{\link[=pdf_doc_open]{pdf_doc_open()}} with \code{readwrite = TRUE} and one or more mutators)
 to a file. Wraps \code{FPDF_SaveAsCopy} and \code{FPDF_SaveWithVersion}.
 }
 \details{
@@ -56,6 +56,6 @@ content.
 }
 \seealso{
 \code{\link[=pdf_save_to_raw]{pdf_save_to_raw()}} for in-memory output;
-\code{\link[=pdf_open]{pdf_open()}} for the read side; \code{\link[=pdf_doc_new]{pdf_doc_new()}} for a fresh
+\code{\link[=pdf_doc_open]{pdf_doc_open()}} for the read side; \code{\link[=pdf_doc_new]{pdf_doc_new()}} for a fresh
 document.
 }

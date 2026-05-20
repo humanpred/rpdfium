@@ -59,7 +59,7 @@ form_field_flag_decode <- function(flags, bit) {
 #' check/radio state, and `FPDFAnnot_GetOption*` for choice-list
 #' options.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character
 #'   path.
 #' @return A tibble with columns:
 #'   * `field_index` integer - 1-based, document-wide ordering

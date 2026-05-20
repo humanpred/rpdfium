@@ -4,7 +4,7 @@
 //
 //   FPDFPage_New / _Delete / _SetRotation
 //   FPDF_MovePages
-//   FPDF_ImportPagesByIndex (pdf_merge backbone)
+//   FPDF_ImportPagesByIndex (pdf_docs_merge backbone)
 //   FPDFPage_Set{Media,Crop,Bleed,Trim,Art}Box
 //   FPDFCatalog_SetLanguage
 //   FPDFPage_GenerateContent (run on a page before save to persist edits)

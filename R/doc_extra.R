@@ -7,14 +7,14 @@
 #'
 #' Convenience wrapper that returns the document's text content
 #' one string per page, matching the shape of
-#' `pdftools::pdf_text()`. Each element is the concatenated text
+#' `pdftools::pdf_doc_text()`. Each element is the concatenated text
 #' of every text run on the corresponding page, joined with `"\n"`
 #' between runs.
 #'
 #' Internally walks the document with [pdf_text_runs()] to reuse
 #' the batched text-page load.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return Character vector of length `pdf_page_count(doc)`. Each
@@ -25,14 +25,14 @@
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
 #'   package = "pdfium"
 #' )
-#' if (nzchar(fixture)) pdf_text(fixture)
+#' if (nzchar(fixture)) pdf_doc_text(fixture)
 #' @export
-pdf_text <- function(doc, password = NULL) {
+pdf_doc_text <- function(doc, password = NULL) {
   doc <- as_open_doc(doc, password = password)
   n <- cpp_page_count(doc$ptr)
   vapply(seq_len(n), function(i) {
-    page <- pdf_load_page(doc, i)
-    on.exit(pdf_close_page(page))
+    page <- pdf_page_load(doc, i)
+    on.exit(pdf_page_close(page))
     runs <- pdf_text_runs(page)
     if (nrow(runs) == 0L) "" else paste(runs$text, collapse = "\n")
   }, character(1L))
@@ -43,14 +43,14 @@ pdf_text <- function(doc, password = NULL) {
 #' Returns one tibble row per distinct font used anywhere in the
 #' document, with the same metadata columns
 #' [pdf_text_runs()]/[pdf_text_font()] report at the run/object
-#' level. Useful for porting from `pdftools::pdf_fonts()`.
+#' level. Useful for porting from `pdftools::pdf_doc_fonts()`.
 #'
 #' Two fonts are treated as distinct when any of `font_base_name`,
 #' `font_family`, `font_weight`, `font_italic_angle`,
 #' `font_is_embedded`, or `font_flags` differ. The first page on
 #' which each font appears is recorded in `first_seen_page`.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return A tibble with columns: `font_base_name`, `font_family`,
@@ -58,14 +58,14 @@ pdf_text <- function(doc, password = NULL) {
 #'   `font_flags`, `first_seen_page` (1-based).
 #' @seealso [pdf_text_runs()], [pdf_text_font()].
 #' @export
-pdf_fonts <- function(doc, password = NULL) {
+pdf_doc_fonts <- function(doc, password = NULL) {
   doc <- as_open_doc(doc, password = password)
   n <- cpp_page_count(doc$ptr)
   all_runs <- list()
   for (i in seq_len(n)) {
-    page <- pdf_load_page(doc, i)
+    page <- pdf_page_load(doc, i)
     runs <- pdf_text_runs(page)
-    pdf_close_page(page)
+    pdf_page_close(page)
     if (nrow(runs) > 0L) {
       runs$first_seen_page <- i
       all_runs[[length(all_runs) + 1L]] <- runs
@@ -114,7 +114,7 @@ pdf_fonts <- function(doc, password = NULL) {
 #' length is unspecified and PDFs from non-standard writers may
 #' return any byte string (or none at all).
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param id_type One of `"permanent"` (default) or `"changing"`.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
@@ -124,9 +124,9 @@ pdf_fonts <- function(doc, password = NULL) {
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
 #'   package = "pdfium"
 #' )
-#' if (nzchar(fixture)) pdf_file_id(fixture)
+#' if (nzchar(fixture)) pdf_doc_file_id(fixture)
 #' @export
-pdf_file_id <- function(doc, id_type = c("permanent", "changing"),
+pdf_doc_file_id <- function(doc, id_type = c("permanent", "changing"),
                         password = NULL) {
   id_type <- match.arg(id_type)
   type_code <- if (identical(id_type, "permanent")) 0L else 1L
@@ -152,7 +152,7 @@ pdf_file_id <- function(doc, id_type = c("permanent", "changing"),
 #' thumbnails panel, full-screen, the optional-content panel, or
 #' the attachments panel. Wraps `FPDFDoc_GetPageMode`.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return Character scalar - one of `"use_none"`,
@@ -172,7 +172,7 @@ pdf_doc_page_mode <- function(doc, password = NULL) {
 
 # Duplex mode codes from FPDF_DUPLEXTYPE in fpdf_doc.h
 # (DuplexUndefined=0, Simplex=1, DuplexFlipShortEdge=2,
-# DuplexFlipLongEdge=3). Bumped to 1-based index in pdf_viewer_preferences().
+# DuplexFlipLongEdge=3). Bumped to 1-based index in pdf_doc_viewer_preferences().
 .pdfium_duplex_modes <- c(
   "none", # 0 DuplexUndefined
   "simplex", # 1 Simplex
@@ -195,7 +195,7 @@ decode_duplex <- function(idx) {
 #' that a "tagged" advertisement is not a guarantee that the
 #' structure tree is well-formed.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return Logical scalar.
@@ -217,7 +217,7 @@ pdf_doc_is_tagged <- function(doc, password = NULL) {
 #' "no preference" sentinels: `print_scaling = TRUE`,
 #' `num_copies = 1`, `duplex = "none"`, `print_page_ranges` empty.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return A named list with:
@@ -229,7 +229,7 @@ pdf_doc_is_tagged <- function(doc, password = NULL) {
 #'   * `print_page_ranges` (integer) — 1-based page numbers the
 #'     author suggests printing; empty when unspecified.
 #' @export
-pdf_viewer_preferences <- function(doc, password = NULL) {
+pdf_doc_viewer_preferences <- function(doc, password = NULL) {
   doc <- as_open_doc(doc, password = password)
   raw <- cpp_doc_viewer_prefs(doc$ptr)
   idx <- raw$duplex_code + 1L
@@ -244,14 +244,14 @@ pdf_viewer_preferences <- function(doc, password = NULL) {
 
 #' Look up a `/ViewerPreferences` name-typed entry by key
 #'
-#' PDFium's structured [pdf_viewer_preferences()] surfaces the
+#' PDFium's structured [pdf_doc_viewer_preferences()] surfaces the
 #' commonly-used entries (print scaling, copies, duplex, page
 #' ranges). For other keys whose value is a `/Name` (e.g. `Direction`
 #' = `"L2R"`/`"R2L"`, `ViewArea` = `"MediaBox"`/`"CropBox"`, or
 #' arbitrary author-defined entries), use this by-key lookup.
 #' Wraps `FPDF_VIEWERREF_GetName`.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param key The viewer-preferences dictionary key as a single
 #'   non-empty character string (ASCII PDF name, e.g.
 #'   `"Direction"`).
@@ -260,9 +260,9 @@ pdf_viewer_preferences <- function(doc, password = NULL) {
 #' @return Character scalar — the entry's name value (without the
 #'   leading slash), or `NA_character_` when the key is absent or
 #'   the value is not a `/Name`.
-#' @seealso [pdf_viewer_preferences()].
+#' @seealso [pdf_doc_viewer_preferences()].
 #' @export
-pdf_viewer_preference_by_name <- function(doc, key, password = NULL) {
+pdf_doc_viewer_preference_by_name <- function(doc, key, password = NULL) {
   key <- assert_pdf_key(key)
   doc <- as_open_doc(doc, password = password)
   out <- cpp_viewer_ref_name(doc$ptr, key)
@@ -287,7 +287,7 @@ pdf_viewer_preference_by_name <- function(doc, key, password = NULL) {
 #' `FPDFDest_GetDestPageIndex` / `FPDFDest_GetView` /
 #' `FPDFDest_GetLocationInPage`.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return A tibble with columns:
@@ -303,7 +303,7 @@ pdf_viewer_preference_by_name <- function(doc, key, password = NULL) {
 #'   * `dest_zoom` numeric - the explicit zoom for XYZ destinations,
 #'     `NA` otherwise.
 #' @export
-pdf_named_dests <- function(doc, password = NULL) {
+pdf_doc_named_dests <- function(doc, password = NULL) {
   doc <- as_open_doc(doc, password = password)
   raw <- cpp_doc_named_dests(doc$ptr)
   page <- raw$page_index_zero
@@ -328,7 +328,7 @@ pdf_named_dests <- function(doc, password = NULL) {
 #' `FPDFDoc_GetJavaScriptAction*` / `FPDFJavaScriptAction_GetName` /
 #' `_GetScript`.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return A tibble with columns `name` (UTF-8 action name, often

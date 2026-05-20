@@ -2,11 +2,11 @@
 
 test_that("pdf_obj_matrix returns a 3x3 homogeneous transform matrix", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   for (o in pdf_page_objects(page)) {
     M <- pdf_obj_matrix(o)
@@ -21,11 +21,11 @@ test_that("pdf_obj_matrix returns a 3x3 homogeneous transform matrix", {
 
 test_that("Cairo's y-flip matrix is consistent across paths in shapes.pdf", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   # Cairo emits PDF paths with a y-flip CTM that maps top-left-origin
@@ -50,10 +50,10 @@ test_that("Cairo's y-flip matrix is consistent across paths in shapes.pdf", {
 
 test_that("pdf_obj_matrix transforms points via M %*% c(x, y, 1)", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   # Y-flip with translation 216: (10, 50) in local coords maps to
@@ -67,11 +67,11 @@ test_that("pdf_obj_matrix transforms points via M %*% c(x, y, 1)", {
 
 test_that("text object matrix encodes the rendered font size on the diagonal", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   text_obj <- Filter(
     function(o) o$type == "text",
@@ -96,22 +96,22 @@ test_that("pdf_obj_matrix validates inputs and closed-page state", {
   expect_error(pdf_obj_matrix("nope"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
+  page <- pdf_page_load(doc, 1)
   obj <- pdf_page_objects(page)[[1]]
-  pdf_close_page(page)
+  pdf_page_close(page)
   expect_error(pdf_obj_matrix(obj), "Parent page has been closed")
 })
 
 test_that("pdf_path_dash returns empty array for solid lines", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   # The user-drawn rect and the first diagonal line are solid (lty
@@ -127,11 +127,11 @@ test_that("pdf_path_dash returns empty array for solid lines", {
 
 test_that("pdf_path_dash returns non-empty array for the dashed line", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   # Path 4 is the second diagonal segment, drawn with lty = "dashed".
@@ -147,11 +147,11 @@ test_that("pdf_path_dash refuses non-path objects and closed pages", {
   expect_error(pdf_path_dash("nope"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   text_obj <- Filter(
     function(o) o$type == "text",

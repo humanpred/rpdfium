@@ -13,21 +13,21 @@
 # where clipped_obj is the first page object whose pdf_obj_clip_path()
 # is non-NULL.
 clip_bundle <- function(doc) {
-  page <- pdf_load_page(doc, 1L)
+  page <- pdf_page_load(doc, 1L)
   objs <- pdf_page_objects(page)
   clipped <- Filter(function(o) !is.null(pdf_obj_clip_path(o)), objs)
   if (length(clipped) == 0L) {
-    pdf_close_page(page)
+    pdf_page_close(page)
     testthat::skip("clip.pdf fixture has no clipped objects")
   }
   list(page = page, obj = clipped[[1L]])
 }
 
 test_that("pdf_obj_clip_path returns NULL for objects with no clip", {
-  doc <- pdf_open(fixture_path("clip"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("clip"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   objs <- pdf_page_objects(page)
   no_clip <- Filter(function(o) is.null(pdf_obj_clip_path(o)), objs)
@@ -35,10 +35,10 @@ test_that("pdf_obj_clip_path returns NULL for objects with no clip", {
 })
 
 test_that("pdf_obj_clip_path returns a pdfium_clip_path for clipped objects", {
-  doc <- pdf_open(fixture_path("clip"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("clip"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   b <- clip_bundle(doc)
-  on.exit(pdf_close_page(b$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(b$page), add = TRUE, after = FALSE)
 
   cp <- pdf_obj_clip_path(b$obj)
   expect_s3_class(cp, c("pdfium_clip_path", "pdfium_handle"), exact = TRUE)
@@ -49,20 +49,20 @@ test_that("pdf_obj_clip_path returns a pdfium_clip_path for clipped objects", {
 })
 
 test_that("pdf_clip_path_count returns the sub-path count", {
-  doc <- pdf_open(fixture_path("clip"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("clip"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   b <- clip_bundle(doc)
-  on.exit(pdf_close_page(b$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(b$page), add = TRUE, after = FALSE)
 
   cp <- pdf_obj_clip_path(b$obj)
   expect_identical(pdf_clip_path_count(cp), 1L)
 })
 
 test_that("pdf_clip_path_segments returns the rectangular clip geometry", {
-  doc <- pdf_open(fixture_path("clip"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("clip"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   b <- clip_bundle(doc)
-  on.exit(pdf_close_page(b$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(b$page), add = TRUE, after = FALSE)
 
   cp <- pdf_obj_clip_path(b$obj)
   segs <- pdf_clip_path_segments(cp)
@@ -122,15 +122,15 @@ test_that("pdf_clip_path_count + segments reject bad input", {
 })
 
 test_that("clip-path accessors refuse a closed parent page", {
-  doc <- pdf_open(fixture_path("clip"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
+  doc <- pdf_doc_open(fixture_path("clip"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
   objs <- pdf_page_objects(page)
   clipped <- Filter(function(o) !is.null(pdf_obj_clip_path(o)), objs)
   skip_if(length(clipped) == 0L, "no clipped objects")
   obj <- clipped[[1L]]
   cp <- pdf_obj_clip_path(obj)
-  pdf_close_page(page)
+  pdf_page_close(page)
 
   expect_error(
     pdf_obj_clip_path(obj),
@@ -147,10 +147,10 @@ test_that("clip-path accessors refuse a closed parent page", {
 })
 
 test_that("print.pdfium_clip_path emits a one-line description", {
-  doc <- pdf_open(fixture_path("clip"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("clip"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   b <- clip_bundle(doc)
-  on.exit(pdf_close_page(b$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(b$page), add = TRUE, after = FALSE)
 
   cp <- pdf_obj_clip_path(b$obj)
   expect_output(print(cp), "pdfium_clip_path")

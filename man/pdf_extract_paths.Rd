@@ -8,7 +8,7 @@ pdf_extract_paths(doc, page_num = 1L, password = NULL)
 }
 \arguments{
 \item{doc}{Either a character scalar path to a PDF file, or an
-already-open \code{pdfium_doc} returned by \code{\link[=pdf_open]{pdf_open()}}. When \code{doc}
+already-open \code{pdfium_doc} returned by \code{\link[=pdf_doc_open]{pdf_doc_open()}}. When \code{doc}
 is a character path the document is opened and closed
 internally.}
 

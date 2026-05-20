@@ -13,7 +13,7 @@
 #' `FPDFAttachment_GetSubtype`, and `FPDFAttachment_GetFile`'s
 #' size-query form.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @return A tibble with columns:
 #'   * `attachment_index` integer - 1-based index into the
 #'     document's attachment table; pass this to
@@ -59,7 +59,7 @@ pdf_attachments <- function(doc) {
 #' re-encoding, or pass it to a downstream parser
 #' (e.g. `xml2::read_xml(rawToChar(bytes))` for XML attachments).
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param attachment_index One-based index of the attachment in
 #'   the document's attachment table.
 #' @return A raw vector of file bytes.

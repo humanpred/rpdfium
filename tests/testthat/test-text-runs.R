@@ -1,7 +1,7 @@
 # Tests for pdf_text_runs() - the batched text-run extractor.
 
 test_that("pdf_text_runs returns the documented tibble shape", {
-  res <- pdf_text_runs(pdf_open(fixture_path("shapes")))
+  res <- pdf_text_runs(pdf_doc_open(fixture_path("shapes")))
   expect_s3_class(res, "tbl_df")
   # The font_* columns were added when font metadata extraction
   # landed; see test-text-font.R for the per-column type checks.
@@ -19,7 +19,7 @@ test_that("pdf_text_runs returns the documented tibble shape", {
 })
 
 test_that("pdf_text_runs returns one row per text object on shapes.pdf", {
-  res <- pdf_text_runs(pdf_open(fixture_path("shapes")))
+  res <- pdf_text_runs(pdf_doc_open(fixture_path("shapes")))
   expect_equal(nrow(res), 1L)
   expect_identical(res$text[[1]], "Hello")
   # The Cairo-built shapes fixture puts "Hello" as the 5th page
@@ -30,7 +30,7 @@ test_that("pdf_text_runs returns one row per text object on shapes.pdf", {
 })
 
 test_that("pdf_text_runs enumerates every text object on a multi-text page", {
-  res <- pdf_text_runs(pdf_open(fixture_path("unicode")))
+  res <- pdf_text_runs(pdf_doc_open(fixture_path("unicode")))
   # Cairo's ligature handling splits "pdfium" into three runs around
   # its "fi" ligature glyph, plus the two whole-word lines:
   expect_equal(nrow(res), 5L)
@@ -41,10 +41,10 @@ test_that("pdf_text_runs enumerates every text object on a multi-text page", {
 })
 
 test_that("pdf_text_runs accepts a pdfium_page (caller still owns it)", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   res <- pdf_text_runs(page)
   expect_equal(nrow(res), 1L)
@@ -57,16 +57,16 @@ test_that("pdf_text_runs validates inputs and refuses closed pages", {
     "class .pdfium_page./.pdfium_doc."
   )
 
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(try(pdf_close(doc), silent = TRUE), add = TRUE)
-  page <- pdf_load_page(doc, 1)
-  pdf_close_page(page)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(try(pdf_doc_close(doc), silent = TRUE), add = TRUE)
+  page <- pdf_page_load(doc, 1)
+  pdf_page_close(page)
   expect_error(pdf_text_runs(page), "Page has been closed")
 })
 
 test_that("pdf_extract_paths' text_runs attribute matches pdf_text_runs()", {
-  doc <- pdf_open(fixture_path("unicode"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("unicode"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   extracted <- pdf_extract_paths(doc, 1)
   direct <- pdf_text_runs(doc, 1)
   expect_identical(attr(extracted, "text_runs"), direct)

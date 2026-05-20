@@ -7,7 +7,7 @@
 pdf_page_label(doc, page_num = 1L)
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}}, or a character path.}
+\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}}, or a character path.}
 
 \item{page_num}{One-based physical page index (default \code{1}).}
 }
@@ -26,5 +26,5 @@ Wraps \code{FPDF_GetPageLabel}.
 }
 \seealso{
 \code{\link[=pdf_page_labels]{pdf_page_labels()}} for every page's label at once,
-\code{\link[=pdf_bookmarks]{pdf_bookmarks()}}.
+\code{\link[=pdf_doc_bookmarks]{pdf_doc_bookmarks()}}.
 }

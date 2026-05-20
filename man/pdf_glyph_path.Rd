@@ -74,8 +74,8 @@ from the source content stream (visible in tools like \code{pdfinfo -text}) inst
 
 \examples{
 \dontrun{
-doc <- pdf_open("weird-font.pdf")
-page <- pdf_load_page(doc, 1)
+doc <- pdf_doc_open("weird-font.pdf")
+page <- pdf_page_load(doc, 1)
 text_obj <- Filter(\(o) o$type == "text", pdf_page_objects(page))[[1]]
 # First visible character on the page:
 chars <- pdf_text_chars(page)

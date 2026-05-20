@@ -76,8 +76,8 @@ test_that("rectangle path's rows carry the expected style + bbox", {
 })
 
 test_that("pdf_extract_paths accepts an already-open pdfium_doc", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   res <- pdf_extract_paths(doc, page_num = 1)
   expect_gt(nrow(res), 0L)
@@ -85,8 +85,8 @@ test_that("pdf_extract_paths accepts an already-open pdfium_doc", {
 })
 
 test_that("pdf_extract_paths refuses a closed doc", {
-  doc <- pdf_open(fixture_path("shapes"))
-  pdf_close(doc)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  pdf_doc_close(doc)
   expect_error(pdf_extract_paths(doc), "Document has been closed")
 })
 

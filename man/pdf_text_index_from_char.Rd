@@ -10,7 +10,7 @@ pdf_text_index_from_char(page, char_index, page_num = 1L)
 pdf_text_char_from_text_index(page, text_index, page_num = 1L)
 }
 \arguments{
-\item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a
+\item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a
 \code{pdfium_doc}.}
 
 \item{char_index}{One-based character index (matches
@@ -30,7 +30,7 @@ character has no counterpart in the other indexing system.
 PDFium's text page surfaces two parallel views of the page's text:
 the full \emph{character} list (positioned glyphs including
 PDFium-synthesised whitespace between them), and the \emph{extractable
-text} string (only characters that appear in \code{\link[=pdf_text]{pdf_text()}}'s
+text} string (only characters that appear in \code{\link[=pdf_doc_text]{pdf_doc_text()}}'s
 output). These helpers translate between the two indexing systems.
 }
 \details{
@@ -46,5 +46,5 @@ Wraps \code{FPDFText_GetTextIndexFromCharIndex} /
 \code{FPDFText_GetCharIndexFromTextIndex}.
 }
 \seealso{
-\code{\link[=pdf_text_chars]{pdf_text_chars()}}, \code{\link[=pdf_text]{pdf_text()}}, \code{\link[=pdf_text_search]{pdf_text_search()}}.
+\code{\link[=pdf_text_chars]{pdf_text_chars()}}, \code{\link[=pdf_doc_text]{pdf_doc_text()}}, \code{\link[=pdf_text_search]{pdf_text_search()}}.
 }

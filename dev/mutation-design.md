@@ -61,8 +61,8 @@ scope merged into v0.1.0 they become accepted as:
 | # | Topic | Outcome |
 |---|---|---|
 | [ADR-011](decisions/ADR-011-mutation-lifecycle.md) | Mutation lifecycle: explicit `pdf_save()` | open → modify → `pdf_save(doc, file)`; no in-place edit, no side-effect path-string overloads |
-| [ADR-012](decisions/ADR-012-readwrite-flag.md) | Read-write flag on `pdfium_doc` | `pdf_open(..., readwrite = FALSE)`; mutators error early on read-only handles |
-| [ADR-013](decisions/ADR-013-form-fill-env.md) | Form-fill environment lifetime | Lazy + cached; FFL env spins up on first form mutation, frees at `pdf_close()` |
+| [ADR-012](decisions/ADR-012-readwrite-flag.md) | Read-write flag on `pdfium_doc` | `pdf_doc_open(..., readwrite = FALSE)`; mutators error early on read-only handles |
+| [ADR-013](decisions/ADR-013-form-fill-env.md) | Form-fill environment lifetime | Lazy + cached; FFL env spins up on first form mutation, frees at `pdf_doc_close()` |
 | [ADR-014](decisions/ADR-014-structural-mutation-set.md) | Structural mutation set | Rotate, delete, reorder, merge, set-box, set-language; defer compress/linearise/encrypt to qpdf |
 | [ADR-015](decisions/ADR-015-annotation-authoring.md) | Annotation authoring scope | All FPDF_ANNOT_* subtypes PDFium supports via `FPDFAnnot_IsSupportedSubtype`; `_set_uri`, `_set_*` properties; `_add_ink_stroke` |
 | [ADR-016](decisions/ADR-016-page-object-creation.md) | Page-object creation scope | New paths, rects, text, images; insert into pages with `FPDFPage_InsertObject`; the writer pairs every reader |
@@ -78,8 +78,8 @@ more commits on the working branch and lands its own tests.
 
 | Phase | Scope | Key R functions | Key PDFium symbols |
 |---|---|---|---|
-| 1 | **Foundation** | `pdf_open(..., readwrite=)`, `pdf_save()`, `pdf_save_to_raw()`, `pdf_new_doc()`, `assert_readwrite()` (internal) | `FPDF_SaveAsCopy`, `FPDF_FILEWRITE`, `FPDF_CreateNewDocument` |
-| 2 | **Structural mutation** | `pdf_set_page_rotation`, `pdf_delete_page`, `pdf_reorder_pages`, `pdf_merge`, `pdf_set_page_box`, `pdf_set_doc_language`, `pdf_new_page` | `FPDFPage_SetRotation`, `_Delete`, `FPDF_MovePages`, `FPDF_ImportPagesByIndex`, `FPDFPage_Set*Box`, `FPDFCatalog_SetLanguage`, `FPDFPage_New` |
+| 1 | **Foundation** | `pdf_doc_open(..., readwrite=)`, `pdf_save()`, `pdf_save_to_raw()`, `pdf_new_doc()`, `assert_readwrite()` (internal) | `FPDF_SaveAsCopy`, `FPDF_FILEWRITE`, `FPDF_CreateNewDocument` |
+| 2 | **Structural mutation** | `pdf_set_page_rotation`, `pdf_delete_page`, `pdf_reorder_pages`, `pdf_docs_merge`, `pdf_set_page_box`, `pdf_set_doc_language`, `pdf_new_page` | `FPDFPage_SetRotation`, `_Delete`, `FPDF_MovePages`, `FPDF_ImportPagesByIndex`, `FPDFPage_Set*Box`, `FPDFCatalog_SetLanguage`, `FPDFPage_New` |
 | 3 | **Page-obj styling setters** | `pdf_obj_set_matrix/_active/_blend_mode/_transform`; `pdf_path_set_stroke_*/_fill_*/_line_*/_dash/_draw_mode`; `pdf_text_set/_set_font_size/_set_render_mode`; `pdf_obj_add_mark/_remove_mark/_set_mark_param_*` | `FPDFPageObj_Set*`, `FPDFPath_SetDrawMode`, `FPDFText_SetText`, `FPDFTextObj_Set*`, `FPDFPageObj_AddMark`, `FPDFPageObjMark_Set*Param` |
 | 4 | **Path geometry rebuild** | `pdf_path_new`, `pdf_path_replace`, `pdf_path_close_subpath` | `FPDFPath_MoveTo/_LineTo/_BezierTo/_Close` |
 | 5 | **Page-obj creation** | `pdf_obj_new_path/_new_rect/_new_text/_new_image`; `pdf_page_insert_object/_remove_object`; `pdf_font_load_standard/_load`; `pdf_image_set_bitmap/_set_jpeg` | `FPDFPageObj_CreateNewPath`, `_CreateNewRect`, `_NewTextObj`, `_NewImageObj`, `FPDFPage_InsertObject`, `FPDFText_LoadStandardFont`, `FPDFText_LoadFont`, `FPDFImageObj_SetBitmap`, `FPDFImageObj_LoadJpegFile` |
@@ -129,7 +129,7 @@ appending to a `std::vector<uint8_t>` instead of a file. Returns a
 
 ## 4. readwrite flag
 
-`pdf_open(path, source = NULL, password = NULL, readwrite = FALSE)`.
+`pdf_doc_open(path, source = NULL, password = NULL, readwrite = FALSE)`.
 
 The flag lives on the `pdfium_doc` S3 object as `doc$readwrite`
 (logical scalar). Every mutator calls `assert_readwrite(doc)` —
@@ -139,7 +139,7 @@ an internal helper in `R/utils.R`:
 assert_readwrite <- function(doc) {
   if (!isTRUE(doc$readwrite)) {
     stop(
-      "Document opened read-only; reopen with `pdf_open(..., readwrite = TRUE)`.",
+      "Document opened read-only; reopen with `pdf_doc_open(..., readwrite = TRUE)`.",
       call. = FALSE
     )
   }
@@ -172,7 +172,7 @@ ensure_ffl_env <- function(doc) {
 ```
 
 The form-fill env has its own R-level finalizer that calls
-`FPDFDOC_ExitFormFillEnvironment` on GC. `pdf_close()` runs the
+`FPDFDOC_ExitFormFillEnvironment` on GC. `pdf_doc_close()` runs the
 finalizer eagerly so the lifecycle order is correct (form-fill env
 must die before the doc).
 
@@ -185,7 +185,7 @@ Existing fixtures + four new ones (built by `tools/build-fixtures.R`):
 * `mut_form.pdf` — three-field AcroForm (text, checkbox, choice)
   for form-fill round-trips.
 * `mut_merge_a.pdf` / `mut_merge_b.pdf` — two-page visually-distinct
-  inputs for `pdf_merge()` and `pdf_reorder_pages()`.
+  inputs for `pdf_docs_merge()` and `pdf_reorder_pages()`.
 * `mut_annot.pdf` — page with one each of FreeText, Highlight, and
   Ink annotations, for `pdf_annot_set_*()` round-trips.
 
@@ -207,7 +207,7 @@ unchanged by the merge:
 
 1. **`FPDF_ImportPagesByIndex` lifetime**: closing the source before
    the destination may leave dangling pointers. Test for it
-   explicitly in `pdf_merge()`'s round-trip.
+   explicitly in `pdf_docs_merge()`'s round-trip.
 2. **Annotation appearance-stream regeneration**: `FPDFAnnot_SetAP`
    semantics. Investigate per-subtype.
 3. **`/Vertices` and `/InkList` setters**: PDFium has

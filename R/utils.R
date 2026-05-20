@@ -7,10 +7,10 @@
 # `checkmate::assert_number(x, finite = TRUE)` instead.
 
 # Internal: resolve a doc-or-path argument into an open `pdfium_doc`,
-# scheduling `pdf_close()` on the caller's exit when (and only when)
+# scheduling `pdf_doc_close()` on the caller's exit when (and only when)
 # this call opened the doc itself. Centralises the path-or-doc
 # pattern used by every doc-or-path public function (pdf_page_count,
-# pdf_doc_info, pdf_bookmarks, pdf_attachments, pdf_text, ...).
+# pdf_doc_info, pdf_doc_bookmarks, pdf_attachments, pdf_doc_text, ...).
 #
 # `arg` is the public-facing argument name to surface in the
 # assertion message when the caller passes something other than a
@@ -23,8 +23,8 @@
 as_open_doc <- function(x, arg = "doc", password = NULL,
                         .envir = parent.frame()) {
   if (is.character(x)) {
-    doc <- pdf_open(x, password = password)
-    withr::defer(pdf_close(doc), envir = .envir)
+    doc <- pdf_doc_open(x, password = password)
+    withr::defer(pdf_doc_close(doc), envir = .envir)
     return(doc)
   }
   checkmate::assert_class(x, "pdfium_doc", .var.name = arg)
@@ -35,7 +35,7 @@ as_open_doc <- function(x, arg = "doc", password = NULL,
 }
 
 # Internal: resolve a page-or-doc argument into an open `pdfium_page`,
-# scheduling `pdf_close_page()` on the caller's exit when (and only
+# scheduling `pdf_page_close()` on the caller's exit when (and only
 # when) this call loaded the page itself. The two-shape page
 # argument (already-open page or doc-plus-index) is the convention
 # used by every page-level wrapper in the package.
@@ -47,8 +47,8 @@ as_open_page <- function(page, page_num = 1L, .envir = parent.frame()) {
   }
   # `page` is a pdfium_doc — load `page_num` and arrange for close.
   if (!is_open(page)) stop("Document has been closed.", call. = FALSE)
-  p <- pdf_load_page(page, page_num)
-  withr::defer(pdf_close_page(p), envir = .envir)
+  p <- pdf_page_load(page, page_num)
+  withr::defer(pdf_page_close(p), envir = .envir)
   p
 }
 

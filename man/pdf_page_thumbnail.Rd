@@ -7,7 +7,7 @@
 pdf_page_thumbnail(page, page_num = 1L, decoded = TRUE)
 }
 \arguments{
-\item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a
+\item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a
 \code{pdfium_doc}.}
 
 \item{page_num}{One-based page index. Only used when \code{page} is a

@@ -1,14 +1,14 @@
 # Name- and point-based lookups against the document / page.
 # Each is a thin wrapper around a single PDFium helper:
 #
-#   pdf_named_dest_by_name(doc, name)   - resolve a /Dest by name
-#   pdf_bookmark_find(doc, title)       - find a bookmark by title
+#   pdf_doc_named_dest_by_name(doc, name)   - resolve a /Dest by name
+#   pdf_doc_bookmark_find(doc, title)       - find a bookmark by title
 #   pdf_form_field_at_point(page, x, y) - form-field hit-test
 
 #' Resolve a named destination by name
 #'
 #' Looks up a `/Dest` by its name string and returns the same kind
-#' of row [pdf_named_dests()] surfaces — page, view, x, y, zoom.
+#' of row [pdf_doc_named_dests()] surfaces — page, view, x, y, zoom.
 #' Useful for following cross-document references such as
 #' `RemoteGoTo` actions that carry a destination name rather than
 #' a page index.
@@ -16,19 +16,19 @@
 #' Wraps `FPDF_GetNamedDestByName` plus `FPDFDest_GetDestPageIndex`
 #' / `FPDFDest_GetView` / `FPDFDest_GetLocationInPage`.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param name Single non-empty character string.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return A list with `found` (logical), `page` (integer, 1-based,
 #'   `NA` when not resolvable), and `dest_view` / `dest_x` /
 #'   `dest_y` / `dest_zoom` (same shape as the corresponding
-#'   columns on [pdf_named_dests()]). `found = FALSE` and all
+#'   columns on [pdf_doc_named_dests()]). `found = FALSE` and all
 #'   other fields `NA` when the name is not in the destination
 #'   table.
-#' @seealso [pdf_named_dests()].
+#' @seealso [pdf_doc_named_dests()].
 #' @export
-pdf_named_dest_by_name <- function(doc, name, password = NULL) {
+pdf_doc_named_dest_by_name <- function(doc, name, password = NULL) {
   name <- assert_pdf_key(name, arg = "name")
   doc <- as_open_doc(doc, password = password)
   raw <- cpp_named_dest_by_name(doc$ptr, name)
@@ -46,21 +46,21 @@ pdf_named_dest_by_name <- function(doc, name, password = NULL) {
 #'
 #' Returns the 1-based `bookmark_index` of the first outline entry
 #' matching `title`, suitable for indexing back into
-#' [pdf_bookmarks()]'s tibble. `NA` when no bookmark matches.
+#' [pdf_doc_bookmarks()]'s tibble. `NA` when no bookmark matches.
 #' Wraps `FPDFBookmark_Find` and walks the outline pre-order to map
 #' the PDFium handle back to the row index.
 #'
 #' PDFium's matching is case-sensitive and matches the full title
 #' string.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param title Single non-empty character string.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return Integer scalar — the 1-based bookmark_index, or `NA`.
-#' @seealso [pdf_bookmarks()].
+#' @seealso [pdf_doc_bookmarks()].
 #' @export
-pdf_bookmark_find <- function(doc, title, password = NULL) {
+pdf_doc_bookmark_find <- function(doc, title, password = NULL) {
   title <- assert_pdf_key(title, arg = "title")
   doc <- as_open_doc(doc, password = password)
   idx <- cpp_bookmark_find(doc$ptr, title)
@@ -75,7 +75,7 @@ pdf_bookmark_find <- function(doc, title, password = NULL) {
 #' `FPDFPage_HasFormFieldAtPoint` and
 #' `FPDFPage_FormFieldZOrderAtPoint`.
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc`.
 #' @param x,y Point coordinates in PDF user-space points.
 #' @param page_num One-based page index. Only used when `page` is a

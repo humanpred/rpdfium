@@ -86,7 +86,7 @@ Rcpp::IntegerVector cpp_doc_trailer_ends(SEXP doc_ptr) {
 }
 
 // FPDF_GetPageSizeByIndexF reads the page's width/height without
-// loading the page. Cheaper than pdf_load_page + pdf_page_size for
+// loading the page. Cheaper than pdf_page_load + pdf_page_size for
 // callers that just want the dimensions of every page.
 // [[Rcpp::export(name = "cpp_doc_page_size_by_index")]]
 Rcpp::NumericVector cpp_doc_page_size_by_index(SEXP doc_ptr,

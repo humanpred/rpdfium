@@ -7,7 +7,7 @@
 pdf_attachment_data(doc, attachment_index = 1L)
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}}, or a character path.}
+\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}}, or a character path.}
 
 \item{attachment_index}{One-based index of the attachment in
 the document's attachment table.}

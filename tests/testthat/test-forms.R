@@ -12,22 +12,22 @@
 # Helper: return the populated form (obj 1) plus its parent page so
 # callers can defer-close both.
 form_obj <- function(doc) {
-  page <- pdf_load_page(doc, 1L)
+  page <- pdf_page_load(doc, 1L)
   objs <- pdf_page_objects(page)
   forms <- Filter(function(o) identical(o$type, "form"), objs)
   if (length(forms) == 0L) {
-    pdf_close_page(page)
+    pdf_page_close(page)
     testthat::skip("form_xobject.pdf fixture has no form objects")
   }
   list(form = forms[[1L]], page = page)
 }
 
 test_that("form fixture exposes one populated and one empty form", {
-  doc <- pdf_open(fixture_path("form_xobject"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("form_xobject"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   objs <- pdf_page_objects(page)
   expect_length(objs, 2L)
   expect_identical(
@@ -37,11 +37,11 @@ test_that("form fixture exposes one populated and one empty form", {
 })
 
 test_that("pdf_form_objects on an empty form returns an empty list", {
-  doc <- pdf_open(fixture_path("form_xobject"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("form_xobject"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   forms <- Filter(
     function(o) identical(o$type, "form"),
     pdf_page_objects(page)
@@ -55,10 +55,10 @@ test_that("pdf_form_objects on an empty form returns an empty list", {
 })
 
 test_that("pdf_form_objects returns the two nested rectangles", {
-  doc <- pdf_open(fixture_path("form_xobject"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("form_xobject"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bundle <- form_obj(doc)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
 
   nested <- pdf_form_objects(bundle$form)
   expect_type(nested, "list")
@@ -75,10 +75,10 @@ test_that("pdf_form_objects returns the two nested rectangles", {
 })
 
 test_that("nested objects record parent_form and render with the chain", {
-  doc <- pdf_open(fixture_path("form_xobject"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("form_xobject"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bundle <- form_obj(doc)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
 
   nested <- pdf_form_objects(bundle$form)
   expect_s3_class(nested[[1L]]$parent_form, "pdfium_obj")
@@ -91,10 +91,10 @@ test_that("nested objects record parent_form and render with the chain", {
 })
 
 test_that("nested objects participate in the general pdfium_obj API", {
-  doc <- pdf_open(fixture_path("form_xobject"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("form_xobject"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bundle <- form_obj(doc)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
 
   nested <- pdf_form_objects(bundle$form)
   # First rect bounds in form coords are (0, 0)-(50, 50) with 2pt
@@ -111,10 +111,10 @@ test_that("nested objects participate in the general pdfium_obj API", {
 })
 
 test_that("the form's own matrix exposes its placement on the page", {
-  doc <- pdf_open(fixture_path("form_xobject"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("form_xobject"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bundle <- form_obj(doc)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
 
   M <- pdf_obj_matrix(bundle$form)
   # The fixture's page content stream uses `1 0 0 1 50 50 cm` before
@@ -137,10 +137,10 @@ test_that("the form's own matrix exposes its placement on the page", {
 test_that("pdf_form_objects rejects non-form objects", {
   # A path object from shapes.pdf is the simplest non-form to test
   # against.
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   paths <- Filter(
     function(o) identical(o$type, "path"),
@@ -169,14 +169,14 @@ test_that("pdf_form_objects rejects bad inputs", {
 })
 
 test_that("pdf_form_objects refuses a closed parent page", {
-  doc <- pdf_open(fixture_path("form_xobject"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
+  doc <- pdf_doc_open(fixture_path("form_xobject"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
   objs <- pdf_page_objects(page)
   forms <- Filter(function(o) identical(o$type, "form"), objs)
   skip_if(length(forms) == 0L, "no form objects")
   form <- forms[[1L]]
-  pdf_close_page(page)
+  pdf_page_close(page)
 
   expect_error(
     pdf_form_objects(form),

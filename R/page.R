@@ -2,12 +2,12 @@
 #'
 #' Returns a `pdfium_page` handle bound to its parent `doc`. The page is
 #' garbage-collected with a finalizer that calls `FPDF_ClosePage`; call
-#' [pdf_close_page()] explicitly when you need deterministic release.
+#' [pdf_page_close()] explicitly when you need deterministic release.
 #' The page keeps the parent document alive for as long as the page
 #' is reachable, so it is safe to drop your reference to `doc` while
 #' still holding a page.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()].
+#' @param doc A `pdfium_doc` from [pdf_doc_open()].
 #' @param page_num One-based page index. Must satisfy
 #'   `1 <= page_num <= pdf_page_count(doc)`.
 #' @return A `pdfium_page` object.
@@ -17,13 +17,13 @@
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
-#'   page <- pdf_load_page(doc, 1)
-#'   pdf_close_page(page)
-#'   pdf_close(doc)
+#'   doc <- pdf_doc_open(fixture)
+#'   page <- pdf_page_load(doc, 1)
+#'   pdf_page_close(page)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
-pdf_load_page <- function(doc, page_num = 1L) {
+pdf_page_load <- function(doc, page_num = 1L) {
   checkmate::assert_class(doc, "pdfium_doc")
   if (!is_open(doc)) {
     stop("Document has been closed.", call. = FALSE)
@@ -44,12 +44,12 @@ pdf_load_page <- function(doc, page_num = 1L) {
 #' Close a page handle
 #'
 #' Releases the underlying PDFium handle. Idempotent — calling
-#' `pdf_close_page()` on an already-closed page is a no-op.
+#' `pdf_page_close()` on an already-closed page is a no-op.
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()].
+#' @param page A `pdfium_page` from [pdf_page_load()].
 #' @return Invisibly returns `page` with its underlying pointer marked closed.
 #' @export
-pdf_close_page <- function(page) {
+pdf_page_close <- function(page) {
   checkmate::assert_class(page, "pdfium_page")
   cpp_close_page(page$ptr)
   invisible(page)
@@ -68,7 +68,7 @@ pdf_close_page <- function(page) {
 #' the rotation separately with [pdf_page_rotation()] if you need to
 #' know the on-screen orientation.
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc`.
 #' @param page_num One-based page index. Only used when `page` is a
 #'   `pdfium_doc`. Ignored otherwise.
@@ -81,9 +81,9 @@ pdf_close_page <- function(page) {
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
+#'   doc <- pdf_doc_open(fixture)
 #'   pdf_page_size(doc, 1)
-#'   pdf_close(doc)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
 pdf_page_size <- function(page, page_num = 1L) {
@@ -96,7 +96,7 @@ pdf_page_size <- function(page, page_num = 1L) {
   if (!is_open(page)) stop("Document has been closed.", call. = FALSE)
   # Fast path: FPDF_GetPageSizeByIndexF reports the page's media
   # extents without loading the page object, which is much
-  # cheaper than pdf_load_page + cpp_page_size for callers
+  # cheaper than pdf_page_load + cpp_page_size for callers
   # iterating dimensions across many pages.
   cpp_doc_page_size_by_index(page$ptr, as.integer(page_num - 1L))
 }
@@ -112,7 +112,7 @@ pdf_page_size <- function(page, page_num = 1L) {
 #' dimensions a viewer would display. For an "as-displayed" size, swap
 #' `width` and `height` when rotation is `90` or `270`.
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc`.
 #' @param page_num One-based page index. Only used when `page` is a
 #'   `pdfium_doc`. Ignored otherwise.
@@ -124,9 +124,9 @@ pdf_page_size <- function(page, page_num = 1L) {
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
+#'   doc <- pdf_doc_open(fixture)
 #'   pdf_page_rotation(doc, 1)
-#'   pdf_close(doc)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
 pdf_page_rotation <- function(page, page_num = 1L) {
@@ -136,7 +136,7 @@ pdf_page_rotation <- function(page, page_num = 1L) {
     return(cpp_page_rotation(page$ptr))
   }
   # `page` is a pdfium_doc.
-  p <- pdf_load_page(page, page_num)
-  on.exit(pdf_close_page(p), add = TRUE)
+  p <- pdf_page_load(page, page_num)
+  on.exit(pdf_page_close(p), add = TRUE)
   cpp_page_rotation(p$ptr)
 }

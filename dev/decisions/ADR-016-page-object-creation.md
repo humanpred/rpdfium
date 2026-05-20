@@ -70,7 +70,7 @@ font on `doc$standard_fonts` as a cache).
 - `pdfium_font` becomes a fourth top-level S3 class alongside
   `pdfium_doc`, `pdfium_page`, `pdfium_obj`.
 - Standard-font caching on the doc reduces repeat loads but
-  requires careful cleanup at `pdf_close()`.
+  requires careful cleanup at `pdf_doc_close()`.
 - We still recommend `cairo_pdf` for users authoring whole
   documents from scratch; document this in the vignette. The
   pdfium creation API is the right choice for *incremental*

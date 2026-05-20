@@ -50,12 +50,12 @@ pdfium_segment_type_name <- function(codes) {
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
-#'   p <- pdf_load_page(doc, 1)
+#'   doc <- pdf_doc_open(fixture)
+#'   p <- pdf_page_load(doc, 1)
 #'   path_obj <- Filter(\(o) o$type == "path", pdf_page_objects(p))[[1]]
 #'   pdf_path_segments(path_obj)
-#'   pdf_close_page(p)
-#'   pdf_close(doc)
+#'   pdf_page_close(p)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
 pdf_path_segments <- function(obj) {
@@ -101,12 +101,12 @@ check_path_obj <- function(obj) {
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
-#'   p <- pdf_load_page(doc, 1)
+#'   doc <- pdf_doc_open(fixture)
+#'   p <- pdf_page_load(doc, 1)
 #'   path_obj <- Filter(\(o) o$type == "path", pdf_page_objects(p))[[1]]
 #'   pdf_path_stroke(path_obj)
-#'   pdf_close_page(p)
-#'   pdf_close(doc)
+#'   pdf_page_close(p)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
 pdf_path_stroke <- function(obj) {
@@ -132,12 +132,12 @@ pdf_path_stroke <- function(obj) {
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
-#'   p <- pdf_load_page(doc, 1)
+#'   doc <- pdf_doc_open(fixture)
+#'   p <- pdf_page_load(doc, 1)
 #'   path_obj <- Filter(\(o) o$type == "path", pdf_page_objects(p))[[1]]
 #'   pdf_path_fill(path_obj)
-#'   pdf_close_page(p)
-#'   pdf_close(doc)
+#'   pdf_page_close(p)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
 pdf_path_fill <- function(obj) {
@@ -169,12 +169,12 @@ pdf_path_fill <- function(obj) {
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
-#'   p <- pdf_load_page(doc, 1)
+#'   doc <- pdf_doc_open(fixture)
+#'   p <- pdf_page_load(doc, 1)
 #'   path_obj <- Filter(\(o) o$type == "path", pdf_page_objects(p))[[1]]
 #'   pdf_path_dash(path_obj)
-#'   pdf_close_page(p)
-#'   pdf_close(doc)
+#'   pdf_page_close(p)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
 pdf_path_dash <- function(obj) {

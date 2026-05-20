@@ -7,7 +7,7 @@
 pdf_text_char_at_point(page, x, y, tolerance = 2, page_num = 1L)
 }
 \arguments{
-\item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a
+\item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a
 \code{pdfium_doc}.}
 
 \item{x, y}{Point in PDF user-space points.}

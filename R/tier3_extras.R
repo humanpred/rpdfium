@@ -66,7 +66,7 @@ pdf_text_obj_rendered_bitmap <- function(obj, scale = 1) {
 #' `value = NA_character_` (use [pdf_attachments()] for the
 #' structured size/date/checksum readouts).
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param attachment_index One-based index into the attachment list.
 #' @param key The attachment-dict key as a single non-empty
 #'   character string (e.g. `"Subtype"`, `"AFRelationship"`).

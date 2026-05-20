@@ -84,7 +84,7 @@ The normalization is documented per setter; users can pass either.
 Every setter returns the doc invisibly so chaining works:
 
 ```r
-doc <- pdf_open("in.pdf", readwrite = TRUE)
+doc <- pdf_doc_open("in.pdf", readwrite = TRUE)
 doc |>
   pdf_page_set_rotation(1, 90) |>
   pdf_page_set_rotation(2, 180) |>

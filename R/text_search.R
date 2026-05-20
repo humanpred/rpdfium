@@ -22,7 +22,7 @@
 #' one rectangle per line for highlighting, expand each row by
 #' iterating `pdf_text_chars()` over `start_char:(start_char + char_count - 1)`.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param query Single non-empty character string to find. Encoded
 #'   to UTF-16LE before being handed to PDFium; any character
 #'   representable in UTF-8 works (including supplementary-plane code
@@ -52,7 +52,7 @@
 #'
 #'   The tibble has zero rows when no matches are found. Column types
 #'   are stable across the zero-row and non-zero-row cases.
-#' @seealso [pdf_text()] for whole-page text, [pdf_text_runs()] for
+#' @seealso [pdf_doc_text()] for whole-page text, [pdf_text_runs()] for
 #'   per-text-object structure, [pdf_text_chars()] for per-character
 #'   positions.
 #' @examples
@@ -78,14 +78,14 @@ pdf_text_search <- function(doc, query,
 
   rows <- vector("list", n)
   for (i in seq_len(n)) {
-    page <- pdf_load_page(doc, i)
+    page <- pdf_page_load(doc, i)
     raw <- cpp_text_search_page(
       page$ptr, query_utf8,
       match_case = case_sensitive,
       match_whole_word = whole_word,
       consecutive = consecutive
     )
-    pdf_close_page(page)
+    pdf_page_close(page)
 
     m <- length(raw$start_char)
     if (m > 0L) {

@@ -8,21 +8,21 @@
 image_obj <- function(doc) {
   # First image-typed page object on page 1. Returns the obj plus
   # its parent page so the caller can defer-close both.
-  page <- pdf_load_page(doc, 1L)
+  page <- pdf_page_load(doc, 1L)
   objs <- pdf_page_objects(page)
   imgs <- Filter(function(o) identical(o$type, "image"), objs)
   if (length(imgs) == 0L) {
-    pdf_close_page(page)
+    pdf_page_close(page)
     testthat::skip("image.pdf fixture has no image objects")
   }
   list(obj = imgs[[1L]], page = page)
 }
 
 test_that("pdf_image_info returns the documented shape", {
-  doc <- pdf_open(fixture_path("image"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("image"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bundle <- image_obj(doc)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
 
   info <- pdf_image_info(bundle$obj)
   expect_named(info, c(
@@ -40,20 +40,20 @@ test_that("pdf_image_info returns the documented shape", {
 })
 
 test_that("pdf_image_size matches the source pixel dimensions", {
-  doc <- pdf_open(fixture_path("image"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("image"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bundle <- image_obj(doc)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
 
   sz <- pdf_image_size(bundle$obj)
   expect_identical(sz, c(width = 16L, height = 16L))
 })
 
 test_that("pdf_image_bitmap returns a pdfium_bitmap with source dims", {
-  doc <- pdf_open(fixture_path("image"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("image"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bundle <- image_obj(doc)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
 
   bmp <- pdf_image_bitmap(bundle$obj)
   expect_s3_class(bmp, c("pdfium_bitmap", "nativeRaster"), exact = TRUE)
@@ -67,10 +67,10 @@ test_that("pdf_image_bitmap returns a pdfium_bitmap with source dims", {
 })
 
 test_that("pdf_image_bitmap pixel sampling matches the fixture's quadrants", {
-  doc <- pdf_open(fixture_path("image"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("image"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bundle <- image_obj(doc)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
 
   arr <- as.array(pdf_image_bitmap(bundle$obj))
   # Sample interior of each 8x8 quadrant; expect ~exact colour since
@@ -84,10 +84,10 @@ test_that("pdf_image_bitmap pixel sampling matches the fixture's quadrants", {
 })
 
 test_that("pdf_image_rendered applies the page CTM", {
-  doc <- pdf_open(fixture_path("image"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("image"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bundle <- image_obj(doc)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
 
   ren <- pdf_image_rendered(bundle$obj)
   expect_s3_class(ren, c("pdfium_bitmap", "nativeRaster"), exact = TRUE)
@@ -101,10 +101,10 @@ test_that("pdf_image_rendered applies the page CTM", {
 })
 
 test_that("pdf_image_data returns decoded vs raw stream bytes", {
-  doc <- pdf_open(fixture_path("image"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("image"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bundle <- image_obj(doc)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
 
   decoded <- pdf_image_data(bundle$obj, decoded = TRUE)
   raw <- pdf_image_data(bundle$obj, decoded = FALSE)
@@ -120,10 +120,10 @@ test_that("pdf_image_data returns decoded vs raw stream bytes", {
 })
 
 test_that("pdf_image_filters reports the Flate filter chain", {
-  doc <- pdf_open(fixture_path("image"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("image"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bundle <- image_obj(doc)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
 
   filters <- pdf_image_filters(bundle$obj)
   expect_type(filters, "character")
@@ -131,10 +131,10 @@ test_that("pdf_image_filters reports the Flate filter chain", {
 })
 
 test_that("pdf_image_icc_profile returns raw(0) when no ICC profile is set", {
-  doc <- pdf_open(fixture_path("image"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("image"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bundle <- image_obj(doc)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
 
   out <- pdf_image_icc_profile(bundle$obj)
   expect_type(out, "raw")
@@ -142,10 +142,10 @@ test_that("pdf_image_icc_profile returns raw(0) when no ICC profile is set", {
 })
 
 test_that("image accessors reject non-image objects", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   objs <- pdf_page_objects(page)
   paths <- Filter(function(o) identical(o$type, "path"), objs)
@@ -176,10 +176,10 @@ test_that("image accessors reject bad inputs", {
 })
 
 test_that("pdf_image_data validates the decoded flag", {
-  doc <- pdf_open(fixture_path("image"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("image"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bundle <- image_obj(doc)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
 
   expect_error(
     pdf_image_data(bundle$obj, decoded = NA),
@@ -196,14 +196,14 @@ test_that("pdf_image_data validates the decoded flag", {
 })
 
 test_that("image accessors refuse a closed parent page", {
-  doc <- pdf_open(fixture_path("image"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
+  doc <- pdf_doc_open(fixture_path("image"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
   objs <- pdf_page_objects(page)
   imgs <- Filter(function(o) identical(o$type, "image"), objs)
   skip_if(length(imgs) == 0L, "image.pdf fixture has no images")
   img <- imgs[[1L]]
-  pdf_close_page(page)
+  pdf_page_close(page)
 
   expect_error(pdf_image_info(img), "Parent page has been closed")
   expect_error(pdf_image_bitmap(img), "Parent page has been closed")

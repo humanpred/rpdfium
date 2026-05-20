@@ -2,11 +2,11 @@
 
 test_that("pdf_text_font returns the documented six-element list", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   text_obj <- Filter(
     function(o) o$type == "text",
@@ -28,11 +28,11 @@ test_that("pdf_text_font returns the documented six-element list", {
 
 test_that("pdf_text_font reports sensible values for Cairo-embedded text", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   text_obj <- Filter(
     function(o) o$type == "text",
@@ -69,10 +69,10 @@ test_that("pdf_text_font validates input and refuses non-text objects", {
   expect_error(pdf_text_font("nope"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   path_obj <- Filter(
     function(o) o$type == "path",
@@ -86,14 +86,14 @@ test_that("pdf_text_font validates input and refuses non-text objects", {
 
 test_that("pdf_text_font refuses objects whose parent page has closed", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1)
   text_obj <- Filter(
     function(o) o$type == "text",
     pdf_page_objects(page)
   )[[1]]
-  pdf_close_page(page)
+  pdf_page_close(page)
   expect_error(
     pdf_text_font(text_obj),
     "Parent page has been closed"
@@ -101,7 +101,7 @@ test_that("pdf_text_font refuses objects whose parent page has closed", {
 })
 
 test_that("pdf_text_runs now includes font_* columns", {
-  res <- pdf_text_runs(pdf_open(fixture_path("unicode")))
+  res <- pdf_text_runs(pdf_doc_open(fixture_path("unicode")))
   expect_named(res, c(
     "obj_index", "bounds_left", "bounds_bottom",
     "bounds_right", "bounds_top", "font_size", "text",
@@ -122,11 +122,11 @@ test_that("pdf_text_runs now includes font_* columns", {
 
 test_that("pdf_text_font scalars match pdf_text_runs row for the same obj", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   text_obj <- Filter(
     function(o) o$type == "text",

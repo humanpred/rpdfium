@@ -27,12 +27,12 @@ test_that("documents are reclaimed after their wrappers go out of scope", {
   n_iter <- 200L
 
   # Phase 1: open + read metadata + drop the reference. No explicit
-  # pdf_close(). If the finalizer doesn't fire, the OS will at some
+  # pdf_doc_close(). If the finalizer doesn't fire, the OS will at some
   # point refuse new FPDF_LoadDocument calls with "too many open
   # files" (Linux default is 1024).
   for (i in seq_len(n_iter)) {
     local({
-      d <- pdf_open(fx)
+      d <- pdf_doc_open(fx)
       info <- pdf_doc_info(d)
       stopifnot(info$page_count == 1L)
     }) # `d` goes out of scope here.
@@ -47,20 +47,20 @@ test_that("documents are reclaimed after their wrappers go out of scope", {
   # documents. testthat needs at least one expectation per test, so
   # assert the post-condition we actually care about: a fresh open
   # still succeeds (the FD table is clear).
-  d <- pdf_open(fx)
+  d <- pdf_doc_open(fx)
   expect_s3_class(d, "pdfium_doc")
-  pdf_close(d)
+  pdf_doc_close(d)
 })
 
 test_that("pages are reclaimed after their wrappers go out of scope", {
   fx <- fixture_path("shapes")
-  doc <- pdf_open(fx)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fx)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   n_iter <- 500L
   for (i in seq_len(n_iter)) {
     local({
-      p <- pdf_load_page(doc, 1L)
+      p <- pdf_page_load(doc, 1L)
       sz <- pdf_page_size(p)
       stopifnot(sz[["width"]] > 0)
     }) # `p` goes out of scope here.
@@ -69,15 +69,15 @@ test_that("pages are reclaimed after their wrappers go out of scope", {
   invisible(gc(verbose = FALSE))
 
   # Post-condition: doc is still open, a fresh page load succeeds.
-  p <- pdf_load_page(doc, 1L)
+  p <- pdf_page_load(doc, 1L)
   expect_s3_class(p, "pdfium_page")
-  pdf_close_page(p)
+  pdf_page_close(p)
 })
 
 test_that("rendered bitmaps are reclaimed after their wrappers go out of scope", {
   fx <- fixture_path("shapes")
-  doc <- pdf_open(fx)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fx)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   # Each bitmap at 144 dpi for a 4x3in page is 576x432x4 = ~1 MB.
   # 50 of them is ~50 MB worth of integer-matrix allocations - small
@@ -105,10 +105,10 @@ test_that("explicit close() of an already-GC'd handle is a no-op", {
 
   # Create a doc, capture the externalptr's address, drop the R-side
   # reference, force GC. The finalizer should have nulled the
-  # underlying pointer. A subsequent pdf_close() on a separately-
+  # underlying pointer. A subsequent pdf_doc_close() on a separately-
   # captured copy of the wrapper should not crash - it should
   # detect the null pointer and no-op.
-  doc <- pdf_open(fx)
+  doc <- pdf_doc_open(fx)
   shadow <- doc
   rm(doc)
   invisible(gc(verbose = FALSE))
@@ -116,8 +116,8 @@ test_that("explicit close() of an already-GC'd handle is a no-op", {
   # shadow keeps a reference, so the doc isn't actually finalised
   # yet. But shadow has been through GC at least once and the
   # finalizer is registered. Closing it now should still work.
-  expect_silent(pdf_close(shadow))
-  # And calling pdf_close() again is the documented idempotent
+  expect_silent(pdf_doc_close(shadow))
+  # And calling pdf_doc_close() again is the documented idempotent
   # contract.
-  expect_silent(pdf_close(shadow))
+  expect_silent(pdf_doc_close(shadow))
 })

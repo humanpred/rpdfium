@@ -4,7 +4,7 @@
 #' returned `pdfium_doc` carries an external pointer to a PDFium
 #' `FPDF_DOCUMENT` handle along with a finalizer that calls
 #' `FPDF_CloseDocument()` when the R object is garbage-collected.
-#' Call [pdf_close()] explicitly when you need deterministic
+#' Call [pdf_doc_close()] explicitly when you need deterministic
 #' release.
 #'
 #' Two input forms are supported. Pass `path` to load from disk
@@ -40,20 +40,20 @@
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
+#'   doc <- pdf_doc_open(fixture)
 #'   pdf_page_count(doc)
-#'   pdf_close(doc)
+#'   pdf_doc_close(doc)
 #' }
 #'
 #' # Round-trip via raw bytes - useful for downloaded PDFs.
 #' if (nzchar(fixture)) {
 #'   bytes <- readBin(fixture, "raw", file.info(fixture)$size)
-#'   doc <- pdf_open(source = bytes)
+#'   doc <- pdf_doc_open(source = bytes)
 #'   pdf_page_count(doc)
-#'   pdf_close(doc)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
-pdf_open <- function(path = NULL, source = NULL, password = NULL,
+pdf_doc_open <- function(path = NULL, source = NULL, password = NULL,
                      readwrite = FALSE) {
   validate_pdf_open_args(path, source, password)
   checkmate::assert_flag(readwrite)
@@ -70,7 +70,7 @@ pdf_open <- function(path = NULL, source = NULL, password = NULL,
   )
 }
 
-# Internal: validate the three pdf_open() arguments. Split into
+# Internal: validate the three pdf_doc_open() arguments. Split into
 # per-concern helpers so each stays under lintr's cyclocomp limit.
 validate_pdf_open_args <- function(path, source, password) {
   validate_pdf_open_exclusivity(path, source)
@@ -111,16 +111,16 @@ validate_pdf_open_path <- function(path) {
 
 #' Close a PDF document
 #'
-#' Releases the underlying PDFium handle. Idempotent — calling `pdf_close()` on
+#' Releases the underlying PDFium handle. Idempotent — calling `pdf_doc_close()` on
 #' an already-closed document is a no-op. The finalizer registered at
-#' [pdf_open()] also calls this when the R object is garbage-collected, but
+#' [pdf_doc_open()] also calls this when the R object is garbage-collected, but
 #' explicit close is recommended when handling many large documents or when a
 #' subsequent operation needs to delete the source file (relevant on Windows).
 #'
-#' @param doc A `pdfium_doc` produced by [pdf_open()].
+#' @param doc A `pdfium_doc` produced by [pdf_doc_open()].
 #' @return Invisibly returns `doc` with its underlying pointer marked closed.
 #' @export
-pdf_close <- function(doc) {
+pdf_doc_close <- function(doc) {
   checkmate::assert_class(doc, "pdfium_doc")
   cpp_close_document(doc$ptr)
   invisible(doc)
@@ -132,7 +132,7 @@ pdf_close <- function(doc) {
 #' or a character path (in which case it opens and closes the document
 #' internally — convenient for one-shot inspection).
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character scalar path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character scalar path.
 #' @param password Optional password for encrypted PDFs when `doc` is
 #'   a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return An integer scalar — the page count.
@@ -147,8 +147,8 @@ pdf_close <- function(doc) {
 #' @export
 pdf_page_count <- function(doc, password = NULL) {
   if (is.character(doc)) {
-    handle <- pdf_open(doc, password = password)
-    on.exit(pdf_close(handle), add = TRUE)
+    handle <- pdf_doc_open(doc, password = password)
+    on.exit(pdf_doc_close(handle), add = TRUE)
     return(cpp_page_count(handle$ptr))
   }
   checkmate::assert_class(doc, "pdfium_doc")
@@ -167,7 +167,7 @@ pdf_page_count <- function(doc, password = NULL) {
 #' `"CreationDate"`, `"ModDate"`, `"Trapped"`. Custom tags from a
 #' particular producer's Info dictionary are also accepted.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()].
+#' @param doc A `pdfium_doc` from [pdf_doc_open()].
 #' @param tag Character scalar - the Info-dictionary key.
 #' @return Character scalar, UTF-8 encoded. `""` if the tag is not
 #'   present.
@@ -178,9 +178,9 @@ pdf_page_count <- function(doc, password = NULL) {
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
+#'   doc <- pdf_doc_open(fixture)
 #'   pdf_doc_meta(doc, "Producer")
-#'   pdf_close(doc)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
 pdf_doc_meta <- function(doc, tag) {
@@ -203,7 +203,7 @@ pdf_doc_meta <- function(doc, tag) {
 #' (UTC) in the `creation_date_parsed` and `mod_date_parsed`
 #' slots; parses that fail return `NA`.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return A list with elements:
@@ -230,8 +230,8 @@ pdf_doc_meta <- function(doc, tag) {
 #' @export
 pdf_doc_info <- function(doc, password = NULL) {
   if (is.character(doc)) {
-    handle <- pdf_open(doc, password = password)
-    on.exit(pdf_close(handle), add = TRUE)
+    handle <- pdf_doc_open(doc, password = password)
+    on.exit(pdf_doc_close(handle), add = TRUE)
     return(pdf_doc_info(handle))
   }
   checkmate::assert_class(doc, "pdfium_doc")

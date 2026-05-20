@@ -1,4 +1,4 @@
-# Tests for pdf_bookmarks(), pdf_page_label(), pdf_page_labels(),
+# Tests for pdf_doc_bookmarks(), pdf_page_label(), pdf_page_labels(),
 # and pdf_doc_permissions(). outline.pdf is a hand-built two-page
 # fixture with:
 #
@@ -11,12 +11,12 @@
 # unencrypted; we use it for the empty-tree and all-permissions
 # branches.
 
-# pdf_bookmarks ----------------------------------------------------
+# pdf_doc_bookmarks ----------------------------------------------------
 
-test_that("pdf_bookmarks() returns the documented tibble shape", {
-  doc <- pdf_open(fixture_path("outline"))
-  on.exit(pdf_close(doc), add = TRUE)
-  bm <- pdf_bookmarks(doc)
+test_that("pdf_doc_bookmarks() returns the documented tibble shape", {
+  doc <- pdf_doc_open(fixture_path("outline"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  bm <- pdf_doc_bookmarks(doc)
   expect_s3_class(bm, "tbl_df")
   expect_named(bm, c(
     "bookmark_index", "parent_index", "level",
@@ -34,8 +34,8 @@ test_that("pdf_bookmarks() returns the documented tibble shape", {
   expect_type(bm$filepath, "character")
 })
 
-test_that("pdf_bookmarks() reads the outline tree depth-first", {
-  bm <- pdf_bookmarks(fixture_path("outline"))
+test_that("pdf_doc_bookmarks() reads the outline tree depth-first", {
+  bm <- pdf_doc_bookmarks(fixture_path("outline"))
   expect_equal(nrow(bm), 3L)
   expect_identical(bm$bookmark_index, 1L:3L)
   expect_identical(
@@ -52,8 +52,8 @@ test_that("pdf_bookmarks() reads the outline tree depth-first", {
   expect_true(all(is.na(bm$filepath)))
 })
 
-test_that("pdf_bookmarks() returns 0 rows for a PDF without an outline", {
-  bm <- pdf_bookmarks(fixture_path("shapes"))
+test_that("pdf_doc_bookmarks() returns 0 rows for a PDF without an outline", {
+  bm <- pdf_doc_bookmarks(fixture_path("shapes"))
   expect_s3_class(bm, "tbl_df")
   expect_equal(nrow(bm), 0L)
   expect_named(bm, c(
@@ -64,20 +64,20 @@ test_that("pdf_bookmarks() returns 0 rows for a PDF without an outline", {
   ))
 })
 
-test_that("pdf_bookmarks() accepts a path or an open doc", {
-  by_path <- pdf_bookmarks(fixture_path("outline"))
-  doc <- pdf_open(fixture_path("outline"))
-  on.exit(pdf_close(doc), add = TRUE)
-  by_doc <- pdf_bookmarks(doc)
+test_that("pdf_doc_bookmarks() accepts a path or an open doc", {
+  by_path <- pdf_doc_bookmarks(fixture_path("outline"))
+  doc <- pdf_doc_open(fixture_path("outline"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  by_doc <- pdf_doc_bookmarks(doc)
   expect_identical(by_path$title, by_doc$title)
   expect_true(is_open(doc))
 })
 
-test_that("pdf_bookmarks() rejects bad inputs and closed docs", {
-  expect_error(pdf_bookmarks(42), "class .pdfium_doc.")
-  doc <- pdf_open(fixture_path("outline"))
-  pdf_close(doc)
-  expect_error(pdf_bookmarks(doc), "Document has been closed")
+test_that("pdf_doc_bookmarks() rejects bad inputs and closed docs", {
+  expect_error(pdf_doc_bookmarks(42), "class .pdfium_doc.")
+  doc <- pdf_doc_open(fixture_path("outline"))
+  pdf_doc_close(doc)
+  expect_error(pdf_doc_bookmarks(doc), "Document has been closed")
 })
 
 # pdf_page_label / pdf_page_labels ---------------------------------
@@ -90,8 +90,8 @@ test_that("pdf_page_labels() reads the PageLabels number tree", {
 })
 
 test_that("pdf_page_label() reads one page's label", {
-  doc <- pdf_open(fixture_path("outline"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("outline"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   expect_identical(pdf_page_label(doc, 1L), "i")
   expect_identical(pdf_page_label(doc, 2L), "1")
 })
@@ -105,8 +105,8 @@ test_that("pdf_page_labels() returns empty strings for PDFs without a labels tab
 })
 
 test_that("pdf_page_label() validates page_num", {
-  doc <- pdf_open(fixture_path("outline"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("outline"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   expect_error(
     pdf_page_label(doc, 0),
     "Assertion on"
@@ -144,15 +144,15 @@ test_that("pdf_doc_permissions() reports all flags TRUE for an unencrypted PDF",
 
 test_that("pdf_doc_permissions() accepts a path or an open doc", {
   by_path <- pdf_doc_permissions(fixture_path("shapes"))
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   by_doc <- pdf_doc_permissions(doc)
   expect_identical(by_path, by_doc)
 })
 
 test_that("pdf_doc_permissions() rejects closed docs", {
-  doc <- pdf_open(fixture_path("shapes"))
-  pdf_close(doc)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  pdf_doc_close(doc)
   expect_error(pdf_doc_permissions(doc), "Document has been closed")
 })
 
@@ -183,8 +183,8 @@ test_that("pdf_doc_trailer_ends returns at least one offset per PDF", {
 })
 
 test_that("doc-health helpers reject closed docs", {
-  doc <- pdf_open(fixture_path("shapes"))
-  pdf_close(doc)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  pdf_doc_close(doc)
   for (fn in list(
     pdf_doc_security, pdf_doc_user_permissions,
     pdf_doc_xref_valid, pdf_doc_trailer_ends

@@ -10,9 +10,9 @@
 #' as long as the parent `pdfium_page` is open. The handle's internal
 #' parent reference keeps the page (and transitively the document)
 #' alive for as long as you hold the object, but calling
-#' [pdf_close_page()] explicitly invalidates all returned objects.
+#' [pdf_page_close()] explicitly invalidates all returned objects.
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a `pdfium_doc`
+#' @param page A `pdfium_page` from [pdf_page_load()], or a `pdfium_doc`
 #'   (in which case the first page is loaded and closed automatically).
 #' @param page_num One-based page index. Only used when `page` is a
 #'   `pdfium_doc`. Ignored otherwise.
@@ -32,13 +32,13 @@
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
-#'   p <- pdf_load_page(doc, 1)
+#'   doc <- pdf_doc_open(fixture)
+#'   p <- pdf_page_load(doc, 1)
 #'   objs <- pdf_page_objects(p)
 #'   length(objs)
 #'   vapply(objs, pdf_obj_type, character(1))
-#'   pdf_close_page(p)
-#'   pdf_close(doc)
+#'   pdf_page_close(p)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
 pdf_page_objects <- function(page, page_num = 1L, recursive = FALSE) {
@@ -109,12 +109,12 @@ pdf_obj_type <- function(obj) {
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
-#'   p <- pdf_load_page(doc, 1)
+#'   doc <- pdf_doc_open(fixture)
+#'   p <- pdf_page_load(doc, 1)
 #'   objs <- pdf_page_objects(p)
 #'   pdf_obj_bounds(objs[[1]])
-#'   pdf_close_page(p)
-#'   pdf_close(doc)
+#'   pdf_page_close(p)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
 pdf_obj_bounds <- function(obj) {
@@ -155,12 +155,12 @@ pdf_obj_bounds <- function(obj) {
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
-#'   p <- pdf_load_page(doc, 1)
+#'   doc <- pdf_doc_open(fixture)
+#'   p <- pdf_page_load(doc, 1)
 #'   M <- pdf_obj_matrix(pdf_page_objects(p)[[1]])
 #'   M %*% c(10, 20, 1)
-#'   pdf_close_page(p)
-#'   pdf_close(doc)
+#'   pdf_page_close(p)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
 pdf_obj_matrix <- function(obj) {

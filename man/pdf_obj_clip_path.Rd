@@ -32,13 +32,13 @@ fixture <- system.file("extdata", "fixtures", "clip.pdf",
   package = "pdfium"
 )
 if (nzchar(fixture)) {
-  doc <- pdf_open(fixture)
-  page <- pdf_load_page(doc, 1L)
+  doc <- pdf_doc_open(fixture)
+  page <- pdf_page_load(doc, 1L)
   objs <- pdf_page_objects(page)
   clipped <- Filter(function(o) !is.null(pdf_obj_clip_path(o)), objs)
   length(clipped)
-  pdf_close_page(page)
-  pdf_close(doc)
+  pdf_page_close(page)
+  pdf_doc_close(doc)
 }
 }
 \seealso{

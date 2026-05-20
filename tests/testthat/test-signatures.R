@@ -53,8 +53,8 @@ test_that("pdf_signature_byte_range returns the documented matrix", {
 
 test_that("pdf_signatures accepts a path or an open doc", {
   by_path <- pdf_signatures(fixture_path("signed"))
-  doc <- pdf_open(fixture_path("signed"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("signed"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   by_doc <- pdf_signatures(doc)
   expect_identical(by_path, by_doc)
 })
@@ -71,8 +71,8 @@ test_that("pdf_signature_contents / _byte_range validate their indices", {
 
 test_that("pdf_signatures rejects bad inputs and closed docs", {
   expect_error(pdf_signatures(42), "class .pdfium_doc.")
-  doc <- pdf_open(fixture_path("signed"))
-  pdf_close(doc)
+  doc <- pdf_doc_open(fixture_path("signed"))
+  pdf_doc_close(doc)
   expect_error(pdf_signatures(doc), "Document has been closed")
 })
 

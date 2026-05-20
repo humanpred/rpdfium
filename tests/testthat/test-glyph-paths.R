@@ -3,16 +3,16 @@
 # "challenging character mapping" use case.
 
 helper_text_obj <- function() {
-  doc <- pdf_open(fixture_path("shapes")) # nolint: object_usage_linter
-  page <- pdf_load_page(doc, 1L)
+  doc <- pdf_doc_open(fixture_path("shapes")) # nolint: object_usage_linter
+  page <- pdf_page_load(doc, 1L)
   text <- Filter(function(o) o$type == "text", pdf_page_objects(page))
   list(doc = doc, page = page, obj = text[[1L]])
 }
 
 test_that("pdf_glyph_path returns a non-empty segment tibble for 'H'", {
   bundle <- helper_text_obj()
-  on.exit(pdf_close(bundle$doc), add = TRUE)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_doc_close(bundle$doc), add = TRUE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
   # shapes.pdf draws "Hello"; first visible codepoint is 0x48 = 'H'.
   gp <- pdf_glyph_path(bundle$obj, 0x48L)
   expect_s3_class(gp, "tbl_df")
@@ -31,8 +31,8 @@ test_that("pdf_glyph_path returns a non-empty segment tibble for 'H'", {
 
 test_that("pdf_glyph_path validates obj type, glyph_code, font_size", {
   bundle <- helper_text_obj()
-  on.exit(pdf_close(bundle$doc), add = TRUE)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_doc_close(bundle$doc), add = TRUE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
   expect_error(
     pdf_glyph_path("nope", 0x48L),
     "class .pdfium_obj."
@@ -57,8 +57,8 @@ test_that("pdf_glyph_path validates obj type, glyph_code, font_size", {
 
 test_that("pdf_glyph_width returns a sensible width for 'H'", {
   bundle <- helper_text_obj()
-  on.exit(pdf_close(bundle$doc), add = TRUE)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_doc_close(bundle$doc), add = TRUE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
   # At unit font size, glyph widths are advance-width units typically
   # in the 0.4 - 1.0 range for Latin letters.
   w <- pdf_glyph_width(bundle$obj, 0x48L, font_size = 1)
@@ -70,8 +70,8 @@ test_that("pdf_glyph_width returns a sensible width for 'H'", {
 
 test_that("pdf_text_font_metrics returns ascent + descent", {
   bundle <- helper_text_obj()
-  on.exit(pdf_close(bundle$doc), add = TRUE)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_doc_close(bundle$doc), add = TRUE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
   m <- pdf_text_font_metrics(bundle$obj, font_size = 12)
   expect_named(m, c("ascent", "descent"))
   expect_gt(m$ascent, 0)
@@ -84,8 +84,8 @@ test_that("pdf_text_font_metrics returns ascent + descent", {
 
 test_that("pdf_glyph_width validates obj type, glyph_code, font_size", {
   bundle <- helper_text_obj()
-  on.exit(pdf_close(bundle$doc), add = TRUE)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_doc_close(bundle$doc), add = TRUE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
   expect_error(
     pdf_glyph_width("nope", 0x48L),
     "class .pdfium_obj."
@@ -114,8 +114,8 @@ test_that("pdf_glyph_width validates obj type, glyph_code, font_size", {
 
 test_that("pdf_text_font_metrics validates font_size", {
   bundle <- helper_text_obj()
-  on.exit(pdf_close(bundle$doc), add = TRUE)
-  on.exit(pdf_close_page(bundle$page), add = TRUE, after = FALSE)
+  on.exit(pdf_doc_close(bundle$doc), add = TRUE)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
   expect_error(
     pdf_text_font_metrics(bundle$obj, font_size = 0),
     "Assertion on"
@@ -127,8 +127,8 @@ test_that("pdf_text_font_metrics validates font_size", {
 })
 
 test_that("pdf_text_chars exposes per-char font_name + flags", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   chars <- pdf_text_chars(doc, page_num = 1L)
   expect_true("char_font_name" %in% names(chars))
   expect_true("char_font_flags" %in% names(chars))

@@ -19,12 +19,12 @@
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
-#'   p <- pdf_load_page(doc, 1)
+#'   doc <- pdf_doc_open(fixture)
+#'   p <- pdf_page_load(doc, 1)
 #'   text_obj <- Filter(\(o) o$type == "text", pdf_page_objects(p))[[1]]
 #'   pdf_text_font_size(text_obj)
-#'   pdf_close_page(p)
-#'   pdf_close(doc)
+#'   pdf_page_close(p)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
 pdf_text_font_size <- function(obj) {
@@ -57,12 +57,12 @@ pdf_text_font_size <- function(obj) {
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
-#'   p <- pdf_load_page(doc, 1)
+#'   doc <- pdf_doc_open(fixture)
+#'   p <- pdf_page_load(doc, 1)
 #'   text_obj <- Filter(\(o) o$type == "text", pdf_page_objects(p))[[1]]
 #'   pdf_text_content(text_obj)
-#'   pdf_close_page(p)
-#'   pdf_close(doc)
+#'   pdf_page_close(p)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
 pdf_text_content <- function(obj) {
@@ -83,7 +83,7 @@ pdf_text_content <- function(obj) {
 #' The returned tibble's schema matches the `text_runs` attribute
 #' produced by [pdf_extract_paths()].
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc` (in which case the first page is loaded and
 #'   closed automatically).
 #' @param page_num One-based page index. Only used when `page` is a
@@ -106,9 +106,9 @@ pdf_text_content <- function(obj) {
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
+#'   doc <- pdf_doc_open(fixture)
 #'   pdf_text_runs(doc, 1)
-#'   pdf_close(doc)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
 pdf_text_runs <- function(page, page_num = 1L) {
@@ -169,12 +169,12 @@ pdf_text_runs <- function(page, page_num = 1L) {
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   doc <- pdf_open(fixture)
-#'   p <- pdf_load_page(doc, 1)
+#'   doc <- pdf_doc_open(fixture)
+#'   p <- pdf_page_load(doc, 1)
 #'   text_obj <- Filter(\(o) o$type == "text", pdf_page_objects(p))[[1]]
 #'   pdf_text_font(text_obj)
-#'   pdf_close_page(p)
-#'   pdf_close(doc)
+#'   pdf_page_close(p)
+#'   pdf_doc_close(doc)
 #' }
 #' @export
 pdf_text_font <- function(obj) {

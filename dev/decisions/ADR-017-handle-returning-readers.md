@@ -12,7 +12,7 @@ The v0.1.0 reader surface is split across two return shapes:
   Per-attribute readers (`pdf_obj_type`, `pdf_obj_bounds`,
   `pdf_path_segments`, …) take the handle and read one fact about it.
 - Everything else (`pdf_annotations`, `pdf_form_fields`,
-  `pdf_attachments`, `pdf_signatures`, `pdf_bookmarks`,
+  `pdf_attachments`, `pdf_signatures`, `pdf_doc_bookmarks`,
   `pdf_text_runs`, `pdf_text_chars`, `pdf_page_links`, …) returns a
   **tibble** with one row per item.
 
@@ -38,7 +38,7 @@ to handles is `as_pdfium_<class>()`:
 | `pdf_form_fields(doc)` | `list` of `pdfium_form_field` | `pdfium_form_field` (IS-A `pdfium_annot` of subtype widget) | Per-handle finalizer |
 | `pdf_attachments(doc)` | `list` of `pdfium_attachment` | `pdfium_attachment` | Borrows doc |
 | `pdf_signatures(doc)` | `list` of `pdfium_signature` | `pdfium_signature` | Borrows doc |
-| `pdf_bookmarks(doc)` | `list` of `pdfium_bookmark` | `pdfium_bookmark` | Borrows doc |
+| `pdf_doc_bookmarks(doc)` | `list` of `pdfium_bookmark` | `pdfium_bookmark` | Borrows doc |
 
 Each list of handles can be flattened via
 `tibble::as_tibble(x)` (an S3 method on the list type). The

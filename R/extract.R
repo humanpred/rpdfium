@@ -51,7 +51,7 @@
 #'   `dev/decisions/ADR-009-defer-bezier-controls.md`.
 #'
 #' @param doc Either a character scalar path to a PDF file, or an
-#'   already-open `pdfium_doc` returned by [pdf_open()]. When `doc`
+#'   already-open `pdfium_doc` returned by [pdf_doc_open()]. When `doc`
 #'   is a character path the document is opened and closed
 #'   internally.
 #' @param page_num One-based page index (default `1`).
@@ -76,12 +76,12 @@ pdf_extract_paths <- function(doc, page_num = 1L, password = NULL) {
   if (inherits(doc, "pdfium_doc")) {
     if (!is_open(doc)) stop("Document has been closed.", call. = FALSE)
   } else {
-    doc <- pdf_open(doc, password = password)
-    on.exit(pdf_close(doc), add = TRUE)
+    doc <- pdf_doc_open(doc, password = password)
+    on.exit(pdf_doc_close(doc), add = TRUE)
   }
 
-  page_obj <- pdf_load_page(doc, page_num)
-  on.exit(pdf_close_page(page_obj), add = TRUE, after = FALSE)
+  page_obj <- pdf_page_load(doc, page_num)
+  on.exit(pdf_page_close(page_obj), add = TRUE, after = FALSE)
 
   page_size <- pdf_page_size(page_obj)
   page_rot <- pdf_page_rotation(page_obj)

@@ -22,7 +22,7 @@ Expose the structural mutators PDFium's public API supports directly:
 | `pdf_set_page_rotation(doc, page_num, degrees)` | `FPDFPage_SetRotation` |
 | `pdf_delete_page(doc, page_num)` | `FPDFPage_Delete` |
 | `pdf_reorder_pages(doc, new_order)` | `FPDF_MovePages` |
-| `pdf_merge(docs, file, ...)` | `FPDF_ImportPagesByIndex` |
+| `pdf_docs_merge(docs, file, ...)` | `FPDF_ImportPagesByIndex` |
 | `pdf_n_up(doc, file, cols, rows)` | `FPDF_ImportNPagesToOne` |
 | `pdf_set_page_box(page, box, c(l, b, r, t))` | `FPDFPage_Set{Media,Crop,Bleed,Trim,Art}Box` |
 | `pdf_set_doc_language(doc, lang)` | `FPDFCatalog_SetLanguage` |
@@ -41,7 +41,7 @@ package solves which problem.
   forcing users to also install `qpdf`.
 - `qpdf` remains the right choice for compression, linearisation,
   optimization, and password-based encryption.
-- `pdf_n_up` and `pdf_merge` need round-trip tests that verify the
+- `pdf_n_up` and `pdf_docs_merge` need round-trip tests that verify the
   handle lifetime issue (see `dev/mutation-design.md` §8) is not
   hit; document the order callers must close handles in.
 

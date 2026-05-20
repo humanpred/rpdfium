@@ -30,10 +30,10 @@ as_page_and_doc <- function(page, page_num = 1L,
 #' value as 0.
 #'
 #' Polymorphic in `page`: accepts either an already-loaded
-#' `pdfium_page` from [pdf_load_page()] (with `readwrite = TRUE`
+#' `pdfium_page` from [pdf_page_load()] (with `readwrite = TRUE`
 #' on the parent doc) or a `pdfium_doc` plus `page_num`.
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc` (in which case `page_num` selects the page).
 #' @param degrees Integer; one of `0`, `90`, `180`, `270`.
 #' @param page_num One-based page index. Only used when `page` is a
@@ -138,14 +138,14 @@ pdf_pages_reorder <- function(doc, new_order = NULL,
 #' @return When `file` is non-NULL, invisibly returns `file`. When
 #'   `file` is NULL, returns the merged `pdfium_doc`.
 #' @export
-pdf_merge <- function(docs, file = NULL) {
+pdf_docs_merge <- function(docs, file = NULL) {
   checkmate::assert_list(docs, min.len = 1L)
   checkmate::assert_string(file, min.chars = 1L, null.ok = TRUE)
   out <- pdf_doc_new()
   insert_at <- 0L
   for (entry in docs) {
     if (is.character(entry)) {
-      src <- pdf_open(entry)
+      src <- pdf_doc_open(entry)
     } else {
       checkmate::assert_class(entry, "pdfium_doc")
       src <- entry
@@ -154,13 +154,13 @@ pdf_merge <- function(docs, file = NULL) {
     cpp_import_pages_by_index(out$ptr, src$ptr,
                               seq_len(n) - 1L, insert_at)
     insert_at <- insert_at + n
-    if (is.character(entry)) pdf_close(src)
+    if (is.character(entry)) pdf_doc_close(src)
   }
   if (is.null(file)) {
     return(out)
   }
   pdf_save(out, file)
-  pdf_close(out)
+  pdf_doc_close(out)
   invisible(file)
 }
 
@@ -193,7 +193,7 @@ pdf_n_up <- function(doc, file, cols, rows,
                                        as.integer(rows))
   out <- new_pdfium_doc(out_ptr, "<n_up>", readwrite = TRUE)
   pdf_save(out, file)
-  pdf_close(out)
+  pdf_doc_close(out)
   invisible(file)
 }
 

@@ -58,7 +58,7 @@ fixture <- system.file("extdata", "fixtures", "shapes.pdf",
   package = "pdfium"
 )
 if (nzchar(fixture) && interactive()) {
-  bmp <- pdf_render_page(pdf_open(fixture), dpi = 96)
+  bmp <- pdf_render_page(pdf_doc_open(fixture), dpi = 96)
   plot(bmp)
 }
 }

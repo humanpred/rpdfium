@@ -20,13 +20,13 @@ The upstream survey shows two API shapes work in practice:
 **type-safe-and-idiomatic** (pdfium-render's enum-per-object-type +
 typed annotations) and **flat-and-raw** (pdfium-rs's near-1:1 C
 mapping). The R PDF ecosystem survey shows `pdftools` already shapes
-expectations: `pdf_text()`, `pdf_data()`, `pdf_info()`, etc., with
+expectations: `pdf_doc_text()`, `pdf_data()`, `pdf_info()`, etc., with
 `opw=`/`upw=` on every function.
 
 ## Decision
 
 - **Naming convention:** snake_case, with the `pdf_*` prefix for every
-  exported function (`pdf_open`, `pdf_close`, `pdf_page_count`,
+  exported function (`pdf_doc_open`, `pdf_doc_close`, `pdf_page_count`,
   `pdf_path_segments`, etc.). This matches `pdftools` user
   expectations.
 - **Argument naming:** lowercase snake_case. The first argument is
@@ -39,7 +39,7 @@ expectations: `pdf_text()`, `pdf_data()`, `pdf_info()`, etc., with
 - **S3 classes for handles:** `pdfium_doc`, `pdfium_page`, `pdfium_obj`.
   Print methods identify the open/closed state at a glance.
 - **Reserved signature points (must be in v0.1.0):**
-  - `pdf_open(path, password = NULL)` — reserves the slot so future
+  - `pdf_doc_open(path, password = NULL)` — reserves the slot so future
     encrypted-PDF support is non-breaking.
   - Document and page constructors accept and propagate an "extras"
     slot (an environment) so AcroForm state, conformance metadata,

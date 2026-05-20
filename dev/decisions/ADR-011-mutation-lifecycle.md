@@ -15,7 +15,7 @@ Three shapes were considered:
 
 | Shape | Example |
 |---|---|
-| A: explicit save | `pdf_open(path) → modify → pdf_save(doc, out)` |
+| A: explicit save | `pdf_doc_open(path) → modify → pdf_save(doc, out)` |
 | B: in-place edit | `pdf_edit(in, out, function(doc) ...)` |
 | C: side-effect functions | `pdf_rotate_page(path, page, degrees, out = path)` |
 
@@ -23,7 +23,7 @@ Three shapes were considered:
 
 Adopt shape A. `pdf_save(doc, file, ...)` is its own export. The doc
 handle remains the unit of work — open it, mutate it, save it. The
-mutation API never overloads `pdf_close()` and never takes path-string
+mutation API never overloads `pdf_doc_close()` and never takes path-string
 arguments in place of a doc handle.
 
 ## Consequences

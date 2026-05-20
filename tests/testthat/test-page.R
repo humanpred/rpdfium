@@ -1,98 +1,98 @@
-test_that("pdf_load_page() validates its inputs", {
+test_that("pdf_page_load() validates its inputs", {
   pdf <- fixture_path("minimal")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  expect_error(pdf_load_page("not a doc"), "class .pdfium_doc.")
+  expect_error(pdf_page_load("not a doc"), "class .pdfium_doc.")
   expect_error(
-    pdf_load_page(doc, page_num = 0),
+    pdf_page_load(doc, page_num = 0),
     "Assertion on"
   )
   expect_error(
-    pdf_load_page(doc, page_num = -1),
+    pdf_page_load(doc, page_num = -1),
     "Assertion on"
   )
   expect_error(
-    pdf_load_page(doc, page_num = 1.5),
+    pdf_page_load(doc, page_num = 1.5),
     "Assertion on"
   )
   expect_error(
-    pdf_load_page(doc, page_num = c(1, 2)),
+    pdf_page_load(doc, page_num = c(1, 2)),
     "Assertion on"
   )
   expect_error(
-    pdf_load_page(doc, page_num = NA_integer_),
+    pdf_page_load(doc, page_num = NA_integer_),
     "Assertion on"
   )
   expect_error(
-    pdf_load_page(doc, page_num = "1"),
+    pdf_page_load(doc, page_num = "1"),
     "Assertion on"
   )
   expect_error(
-    pdf_load_page(doc, page_num = 99L),
+    pdf_page_load(doc, page_num = 99L),
     "exceeds the document's page count"
   )
 })
 
-test_that("pdf_load_page() returns a working pdfium_page", {
+test_that("pdf_page_load() returns a working pdfium_page", {
   pdf <- fixture_path("minimal")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   expect_s3_class(page, "pdfium_page")
   expect_true(is_open(page))
   expect_equal(page$index, 1L)
 })
 
-test_that("pdf_load_page() refuses a closed document", {
+test_that("pdf_page_load() refuses a closed document", {
   pdf <- fixture_path("minimal")
-  doc <- pdf_open(pdf)
-  pdf_close(doc)
-  expect_error(pdf_load_page(doc, 1), "Document has been closed")
+  doc <- pdf_doc_open(pdf)
+  pdf_doc_close(doc)
+  expect_error(pdf_page_load(doc, 1), "Document has been closed")
 })
 
-test_that("pdf_close_page() is idempotent and refuses non-pages", {
+test_that("pdf_page_close() is idempotent and refuses non-pages", {
   pdf <- fixture_path("minimal")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  expect_invisible(pdf_close_page(page))
-  expect_invisible(pdf_close_page(page))
+  page <- pdf_page_load(doc, 1)
+  expect_invisible(pdf_page_close(page))
+  expect_invisible(pdf_page_close(page))
   expect_false(is_open(page))
 
-  expect_error(pdf_close_page("nope"), "class .pdfium_page.")
+  expect_error(pdf_page_close("nope"), "class .pdfium_page.")
 })
 
 test_that("page format / print reflect open / closed and parent path", {
   pdf <- fixture_path("minimal")
-  doc <- pdf_open(pdf)
-  on.exit(try(pdf_close(doc), silent = TRUE), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(try(pdf_doc_close(doc), silent = TRUE), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
+  page <- pdf_page_load(doc, 1)
   expect_match(format(page), "open")
   expect_match(format(page), "page 1 of minimal.pdf")
   expect_output(print(page), "pdfium_page")
 
-  pdf_close_page(page)
+  pdf_page_close(page)
   expect_match(format(page), "closed")
 })
 
 test_that("pdf_page_size accepts a page or a doc, returns width/height", {
   pdf <- fixture_path("minimal")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   size_doc <- pdf_page_size(doc, 1)
   expect_named(size_doc, c("width", "height"))
   expect_true(size_doc[["width"]] > 0)
   expect_true(size_doc[["height"]] > 0)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   size_page <- pdf_page_size(page)
   expect_equal(size_doc, size_page, tolerance = 1e-6)
 
@@ -104,16 +104,16 @@ test_that("pdf_page_size accepts a page or a doc, returns width/height", {
 
 test_that("pdf_page_size refuses closed handles and bad inputs", {
   pdf <- fixture_path("minimal")
-  doc <- pdf_open(pdf)
-  on.exit(try(pdf_close(doc), silent = TRUE), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(try(pdf_doc_close(doc), silent = TRUE), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  pdf_close_page(page)
+  page <- pdf_page_load(doc, 1)
+  pdf_page_close(page)
   expect_error(pdf_page_size(page), "Page has been closed")
   expect_error(pdf_page_size(42), "class .pdfium_page./.pdfium_doc.")
 
-  doc2 <- pdf_open(pdf)
-  pdf_close(doc2)
+  doc2 <- pdf_doc_open(pdf)
+  pdf_doc_close(doc2)
   expect_error(
     pdf_page_size(doc2, 1L),
     "Document has been closed"
@@ -122,14 +122,14 @@ test_that("pdf_page_size refuses closed handles and bad inputs", {
 
 test_that("pdf_page_rotation returns 0/90/180/270 from a page or a doc", {
   pdf <- fixture_path("minimal")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   # The Cairo-built fixture is un-rotated.
   expect_identical(pdf_page_rotation(doc, 1), 0L)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   rot <- pdf_page_rotation(page)
   expect_identical(rot, 0L)
   expect_true(rot %in% c(0L, 90L, 180L, 270L))
@@ -137,22 +137,22 @@ test_that("pdf_page_rotation returns 0/90/180/270 from a page or a doc", {
 
 test_that("pdf_page_rotation refuses closed handles and bad inputs", {
   pdf <- fixture_path("minimal")
-  doc <- pdf_open(pdf)
-  on.exit(try(pdf_close(doc), silent = TRUE), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(try(pdf_doc_close(doc), silent = TRUE), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  pdf_close_page(page)
+  page <- pdf_page_load(doc, 1)
+  pdf_page_close(page)
   expect_error(pdf_page_rotation(page), "Page has been closed")
   expect_error(pdf_page_rotation(42), "class .pdfium_page./.pdfium_doc.")
 })
 
 test_that("auto-finalizer releases pages dropped without explicit close", {
   pdf <- fixture_path("minimal")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   load_and_drop <- function() {
-    p <- pdf_load_page(doc, 1)
+    p <- pdf_page_load(doc, 1)
     invisible(cpp_page_size(p$ptr))
   }
   for (i in seq_len(50)) load_and_drop()
@@ -162,13 +162,13 @@ test_that("auto-finalizer releases pages dropped without explicit close", {
 
 test_that("page outlives parent doc when doc reference is dropped", {
   pdf <- fixture_path("minimal")
-  doc <- pdf_open(pdf)
-  page <- pdf_load_page(doc, 1)
+  doc <- pdf_doc_open(pdf)
+  page <- pdf_page_load(doc, 1)
   rm(doc)
   invisible(gc(verbose = FALSE))
   # The doc handle is referenced by page via externalptr prot slot, so
   # FPDF_CloseDocument has not run. cpp_page_size should still work.
   size <- cpp_page_size(page$ptr)
   expect_true(size[["width"]] > 0)
-  pdf_close_page(page)
+  pdf_page_close(page)
 })

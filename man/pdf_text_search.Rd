@@ -14,7 +14,7 @@ pdf_text_search(
 )
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}}, or a character path.}
+\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}}, or a character path.}
 
 \item{query}{Single non-empty character string to find. Encoded
 to UTF-16LE before being handed to PDFium; any character
@@ -84,7 +84,7 @@ if (nzchar(fixture)) {
 }
 }
 \seealso{
-\code{\link[=pdf_text]{pdf_text()}} for whole-page text, \code{\link[=pdf_text_runs]{pdf_text_runs()}} for
+\code{\link[=pdf_doc_text]{pdf_doc_text()}} for whole-page text, \code{\link[=pdf_text_runs]{pdf_text_runs()}} for
 per-text-object structure, \code{\link[=pdf_text_chars]{pdf_text_chars()}} for per-character
 positions.
 }

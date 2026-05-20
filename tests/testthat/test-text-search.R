@@ -44,8 +44,8 @@ test_that("pdf_text_search rejects bad doc inputs", {
   )
 
   # closed-doc path
-  doc <- pdf_open(fixture_path("shapes"))
-  pdf_close(doc)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  pdf_doc_close(doc)
   expect_error(pdf_text_search(doc, "Hello"), "closed")
 })
 
@@ -150,8 +150,8 @@ test_that("pdf_text_search returns an empty tibble of the right shape on no matc
 test_that("pdf_text_search accepts either a path or an open pdfium_doc", {
   from_path <- pdf_text_search(fixture_path("shapes"), "Hello")
 
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   from_doc <- pdf_text_search(doc, "Hello")
   expect_identical(from_path, from_doc)
 })

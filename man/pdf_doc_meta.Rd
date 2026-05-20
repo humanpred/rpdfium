@@ -7,7 +7,7 @@
 pdf_doc_meta(doc, tag)
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}}.}
+\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}}.}
 
 \item{tag}{Character scalar - the Info-dictionary key.}
 }
@@ -28,9 +28,9 @@ fixture <- system.file("extdata", "fixtures", "shapes.pdf",
   package = "pdfium"
 )
 if (nzchar(fixture)) {
-  doc <- pdf_open(fixture)
+  doc <- pdf_doc_open(fixture)
   pdf_doc_meta(doc, "Producer")
-  pdf_close(doc)
+  pdf_doc_close(doc)
 }
 }
 \seealso{

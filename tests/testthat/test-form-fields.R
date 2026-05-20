@@ -108,16 +108,16 @@ test_that("form-field flag decoding handles bits 1-3", {
 
 test_that("pdf_form_fields accepts a path or an open doc", {
   by_path <- pdf_form_fields(fixture_path("annotated"))
-  doc <- pdf_open(fixture_path("annotated"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   by_doc <- pdf_form_fields(doc)
   expect_identical(by_path, by_doc)
 })
 
 test_that("pdf_form_fields rejects bad inputs and closed docs", {
   expect_error(pdf_form_fields(42), "class .pdfium_doc.")
-  doc <- pdf_open(fixture_path("annotated"))
-  pdf_close(doc)
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  pdf_doc_close(doc)
   expect_error(pdf_form_fields(doc), "Document has been closed")
 })
 

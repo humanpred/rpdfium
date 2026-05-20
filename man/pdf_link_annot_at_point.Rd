@@ -7,7 +7,7 @@
 pdf_link_annot_at_point(page, x, y, page_num = 1L)
 }
 \arguments{
-\item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a
+\item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a
 \code{pdfium_doc} (the page given by \code{page_num} will be loaded
 and closed internally).}
 
