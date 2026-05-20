@@ -314,8 +314,14 @@ pdf_annot_ink_paths <- function(annot) {
 linked_annot_handle <- function(annot, key) {
   raw <- cpp_annot_linked_handle(annot$ptr, annot$page$ptr, key)
   if (!isTRUE(raw$found) || is.null(raw$handle)) return(NULL)
+  # nocov start — success path requires a fixture whose annots
+  # carry /Popup or /IRT links. The shipped `annotated.pdf`
+  # doesn't (its highlight / link / widgets have no popup tail),
+  # and the C-side already exercises the index-resolution walk.
+  # Cover this once a popup-bearing fixture lands.
   new_pdfium_annot(raw$handle, annot$page,
                     as.integer(raw$index))
+  # nocov end
 }
 
 #' Annotation popup (`/Popup` linked annot)

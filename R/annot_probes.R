@@ -128,7 +128,13 @@ pdf_link_annot_at_point <- function(page, x, y, page_num = 1L) {
   )
   if (!isTRUE(as.logical(raw$found))) return(NULL)
   idx <- as.integer(raw$annotation_index)
+  # nocov start — defensive: the C-side resolves found=TRUE links
+  # via a page-annot walk that always finds the index. NA here
+  # would require a PDFium build where FPDFLink_GetAnnot returns
+  # an annot whose rect / subtype don't match anything on the
+  # page, which the shipped fixtures don't exercise.
   if (is.na(idx)) return(NULL)
+  # nocov end
   ptr <- cpp_annot_get(page$ptr, idx - 1L)
   new_pdfium_annot(ptr, page, idx)
 }

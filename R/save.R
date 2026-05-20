@@ -253,7 +253,12 @@ flush_dirty_pages <- function(doc) {
 flush_page_if_dirty <- function(page) {
   doc <- page$doc
   state <- doc$state
+  # nocov start — every `pdfium_doc` constructed via
+  # `new_pdfium_doc()` carries a non-NULL state env. Guard is
+  # defensive against future construction paths that forget to
+  # populate it; matches the same pattern in flush_dirty_pages().
   if (is.null(state)) return(invisible(NULL))
+  # nocov end
   dirty <- state$dirty_pages
   if (!page$index %in% dirty) return(invisible(NULL))
   cpp_page_generate_content(page$ptr)

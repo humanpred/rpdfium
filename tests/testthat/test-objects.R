@@ -108,6 +108,39 @@ test_that("pdfium_obj_list print shows count and entries", {
   expect_true(any(grepl(sprintf("%d object\\(s\\)", length(objs)), txt)))
 })
 
+test_that("pdfium_obj_list print truncates beyond 5 entries", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  objs <- pdf_page_objects(page)
+  # Synthesize a longer list by replicating handles; the truncation
+  # logic is index-driven so the replicated handles exercise the
+  # "... and N more" branch.
+  many <- structure(
+    rep(unclass(objs), 6L),
+    source = attr(objs, "source"),
+    class = c("pdfium_obj_list", "list")
+  )
+  txt <- capture.output(print(many))
+  expect_true(any(grepl("more", txt)))
+})
+
+test_that("tibble view of recursive page_objects populates parent_form_index", {
+  doc <- pdf_doc_open(fixture_path("form_xobject"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+
+  recurs <- pdf_page_objects(page, recursive = TRUE)
+  tbl <- tibble::as_tibble(recurs)
+  # Top-level objects: parent_form_index is NA. Nested objects:
+  # parent_form_index is the parent form's object_index.
+  expect_true(any(is.na(tbl$parent_form_index)))
+  expect_true(any(!is.na(tbl$parent_form_index)))
+  expect_type(tbl$parent_form_index, "integer")
+})
+
 test_that("pdf_page_objects enumerates path + text on the shapes fixture", {
   pdf <- fixture_path("shapes")
   doc <- pdf_doc_open(pdf)

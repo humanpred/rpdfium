@@ -278,6 +278,11 @@ test_that("per-handle getters read the checkbox's documented attrs", {
   expect_identical(pdf_form_field_name(cb), "agree")
   expect_identical(pdf_form_field_alternate_name(cb), "I agree")
   expect_true(pdf_form_field_is_checked(cb))
+  # Checkboxes report control_count/index of 1/1 in PDFium's
+  # accounting (single-control group). Exercise the happy path so
+  # the +1 branch is covered.
+  expect_identical(pdf_form_field_control_count(cb), 1L)
+  expect_identical(pdf_form_field_control_index(cb), 1L)
 })
 
 test_that("per-handle getters reject non-form-field input", {

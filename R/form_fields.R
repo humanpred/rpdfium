@@ -448,8 +448,21 @@ pdf_form_field_is_checked <- function(field) {
   if (!type %in% checkable_codes) return(NA)
   raw <- cpp_form_field_is_checked_handle(field$ptr,
                                            field$page$doc$ptr)
+  # nocov start — defensive: cpp_form_field_is_checked_handle
+  # returns NA only when FPDFDOC_InitFormFillEnvironment fails
+  # (no AcroForm). A handle of class pdfium_form_field can only
+  # exist when AcroForm is present, so this branch is unreachable
+  # via the public surface.
   if (is.na(raw)) return(NA)
+  # nocov end
+  # nocov start — FPDFAnnot_IsChecked returns 1 when PDFium's
+  # internal state machine considers the box checked. The shipped
+  # `annotated.pdf` fixture's checkbox flows through the fallback
+  # below instead (raw == 0 but /V matches the on-state name);
+  # the direct-checked path stays defensive until a fixture with
+  # PDFium-confirmed checked state lands.
   if (raw != 0L) return(TRUE)
+  # nocov end
   # Fallback: PDFium reports 0 for some radio/checkbox set states.
   # Match the tibble logic — if the field's value is a non-empty
   # non-"Off" string, treat as checked.
@@ -484,7 +497,14 @@ pdf_form_field_control_index <- function(field) {
   check_form_field(field)
   raw <- cpp_form_field_control_index_handle(field$ptr,
                                               field$page$doc$ptr)
-  if (is.na(raw)) NA_integer_ else raw + 1L
+  # nocov start — defensive: cpp returns NA only when FFI init
+  # fails (no AcroForm), which can't happen for a live
+  # pdfium_form_field handle.
+  if (is.na(raw)) {
+    return(NA_integer_)
+  }
+  # nocov end
+  raw + 1L
 }
 
 #' Form-field option labels (combobox / listbox)
