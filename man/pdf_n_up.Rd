@@ -7,8 +7,7 @@
 pdf_n_up(doc, file, cols, rows, output_width = 612, output_height = 792)
 }
 \arguments{
-\item{doc}{A read-write \code{pdfium_doc} from
-\code{\link[=pdf_open]{pdf_open()}} (with \code{readwrite = TRUE}) or \code{\link[=pdf_new_doc]{pdf_new_doc()}}.}
+\item{doc}{A source \code{pdfium_doc} (does not need \code{readwrite}).}
 
 \item{file}{Destination path.}
 
@@ -21,8 +20,8 @@ points. Defaults to US Letter (612 x 792).}
 Invisibly returns \code{file}.
 }
 \description{
-Wraps \code{FPDF_ImportNPagesToOne} — imposition / N-up imposition.
-Pages are arranged into a \verb{cols x rows} grid on each output
-page; if the source has more pages than fit on one output
-page, more output pages are created.
+Wraps \code{FPDF_ImportNPagesToOne} — N-up imposition. Pages are
+arranged into a \verb{cols x rows} grid on each output page; if the
+source has more pages than fit on one output page, more output
+pages are created.
 }

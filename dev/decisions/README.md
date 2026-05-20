@@ -24,6 +24,8 @@ Markdown ADR following the
 | [014](ADR-014-structural-mutation-set.md) | Accepted | Structural mutation set: rotate, delete, reorder, merge, set-box, set-language; defer compress/linearise/encrypt to qpdf |
 | [015](ADR-015-annotation-authoring.md) | Accepted | Annotation authoring: full writer mirror of the v0.1.0 reader |
 | [016](ADR-016-page-object-creation.md) | Accepted | Page-object creation: new paths, rects, text, images; `pdfium_font` S3 class |
+| [017](ADR-017-handle-returning-readers.md) | Accepted | Handle-returning readers + `as_tibble()` / `as_pdfium_<class>()` round-trip; tibble carries `handle` + `source` list-columns |
+| [018](ADR-018-setter-conventions.md) | Accepted | Setter conventions: object-first naming, polymorphic page arg, composite + named-partial-update setters, 0-255 / 0-1 color auto-detection |
 
 ## Policy
 

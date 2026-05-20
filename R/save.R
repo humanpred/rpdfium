@@ -195,13 +195,13 @@ pdf_save_to_raw <- function(doc, incremental = FALSE,
 #' @seealso [pdf_new_page()] to add a page;
 #'   [pdf_save()] to persist the result.
 #' @examples
-#' doc <- pdf_new_doc()
-#' pdf_new_page(doc, 1, 612, 792)
+#' doc <- pdf_doc_new()
+#' pdf_page_new(doc, 1, 612, 792)
 #' tmp <- tempfile(fileext = ".pdf")
 #' pdf_save(doc, tmp)
 #' pdf_close(doc)
 #' @export
-pdf_new_doc <- function() {
+pdf_doc_new <- function() {
   ptr <- cpp_create_new_document()
   new_pdfium_doc(ptr, path = "<new>", readwrite = TRUE)
 }

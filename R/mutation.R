@@ -1,8 +1,26 @@
 # Structural mutation: page rotation, deletion, reordering, merging,
-# page-box assignment, document language. Each function takes a
-# read-write `pdfium_doc` (or `pdfium_page`), asserts the
-# readwrite flag, calls the matching PDFium one-liner, and returns
-# the doc/page invisibly so edits can be chained with `|>`.
+# page-box assignment, document language. Each function follows the
+# conventions in ADR-018:
+#   * object-first naming (`pdf_page_set_*`, `pdf_doc_set_*`)
+#   * polymorphic page arg (mirrors `pdf_page_rotation()` reader)
+#   * invisibly returns the doc for chaining
+
+# Internal: resolve a (page-or-doc, page_num) input into an open
+# pdfium_page, *plus* its parent pdfium_doc. Setters need the doc
+# both to (a) check `readwrite` and (b) return it for chaining. The
+# helper reuses as_open_page() (which already handles the
+# polymorphic shape) and re-derives the doc from the page's `$doc`
+# slot.
+#
+# `.envir` is the caller's frame; pages opened transiently here are
+# scheduled to close in `.envir` via withr::defer (same pattern as
+# as_open_page itself).
+as_page_and_doc <- function(page, page_num = 1L,
+                            .envir = parent.frame()) {
+  open_page <- as_open_page(page, page_num, .envir = .envir)
+  doc <- open_page$doc
+  list(page = open_page, doc = doc)
+}
 
 #' Set a page's rotation
 #'
@@ -11,34 +29,42 @@
 #' rotation to multiples of 90; PDFium silently treats any other
 #' value as 0.
 #'
-#' @param doc A read-write `pdfium_doc` from
-#'   [pdf_open()] (with `readwrite = TRUE`) or [pdf_new_doc()].
-#' @param page_num One-based page index.
+#' Polymorphic in `page`: accepts either an already-loaded
+#' `pdfium_page` from [pdf_load_page()] (with `readwrite = TRUE`
+#' on the parent doc) or a `pdfium_doc` plus `page_num`.
+#'
+#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#'   `pdfium_doc` (in which case `page_num` selects the page).
 #' @param degrees Integer; one of `0`, `90`, `180`, `270`.
-#' @return Invisibly returns `doc` so the call can be chained.
+#' @param page_num One-based page index. Only used when `page` is a
+#'   `pdfium_doc`. Ignored otherwise.
+#' @return Invisibly returns the parent `pdfium_doc` so calls can
+#'   be chained with `|>`.
 #' @seealso [pdf_page_rotation()] for the read side.
 #' @export
-pdf_set_page_rotation <- function(doc, page_num, degrees) {
-  assert_readwrite(doc)
-  checkmate::assert_count(page_num, positive = TRUE)
+pdf_page_set_rotation <- function(page, degrees, page_num = 1L) {
   checkmate::assert_choice(degrees, c(0L, 90L, 180L, 270L))
+  ph <- as_page_and_doc(page, page_num)
+  assert_readwrite(ph$doc)
   code <- as.integer(degrees / 90L)
-  page <- pdf_load_page(doc, page_num)
-  cpp_page_set_rotation(page$ptr, code)
-  pdf_close_page(page)
-  mark_page_dirty(doc, page_num)
-  invisible(doc)
+  cpp_page_set_rotation(ph$page$ptr, code)
+  mark_page_dirty(ph$doc, ph$page$index)
+  invisible(ph$doc)
 }
 
-#' Delete a page
+#' Delete a page from the document
 #'
-#' Wraps `FPDFPage_Delete`. Removes the page at `page_num` from
-#' the document. Subsequent page numbers shift down by one.
+#' Wraps `FPDFPage_Delete`. Removes the page at `page_num` from the
+#' document. Subsequent page numbers shift down by one.
 #'
-#' @inheritParams pdf_set_page_rotation
+#' Takes a `pdfium_doc` (not a `pdfium_page` — once you delete a
+#' page, any loaded handle to it is invalid).
+#'
+#' @param doc A read-write `pdfium_doc`.
+#' @param page_num One-based page index to delete.
 #' @return Invisibly returns `doc`.
 #' @export
-pdf_delete_page <- function(doc, page_num) {
+pdf_page_delete <- function(doc, page_num) {
   assert_readwrite(doc)
   checkmate::assert_count(page_num, positive = TRUE)
   n <- cpp_page_count(doc$ptr)
@@ -54,27 +80,21 @@ pdf_delete_page <- function(doc, page_num) {
 
 #' Reorder pages
 #'
-#' Wraps `FPDF_MovePages`. Moves a contiguous set of pages to a
-#' new position within the document. The most common use is
-#' rearranging a full document to a new order; pass a permutation
-#' of `seq_len(pdf_page_count(doc))` as `new_order`.
+#' Wraps `FPDF_MovePages`. Either passes a full permutation of
+#' `seq_len(pdf_page_count(doc))` as `new_order` (the document is
+#' reordered in place to that permutation), or moves a contiguous
+#' set of pages to a new position via `move_pages` + `dest`.
 #'
-#' For partial reorderings (move pages 3–5 to position 1), pass
-#' the source indices and the insertion point separately.
-#'
-#' @inheritParams pdf_set_page_rotation
-#' @param new_order Integer vector. Either (a) a full permutation
-#'   of `1:pdf_page_count(doc)` — the document is reordered in
-#'   place to that permutation — or (b) the contiguous-move case
-#'   handled via `move_pages` + `dest`.
+#' @param doc A read-write `pdfium_doc`.
+#' @param new_order Integer vector. A full permutation of
+#'   `1:pdf_page_count(doc)`.
 #' @param move_pages Integer vector of 1-based source page
-#'   indices to move (ignored when `new_order` is a full
-#'   permutation).
+#'   indices to move (ignored when `new_order` is supplied).
 #' @param dest One-based destination index for the moved pages
-#'   (ignored when `new_order` is a full permutation).
+#'   (ignored when `new_order` is supplied).
 #' @return Invisibly returns `doc`.
 #' @export
-pdf_reorder_pages <- function(doc, new_order = NULL,
+pdf_pages_reorder <- function(doc, new_order = NULL,
                               move_pages = NULL, dest = NULL) {
   assert_readwrite(doc)
   n <- cpp_page_count(doc$ptr)
@@ -82,17 +102,11 @@ pdf_reorder_pages <- function(doc, new_order = NULL,
     checkmate::assert_integerish(new_order, lower = 1L, upper = n,
                                  len = n, unique = TRUE,
                                  any.missing = FALSE)
-    # FPDF_MovePages takes (source_indices, dest_index). To achieve
-    # an arbitrary permutation we walk new_order left-to-right,
-    # moving one source page at a time to its target position.
     new_order <- as.integer(new_order)
     for (target_idx in seq_along(new_order)) {
       src <- new_order[target_idx]
-      # Translate the original 1-based index `src` to its current
-      # 0-based position by tracking how many earlier indices have
-      # already been moved ahead of it.
       moved_before <- sum(new_order[seq_len(target_idx - 1L)] < src)
-      current_pos <- src - 1L + 0L  # 0-based
+      current_pos <- src - 1L
       cpp_move_pages(doc$ptr,
                      as.integer(current_pos - moved_before),
                      as.integer(target_idx - 1L))
@@ -111,24 +125,23 @@ pdf_reorder_pages <- function(doc, new_order = NULL,
 #' Merge documents into a new PDF
 #'
 #' Concatenates the pages of one or more source documents into a
-#' fresh `pdfium_doc`, then saves to `file`. Wraps
+#' fresh `pdfium_doc`, then optionally saves to `file`. Wraps
 #' `FPDF_CreateNewDocument` + `FPDF_ImportPagesByIndex` per source.
 #'
-#' Source documents are not modified. The returned doc has
-#' `readwrite = TRUE`.
+#' Source documents are not modified. The returned doc is
+#' read-write.
 #'
 #' @param docs A list of `pdfium_doc` objects, or a character
 #'   vector of paths. Mixed lists are also accepted.
 #' @param file Destination path. If `NULL` (default), the merged
 #'   document is returned without saving.
 #' @return When `file` is non-NULL, invisibly returns `file`. When
-#'   `file` is NULL, returns the merged `pdfium_doc` open in
-#'   memory.
+#'   `file` is NULL, returns the merged `pdfium_doc`.
 #' @export
 pdf_merge <- function(docs, file = NULL) {
   checkmate::assert_list(docs, min.len = 1L)
   checkmate::assert_string(file, min.chars = 1L, null.ok = TRUE)
-  out <- pdf_new_doc()
+  out <- pdf_doc_new()
   insert_at <- 0L
   for (entry in docs) {
     if (is.character(entry)) {
@@ -153,12 +166,12 @@ pdf_merge <- function(docs, file = NULL) {
 
 #' Combine N pages of a document into one
 #'
-#' Wraps `FPDF_ImportNPagesToOne` — imposition / N-up imposition.
-#' Pages are arranged into a `cols x rows` grid on each output
-#' page; if the source has more pages than fit on one output
-#' page, more output pages are created.
+#' Wraps `FPDF_ImportNPagesToOne` — N-up imposition. Pages are
+#' arranged into a `cols x rows` grid on each output page; if the
+#' source has more pages than fit on one output page, more output
+#' pages are created.
 #'
-#' @inheritParams pdf_set_page_rotation
+#' @param doc A source `pdfium_doc` (does not need `readwrite`).
 #' @param file Destination path.
 #' @param cols,rows Grid dimensions per output page.
 #' @param output_width,output_height Output page size in PDF
@@ -190,17 +203,17 @@ pdf_n_up <- function(doc, file, cols, rows,
 #' dimensions at `page_num` (1-based). Existing pages at or above
 #' `page_num` shift down by one.
 #'
-#' @inheritParams pdf_set_page_rotation
+#' @inheritParams pdf_page_delete
 #' @param page_num Insertion index, 1-based. Must satisfy
 #'   `1 <= page_num <= pdf_page_count(doc) + 1`.
 #' @param width,height Page size in PDF points (1 pt = 1/72 in).
 #'   US Letter is `612, 792`; A4 is `595, 842`.
-#' @return A `pdfium_page` handle for the new page. (Unlike
-#'   most mutators this returns a page rather than the doc,
-#'   because callers typically want to add content to the page
+#' @return A `pdfium_page` handle for the new page. (Unlike most
+#'   mutators this returns a page rather than the doc, because
+#'   callers typically want to add content to the page
 #'   immediately.)
 #' @export
-pdf_new_page <- function(doc, page_num, width, height) {
+pdf_page_new <- function(doc, page_num, width, height) {
   assert_readwrite(doc)
   n <- cpp_page_count(doc$ptr)
   checkmate::assert_int(page_num, lower = 1L, upper = n + 1L)
@@ -216,29 +229,26 @@ pdf_new_page <- function(doc, page_num, width, height) {
 #' Wraps `FPDFPage_Set{Media,Crop,Bleed,Trim,Art}Box`. Companion to
 #' [pdf_page_box()].
 #'
-#' @inheritParams pdf_set_page_rotation
+#' Polymorphic in `page`.
+#'
+#' @inheritParams pdf_page_set_rotation
 #' @param box One of `"media"`, `"crop"`, `"bleed"`, `"trim"`,
 #'   `"art"`.
 #' @param rect Length-4 numeric `c(left, bottom, right, top)` in
 #'   PDF user-space points.
-#' @return Invisibly returns `doc`.
+#' @return Invisibly returns the parent `pdfium_doc`.
 #' @seealso [pdf_page_box()] for the read side.
 #' @export
-pdf_set_page_box <- function(doc, page_num,
-                             box = c("media", "crop", "bleed",
-                                     "trim", "art"),
-                             rect) {
-  assert_readwrite(doc)
-  checkmate::assert_count(page_num, positive = TRUE)
-  box <- match.arg(box)
+pdf_page_set_box <- function(page, box, rect, page_num = 1L) {
+  box <- match.arg(box, c("media", "crop", "bleed", "trim", "art"))
   checkmate::assert_numeric(rect, len = 4L, finite = TRUE,
                             any.missing = FALSE)
-  page <- pdf_load_page(doc, page_num)
-  cpp_page_set_box(page$ptr, box,
+  ph <- as_page_and_doc(page, page_num)
+  assert_readwrite(ph$doc)
+  cpp_page_set_box(ph$page$ptr, box,
                    as.numeric(rect[1L]), as.numeric(rect[2L]),
                    as.numeric(rect[3L]), as.numeric(rect[4L]))
-  pdf_close_page(page)
-  invisible(doc)
+  invisible(ph$doc)
 }
 
 #' Set the document's declared language
@@ -246,11 +256,11 @@ pdf_set_page_box <- function(doc, page_num,
 #' Wraps `FPDFCatalog_SetLanguage`. The language tag follows BCP-47
 #' (e.g. `"en"`, `"en-US"`, `"de-AT"`).
 #'
-#' @inheritParams pdf_set_page_rotation
+#' @inheritParams pdf_page_delete
 #' @param lang Character scalar — the BCP-47 language tag.
 #' @return Invisibly returns `doc`.
 #' @export
-pdf_set_doc_language <- function(doc, lang) {
+pdf_doc_set_language <- function(doc, lang) {
   assert_readwrite(doc)
   checkmate::assert_string(lang, min.chars = 1L)
   if (!cpp_catalog_set_language(doc$ptr, enc2utf8(lang))) {

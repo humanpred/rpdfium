@@ -15,15 +15,14 @@ document is returned without saving.}
 }
 \value{
 When \code{file} is non-NULL, invisibly returns \code{file}. When
-\code{file} is NULL, returns the merged \code{pdfium_doc} open in
-memory.
+\code{file} is NULL, returns the merged \code{pdfium_doc}.
 }
 \description{
 Concatenates the pages of one or more source documents into a
-fresh \code{pdfium_doc}, then saves to \code{file}. Wraps
+fresh \code{pdfium_doc}, then optionally saves to \code{file}. Wraps
 \code{FPDF_CreateNewDocument} + \code{FPDF_ImportPagesByIndex} per source.
 }
 \details{
-Source documents are not modified. The returned doc has
-\code{readwrite = TRUE}.
+Source documents are not modified. The returned doc is
+read-write.
 }

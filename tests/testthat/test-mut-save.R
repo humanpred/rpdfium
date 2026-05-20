@@ -1,10 +1,10 @@
 # Tests for the writer foundation: pdf_save, pdf_save_to_raw,
-# pdf_new_doc, the readwrite flag, and assert_readwrite. Mutation
+# pdf_doc_new, the readwrite flag, and assert_readwrite. Mutation
 # functionality itself is exercised in the phase-specific test
 # files (test-mut-structural.R, etc.).
 
-test_that("pdf_new_doc() returns a writable empty doc", {
-  doc <- pdf_new_doc()
+test_that("pdf_doc_new() returns a writable empty doc", {
+  doc <- pdf_doc_new()
   on.exit(pdf_close(doc), add = TRUE)
   expect_s3_class(doc, "pdfium_doc")
   expect_true(doc$readwrite)
