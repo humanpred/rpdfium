@@ -59,31 +59,21 @@ doesn't surface (e.g. <code>/M</code> modification date, <code>/NM</code> unique
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pdf_annot_dict_value</span><span class="op">(</span><span class="va">page</span>, <span class="va">annotation_index</span>, <span class="va">key</span>, page_num <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pdf_annot_dict_value</span><span class="op">(</span><span class="va">annot</span>, <span class="va">key</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-page">page<a class="anchor" aria-label="anchor" href="#arg-page"></a></dt>
-<dd><p>A <code>pdfium_page</code> from <code><a href="pdf_page_load.html">pdf_page_load()</a></code>, or a
-<code>pdfium_doc</code>.</p></dd>
-
-
-<dt id="arg-annotation-index">annotation_index<a class="anchor" aria-label="anchor" href="#arg-annotation-index"></a></dt>
-<dd><p>One-based index into the page's
-annotations.</p></dd>
+<dl><dt id="arg-annot">annot<a class="anchor" aria-label="anchor" href="#arg-annot"></a></dt>
+<dd><p>A <code>pdfium_annot</code> handle (e.g. one element of
+<code>pdf_annotations(page)</code>).</p></dd>
 
 
 <dt id="arg-key">key<a class="anchor" aria-label="anchor" href="#arg-key"></a></dt>
 <dd><p>The annotation-dict key as a single non-empty
 character string (ASCII PDF name, e.g. <code>"M"</code>, <code>"NM"</code>, <code>"CA"</code>).</p></dd>
-
-
-<dt id="arg-page-num">page_num<a class="anchor" aria-label="anchor" href="#arg-page-num"></a></dt>
-<dd><p>One-based page index. Only used when <code>page</code> is a
-<code>pdfium_doc</code>. Ignored otherwise.</p></dd>
 
 </dl></div>
     <div class="section level2">

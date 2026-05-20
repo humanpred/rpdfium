@@ -11,30 +11,19 @@ overall opacity, `/RC` rich-text contents).
 ## Usage
 
 ``` r
-pdf_annot_dict_value(page, annotation_index, key, page_num = 1L)
+pdf_annot_dict_value(annot, key)
 ```
 
 ## Arguments
 
-- page:
+- annot:
 
-  A `pdfium_page` from
-  [`pdf_page_load()`](https://humanpred.github.io/rpdfium/reference/pdf_page_load.md),
-  or a `pdfium_doc`.
-
-- annotation_index:
-
-  One-based index into the page's annotations.
+  A `pdfium_annot` handle (e.g. one element of `pdf_annotations(page)`).
 
 - key:
 
   The annotation-dict key as a single non-empty character string (ASCII
   PDF name, e.g. `"M"`, `"NM"`, `"CA"`).
-
-- page_num:
-
-  One-based page index. Only used when `page` is a `pdfium_doc`. Ignored
-  otherwise.
 
 ## Value
 

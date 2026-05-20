@@ -199,12 +199,98 @@ and is *not* distributed in the source tarball — see
 
 - [`pdf_annotations()`](https://humanpred.github.io/rpdfium/reference/pdf_annotations.md)
   : List the annotations on a PDF page
+
+- [`pdf_annot_at()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_at.md)
+  :
+
+  Construct a `pdfium_annot` handle for one annotation
+
+- [`as_pdfium_annot_list()`](https://humanpred.github.io/rpdfium/reference/as_pdfium_annot_list.md)
+  :
+
+  Coerce input to a `pdfium_annot_list`
+
+- [`as_tibble(`*`<pdfium_annot_list>`*`)`](https://humanpred.github.io/rpdfium/reference/as_tibble.pdfium_annot_list.md)
+  :
+
+  Tibble view of a `pdfium_annot_list`
+
+- [`pdf_annot_subtype()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_subtype.md)
+  : Annotation subtype (string)
+
+- [`pdf_annot_subtype_code()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_subtype_code.md)
+  : Annotation subtype code (integer enum)
+
+- [`pdf_annot_flags()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_flags.md)
+  : Annotation flag bitmask
+
+- [`pdf_annot_flags_decoded()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_flags_decoded.md)
+  : Annotation flags decoded as named logicals
+
+- [`pdf_annot_bounds()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_bounds.md)
+  : Annotation bounding rectangle
+
+- [`pdf_annot_contents()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_contents.md)
+  :
+
+  Annotation `/Contents` text
+
+- [`pdf_annot_title()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_title.md)
+  :
+
+  Annotation `/T` title (author) text
+
+- [`pdf_annot_subject()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_subject.md)
+  :
+
+  Annotation `/Subj` subject text
+
+- [`pdf_annot_color()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_color.md)
+  :
+
+  Annotation `/C` colour (RGBA, 0..1)
+
+- [`pdf_annot_interior_color()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_interior_color.md)
+  :
+
+  Annotation `/IC` interior colour (RGBA, 0..1)
+
+- [`pdf_annot_border_width()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_border_width.md)
+  : Annotation border width
+
+- [`pdf_annot_font_size()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_font_size.md)
+  : Annotation font size (FreeText / Widget subtypes)
+
+- [`pdf_annot_font_color()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_font_color.md)
+  : Annotation font colour (RGB, 0..1)
+
 - [`pdf_annot_dict_value()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_dict_value.md)
   : Read an annotation-dict entry by key
+
 - [`pdf_annot_appearance()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_appearance.md)
   : Appearance-stream string for an annotation
+
 - [`pdf_form_fields()`](https://humanpred.github.io/rpdfium/reference/pdf_form_fields.md)
   : Enumerate AcroForm fields across the whole document
+
+- [`as_pdfium_form_field_list()`](https://humanpred.github.io/rpdfium/reference/as_pdfium_form_field_list.md)
+  :
+
+  Coerce input to a `pdfium_form_field_list`
+
+- [`as_tibble(`*`<pdfium_form_field_list>`*`)`](https://humanpred.github.io/rpdfium/reference/as_tibble.pdfium_form_field_list.md)
+  :
+
+  Tibble view of a `pdfium_form_field_list`
+
+- [`pdf_form_field_type()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_type.md)
+  : Form-field type (string)
+
+- [`pdf_form_field_type_code()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_type_code.md)
+  : Form-field type code (integer enum)
+
+- [`pdf_form_field_page_num()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_page_num.md)
+  : Form-field page number
 
 ## Page objects
 

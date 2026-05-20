@@ -9,34 +9,18 @@ annotation is being activated). Wraps `FPDFAnnot_GetAP`.
 ## Usage
 
 ``` r
-pdf_annot_appearance(
-  page,
-  annotation_index,
-  mode = c("normal", "rollover", "down"),
-  page_num = 1L
-)
+pdf_annot_appearance(annot, mode = c("normal", "rollover", "down"))
 ```
 
 ## Arguments
 
-- page:
+- annot:
 
-  A `pdfium_page` from
-  [`pdf_page_load()`](https://humanpred.github.io/rpdfium/reference/pdf_page_load.md),
-  or a `pdfium_doc`.
-
-- annotation_index:
-
-  One-based index into the page's annotations.
+  A `pdfium_annot` handle (e.g. one element of `pdf_annotations(page)`).
 
 - mode:
 
   One of `"normal"` (default), `"rollover"`, or `"down"`.
-
-- page_num:
-
-  One-based page index. Only used when `page` is a `pdfium_doc`. Ignored
-  otherwise.
 
 ## Value
 
