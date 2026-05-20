@@ -1,0 +1,396 @@
+From 41eaeb5c497097d644993d4426e1623bff79534d Mon Sep 17 00:00:00 2001
+From: Bill Denney <wdenney@humanpredictions.com>
+Date: Wed, 20 May 2026 21:55:44 +0000
+Subject: [PATCH] Expose AppendOption / RemoveOptions writers for widget /Opt
+ arrays
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add two new public APIs:
+
+  FPDFAnnot_AppendOption(FPDF_FORMHANDLE hHandle,
+                         FPDF_ANNOTATION annot,
+                         FPDF_WIDESTRING label);
+
+  FPDFAnnot_RemoveOptions(FPDF_FORMHANDLE hHandle,
+                          FPDF_ANNOTATION annot);
+
+The reader side already exposes the /Opt array via
+FPDFAnnot_GetOptionCount() + FPDFAnnot_GetOptionLabel() +
+FPDFAnnot_IsOptionSelected(), but there is no symmetric writer.
+Embedders that compose programmatically-generated PDFs (e.g.
+populating a listbox/combobox at fill time from a database) currently
+have to either bake the options in at PDF-creation time or fall back
+to a private dictionary mutation through the structural editing API.
+
+The append-one-and-clear-all shape mirrors the existing pair
+FPDFAnnot_AddInkStroke() + FPDFAnnot_RemoveInkList(), which is the
+established precedent in this header for array-valued mutators.
+Replacing the whole array is "RemoveOptions then loop AppendOption";
+extending the array is "loop AppendOption"; clearing is just
+"RemoveOptions". This avoids the double-pointer-of-FPDF_WIDESTRING
+ABI a single-shot SetOptions would need.
+
+Implementation notes:
+
+* /Opt is a field-dict attribute that can be inherited from an
+  ancestor form field. AppendOption() detects inheritance and, on
+  first append, copies the inherited array down onto the terminal
+  field's own dictionary before appending the new entry. Without
+  this, writes to a non-root child of an /Opt-bearing parent would
+  silently mutate the parent (and thus every other sibling that
+  inherits from it).
+* RemoveOptions() only removes /Opt from the terminal field's own
+  dict; an inherited /Opt remains visible via GetOption* afterwards.
+  The doc comment makes this explicit.
+* Both new APIs route through new core methods
+  CPDF_FormField::AppendOption() and CPDF_FormField::RemoveOptions(),
+  CHECK()ed for HasOptField() like the existing readers.
+* /Opt entries are written as single-label CPDF_String objects.
+  PDF allows entries to be two-element [export_value, label]
+  CPDF_Array entries instead — that variant is intentionally
+  deferred; it can ship as a future overload taking an optional
+  export-value argument without breaking this API.
+
+Tested via six new FPDFAnnotEmbedderTest cases against
+combobox_form.pdf and multiple_form_types.pdf:
+  * AppendOptionCombobox          - appends + round-trips a label,
+                                    then appends a second label
+  * AppendOptionInvalidArgs       - NULL form / annot / label
+  * AppendOptionWrongAnnotationType - textfield returns -1
+  * RemoveOptionsCombobox         - removes /Opt, verifies
+                                    GetOptionCount returns -1,
+                                    then re-appends to a fresh /Opt
+  * RemoveOptionsInvalidArgs      - NULL form / annot
+  * RemoveOptionsWrongAnnotationType - textfield returns false
+
+Change-Id: I502beb8b78a18256eb147919fe7b73dbf012b106
+---
+ core/fpdfdoc/cpdf_formfield.cpp     |  40 ++++++++++
+ core/fpdfdoc/cpdf_formfield.h       |  11 +++
+ fpdfsdk/fpdf_annot.cpp              |  25 ++++++
+ fpdfsdk/fpdf_annot_embeddertest.cpp | 118 ++++++++++++++++++++++++++++
+ fpdfsdk/fpdf_view_c_api_test.c      |   2 +
+ public/fpdf_annot.h                 |  47 +++++++++++
+ 6 files changed, 243 insertions(+)
+
+diff --git a/core/fpdfdoc/cpdf_formfield.cpp b/core/fpdfdoc/cpdf_formfield.cpp
+index a43252bfc..d2307e9a5 100644
+--- a/core/fpdfdoc/cpdf_formfield.cpp
++++ b/core/fpdfdoc/cpdf_formfield.cpp
+@@ -680,6 +680,46 @@ int CPDF_FormField::FindOption(const WideString& csOptValue) const {
+   return -1;
+ }
+ 
++int CPDF_FormField::AppendOption(const WideString& label) {
++  CHECK(HasOptField());
++  // /Opt may be inherited from an ancestor field; for the writer we
++  // operate strictly on this terminal field's own dictionary. If an
++  // inherited /Opt exists, we copy it down to this field before
++  // appending so that the write doesn't silently mutate a parent
++  // (which would affect every sibling field that shares it).
++  RetainPtr<const CPDF_Array> inherited_array =
++      ToArray(GetFieldAttrInternal("Opt"));
++  RetainPtr<CPDF_Array> opt_array;
++  RetainPtr<CPDF_Object> own_opt = dict_->GetMutableObjectFor("Opt");
++  if (own_opt) {
++    opt_array = ToArray(own_opt);
++  }
++  if (!opt_array) {
++    opt_array = dict_->SetNewFor<CPDF_Array>("Opt");
++    if (inherited_array) {
++      for (size_t i = 0; i < inherited_array->size(); ++i) {
++        RetainPtr<const CPDF_Object> entry =
++            inherited_array->GetDirectObjectAt(i);
++        if (entry) {
++          opt_array->Append(entry->Clone());
++        }
++      }
++    }
++  }
++  const int index = fxcrt::CollectionSize<int>(*opt_array);
++  opt_array->AppendNew<CPDF_String>(label.AsStringView());
++  return index;
++}
++
++bool CPDF_FormField::RemoveOptions() {
++  CHECK(HasOptField());
++  if (!dict_->KeyExist("Opt")) {
++    return false;
++  }
++  dict_->RemoveFor("Opt");
++  return true;
++}
++
+ void CPDF_FormField::CheckControl(int iControlIndex,
+                                   bool bChecked,
+                                   NotificationOption notify) {
+diff --git a/core/fpdfdoc/cpdf_formfield.h b/core/fpdfdoc/cpdf_formfield.h
+index 7474fa0e4..7e5b2ddf0 100644
+--- a/core/fpdfdoc/cpdf_formfield.h
++++ b/core/fpdfdoc/cpdf_formfield.h
+@@ -126,6 +126,17 @@ class CPDF_FormField {
+   WideString GetOptionValue(int index) const;
+   int FindOption(const WideString& csOptValue) const;
+ 
++  // Append a single label-only option to the field's "Opt" array,
++  // creating the array on the field's own dictionary if it doesn't
++  // already exist. Returns the 0-based index at which the option was
++  // appended. Can only be called if HasOptField() returns true.
++  int AppendOption(const WideString& label);
++
++  // Remove the field's "Opt" array. Returns true if the array was
++  // present (and is now removed), false if it was already absent.
++  // Can only be called if HasOptField() returns true.
++  bool RemoveOptions();
++
+   void CheckControl(int iControlIndex,
+                     bool bChecked,
+                     NotificationOption notify);
+diff --git a/fpdfsdk/fpdf_annot.cpp b/fpdfsdk/fpdf_annot.cpp
+index 956c24c42..0e22507aa 100644
+--- a/fpdfsdk/fpdf_annot.cpp
++++ b/fpdfsdk/fpdf_annot.cpp
+@@ -1487,6 +1487,31 @@ FPDFAnnot_IsOptionSelected(FPDF_FORMHANDLE handle,
+          form_field->IsItemSelected(index);
+ }
+ 
++FPDF_EXPORT int FPDF_CALLCONV
++FPDFAnnot_AppendOption(FPDF_FORMHANDLE hHandle,
++                       FPDF_ANNOTATION annot,
++                       FPDF_WIDESTRING label) {
++  if (!label) {
++    return -1;
++  }
++  CPDF_FormField* form_field = GetFormField(hHandle, annot);
++  if (!form_field || !form_field->HasOptField()) {
++    return -1;
++  }
++  // SAFETY: required from caller.
++  return form_field->AppendOption(
++      UNSAFE_BUFFERS(WideStringFromFPDFWideString(label)));
++}
++
++FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
++FPDFAnnot_RemoveOptions(FPDF_FORMHANDLE hHandle, FPDF_ANNOTATION annot) {
++  CPDF_FormField* form_field = GetFormField(hHandle, annot);
++  if (!form_field || !form_field->HasOptField()) {
++    return false;
++  }
++  return form_field->RemoveOptions();
++}
++
+ FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
+ FPDFAnnot_GetFontSize(FPDF_FORMHANDLE hHandle,
+                       FPDF_ANNOTATION annot,
+diff --git a/fpdfsdk/fpdf_annot_embeddertest.cpp b/fpdfsdk/fpdf_annot_embeddertest.cpp
+index d23c3e35f..623fe0522 100644
+--- a/fpdfsdk/fpdf_annot_embeddertest.cpp
++++ b/fpdfsdk/fpdf_annot_embeddertest.cpp
+@@ -2424,6 +2424,124 @@ TEST_F(FPDFAnnotEmbedderTest, IsOptionSelectedInvalidAnnotations) {
+   }
+ }
+ 
++TEST_F(FPDFAnnotEmbedderTest, AppendOptionCombobox) {
++  // Open a combobox-bearing file. Annotation 0 has three options;
++  // we add a fourth and verify the count + label round-trip.
++  ASSERT_TRUE(OpenDocument("combobox_form.pdf"));
++  ScopedPage page = LoadScopedPage(0);
++  ASSERT_TRUE(page);
++
++  ScopedFPDFAnnotation annot(FPDFPage_GetAnnot(page.get(), 0));
++  ASSERT_TRUE(annot);
++  ASSERT_EQ(3, FPDFAnnot_GetOptionCount(form_handle(), annot.get()));
++
++  ScopedFPDFWideString new_label = GetFPDFWideString(L"Grapefruit");
++  EXPECT_EQ(3, FPDFAnnot_AppendOption(form_handle(), annot.get(),
++                                      new_label.get()));
++  EXPECT_EQ(4, FPDFAnnot_GetOptionCount(form_handle(), annot.get()));
++
++  // Read the appended option back via FPDFAnnot_GetOptionLabel.
++  unsigned long length_bytes =
++      FPDFAnnot_GetOptionLabel(form_handle(), annot.get(), 3, nullptr, 0);
++  // "Grapefruit" is 10 chars + NUL terminator * 2 bytes per char = 22 bytes.
++  ASSERT_EQ(22u, length_bytes);
++  std::vector<FPDF_WCHAR> buf = GetFPDFWideStringBuffer(length_bytes);
++  EXPECT_EQ(22u, FPDFAnnot_GetOptionLabel(form_handle(), annot.get(), 3,
++                                          buf.data(), length_bytes));
++  EXPECT_EQ(L"Grapefruit", GetPlatformWString(buf.data()));
++
++  // A second append goes to index 4.
++  ScopedFPDFWideString another = GetFPDFWideString(L"Mango");
++  EXPECT_EQ(4, FPDFAnnot_AppendOption(form_handle(), annot.get(),
++                                      another.get()));
++  EXPECT_EQ(5, FPDFAnnot_GetOptionCount(form_handle(), annot.get()));
++}
++
++TEST_F(FPDFAnnotEmbedderTest, AppendOptionInvalidArgs) {
++  ASSERT_TRUE(OpenDocument("combobox_form.pdf"));
++  ScopedPage page = LoadScopedPage(0);
++  ASSERT_TRUE(page);
++
++  ScopedFPDFAnnotation annot(FPDFPage_GetAnnot(page.get(), 0));
++  ASSERT_TRUE(annot);
++  ScopedFPDFWideString label = GetFPDFWideString(L"X");
++
++  // NULL form handle.
++  EXPECT_EQ(-1,
++            FPDFAnnot_AppendOption(nullptr, annot.get(), label.get()));
++  // NULL annotation.
++  EXPECT_EQ(-1,
++            FPDFAnnot_AppendOption(form_handle(), nullptr, label.get()));
++  // NULL label.
++  EXPECT_EQ(-1,
++            FPDFAnnot_AppendOption(form_handle(), annot.get(), nullptr));
++}
++
++TEST_F(FPDFAnnotEmbedderTest, AppendOptionWrongAnnotationType) {
++  // Text fields don't have an /Opt array; AppendOption should reject
++  // them (HasOptField() is false).
++  ASSERT_TRUE(OpenDocument("multiple_form_types.pdf"));
++  ScopedPage page = LoadScopedPage(0);
++  ASSERT_TRUE(page);
++
++  // Annotation index 3 is the textfield (matches GetOptionCountWrongAnnotationType).
++  ScopedFPDFAnnotation annot(FPDFPage_GetAnnot(page.get(), 3));
++  ASSERT_TRUE(annot);
++  EXPECT_EQ(FPDF_FORMFIELD_TEXTFIELD,
++            FPDFAnnot_GetFormFieldType(form_handle(), annot.get()));
++
++  ScopedFPDFWideString label = GetFPDFWideString(L"X");
++  EXPECT_EQ(-1, FPDFAnnot_AppendOption(form_handle(), annot.get(),
++                                       label.get()));
++}
++
++TEST_F(FPDFAnnotEmbedderTest, RemoveOptionsCombobox) {
++  ASSERT_TRUE(OpenDocument("combobox_form.pdf"));
++  ScopedPage page = LoadScopedPage(0);
++  ASSERT_TRUE(page);
++
++  ScopedFPDFAnnotation annot(FPDFPage_GetAnnot(page.get(), 0));
++  ASSERT_TRUE(annot);
++  ASSERT_EQ(3, FPDFAnnot_GetOptionCount(form_handle(), annot.get()));
++
++  EXPECT_TRUE(FPDFAnnot_RemoveOptions(form_handle(), annot.get()));
++  // /Opt is now absent on the terminal field. GetOptionCount returns
++  // -1 to indicate "no /Opt array", matching its contract.
++  EXPECT_EQ(-1, FPDFAnnot_GetOptionCount(form_handle(), annot.get()));
++
++  // Second remove is a no-op: /Opt is already gone.
++  EXPECT_FALSE(FPDFAnnot_RemoveOptions(form_handle(), annot.get()));
++
++  // After remove, AppendOption recreates /Opt fresh.
++  ScopedFPDFWideString label = GetFPDFWideString(L"Sole");
++  EXPECT_EQ(0, FPDFAnnot_AppendOption(form_handle(), annot.get(),
++                                      label.get()));
++  EXPECT_EQ(1, FPDFAnnot_GetOptionCount(form_handle(), annot.get()));
++}
++
++TEST_F(FPDFAnnotEmbedderTest, RemoveOptionsInvalidArgs) {
++  ASSERT_TRUE(OpenDocument("combobox_form.pdf"));
++  ScopedPage page = LoadScopedPage(0);
++  ASSERT_TRUE(page);
++
++  ScopedFPDFAnnotation annot(FPDFPage_GetAnnot(page.get(), 0));
++  ASSERT_TRUE(annot);
++
++  EXPECT_FALSE(FPDFAnnot_RemoveOptions(nullptr, annot.get()));
++  EXPECT_FALSE(FPDFAnnot_RemoveOptions(form_handle(), nullptr));
++}
++
++TEST_F(FPDFAnnotEmbedderTest, RemoveOptionsWrongAnnotationType) {
++  ASSERT_TRUE(OpenDocument("multiple_form_types.pdf"));
++  ScopedPage page = LoadScopedPage(0);
++  ASSERT_TRUE(page);
++
++  // The text field at index 3 has no /Opt support.
++  ScopedFPDFAnnotation annot(FPDFPage_GetAnnot(page.get(), 3));
++  ASSERT_TRUE(annot);
++  EXPECT_FALSE(FPDFAnnot_RemoveOptions(form_handle(), annot.get()));
++}
++
+ TEST_F(FPDFAnnotEmbedderTest, GetFontSizeCombobox) {
+   // Open a file with combobox annotations and load its first page.
+   ASSERT_TRUE(OpenDocument("combobox_form.pdf"));
+diff --git a/fpdfsdk/fpdf_view_c_api_test.c b/fpdfsdk/fpdf_view_c_api_test.c
+index 282512d13..320518cee 100644
+--- a/fpdfsdk/fpdf_view_c_api_test.c
++++ b/fpdfsdk/fpdf_view_c_api_test.c
+@@ -44,6 +44,7 @@ int CheckPDFiumCApi() {
+     CHK(FPDFAnnot_AddInkStroke);
+     CHK(FPDFAnnot_AppendAttachmentPoints);
+     CHK(FPDFAnnot_AppendObject);
++    CHK(FPDFAnnot_AppendOption);
+     CHK(FPDFAnnot_CountAttachmentPoints);
+     CHK(FPDFAnnot_GetAP);
+     CHK(FPDFAnnot_GetAttachmentPoints);
+@@ -88,6 +89,7 @@ int CheckPDFiumCApi() {
+     CHK(FPDFAnnot_IsSupportedSubtype);
+     CHK(FPDFAnnot_RemoveInkList);
+     CHK(FPDFAnnot_RemoveObject);
++    CHK(FPDFAnnot_RemoveOptions);
+     CHK(FPDFAnnot_SetAP);
+     CHK(FPDFAnnot_SetAttachmentPoints);
+     CHK(FPDFAnnot_SetBorder);
+diff --git a/public/fpdf_annot.h b/public/fpdf_annot.h
+index 0aa9f6886..7687be1d3 100644
+--- a/public/fpdf_annot.h
++++ b/public/fpdf_annot.h
+@@ -842,6 +842,53 @@ FPDFAnnot_IsOptionSelected(FPDF_FORMHANDLE handle,
+                            FPDF_ANNOTATION annot,
+                            int index);
+ 
++// Experimental API.
++// Append a label-only option to |annot|'s "Opt" array. Creates the
++// "Opt" entry on the annotation's terminal form field if it doesn't
++// already exist. Intended for use with combobox, listbox, checkbox,
++// and radio button widget annotations (the same set as
++// FPDFAnnot_GetOptionCount accepts).
++//
++//   hHandle - handle to the form fill module, returned by
++//             FPDFDOC_InitFormFillEnvironment.
++//   annot   - handle to an annotation.
++//   label   - UTF-16LE encoded option label.
++//
++// Returns the 0-based index at which the new option was appended in
++// the "Opt" array. Returns -1 if |annot| does not support an "Opt"
++// array (e.g. it's a text field), if |hHandle| is invalid, or if
++// |label| is NULL.
++//
++// If |annot|'s terminal field inherits its "Opt" array from an
++// ancestor field in the form-field tree, this function copies the
++// inherited array down onto the terminal field's own dictionary
++// before appending, so that the new option only affects |annot| and
++// any sibling widgets that share its terminal field — never a
++// parent or unrelated sibling tree.
++FPDF_EXPORT int FPDF_CALLCONV
++FPDFAnnot_AppendOption(FPDF_FORMHANDLE hHandle,
++                       FPDF_ANNOTATION annot,
++                       FPDF_WIDESTRING label);
++
++// Experimental API.
++// Remove |annot|'s entire "Opt" array. Intended for use with
++// combobox, listbox, checkbox, and radio button widget annotations.
++// Use this before a sequence of FPDFAnnot_AppendOption() calls when
++// you want to replace the entire option list rather than extend it.
++//
++//   hHandle - handle to the form fill module, returned by
++//             FPDFDOC_InitFormFillEnvironment.
++//   annot   - handle to an annotation.
++//
++// Returns true if the "Opt" key was present on the terminal field's
++// dictionary and is now removed. Returns false if |annot| does not
++// support an "Opt" array, |hHandle| is invalid, or the field did
++// not have a directly-owned "Opt" entry (note: returns false even
++// when an inherited "Opt" remains visible via FPDFAnnot_GetOption*,
++// since this function only removes the field's own entry).
++FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
++FPDFAnnot_RemoveOptions(FPDF_FORMHANDLE hHandle, FPDF_ANNOTATION annot);
++
+ // Experimental API.
+ // Get the float value of the font size for an |annot| with variable text.
+ // If 0, the font is to be auto-sized: its size is computed as a function of
+-- 
+2.43.0
+
