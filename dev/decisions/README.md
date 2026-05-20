@@ -17,6 +17,15 @@ Markdown ADR following the
 | [007](ADR-007-ci-and-coverage.md) | Accepted | CI: GitHub Actions matrix, 100% R coverage gate, valgrind, ASan |
 | [008](ADR-008-cran-targeting.md) | Accepted | CRAN-from-v0.1.0 hardening |
 | [009](ADR-009-defer-bezier-controls.md) | Accepted | Defer Bezier control points to a post-0.1.0 release (no public PDFium API) |
+| [010](ADR-010-checkmate-for-argument-validation.md) | Accepted | Use `checkmate` for argument validation throughout the package |
+| [011](ADR-011-mutation-lifecycle.md) | Accepted | Mutation lifecycle: explicit `pdf_save()` |
+| [012](ADR-012-readwrite-flag.md) | Accepted | Read-write flag on `pdfium_doc` (default read-only) |
+| [013](ADR-013-form-fill-env.md) | Accepted | Form-fill environment lifetime: lazy + cached |
+| [014](ADR-014-structural-mutation-set.md) | Accepted | Structural mutation set: rotate, delete, reorder, merge, set-box, set-language; defer compress/linearise/encrypt to qpdf |
+| [015](ADR-015-annotation-authoring.md) | Accepted | Annotation authoring: full writer mirror of the v0.1.0 reader |
+| [016](ADR-016-page-object-creation.md) | Accepted | Page-object creation: new paths, rects, text, images; `pdfium_font` S3 class |
+| [017](ADR-017-handle-returning-readers.md) | Accepted | Handle-returning readers + `as_tibble()` / `as_pdfium_<class>()` round-trip; tibble carries `handle` + `source` list-columns |
+| [018](ADR-018-setter-conventions.md) | Accepted | Setter conventions: object-first naming, polymorphic page arg, composite + named-partial-update setters, 0-255 / 0-1 color auto-detection |
 
 ## Policy
 

@@ -27,7 +27,7 @@ labels: bug
 </details>
 
 - pdfium version:
-- PDFium binary version (run `pdfium:::pdfium_lib_dir()` and report the file name):
+- PDFium binary version (run `system.file("lib", package = "pdfium")` and report the file name):
 - OS / arch:
 
 ## Anything else?

@@ -3,21 +3,35 @@ test_that("pdf_load_page() validates its inputs", {
   doc <- pdf_open(pdf)
   on.exit(pdf_close(doc), add = TRUE)
 
-  expect_error(pdf_load_page("not a doc"), "must be a `pdfium_doc`")
-  expect_error(pdf_load_page(doc, page_num = 0),
-               "must be a single positive integer")
-  expect_error(pdf_load_page(doc, page_num = -1),
-               "must be a single positive integer")
-  expect_error(pdf_load_page(doc, page_num = 1.5),
-               "must be a single positive integer")
-  expect_error(pdf_load_page(doc, page_num = c(1, 2)),
-               "must be a single positive integer")
-  expect_error(pdf_load_page(doc, page_num = NA_integer_),
-               "must be a single positive integer")
-  expect_error(pdf_load_page(doc, page_num = "1"),
-               "must be a single positive integer")
-  expect_error(pdf_load_page(doc, page_num = 99L),
-               "exceeds the document's page count")
+  expect_error(pdf_load_page("not a doc"), "class .pdfium_doc.")
+  expect_error(
+    pdf_load_page(doc, page_num = 0),
+    "Assertion on"
+  )
+  expect_error(
+    pdf_load_page(doc, page_num = -1),
+    "Assertion on"
+  )
+  expect_error(
+    pdf_load_page(doc, page_num = 1.5),
+    "Assertion on"
+  )
+  expect_error(
+    pdf_load_page(doc, page_num = c(1, 2)),
+    "Assertion on"
+  )
+  expect_error(
+    pdf_load_page(doc, page_num = NA_integer_),
+    "Assertion on"
+  )
+  expect_error(
+    pdf_load_page(doc, page_num = "1"),
+    "Assertion on"
+  )
+  expect_error(
+    pdf_load_page(doc, page_num = 99L),
+    "exceeds the document's page count"
+  )
 })
 
 test_that("pdf_load_page() returns a working pdfium_page", {
@@ -50,7 +64,7 @@ test_that("pdf_close_page() is idempotent and refuses non-pages", {
   expect_invisible(pdf_close_page(page))
   expect_false(is_open(page))
 
-  expect_error(pdf_close_page("nope"), "must be a `pdfium_page`")
+  expect_error(pdf_close_page("nope"), "class .pdfium_page.")
 })
 
 test_that("page format / print reflect open / closed and parent path", {
@@ -74,7 +88,7 @@ test_that("pdf_page_size accepts a page or a doc, returns width/height", {
 
   size_doc <- pdf_page_size(doc, 1)
   expect_named(size_doc, c("width", "height"))
-  expect_true(size_doc[["width"]]  > 0)
+  expect_true(size_doc[["width"]] > 0)
   expect_true(size_doc[["height"]] > 0)
 
   page <- pdf_load_page(doc, 1)
@@ -84,7 +98,7 @@ test_that("pdf_page_size accepts a page or a doc, returns width/height", {
 
   # minimal.pdf was generated via cairo_pdf(width = 4, height = 3) which
   # produces a page of 4 x 3 inches = 288 x 216 points.
-  expect_equal(size_page[["width"]],  4 * 72, tolerance = 1e-3)
+  expect_equal(size_page[["width"]], 4 * 72, tolerance = 1e-3)
   expect_equal(size_page[["height"]], 3 * 72, tolerance = 1e-3)
 })
 
@@ -96,7 +110,14 @@ test_that("pdf_page_size refuses closed handles and bad inputs", {
   page <- pdf_load_page(doc, 1)
   pdf_close_page(page)
   expect_error(pdf_page_size(page), "Page has been closed")
-  expect_error(pdf_page_size(42),   "must be a `pdfium_page` or `pdfium_doc`")
+  expect_error(pdf_page_size(42), "class .pdfium_page./.pdfium_doc.")
+
+  doc2 <- pdf_open(pdf)
+  pdf_close(doc2)
+  expect_error(
+    pdf_page_size(doc2, 1L),
+    "Document has been closed"
+  )
 })
 
 test_that("pdf_page_rotation returns 0/90/180/270 from a page or a doc", {
@@ -122,7 +143,7 @@ test_that("pdf_page_rotation refuses closed handles and bad inputs", {
   page <- pdf_load_page(doc, 1)
   pdf_close_page(page)
   expect_error(pdf_page_rotation(page), "Page has been closed")
-  expect_error(pdf_page_rotation(42),   "must be a `pdfium_page` or `pdfium_doc`")
+  expect_error(pdf_page_rotation(42), "class .pdfium_page./.pdfium_doc.")
 })
 
 test_that("auto-finalizer releases pages dropped without explicit close", {

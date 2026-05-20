@@ -8,36 +8,24 @@
 # FPDF_COLORSPACE_UNKNOWN; we use it as the fallback when PDFium
 # reports an unknown value.
 .pdfium_colorspaces <- c(
-  "Unknown",     #  0
-  "DeviceGray",  #  1
-  "DeviceRGB",   #  2
-  "DeviceCMYK",  #  3
-  "CalGray",     #  4
-  "CalRGB",      #  5
-  "Lab",         #  6
-  "ICCBased",    #  7
-  "Separation",  #  8
-  "DeviceN",     #  9
-  "Indexed",     # 10
-  "Pattern"      # 11
+  "Unknown", #  0
+  "DeviceGray", #  1
+  "DeviceRGB", #  2
+  "DeviceCMYK", #  3
+  "CalGray", #  4
+  "CalRGB", #  5
+  "Lab", #  6
+  "ICCBased", #  7
+  "Separation", #  8
+  "DeviceN", #  9
+  "Indexed", # 10
+  "Pattern" # 11
 )
 
 # Internal: validate that x is a still-open pdfium_obj of type
 # "image". Returns the obj unchanged on success.
 check_image_obj <- function(obj, arg = "obj") {
-  if (!inherits(obj, "pdfium_obj")) {
-    stop(sprintf("`%s` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-                 arg), call. = FALSE)
-  }
-  if (!is_open(obj)) {
-    stop("Parent page has been closed; the page object is no longer valid.",
-         call. = FALSE)
-  }
-  if (!identical(obj$type, "image")) {
-    stop(sprintf("`%s` is a `%s` object; this function requires an image.",
-                 arg, obj$type), call. = FALSE)
-  }
-  invisible(obj)
+  check_pdfium_obj(obj, allowed_types = "image", arg = arg)
 }
 
 #' Inspect metadata for an embedded image
@@ -61,34 +49,29 @@ check_image_obj <- function(obj, arg = "obj") {
 #'   [pdf_image_data()] for the raw stream bytes.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "image.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   page <- pdf_load_page(doc, 1L)
 #'   imgs <- Filter(function(o) o$type == "image", pdf_page_objects(page))
 #'   if (length(imgs) > 0L) pdf_image_info(imgs[[1L]])
-#'   pdf_close_page(page); pdf_close(doc)
+#'   pdf_close_page(page)
+#'   pdf_close(doc)
 #' }
 #' @export
 pdf_image_info <- function(obj) {
   check_image_obj(obj)
   m <- cpp_image_metadata(obj$ptr, obj$page$ptr)
-  cs_index <- m$colorspace + 1L
-  # PDFium currently exposes 12 colorspace enum values (0..11). The
-  # else-branch below fires only if PDFium adds new values above
-  # index 11; unreachable today, hence # nocov on that line.
-  cs_name <- if (cs_index >= 1L && cs_index <= length(.pdfium_colorspaces)) {
-    .pdfium_colorspaces[[cs_index]]
-  } else {
-    "Unknown"  # nocov
-  }
   list(
     width             = as.integer(m$width),
     height            = as.integer(m$height),
     horizontal_dpi    = as.numeric(m$horizontal_dpi),
     vertical_dpi      = as.numeric(m$vertical_dpi),
     bits_per_pixel    = as.integer(m$bits_per_pixel),
-    colorspace        = cs_name,
+    colorspace        = .pdfium_enum_name(m$colorspace,
+                                          .pdfium_colorspaces,
+                                          fallback = "Unknown"),
     marked_content_id = as.integer(m$marked_content_id)
   )
 }
@@ -160,9 +143,11 @@ pdf_image_bitmap <- function(obj) {
 #' @export
 pdf_image_rendered <- function(obj) {
   check_image_obj(obj)
-  data <- cpp_image_get_rendered_bitmap(obj$page$doc$ptr,
-                                        obj$page$ptr,
-                                        obj$ptr)
+  data <- cpp_image_get_rendered_bitmap(
+    obj$page$doc$ptr,
+    obj$page$ptr,
+    obj$ptr
+  )
   attr(data, "channels") <- 4L
   new_pdfium_bitmap(
     data,
@@ -196,9 +181,7 @@ pdf_image_rendered <- function(obj) {
 #' @export
 pdf_image_data <- function(obj, decoded = TRUE) {
   check_image_obj(obj)
-  if (!is.logical(decoded) || length(decoded) != 1L || is.na(decoded)) {
-    stop("`decoded` must be a single TRUE/FALSE.", call. = FALSE)
-  }
+  checkmate::assert_flag(decoded)
   cpp_image_data(obj$ptr, decoded)
 }
 
@@ -219,4 +202,25 @@ pdf_image_data <- function(obj, decoded = TRUE) {
 pdf_image_filters <- function(obj) {
   check_image_obj(obj)
   cpp_image_filters(obj$ptr)
+}
+
+#' Decoded ICC color profile bytes for an embedded image
+#'
+#' Returns the raw bytes of the ICC color profile attached to the
+#' image's colour space, if any. Useful for callers that need to
+#' reproduce the colour rendering exactly (e.g. when re-encoding the
+#' image outside PDFium). Wraps
+#' `FPDFImageObj_GetIccProfileDataDecoded`.
+#'
+#' Most embedded images carry no ICC profile — they use a standard
+#' colour space (`/DeviceRGB`, `/DeviceGray`, etc.). This function
+#' returns `raw(0)` in that common case.
+#'
+#' @param obj A `pdfium_obj` of type `"image"`.
+#' @return A `raw` vector. Length zero when the image has no ICC
+#'   profile.
+#' @export
+pdf_image_icc_profile <- function(obj) {
+  check_image_obj(obj)
+  cpp_image_icc_profile(obj$ptr, obj$page$ptr)
 }

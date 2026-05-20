@@ -51,7 +51,8 @@ runtime (it's a Suggests dependency).
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture) && requireNamespace("png", quietly = TRUE)) {
   out <- tempfile(fileext = ".png")
   pdf_render_to_png(pdf_open(fixture), file = out, dpi = 96)

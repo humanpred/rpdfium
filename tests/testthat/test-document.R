@@ -1,17 +1,19 @@
 test_that("pdf_open() rejects bad inputs before touching PDFium", {
-  expect_error(pdf_open(NULL),
-               "One of `path` or `source` must be provided")
-  expect_error(pdf_open(character()), "single, non-NA character")
-  expect_error(pdf_open(NA_character_), "single, non-NA character")
-  expect_error(pdf_open(""), "must not be the empty string")
+  expect_error(
+    pdf_open(NULL),
+    "One of `path` or `source` must be provided"
+  )
+  expect_error(pdf_open(character()), "Assertion on")
+  expect_error(pdf_open(NA_character_), "Assertion on")
+  expect_error(pdf_open(""), "Assertion on")
   expect_error(pdf_open("/no/such/file.pdf"), "PDF file not found")
 })
 
 test_that("pdf_open() validates the password argument", {
   pdf <- fixture_path("minimal")
-  expect_error(pdf_open(pdf, password = 1), "must be NULL or a single")
-  expect_error(pdf_open(pdf, password = NA_character_), "must be NULL or a single")
-  expect_error(pdf_open(pdf, password = c("a", "b")), "must be NULL or a single")
+  expect_error(pdf_open(pdf, password = 1), "Assertion on")
+  expect_error(pdf_open(pdf, password = NA_character_), "Assertion on")
+  expect_error(pdf_open(pdf, password = c("a", "b")), "Assertion on")
   doc <- pdf_open(pdf, password = NULL)
   expect_s3_class(doc, "pdfium_doc")
   pdf_close(doc)
@@ -36,15 +38,21 @@ test_that("pdf_close() is idempotent and blocks further work", {
 })
 
 test_that("pdf_close() refuses non-doc inputs", {
-  expect_error(pdf_close("not a doc"),
-               "must be a `pdfium_doc`")
-  expect_error(pdf_close(NULL),
-               "must be a `pdfium_doc`")
+  expect_error(
+    pdf_close("not a doc"),
+    "class .pdfium_doc."
+  )
+  expect_error(
+    pdf_close(NULL),
+    "class .pdfium_doc."
+  )
 })
 
 test_that("pdf_page_count() rejects non-doc inputs cleanly", {
-  expect_error(pdf_page_count(42),
-               "must be a `pdfium_doc` or a path")
+  expect_error(
+    pdf_page_count(42),
+    "class .pdfium_doc."
+  )
 })
 
 test_that("print() and format() reflect open / closed state", {

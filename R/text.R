@@ -16,7 +16,8 @@
 #' @seealso [pdf_page_objects()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -53,7 +54,8 @@ pdf_text_font_size <- function(obj) {
 #' @seealso [pdf_text_font_size()], [pdf_page_objects()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -87,8 +89,11 @@ pdf_text_content <- function(obj) {
 #' @param page_num One-based page index. Only used when `page` is a
 #'   `pdfium_doc`. Ignored otherwise.
 #' @return A tibble with columns:
-#'   * `text_index` - 1-based page-object index (so this row is the
-#'     `text_index`-th object returned by [pdf_page_objects()])
+#'   * `obj_index` - 1-based page-object index (so this row is the
+#'     `obj_index`-th object returned by [pdf_page_objects()]).
+#'     Renamed from `text_index` in the v0.1.0 reader/writer audit
+#'     to avoid colliding with `pdf_text_chars()$text_index`, which
+#'     is the *extractable-text* offset.
 #'   * `bounds_left`, `bounds_bottom`, `bounds_right`, `bounds_top`
 #'     - the object's bounding box in PDF points
 #'   * `font_size` - typographic em size; multiply by the text
@@ -98,7 +103,8 @@ pdf_text_content <- function(obj) {
 #' @seealso [pdf_text_content()], [pdf_extract_paths()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "unicode.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   pdf_text_runs(doc, 1)
@@ -107,12 +113,15 @@ pdf_text_content <- function(obj) {
 #' @export
 pdf_text_runs <- function(page, page_num = 1L) {
   page <- as_open_page(page, page_num)
-  if (isTRUE(attr(page, ".close_on_exit"))) {
-    on.exit(pdf_close_page(page), add = TRUE)
-  }
   raw <- cpp_page_text_runs(page$ptr)
+  # `obj_index` is the page-object index PDFium reports (1-based,
+  # spans all page objects on the page — paths, images, text). The
+  # column was previously called `text_index` but that name collided
+  # with `pdf_text_chars()$text_index` (the *extractable-text*
+  # offset). Renamed during the v0.1.0 reader/writer audit; see the
+  # audit doc under the dev directory for the rationale.
   tibble::tibble(
-    text_index        = raw$text_index,
+    obj_index         = raw$text_index,
     bounds_left       = raw$bounds_left,
     bounds_bottom     = raw$bounds_bottom,
     bounds_right      = raw$bounds_right,
@@ -157,7 +166,8 @@ pdf_text_runs <- function(page, page_num = 1L) {
 #'   [pdf_text_font_size()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -183,17 +193,5 @@ pdf_text_font <- function(obj) {
 # Internal: validate that `obj` is an open pdfium_obj of type "text".
 # Centralised so the input-validation message stays in one place.
 check_text_obj <- function(obj) {
-  if (!inherits(obj, "pdfium_obj")) {
-    stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-         call. = FALSE)
-  }
-  if (!is_open(obj)) {
-    stop("Parent page has been closed; object handle is no longer valid.",
-         call. = FALSE)
-  }
-  if (!identical(obj$type, "text")) {
-    stop("`obj` must be a text-type pdfium_obj; got type \"",
-         obj$type, "\".", call. = FALSE)
-  }
-  invisible(obj)
+  check_pdfium_obj(obj, allowed_types = "text")
 }

@@ -18,7 +18,9 @@
 #' @return Absolute path to the PDF.
 fixture_path <- function(name) {
   cached <- .fixture_cache[[name]]
-  if (!is.null(cached) && file.exists(cached)) return(cached)
+  if (!is.null(cached) && file.exists(cached)) {
+    return(cached)
+  }
 
   candidates <- c(
     system.file("extdata", "fixtures", paste0(name, ".pdf"), package = "pdfium"),

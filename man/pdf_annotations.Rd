@@ -18,6 +18,9 @@ A tibble with columns:
 \itemize{
 \item \code{annotation_index} integer - 1-based index within the
 page's annotation table.
+\item \code{subtype_code} integer - the raw \verb{FPDF_ANNOT_*} enum value
+(\verb{0..28}). Useful when round-tripping into v0.2.0 writers
+that take the enum directly.
 \item \code{subtype} character - one of \code{"text"}, \code{"link"},
 \code{"freetext"}, \code{"line"}, \code{"square"}, \code{"circle"},
 \code{"polygon"}, \code{"polyline"}, \code{"highlight"}, \code{"underline"},
@@ -29,15 +32,57 @@ page's annotation table.
 \code{"widget"} annotations are AcroForm fields; pass the
 document to \code{\link[=pdf_form_fields]{pdf_form_fields()}} for their field-level
 metadata.
-\item \code{flags} integer - the annotation's 32-bit flag bitmask.
-Useful bits: \code{0x01} invisible, \code{0x02} hidden, \code{0x04}
-printable, \code{0x40} read-only, \code{0x80} locked.
+\item \code{flags} integer - the raw 32-bit \verb{/F} flag bitmask.
+\item \code{is_invisible}, \code{is_hidden}, \code{is_print}, \code{is_no_view},
+\code{is_read_only}, \code{is_locked} logical - decoded flag bits
+(bits 1, 2, 3, 6, 7, 8 from PDF spec Table 165).
 \item \code{bounds_left}, \code{bounds_bottom}, \code{bounds_right},
 \code{bounds_top} - rectangle in PDF user space.
-\item \code{contents} character - the annotation's \verb{/Contents} text,
-UTF-8 encoded. Empty when absent.
-\item \code{title} character - the annotation's \verb{/T} (title /
-author) text, UTF-8 encoded. Empty when absent.
+\item \code{contents} character - the annotation's \verb{/Contents} body
+text, UTF-8 encoded. Empty when absent.
+\item \code{title} character - the annotation's \verb{/T} (title / author)
+text. Empty when absent.
+\item \code{subject} character - the annotation's \verb{/Subj} subject
+line. Empty when absent.
+\item \code{color_red}, \code{color_green}, \code{color_blue}, \code{color_alpha}
+numeric - the annotation's \verb{/C} color components in
+0..1. \code{NA} when the annotation has no \verb{/C}.
+\item \code{interior_red}, \code{interior_green}, \code{interior_blue},
+\code{interior_alpha} numeric - the annotation's \verb{/IC}
+interior color components in 0..1 (used by line/square/
+circle / polygon subtypes). \code{NA} otherwise.
+\item \code{border_width} numeric - the stroke border width PDFium
+reports for \verb{/Border} / \verb{/BS}. \code{NA} for subtypes that
+don't carry a border.
+\item \code{quad_points} list-column - for highlights, underlines,
+strikeouts, squigglies (and any other quad-bearing subtype),
+a numeric matrix with one row per quad set and eight
+columns \verb{x1, y1, x2, y2, x3, y3, x4, y4} in PDF user space.
+\code{NULL} for annotations without \verb{/QuadPoints}. Multi-line
+highlights produce one row per line.
+\item \code{vertices} list-column - for line / polygon / polyline
+annotations, an N-by-2 numeric matrix with columns \verb{x, y}.
+\code{NULL} for other subtypes.
+\item \code{ink_paths} list-column - for ink annotations, a list of
+stroke paths, each an N-by-2 numeric matrix \verb{x, y}.
+\code{NULL} for non-ink annotations. One element per ink
+stroke; a single-stroke ink annotation produces a length-1
+list.
+\item \code{font_color_red}, \code{font_color_green}, \code{font_color_blue}
+numeric - the annotation's text-fill color (\verb{/DA} "g"/"rg"/
+"k" operands) in 0..1. Meaningful for FreeText / Widget
+subtypes that carry inline text; \code{NA} for others.
+\item \code{font_size} numeric - the text-fill font size from \verb{/DA};
+\code{NA} when the annotation doesn't carry variable text.
+\item \code{popup_index} integer - 1-based \code{annotation_index} of the
+linked \verb{/Popup} annotation on the same page (for
+sticky-note + popup pairs); \code{NA} when none.
+\item \code{irt_index} integer - 1-based \code{annotation_index} of the
+\verb{/IRT} (in-reply-to) annotation for comment threads;
+\code{NA} when none.
+\item \code{file_attachment_name} character - the attachment name
+for \code{fileattachment}-subtype annotations; \code{NA} for other
+subtypes.
 }
 
 Returns a 0-row tibble of the same schema when the page has
@@ -46,15 +91,20 @@ no annotations.
 \description{
 Returns one tibble row per annotation on the given page,
 carrying the structural metadata PDFium surfaces: subtype,
-bounding box, the 32-bit flags bitmask, and the two text
-string entries (\verb{/Contents} and \verb{/T}) every annotation kind
-may carry. For form-widget-specific fields (field type, field
-value, choice options) use \code{\link[=pdf_form_fields]{pdf_form_fields()}} instead.
+bounding box, raw + decoded flags, the three free-text string
+entries (\verb{/Contents}, \verb{/T}, \verb{/Subj}), color (\verb{/C}) and interior
+color (\verb{/IC}), and the annotation's stroke border width. For
+form-widget-specific fields (field type, field value, choice
+options) use \code{\link[=pdf_form_fields]{pdf_form_fields()}} instead.
 }
 \details{
 Wraps \code{FPDFPage_GetAnnotCount}, \code{FPDFPage_GetAnnot},
 \code{FPDFAnnot_GetSubtype}, \code{FPDFAnnot_GetFlags},
-\code{FPDFAnnot_GetRect}, \code{FPDFAnnot_GetStringValue}.
+\code{FPDFAnnot_GetRect}, \code{FPDFAnnot_GetStringValue},
+\code{FPDFAnnot_GetColor}, \code{FPDFAnnot_GetBorder},
+\code{FPDFAnnot_GetAttachmentPoints} / \verb{_HasAttachmentPoints} /
+\verb{_CountAttachmentPoints}, \code{FPDFAnnot_GetVertices}, and
+\code{FPDFAnnot_GetInkListCount} / \verb{_GetInkListPath}.
 }
 \seealso{
 \code{\link[=pdf_form_fields]{pdf_form_fields()}} for AcroForm-specific accessors.

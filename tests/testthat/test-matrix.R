@@ -35,10 +35,14 @@ test_that("Cairo's y-flip matrix is consistent across paths in shapes.pdf", {
   #   | 1  0  0 |
   #   | 0 -1 216|
   #   | 0  0  1 |
-  expected <- matrix(c(1, 0, 0,
-                       0, -1, 216,
-                       0,  0,   1),
-                     nrow = 3, byrow = TRUE)
+  expected <- matrix(
+    c(
+      1, 0, 0,
+      0, -1, 216,
+      0, 0, 1
+    ),
+    nrow = 3, byrow = TRUE
+  )
   for (p in paths) {
     expect_equal(pdf_obj_matrix(p), expected, tolerance = 1e-3)
   }
@@ -56,9 +60,9 @@ test_that("pdf_obj_matrix transforms points via M %*% c(x, y, 1)", {
   # (10, 216 - 50) = (10, 166) on the page.
   M <- pdf_obj_matrix(paths[[1L]])
   pt <- M %*% c(10, 50, 1)
-  expect_equal(pt[1L, 1L],  10, tolerance = 1e-3)
+  expect_equal(pt[1L, 1L], 10, tolerance = 1e-3)
   expect_equal(pt[2L, 1L], 166, tolerance = 1e-3)
-  expect_equal(pt[3L, 1L],   1, tolerance = 1e-6)
+  expect_equal(pt[3L, 1L], 1, tolerance = 1e-6)
 })
 
 test_that("text object matrix encodes the rendered font size on the diagonal", {
@@ -69,8 +73,10 @@ test_that("text object matrix encodes the rendered font size on the diagonal", {
   page <- pdf_load_page(doc, 1)
   on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
 
-  text_obj <- Filter(function(o) o$type == "text",
-                     pdf_page_objects(page))[[1]]
+  text_obj <- Filter(
+    function(o) o$type == "text",
+    pdf_page_objects(page)
+  )[[1]]
   M <- pdf_obj_matrix(text_obj)
 
   # cex = 1.2 in the fixture; Cairo applies 1.2 * default 12pt =
@@ -87,7 +93,7 @@ test_that("text object matrix encodes the rendered font size on the diagonal", {
 })
 
 test_that("pdf_obj_matrix validates inputs and closed-page state", {
-  expect_error(pdf_obj_matrix("nope"), "must be a `pdfium_obj`")
+  expect_error(pdf_obj_matrix("nope"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
   doc <- pdf_open(pdf)
@@ -110,7 +116,7 @@ test_that("pdf_path_dash returns empty array for solid lines", {
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   # The user-drawn rect and the first diagonal line are solid (lty
   # default). dash$array should be length-0, phase 0.
-  for (idx in c(2L, 3L)) {  # skip Cairo page-bounds at index 1
+  for (idx in c(2L, 3L)) { # skip Cairo page-bounds at index 1
     d <- pdf_path_dash(paths[[idx]])
     expect_named(d, c("array", "phase"))
     expect_type(d$array, "double")
@@ -138,7 +144,7 @@ test_that("pdf_path_dash returns non-empty array for the dashed line", {
 })
 
 test_that("pdf_path_dash refuses non-path objects and closed pages", {
-  expect_error(pdf_path_dash("nope"), "must be a `pdfium_obj`")
+  expect_error(pdf_path_dash("nope"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
   doc <- pdf_open(pdf)
@@ -147,8 +153,12 @@ test_that("pdf_path_dash refuses non-path objects and closed pages", {
   page <- pdf_load_page(doc, 1)
   on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
 
-  text_obj <- Filter(function(o) o$type == "text",
-                     pdf_page_objects(page))[[1]]
-  expect_error(pdf_path_dash(text_obj),
-               "must be a path-type pdfium_obj.*\"text\"")
+  text_obj <- Filter(
+    function(o) o$type == "text",
+    pdf_page_objects(page)
+  )[[1]]
+  expect_error(
+    pdf_path_dash(text_obj),
+    "Must be element of set .'path'."
+  )
 })

@@ -29,7 +29,8 @@ dimensions a viewer would display. For an "as-displayed" size, swap
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   doc <- pdf_open(fixture)
   pdf_page_rotation(doc, 1)

@@ -24,11 +24,21 @@
 #'   Mutually exclusive with `path`.
 #' @param password Optional password for encrypted PDFs. `NULL`
 #'   (the default) passes no password to PDFium.
+#' @param readwrite Logical. If `TRUE`, the document is opened in
+#'   read-write mode and every mutator function ([pdf_save()],
+#'   [pdf_page_set_rotation()], the `pdf_*_set_*()` family,
+#'   annotation authoring, form filling, …) will accept it.
+#'   Defaults `FALSE` — a read-only handle that refuses mutations
+#'   with a clear error message. See ADR-012 in
+#'   `dev/decisions/`. PDFium itself has no read/write distinction;
+#'   the flag is the R wrapper's safety net against accidental
+#'   edits inside long pipelines.
 #' @return A `pdfium_doc` object.
 #'
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   pdf_page_count(doc)
@@ -43,15 +53,21 @@
 #'   pdf_close(doc)
 #' }
 #' @export
-pdf_open <- function(path = NULL, source = NULL, password = NULL) {
+pdf_open <- function(path = NULL, source = NULL, password = NULL,
+                     readwrite = FALSE) {
   validate_pdf_open_args(path, source, password)
+  checkmate::assert_flag(readwrite)
   pwd <- if (is.null(password)) "" else password
   if (!is.null(source)) {
     ptr <- cpp_open_document_from_memory(source, pwd)
-    return(new_pdfium_doc(ptr, "<raw bytes>"))
+    return(new_pdfium_doc(ptr, "<raw bytes>", readwrite = readwrite))
   }
   ptr <- cpp_open_document(path.expand(path), pwd)
-  new_pdfium_doc(ptr, normalizePath(path, winslash = "/", mustWork = FALSE))
+  new_pdfium_doc(
+    ptr,
+    normalizePath(path, winslash = "/", mustWork = FALSE),
+    readwrite = readwrite
+  )
 }
 
 # Internal: validate the three pdf_open() arguments. Split into
@@ -73,37 +89,21 @@ validate_pdf_open_exclusivity <- function(path, source) {
   }
   if (!is.null(path) && !is.null(source)) {
     stop("Pass exactly one of `path` or `source`, not both.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
 }
 
 validate_pdf_open_password <- function(password) {
-  ok <- is.null(password) ||
-    (is.character(password) && length(password) == 1L &&
-       !is.na(password))
-  if (!ok) {
-    stop("`password` must be NULL or a single non-NA character string.",
-         call. = FALSE)
-  }
+  checkmate::assert_string(password, na.ok = FALSE, null.ok = TRUE)
 }
 
 validate_pdf_open_source <- function(source) {
-  if (!is.raw(source)) {
-    stop("`source` must be a raw vector.", call. = FALSE)
-  }
-  if (length(source) == 0L) {
-    stop("`source` must be non-empty.", call. = FALSE)
-  }
+  checkmate::assert_raw(source, min.len = 1L)
 }
 
 validate_pdf_open_path <- function(path) {
-  if (!is.character(path) || length(path) != 1L || is.na(path)) {
-    stop("`path` must be a single, non-NA character string.",
-         call. = FALSE)
-  }
-  if (!nzchar(path)) {
-    stop("`path` must not be the empty string.", call. = FALSE)
-  }
+  checkmate::assert_string(path, min.chars = 1L)
   if (!file.exists(path)) {
     stop("PDF file not found: ", path, call. = FALSE)
   }
@@ -121,9 +121,7 @@ validate_pdf_open_path <- function(path) {
 #' @return Invisibly returns `doc` with its underlying pointer marked closed.
 #' @export
 pdf_close <- function(doc) {
-  if (!inherits(doc, "pdfium_doc")) {
-    stop("`doc` must be a `pdfium_doc` (from `pdf_open()`).", call. = FALSE)
-  }
+  checkmate::assert_class(doc, "pdfium_doc")
   cpp_close_document(doc$ptr)
   invisible(doc)
 }
@@ -141,7 +139,8 @@ pdf_close <- function(doc) {
 #'
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   pdf_page_count(fixture)
 #' }
@@ -152,9 +151,7 @@ pdf_page_count <- function(doc, password = NULL) {
     on.exit(pdf_close(handle), add = TRUE)
     return(cpp_page_count(handle$ptr))
   }
-  if (!inherits(doc, "pdfium_doc")) {
-    stop("`doc` must be a `pdfium_doc` or a path to a PDF file.", call. = FALSE)
-  }
+  checkmate::assert_class(doc, "pdfium_doc")
   if (!is_open(doc)) {
     stop("Document has been closed.", call. = FALSE)
   }
@@ -178,7 +175,8 @@ pdf_page_count <- function(doc, password = NULL) {
 #'   standard tag plus the page count and file version.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   pdf_doc_meta(doc, "Producer")
@@ -186,16 +184,9 @@ pdf_page_count <- function(doc, password = NULL) {
 #' }
 #' @export
 pdf_doc_meta <- function(doc, tag) {
-  if (!inherits(doc, "pdfium_doc")) {
-    stop("`doc` must be a `pdfium_doc` (from `pdf_open()`).",
-         call. = FALSE)
-  }
+  checkmate::assert_class(doc, "pdfium_doc")
   if (!is_open(doc)) stop("Document has been closed.", call. = FALSE)
-  if (!is.character(tag) || length(tag) != 1L || is.na(tag) ||
-        !nzchar(tag)) {
-    stop("`tag` must be a single non-empty character string.",
-         call. = FALSE)
-  }
+  checkmate::assert_string(tag, min.chars = 1L)
   cpp_doc_meta_text(doc$ptr, tag)
 }
 
@@ -228,7 +219,8 @@ pdf_doc_meta <- function(doc, tag) {
 #'   [pdf_parse_date()] for the date-parser used internally.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   info <- pdf_doc_info(fixture)
 #'   info$page_count
@@ -242,10 +234,7 @@ pdf_doc_info <- function(doc, password = NULL) {
     on.exit(pdf_close(handle), add = TRUE)
     return(pdf_doc_info(handle))
   }
-  if (!inherits(doc, "pdfium_doc")) {
-    stop("`doc` must be a `pdfium_doc` or a path to a PDF file.",
-         call. = FALSE)
-  }
+  checkmate::assert_class(doc, "pdfium_doc")
   if (!is_open(doc)) stop("Document has been closed.", call. = FALSE)
 
   raw <- cpp_doc_info(doc$ptr)
@@ -277,10 +266,10 @@ pdf_doc_info <- function(doc, password = NULL) {
 #'   empty or unparseable entries.
 #' @export
 pdf_parse_date <- function(s) {
-  if (length(s) == 0L) return(as.POSIXct(character(0), tz = "UTC"))
-  if (!is.character(s)) {
-    stop("`s` must be a character vector.", call. = FALSE)
+  if (length(s) == 0L) {
+    return(as.POSIXct(character(0), tz = "UTC"))
   }
+  checkmate::assert_character(s)
   body <- sub("^D:", "", s, perl = TRUE)
   # Default suffix for fields the PDF date omits: Jan 1 00:00:00.
   # Aligned to the YYYY-only case, so the substring we splice in
@@ -294,9 +283,11 @@ pdf_parse_date <- function(s) {
   # preserve the `tz = "UTC"` attribute through the POSIXlt -> POSIXct
   # conversion on some R configurations (the result silently reads
   # back in local time).
-  defaults <- "0101000000"  # MMDDHHMMSS suffix for a YYYY-only input
+  defaults <- "0101000000" # MMDDHHMMSS suffix for a YYYY-only input
   parse_one <- function(x) {
-    if (is.na(x) || !nzchar(x)) return(as.POSIXct(NA, tz = "UTC"))
+    if (is.na(x) || !nzchar(x)) {
+      return(as.POSIXct(NA, tz = "UTC"))
+    }
     digits <- regmatches(x, regexpr("^\\d{1,14}", x))
     if (length(digits) == 0L || !nzchar(digits) || nchar(digits) < 4L) {
       return(as.POSIXct(NA, tz = "UTC"))
@@ -309,15 +300,17 @@ pdf_parse_date <- function(s) {
       paste0(digits, substr(defaults, start, nchar(defaults)))
     }
     ISOdatetime(
-      year  = as.integer(substr(padded,  1L,  4L)),
-      month = as.integer(substr(padded,  5L,  6L)),
-      day   = as.integer(substr(padded,  7L,  8L)),
-      hour  = as.integer(substr(padded,  9L, 10L)),
+      year  = as.integer(substr(padded, 1L, 4L)),
+      month = as.integer(substr(padded, 5L, 6L)),
+      day   = as.integer(substr(padded, 7L, 8L)),
+      hour  = as.integer(substr(padded, 9L, 10L)),
       min   = as.integer(substr(padded, 11L, 12L)),
       sec   = as.integer(substr(padded, 13L, 14L)),
       tz    = "UTC"
     )
   }
-  do.call(c, c(list(as.POSIXct(character(0), tz = "UTC")),
-               lapply(body, parse_one)))
+  do.call(c, c(
+    list(as.POSIXct(character(0), tz = "UTC")),
+    lapply(body, parse_one)
+  ))
 }

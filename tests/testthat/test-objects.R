@@ -45,8 +45,10 @@ test_that("pdf_page_objects accepts a doc (auto-loads page 1)", {
 })
 
 test_that("pdf_page_objects validates inputs and closed-page state", {
-  expect_error(pdf_page_objects("not a page"),
-               "must be a `pdfium_page` or `pdfium_doc`")
+  expect_error(
+    pdf_page_objects("not a page"),
+    "class .pdfium_page./.pdfium_doc."
+  )
 
   pdf <- fixture_path("shapes")
   doc <- pdf_open(pdf)
@@ -68,11 +70,13 @@ test_that("pdf_obj_type returns the cached type and validates input", {
   objs <- pdf_page_objects(page)
   for (o in objs) {
     expect_identical(pdf_obj_type(o), o$type)
-    expect_true(o$type %in% c("path", "text", "image", "form",
-                              "shading", "unknown"))
+    expect_true(o$type %in% c(
+      "path", "text", "image", "form",
+      "shading", "unknown"
+    ))
   }
 
-  expect_error(pdf_obj_type("not an obj"), "must be a `pdfium_obj`")
+  expect_error(pdf_obj_type("not an obj"), "class .pdfium_obj.")
 })
 
 test_that("pdf_obj_type refuses objects whose parent page has closed", {
@@ -116,10 +120,10 @@ test_that("object back-reference keeps parent page alive after rm(page)", {
 })
 
 test_that("unknown type codes map to 'unknown' safely", {
-  expect_identical(pdfium:::pdfium_obj_type_name(99L),  "unknown")
-  expect_identical(pdfium:::pdfium_obj_type_name(-1L),  "unknown")
-  expect_identical(pdfium:::pdfium_obj_type_name(0L),   "unknown")
-  expect_identical(pdfium:::pdfium_obj_type_name(2L),   "path")
+  expect_identical(pdfium:::pdfium_obj_type_name(99L), "unknown")
+  expect_identical(pdfium:::pdfium_obj_type_name(-1L), "unknown")
+  expect_identical(pdfium:::pdfium_obj_type_name(0L), "unknown")
+  expect_identical(pdfium:::pdfium_obj_type_name(2L), "path")
 })
 
 test_that("pdf_obj_bounds returns a 4-element named numeric vector", {
@@ -136,7 +140,7 @@ test_that("pdf_obj_bounds returns a 4-element named numeric vector", {
     expect_named(b, c("left", "bottom", "right", "top"))
     expect_type(b, "double")
     expect_true(b[["right"]] >= b[["left"]])
-    expect_true(b[["top"]]   >= b[["bottom"]])
+    expect_true(b[["top"]] >= b[["bottom"]])
   }
 
   # The Cairo-built rectangle in shapes.pdf is the second path object;
@@ -147,13 +151,17 @@ test_that("pdf_obj_bounds returns a 4-element named numeric vector", {
   rect_obj <- objs[[2]]
   rect_bounds <- pdf_obj_bounds(rect_obj)
   expect_equal(rect_bounds[["right"]] - rect_bounds[["left"]],
-               144, tolerance = 1)
+    144,
+    tolerance = 1
+  )
   expect_equal(rect_bounds[["top"]] - rect_bounds[["bottom"]],
-               144, tolerance = 1)
+    144,
+    tolerance = 1
+  )
 })
 
 test_that("pdf_obj_bounds validates inputs and closed-page state", {
-  expect_error(pdf_obj_bounds("not an obj"), "must be a `pdfium_obj`")
+  expect_error(pdf_obj_bounds("not an obj"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
   doc <- pdf_open(pdf)
@@ -161,6 +169,8 @@ test_that("pdf_obj_bounds validates inputs and closed-page state", {
   page <- pdf_load_page(doc, 1)
   objs <- pdf_page_objects(page)
   pdf_close_page(page)
-  expect_error(pdf_obj_bounds(objs[[1]]),
-               "Parent page has been closed")
+  expect_error(
+    pdf_obj_bounds(objs[[1]]),
+    "Parent page has been closed"
+  )
 })

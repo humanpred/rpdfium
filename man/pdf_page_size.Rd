@@ -32,7 +32,8 @@ know the on-screen orientation.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   doc <- pdf_open(fixture)
   pdf_page_size(doc, 1)

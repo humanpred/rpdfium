@@ -67,8 +67,10 @@ test_that("pdf_clip_path_segments returns the rectangular clip geometry", {
   cp <- pdf_obj_clip_path(b$obj)
   segs <- pdf_clip_path_segments(cp)
   expect_s3_class(segs, "tbl_df")
-  expect_named(segs, c("path_index", "segment_index", "segment_type",
-                       "x", "y", "close_figure"))
+  expect_named(segs, c(
+    "path_index", "segment_index", "segment_type",
+    "x", "y", "close_figure"
+  ))
   expect_identical(nrow(segs), 5L)
   # All five segments belong to the single sub-path.
   expect_identical(unique(segs$path_index), 1L)
@@ -86,23 +88,37 @@ test_that("pdf_clip_path_segments returns the rectangular clip geometry", {
 })
 
 test_that("pdf_obj_clip_path rejects bad input", {
-  expect_error(pdf_obj_clip_path("not-an-obj"),
-               "must be a `pdfium_obj`")
-  expect_error(pdf_obj_clip_path(list()),
-               "must be a `pdfium_obj`")
-  expect_error(pdf_obj_clip_path(42),
-               "must be a `pdfium_obj`")
+  expect_error(
+    pdf_obj_clip_path("not-an-obj"),
+    "class .pdfium_obj."
+  )
+  expect_error(
+    pdf_obj_clip_path(list()),
+    "class .pdfium_obj."
+  )
+  expect_error(
+    pdf_obj_clip_path(42),
+    "class .pdfium_obj."
+  )
 })
 
 test_that("pdf_clip_path_count + segments reject bad input", {
-  expect_error(pdf_clip_path_count("not-a-clip"),
-               "must be a `pdfium_clip_path`")
-  expect_error(pdf_clip_path_count(list()),
-               "must be a `pdfium_clip_path`")
-  expect_error(pdf_clip_path_segments("not-a-clip"),
-               "must be a `pdfium_clip_path`")
-  expect_error(pdf_clip_path_segments(42),
-               "must be a `pdfium_clip_path`")
+  expect_error(
+    pdf_clip_path_count("not-a-clip"),
+    "class .pdfium_clip_path."
+  )
+  expect_error(
+    pdf_clip_path_count(list()),
+    "class .pdfium_clip_path."
+  )
+  expect_error(
+    pdf_clip_path_segments("not-a-clip"),
+    "class .pdfium_clip_path."
+  )
+  expect_error(
+    pdf_clip_path_segments(42),
+    "class .pdfium_clip_path."
+  )
 })
 
 test_that("clip-path accessors refuse a closed parent page", {
@@ -116,12 +132,18 @@ test_that("clip-path accessors refuse a closed parent page", {
   cp <- pdf_obj_clip_path(obj)
   pdf_close_page(page)
 
-  expect_error(pdf_obj_clip_path(obj),
-               "Parent page has been closed")
-  expect_error(pdf_clip_path_count(cp),
-               "Parent page has been closed")
-  expect_error(pdf_clip_path_segments(cp),
-               "Parent page has been closed")
+  expect_error(
+    pdf_obj_clip_path(obj),
+    "Parent page has been closed"
+  )
+  expect_error(
+    pdf_clip_path_count(cp),
+    "Parent page has been closed"
+  )
+  expect_error(
+    pdf_clip_path_segments(cp),
+    "Parent page has been closed"
+  )
 })
 
 test_that("print.pdfium_clip_path emits a one-line description", {

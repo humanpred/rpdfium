@@ -14,7 +14,8 @@
 #'
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   page <- pdf_load_page(doc, 1)
@@ -23,22 +24,18 @@
 #' }
 #' @export
 pdf_load_page <- function(doc, page_num = 1L) {
-  if (!inherits(doc, "pdfium_doc")) {
-    stop("`doc` must be a `pdfium_doc` (from `pdf_open()`).", call. = FALSE)
-  }
+  checkmate::assert_class(doc, "pdfium_doc")
   if (!is_open(doc)) {
     stop("Document has been closed.", call. = FALSE)
   }
-  if (!is.numeric(page_num) || length(page_num) != 1L || is.na(page_num) ||
-        page_num != as.integer(page_num) || page_num < 1L) {
-    stop("`page_num` must be a single positive integer (1-based).",
-         call. = FALSE)
-  }
+  checkmate::assert_count(page_num, positive = TRUE)
   page_num <- as.integer(page_num)
   n <- cpp_page_count(doc$ptr)
   if (page_num > n) {
-    stop(sprintf("`page_num` (%d) exceeds the document's page count (%d).",
-                 page_num, n), call. = FALSE)
+    stop(sprintf(
+      "`page_num` (%d) exceeds the document's page count (%d).",
+      page_num, n
+    ), call. = FALSE)
   }
   ptr <- cpp_load_page(doc$ptr, page_num - 1L)
   new_pdfium_page(ptr, doc, page_num)
@@ -53,10 +50,7 @@ pdf_load_page <- function(doc, page_num = 1L) {
 #' @return Invisibly returns `page` with its underlying pointer marked closed.
 #' @export
 pdf_close_page <- function(page) {
-  if (!inherits(page, "pdfium_page")) {
-    stop("`page` must be a `pdfium_page` (from `pdf_load_page()`).",
-         call. = FALSE)
-  }
+  checkmate::assert_class(page, "pdfium_page")
   cpp_close_page(page$ptr)
   invisible(page)
 }
@@ -84,7 +78,8 @@ pdf_close_page <- function(page) {
 #' @seealso [pdf_page_rotation()] for the rotation angle in degrees.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   pdf_page_size(doc, 1)
@@ -92,16 +87,18 @@ pdf_close_page <- function(page) {
 #' }
 #' @export
 pdf_page_size <- function(page, page_num = 1L) {
+  checkmate::assert_multi_class(page, c("pdfium_page", "pdfium_doc"))
   if (inherits(page, "pdfium_page")) {
     if (!is_open(page)) stop("Page has been closed.", call. = FALSE)
     return(cpp_page_size(page$ptr))
   }
-  if (inherits(page, "pdfium_doc")) {
-    p <- pdf_load_page(page, page_num)
-    on.exit(pdf_close_page(p), add = TRUE)
-    return(cpp_page_size(p$ptr))
-  }
-  stop("`page` must be a `pdfium_page` or `pdfium_doc`.", call. = FALSE)
+  # `page` is a pdfium_doc.
+  if (!is_open(page)) stop("Document has been closed.", call. = FALSE)
+  # Fast path: FPDF_GetPageSizeByIndexF reports the page's media
+  # extents without loading the page object, which is much
+  # cheaper than pdf_load_page + cpp_page_size for callers
+  # iterating dimensions across many pages.
+  cpp_doc_page_size_by_index(page$ptr, as.integer(page_num - 1L))
 }
 
 #' Page rotation in degrees
@@ -124,7 +121,8 @@ pdf_page_size <- function(page, page_num = 1L) {
 #' @seealso [pdf_page_size()] for the un-rotated dimensions.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   pdf_page_rotation(doc, 1)
@@ -132,14 +130,13 @@ pdf_page_size <- function(page, page_num = 1L) {
 #' }
 #' @export
 pdf_page_rotation <- function(page, page_num = 1L) {
+  checkmate::assert_multi_class(page, c("pdfium_page", "pdfium_doc"))
   if (inherits(page, "pdfium_page")) {
     if (!is_open(page)) stop("Page has been closed.", call. = FALSE)
     return(cpp_page_rotation(page$ptr))
   }
-  if (inherits(page, "pdfium_doc")) {
-    p <- pdf_load_page(page, page_num)
-    on.exit(pdf_close_page(p), add = TRUE)
-    return(cpp_page_rotation(p$ptr))
-  }
-  stop("`page` must be a `pdfium_page` or `pdfium_doc`.", call. = FALSE)
+  # `page` is a pdfium_doc.
+  p <- pdf_load_page(page, page_num)
+  on.exit(pdf_close_page(p), add = TRUE)
+  cpp_page_rotation(p$ptr)
 }

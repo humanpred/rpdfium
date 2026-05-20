@@ -265,27 +265,29 @@ local({
   }
 
   build_annotated <- function() {
-    # Single-page PDF with four annotations:
+    # Single-page PDF with five annotations:
     #   * text (sticky note)  /Contents="Hello"   /T="Alice"
     #   * highlight           (no /Contents)
     #   * link to a URI
     #   * widget text field   /T="name" /TU="Full name" /V="Bob"
-    # Plus a top-level /AcroForm with the widget as its only field.
-    # Used by test-annotations.R and test-form-fields.R. Cairo's R
-    # driver doesn't emit annotations or widgets, so the file is
-    # constructed from raw PDF syntax.
+    #   * widget checkbox     /T="agree" /V=/Yes (checked)
+    # Plus a top-level /AcroForm carrying both widgets as fields.
+    # Used by test-annotations.R, test-form-fields.R, and the link-
+    # based navigation tests. Cairo's R driver doesn't emit
+    # annotations or widgets, so the file is constructed from raw
+    # PDF syntax.
     out <- file.path(out_dir, "annotated.pdf")
 
     obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
 
     obj1 <- obj(1,
                 paste0("<< /Type /Catalog /Pages 2 0 R ",
-                       "/AcroForm << /Fields [7 0 R] >> >>"))
+                       "/AcroForm << /Fields [7 0 R 8 0 R] >> >>"))
     obj2 <- obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
     obj3 <- obj(3,
                 paste0("<< /Type /Page /Parent 2 0 R ",
                        "/MediaBox [0 0 300 300] /Resources <<>> ",
-                       "/Annots [4 0 R 5 0 R 6 0 R 7 0 R] >>"))
+                       "/Annots [4 0 R 5 0 R 6 0 R 7 0 R 8 0 R] >>"))
     obj4 <- obj(4,
                 paste0("<< /Type /Annot /Subtype /Text ",
                        "/Rect [20 250 40 270] ",
@@ -293,7 +295,8 @@ local({
     obj5 <- obj(5,
                 paste0("<< /Type /Annot /Subtype /Highlight ",
                        "/Rect [50 200 200 220] ",
-                       "/QuadPoints [50 220 200 220 50 200 200 200] >>"))
+                       "/QuadPoints [50 220 200 220 50 200 200 200] ",
+                       "/C [0.9 0.9 0.2] /Subj (Important) >>"))
     obj6 <- obj(6,
                 paste0("<< /Type /Annot /Subtype /Link ",
                        "/Rect [50 150 200 170] ",
@@ -303,6 +306,32 @@ local({
                 paste0("<< /Type /Annot /Subtype /Widget /FT /Tx ",
                        "/T (name) /TU (Full name) /V (Bob) ",
                        "/Rect [50 100 200 120] /P 3 0 R >>"))
+    # Object 8: AcroForm checkbox widget in the "checked" state.
+    # /FT /Btn with no Pushbutton/Radio bits means checkbox. /V and
+    # /AS both set to /Yes give the widget the "on" appearance
+    # state. The /AP dict supplies appearance streams for both
+    # the /Yes and /Off states; PDFium needs the on-state name in
+    # /AP/N to read FPDFAnnot_IsChecked correctly (PDFium derives
+    # the on-state name from /AP/N's keys, defaulting to "Yes" only
+    # when /AP is absent — and treats /V == on-state-name as
+    # checked, which requires the lookup to actually succeed).
+    obj8 <- obj(8,
+                paste0("<< /Type /Annot /Subtype /Widget /FT /Btn ",
+                       "/T (agree) /TU (I agree) ",
+                       "/V /Yes /AS /Yes ",
+                       "/AP << /N << /Yes 9 0 R /Off 10 0 R >> >> ",
+                       "/Rect [50 60 70 80] /P 3 0 R >>"))
+    # Minimal appearance-stream XObjects for the two states. Empty
+    # content streams suffice; PDFium only reads the dictionary keys
+    # to discover the on-state name.
+    ap_content <- charToRaw("")
+    ap_head <- function(n) paste0(
+      n, " 0 obj\n<< /Type /XObject /Subtype /Form ",
+      "/BBox [0 0 20 20] /Resources <<>> /Length 0 >>\nstream\n")
+    obj9_bytes <- c(charToRaw(ap_head(9)), ap_content,
+                    charToRaw("\nendstream\nendobj\n"))
+    obj10_bytes <- c(charToRaw(ap_head(10)), ap_content,
+                     charToRaw("\nendstream\nendobj\n"))
 
     header <- charToRaw("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
     parts <- list(
@@ -313,21 +342,24 @@ local({
       charToRaw(obj4),
       charToRaw(obj5),
       charToRaw(obj6),
-      charToRaw(obj7)
+      charToRaw(obj7),
+      charToRaw(obj8),
+      obj9_bytes,
+      obj10_bytes
     )
     cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
-    offs <- cum[seq_len(7L) + 1L]
+    offs <- cum[seq_len(10L) + 1L]
     xref_offset <- cum[[length(cum)]]
     fmt10 <- function(n) sprintf("%010d", n)
     xref <- paste(
       c("xref",
-        "0 8",
+        "0 11",
         "0000000000 65535 f ",
         paste0(fmt10(offs), " 00000 n ")),
       collapse = "\n"
     )
     trailer <- paste0(
-      "\ntrailer\n<< /Size 8 /Root 1 0 R >>\nstartxref\n",
+      "\ntrailer\n<< /Size 11 /Root 1 0 R >>\nstartxref\n",
       xref_offset, "\n%%EOF\n"
     )
     full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))
@@ -547,6 +579,266 @@ local({
     message("[fixtures] wrote ", out)
   }
 
+  build_annot_geom <- function() {
+    # Single-page PDF with three annotations that exercise the
+    # vector-geometry list-columns of pdf_annotations():
+    #   1. Polygon  /Vertices [x1 y1 x2 y2 x3 y3]
+    #   2. Ink      /InkList [ [stroke 1 pts] [stroke 2 pts] ]
+    #   3. Highlight  /QuadPoints [two-line quad set]
+    # Used by the quad_points / vertices / ink_paths assertions in
+    # test-annotations.R. Cairo's R driver doesn't emit any of
+    # these so the file is hand-built.
+    out <- file.path(out_dir, "annot_geom.pdf")
+    obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
+
+    obj1 <- obj(1, "<< /Type /Catalog /Pages 2 0 R >>")
+    obj2 <- obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+    obj3 <- obj(3,
+                paste0("<< /Type /Page /Parent 2 0 R ",
+                       "/MediaBox [0 0 300 300] /Resources <<>> ",
+                       "/Annots [4 0 R 5 0 R 6 0 R] >>"))
+    # Polygon: triangle with three vertices.
+    obj4 <- obj(4,
+                paste0("<< /Type /Annot /Subtype /Polygon ",
+                       "/Rect [10 10 60 60] ",
+                       "/Vertices [10 10 60 10 35 60] ",
+                       "/C [0.1 0.5 0.9] >>"))
+    # Ink annotation with two strokes (3 points + 2 points).
+    obj5 <- obj(5,
+                paste0("<< /Type /Annot /Subtype /Ink ",
+                       "/Rect [100 100 200 200] ",
+                       "/InkList [ ",
+                       "  [100 100 150 150 200 100] ",
+                       "  [120 180 180 180] ",
+                       "] >>"))
+    # Two-line highlight (two quad sets in one annotation).
+    obj6 <- obj(6,
+                paste0("<< /Type /Annot /Subtype /Highlight ",
+                       "/Rect [50 250 250 290] ",
+                       "/QuadPoints [",
+                       " 50 290 250 290  50 270 250 270 ",
+                       " 50 270 250 270  50 250 250 250 ",
+                       "] >>"))
+
+    header <- charToRaw("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    parts <- list(header,
+                  charToRaw(obj1),
+                  charToRaw(obj2),
+                  charToRaw(obj3),
+                  charToRaw(obj4),
+                  charToRaw(obj5),
+                  charToRaw(obj6))
+    cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
+    offs <- cum[seq_len(6L) + 1L]
+    xref_offset <- cum[[length(cum)]]
+    fmt10 <- function(n) sprintf("%010d", n)
+    xref <- paste(
+      c("xref",
+        "0 7",
+        "0000000000 65535 f ",
+        paste0(fmt10(offs), " 00000 n ")),
+      collapse = "\n"
+    )
+    trailer <- paste0(
+      "\ntrailer\n<< /Size 7 /Root 1 0 R >>\nstartxref\n",
+      xref_offset, "\n%%EOF\n"
+    )
+    full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))
+    writeBin(full, out)
+    message("[fixtures] wrote ", out)
+  }
+
+  build_tagged <- function() {
+    # Single-page tagged PDF with a tiny structure tree:
+    #
+    #   Document
+    #     H1   "Title"   (Alt: "Heading", Lang: "en", ID: "h1-1")
+    #     P    (one MarkedContent, mcid 0)
+    #     Figure  (Alt: "Logo")
+    #
+    # Used by test-struct-tree.R to exercise the populated branch of
+    # pdf_structure_tree(). The page content stream carries a single
+    # /BDC ... /EMC marked-content tag with /MCID 0 so PDFium can
+    # bind the P element to a real content item; the H1 and Figure
+    # elements have no marked-content of their own (they hold child
+    # K entries that are integers pointing into MCIDs, but we keep
+    # the fixture minimal — PDFium still surfaces type/alt/lang for
+    # them).
+    out <- file.path(out_dir, "tagged.pdf")
+    obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
+
+    # Page content stream: a tagged 50x50 stroked rectangle inside
+    # /P <</MCID 0>> BDC ... EMC, so PDFium sees one page object
+    # carrying marked-content ID 0. Used by pdf_obj_marks() /
+    # pdf_obj_marked_content_id() coverage tests.
+    page_content <- paste(
+      "q",
+      "/P <</MCID 0>> BDC",
+      "0.8 0.2 0.2 RG",
+      "1 w",
+      "50 50 100 100 re",
+      "S",
+      "EMC",
+      "Q",
+      sep = "\n"
+    )
+    page_content_bytes <- charToRaw(paste0(page_content, "\n"))
+
+    obj1 <- obj(1,
+                paste0("<< /Type /Catalog /Pages 2 0 R ",
+                       "/StructTreeRoot 4 0 R /MarkInfo ",
+                       "<< /Marked true >> ",
+                       "/Lang (en) >>"))
+    obj2 <- obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+    obj3 <- obj(3,
+                paste0("<< /Type /Page /Parent 2 0 R ",
+                       "/MediaBox [0 0 200 200] /Resources <<>> ",
+                       "/StructParents 0 /Contents 9 0 R >>"))
+    # StructTreeRoot
+    obj4 <- obj(4,
+                paste0("<< /Type /StructTreeRoot /K 5 0 R ",
+                       "/ParentTree 10 0 R /ParentTreeNextKey 1 >>"))
+    # Document element (top of the tree)
+    obj5 <- obj(5,
+                paste0("<< /Type /StructElem /S /Document ",
+                       "/P 4 0 R /K [6 0 R 7 0 R 8 0 R] >>"))
+    # H1 child
+    obj6 <- obj(6,
+                paste0("<< /Type /StructElem /S /H1 ",
+                       "/P 5 0 R /T (Title) ",
+                       "/Lang (en) /Alt (Heading) /ID (h1-1) >>"))
+    # P child (with marked content ID 0 on page 3)
+    obj7 <- obj(7,
+                paste0("<< /Type /StructElem /S /P ",
+                       "/P 5 0 R /Pg 3 0 R ",
+                       "/K << /Type /MCR /Pg 3 0 R /MCID 0 >> >>"))
+    # Figure child (alt text only)
+    obj8 <- obj(8,
+                paste0("<< /Type /StructElem /S /Figure ",
+                       "/P 5 0 R /Alt (Logo) >>"))
+    # Content stream
+    obj9_head <- paste0("9 0 obj\n<< /Length ",
+                        length(page_content_bytes), " >>\nstream\n")
+    obj9_bytes <- c(charToRaw(obj9_head), page_content_bytes,
+                    charToRaw("\nendstream\nendobj\n"))
+    # ParentTree (NumberTree mapping page parent-tree key -> array
+    # of structure elements). One entry: key 0 -> [7 0 R], because
+    # the P element on page 3 (StructParents 0) owns MCID 0.
+    obj10 <- obj(10, "<< /Nums [0 [7 0 R]] >>")
+
+    header <- charToRaw("%PDF-1.5\n%\xe2\xe3\xcf\xd3\n")
+    parts <- list(
+      header,
+      charToRaw(obj1),
+      charToRaw(obj2),
+      charToRaw(obj3),
+      charToRaw(obj4),
+      charToRaw(obj5),
+      charToRaw(obj6),
+      charToRaw(obj7),
+      charToRaw(obj8),
+      obj9_bytes,
+      charToRaw(obj10)
+    )
+    cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
+    offs <- cum[seq_len(10L) + 1L]
+    xref_offset <- cum[[length(cum)]]
+    fmt10 <- function(n) sprintf("%010d", n)
+    xref <- paste(
+      c("xref",
+        "0 11",
+        "0000000000 65535 f ",
+        paste0(fmt10(offs), " 00000 n ")),
+      collapse = "\n"
+    )
+    trailer <- paste0(
+      "\ntrailer\n<< /Size 11 /Root 1 0 R >>\nstartxref\n",
+      xref_offset, "\n%%EOF\n"
+    )
+    full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))
+    writeBin(full, out)
+    message("[fixtures] wrote ", out)
+  }
+
+  build_weblinks <- function() {
+    # Cairo PDF whose drawn text contains URLs PDFium's web-link
+    # detector can pick up. Used by test-page-thumbs.R to exercise
+    # pdf_text_weblinks(). The URLs themselves are intentionally not
+    # link-annotated; that path is exercised by `annotated.pdf` and
+    # test-page-nav.R.
+    out <- file.path(out_dir, "weblinks.pdf")
+    grDevices::cairo_pdf(out, width = 6, height = 4)
+    on.exit(grDevices::dev.off(), add = TRUE)
+    graphics::par(mar = c(0, 0, 0, 0))
+    graphics::plot.new()
+    graphics::plot.window(c(0, 6), c(0, 4))
+    graphics::text(3.0, 3.0, "Visit https://example.com today",
+                   cex = 0.9)
+    graphics::text(3.0, 2.0, "Mirror: http://example.org/path",
+                   cex = 0.9)
+    message("[fixtures] wrote ", out)
+  }
+
+  build_with_thumbnail <- function() {
+    # Hand-built single-page PDF with a /Thumb attached to the page.
+    # The thumbnail is a 4x4 8-bit DeviceGray image stream of 16
+    # bytes (no filter). Used by test-page-thumbs.R to exercise the
+    # FPDFPage_GetRawThumbnailData / GetDecodedThumbnailData byte
+    # protocol on a page that actually carries a thumbnail (Cairo's
+    # R driver does not emit /Thumb).
+    out <- file.path(out_dir, "with_thumbnail.pdf")
+
+    # 16 bytes: gradient 0x00, 0x10, 0x20, ..., 0xF0.
+    thumb_pixels <- as.raw(seq(0L, 240L, by = 16L))
+
+    obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
+
+    obj1 <- obj(1, "<< /Type /Catalog /Pages 2 0 R >>")
+    obj2 <- obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+    obj3 <- obj(3,
+                paste0("<< /Type /Page /Parent 2 0 R ",
+                       "/MediaBox [0 0 100 100] /Resources <<>> ",
+                       "/Thumb 4 0 R >>"))
+    # Object 4: the thumbnail image XObject. No /Filter, so the
+    # "raw" and "decoded" byte payloads are identical.
+    obj4_head <- paste0("4 0 obj\n",
+                        "<< /Type /XObject /Subtype /Image ",
+                        "/Width 4 /Height 4 /BitsPerComponent 8 ",
+                        "/ColorSpace /DeviceGray ",
+                        "/Length ", length(thumb_pixels),
+                        " >>\nstream\n")
+    obj4_bytes <- c(charToRaw(obj4_head),
+                    thumb_pixels,
+                    charToRaw("\nendstream\nendobj\n"))
+
+    header <- charToRaw("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+    parts <- list(
+      header,
+      charToRaw(obj1),
+      charToRaw(obj2),
+      charToRaw(obj3),
+      obj4_bytes
+    )
+    cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
+    offs <- cum[seq_len(4L) + 1L]
+    xref_offset <- cum[[length(cum)]]
+    fmt10 <- function(n) sprintf("%010d", n)
+    xref <- paste(
+      c("xref",
+        "0 5",
+        "0000000000 65535 f ",
+        paste0(fmt10(offs), " 00000 n ")),
+      collapse = "\n"
+    )
+    trailer <- paste0(
+      "\ntrailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n",
+      xref_offset, "\n%%EOF\n"
+    )
+    full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))
+    writeBin(full, out)
+    message("[fixtures] wrote ", out)
+  }
+
   build_minimal()
   build_shapes()
   build_unicode()
@@ -557,4 +849,8 @@ local({
   build_attachments()
   build_signed()
   build_outline()
+  build_weblinks()
+  build_with_thumbnail()
+  build_tagged()
+  build_annot_geom()
 })

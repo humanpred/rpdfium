@@ -9,6 +9,7 @@
 #include <Rcpp.h>
 #include <cstring>
 #include "fpdfview.h"
+#include "fpdf_edit.h"
 
 namespace {
 
@@ -110,6 +111,19 @@ SEXP cpp_open_document_from_memory(Rcpp::RawVector bytes,
                           static_cast<Rboolean>(TRUE));
   UNPROTECT(2);
   return doc_ptr;
+}
+
+// [[Rcpp::export(name = "cpp_create_new_document")]]
+SEXP cpp_create_new_document() {
+  if (!g_library_initialised) cpp_init_library();
+  FPDF_DOCUMENT doc = FPDF_CreateNewDocument();
+  if (doc == nullptr) {
+    Rcpp::stop("FPDF_CreateNewDocument() returned NULL.");
+  }
+  SEXP ptr = PROTECT(R_MakeExternalPtr(doc, R_NilValue, R_NilValue));
+  R_RegisterCFinalizerEx(ptr, finalize_document, static_cast<Rboolean>(TRUE));
+  UNPROTECT(1);
+  return ptr;
 }
 
 // [[Rcpp::export(name = "cpp_close_document")]]

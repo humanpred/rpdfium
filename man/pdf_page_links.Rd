@@ -23,12 +23,25 @@ link table.
 \item \code{action_type} character - one of \code{"goto"} (jump within
 the document), \code{"remote_goto"} (jump to a remote PDF),
 \code{"uri"} (open a URL), \code{"launch"} (launch an external file
-or application), \code{"unsupported"}.
-\item \code{uri} character - non-empty for \code{action_type == "uri"};
-the target URL.
-\item \code{dest_page_num} integer - non-NA for \code{goto} /
-\code{remote_goto}; the 1-based destination page within the
-current (or remote) document.
+or application), \code{"embedded_goto"} (jump into an embedded
+file), or \code{"unsupported"}.
+\item \code{uri} character - the target URL when
+\code{action_type == "uri"}; \code{NA} otherwise.
+\item \code{filepath} character - the external file path when
+\code{action_type} is \code{"remote_goto"} / \code{"launch"} /
+\code{"embedded_goto"}; \code{NA} otherwise.
+\item \code{dest_page_num} integer - 1-based destination page within
+the current (or remote) document; \code{NA} when not resolvable.
+\item \code{dest_view} character - destination view mode (\code{"xyz"},
+\code{"fit"}, \code{"fith"}, \code{"fitv"}, \code{"fitr"}, \code{"fitb"}, \code{"fitbh"},
+\code{"fitbv"}, \code{"unknown"}).
+\item \code{dest_x}, \code{dest_y}, \code{dest_zoom} numeric - explicit point and
+zoom for XYZ destinations / scroll offsets for the Fit*
+variants; \code{NA} for components the destination doesn't set.
+\item \code{quad_points} list-column - per-line quad sets for multi-line
+links. An N-by-8 numeric matrix with columns \verb{x1, y1, x2, y2, x3, y3, x4, y4} in PDF user space (one row per line),
+or \code{NULL} for links that carry no \verb{/QuadPoints} (single-rect
+links). Same shape as \code{pdf_annotations()$quad_points}.
 }
 
 Returns a 0-row tibble of the same schema when the page has no
@@ -40,6 +53,6 @@ the link's bounding rectangle and the action it carries
 (target page for internal links, URL for external links).
 Wraps \code{FPDFLink_Enumerate} plus the per-link
 \code{FPDFLink_GetAnnotRect}, \code{FPDFLink_GetAction} / \verb{_GetDest},
-\code{FPDFAction_GetType}, \code{FPDFAction_GetURIPath}, and
-\code{FPDFDest_GetDestPageIndex}.
+\code{FPDFAction_GetType}, \code{FPDFAction_GetURIPath},
+\code{FPDFAction_GetFilePath}, and \code{FPDFDest_GetDestPageIndex}.
 }

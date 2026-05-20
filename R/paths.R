@@ -9,14 +9,8 @@
 )
 
 # Internal: convert a FPDF_SEGMENT_* integer code to its short name.
-# Returns "unknown" for negative or out-of-range codes so the public
-# tibble stays well-typed against any future PDFium enum additions.
 pdfium_segment_type_name <- function(codes) {
-  codes <- as.integer(codes)
-  out <- rep("unknown", length(codes))
-  hit <- codes >= 0L & codes < length(.pdfium_segment_type_names)
-  out[hit] <- .pdfium_segment_type_names[codes[hit] + 1L]
-  out
+  .pdfium_enum_name(codes, .pdfium_segment_type_names)
 }
 
 #' Path segments of a path page-object
@@ -53,7 +47,8 @@ pdfium_segment_type_name <- function(codes) {
 #' @seealso [pdf_page_objects()], [pdf_obj_bounds()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -78,18 +73,7 @@ pdf_path_segments <- function(obj) {
 # Internal: validate that `obj` is an open pdfium_obj of type "path".
 # Returns the validated object so callers can chain.
 check_path_obj <- function(obj) {
-  if (!inherits(obj, "pdfium_obj")) {
-    stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-         call. = FALSE)
-  }
-  if (!is_open(obj)) {
-    stop("Parent page has been closed; object handle is no longer valid.",
-         call. = FALSE)
-  }
-  if (!identical(obj$type, "path")) {
-    stop("`obj` must be a path-type pdfium_obj; got type \"",
-         obj$type, "\".", call. = FALSE)
-  }
+  check_pdfium_obj(obj, allowed_types = "path")
   obj
 }
 
@@ -114,7 +98,8 @@ check_path_obj <- function(obj) {
 #' @seealso [pdf_path_fill()], [pdf_path_segments()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -144,7 +129,8 @@ pdf_path_stroke <- function(obj) {
 #' @seealso [pdf_path_stroke()], [pdf_path_segments()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -180,7 +166,8 @@ pdf_path_fill <- function(obj) {
 #' @seealso [pdf_path_stroke()] for the stroke color and width.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -195,5 +182,48 @@ pdf_path_dash <- function(obj) {
   list(
     array = cpp_obj_dash_array(obj$ptr),
     phase = cpp_obj_dash_phase(obj$ptr)
+  )
+}
+
+# PDFium FPDF_FILLMODE_* codes (fpdf_edit.h):
+#   0 = NONE       (clip-only path; not painted)
+#   1 = ALTERNATE  (even-odd fill rule)
+#   2 = WINDING    (non-zero winding fill rule)
+.pdfium_fill_mode_names <- c("none", "even_odd", "winding")
+
+#' Path draw mode (fill rule + stroke flag)
+#'
+#' Returns whether a path object is stroked and which fill mode is
+#' applied. A path can be:
+#'
+#' * Stroked only (`stroke = TRUE`, `fill_mode = "none"`).
+#' * Filled with non-zero winding rule (`fill_mode = "winding"`).
+#' * Filled with even-odd rule (`fill_mode = "even_odd"`).
+#' * Both stroked and filled (`stroke = TRUE` + `fill_mode != "none"`).
+#' * Invisible (`stroke = FALSE`, `fill_mode = "none"`) — used for
+#'   clip-only paths.
+#'
+#' Wraps `FPDFPath_GetDrawMode`.
+#'
+#' @param obj A `pdfium_obj` of type `"path"`.
+#' @return A named list with two elements:
+#'   * `fill_mode` - one of `"none"`, `"even_odd"`, `"winding"`.
+#'     `NA` if PDFium reports no draw-mode (rare; typically only on
+#'     malformed paths).
+#'   * `fill_mode_code` - the raw integer code (`0`, `1`, `2`) for
+#'     round-tripping with v0.2.0 writers.
+#'   * `stroke` - logical scalar; `TRUE` if the path is stroked.
+#' @seealso [pdf_path_stroke()] for the stroke color/width;
+#'   [pdf_path_fill()] for the fill color.
+#' @export
+pdf_path_draw_mode <- function(obj) {
+  obj <- check_path_obj(obj)
+  raw <- cpp_path_draw_mode(obj$ptr)
+  list(
+    fill_mode      = .pdfium_enum_name(raw$fill_mode_code,
+                                       .pdfium_fill_mode_names,
+                                       fallback = NA_character_),
+    fill_mode_code = as.integer(raw$fill_mode_code),
+    stroke         = as.logical(raw$stroke)
   )
 }

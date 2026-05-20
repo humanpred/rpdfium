@@ -4,7 +4,7 @@
 \alias{pdf_open}
 \title{Open a PDF document}
 \usage{
-pdf_open(path = NULL, source = NULL, password = NULL)
+pdf_open(path = NULL, source = NULL, password = NULL, readwrite = FALSE)
 }
 \arguments{
 \item{path}{Character scalar. Path to a PDF file. The file must
@@ -18,6 +18,16 @@ Mutually exclusive with \code{path}.}
 
 \item{password}{Optional password for encrypted PDFs. \code{NULL}
 (the default) passes no password to PDFium.}
+
+\item{readwrite}{Logical. If \code{TRUE}, the document is opened in
+read-write mode and every mutator function (\code{\link[=pdf_save]{pdf_save()}},
+\code{\link[=pdf_page_set_rotation]{pdf_page_set_rotation()}}, the \verb{pdf_*_set_*()} family,
+annotation authoring, form filling, …) will accept it.
+Defaults \code{FALSE} — a read-only handle that refuses mutations
+with a clear error message. See ADR-012 in
+\verb{dev/decisions/}. PDFium itself has no read/write distinction;
+the flag is the R wrapper's safety net against accidental
+edits inside long pipelines.}
 }
 \value{
 A \code{pdfium_doc} object.
@@ -41,7 +51,8 @@ with \code{readBin()} straight into RAM. Exactly one of \code{path} or
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   doc <- pdf_open(fixture)
   pdf_page_count(doc)

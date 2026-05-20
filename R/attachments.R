@@ -5,26 +5,6 @@
 # exposes them via FPDFDoc_GetAttachment*; this module surfaces
 # the read side of that API.
 
-# Internal: accept either an open pdfium_doc or a character path,
-# return a (doc, on_exit) pair where on_exit is a closure the
-# caller invokes when finished. Defined locally here; the rebase
-# against phase-6-tier2-cleanup will delete this copy in favour of
-# the canonical helper that ships in that branch's R doc helpers.
-as_doc_handle <- function(x, arg = "doc") {
-  if (is.character(x)) {
-    doc <- pdf_open(x)
-    return(list(doc = doc, on_exit = function() pdf_close(doc)))
-  }
-  if (!inherits(x, "pdfium_doc")) {
-    stop(sprintf("`%s` must be a `pdfium_doc` or a path to a PDF file.",
-                 arg), call. = FALSE)
-  }
-  if (!is_open(x)) {
-    stop("Document has been closed.", call. = FALSE)
-  }
-  list(doc = x, on_exit = function() invisible(NULL))
-}
-
 #' List the files attached to a PDF document
 #'
 #' Returns a tibble row per `/EmbeddedFile` object in the
@@ -53,13 +33,13 @@ as_doc_handle <- function(x, arg = "doc") {
 #' @seealso [pdf_attachment_data()].
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) pdf_attachments(fixture)
 #' @export
 pdf_attachments <- function(doc) {
-  h <- as_doc_handle(doc, "doc")
-  on.exit(h$on_exit(), add = TRUE)
-  raw <- cpp_attachments_list(h$doc$ptr)
+  doc <- as_open_doc(doc)
+  raw <- cpp_attachments_list(doc$ptr)
   tibble::tibble(
     attachment_index = seq_along(raw$name),
     name             = raw$name,
@@ -86,14 +66,7 @@ pdf_attachments <- function(doc) {
 #' @seealso [pdf_attachments()].
 #' @export
 pdf_attachment_data <- function(doc, attachment_index = 1L) {
-  if (!is.numeric(attachment_index) || length(attachment_index) != 1L ||
-        is.na(attachment_index) ||
-        attachment_index != as.integer(attachment_index) ||
-        attachment_index < 1L) {
-    stop("`attachment_index` must be a single positive integer (1-based).",
-         call. = FALSE)
-  }
-  h <- as_doc_handle(doc, "doc")
-  on.exit(h$on_exit(), add = TRUE)
-  cpp_attachment_data(h$doc$ptr, as.integer(attachment_index) - 1L)
+  checkmate::assert_count(attachment_index, positive = TRUE)
+  doc <- as_open_doc(doc)
+  cpp_attachment_data(doc$ptr, as.integer(attachment_index) - 1L)
 }

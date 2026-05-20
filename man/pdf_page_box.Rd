@@ -22,10 +22,13 @@ a \code{pdfium_doc}. Ignored otherwise.}
 }
 \value{
 A named numeric vector with elements \code{left}, \code{bottom},
-\code{right}, \code{top} (PDF user-space points). When the requested
-box is not declared in the PDF, PDFium falls back per the
-spec (e.g. CropBox -> MediaBox if absent); when no fallback
-exists, every element is \code{NA}.
+\code{right}, \code{top} (PDF user-space points). Every element is
+\code{NA} when the requested box is not declared on the page.
+Note that per the PDF spec a viewer falls back from a
+missing CropBox / BleedBox / TrimBox / ArtBox to the
+MediaBox, but \code{pdf_page_box()} does not - if you want the
+"what would render" rectangle, call \code{\link[=pdf_page_box]{pdf_page_box()}} for
+\code{"media"} after testing whether a more specific box exists.
 }
 \description{
 PDF pages can carry up to five named boxes:

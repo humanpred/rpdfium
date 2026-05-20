@@ -22,7 +22,8 @@ internally — convenient for one-shot inspection).
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   pdf_page_count(fixture)
 }

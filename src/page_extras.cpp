@@ -18,8 +18,10 @@
 #include <vector>
 #include "fpdfview.h"
 #include "fpdf_doc.h"
+#include "fpdf_searchex.h"
 #include "fpdf_text.h"
 #include "fpdf_transformpage.h"
+#include "action_helpers.h"
 #include "utf16.h"
 
 namespace {
@@ -86,7 +88,11 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
   std::vector<double> left, bottom, right, top;
   std::vector<int>    action_code;
   std::vector<std::string> uri;
+  std::vector<std::string> filepath;
   std::vector<int>    dest_page;
+  std::vector<int>    dest_view;
+  std::vector<double> dest_x, dest_y, dest_zoom;
+  Rcpp::List          quad_points;
 
   // FPDFLink_Enumerate iterates link annotations on the page. The
   // start_pos argument is an int in-out cursor PDFium updates.
@@ -106,41 +112,66 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
       top.push_back(NA_REAL);
     }
     FPDF_ACTION action = FPDFLink_GetAction(link);
-    if (action == nullptr) {
-      // Link with a /Dest only (no /A action).
-      action_code.push_back(0);  // 0 == GoTo via Dest
-      uri.emplace_back();
-      // Pull the destination page index directly off the link.
-      FPDF_DEST dest = FPDFLink_GetDest(doc, link);
-      int idx = (dest == nullptr) ? -1
-                                  : FPDFDest_GetDestPageIndex(doc, dest);
-      dest_page.push_back(idx < 0 ? NA_INTEGER : idx + 1);
-      continue;
-    }
-    unsigned long act_type = FPDFAction_GetType(action);
-    action_code.push_back(static_cast<int>(act_type));
-    // URI extraction (ASCII-encoded path string).
-    std::string uri_text;
-    if (act_type == PDFACTION_URI) {
-      unsigned long need =
-          FPDFAction_GetURIPath(doc, action, nullptr, 0);
-      if (need > 1) {
-        std::vector<char> buf(need);
-        FPDFAction_GetURIPath(doc, action, buf.data(), need);
-        uri_text.assign(buf.data(), need - 1);
+    int code = 0, dest_idx = -1, dview = 0;
+    double dx = NA_REAL, dy = NA_REAL, dzoom = NA_REAL;
+    std::string uri_text, fp_text;
+    pdfium_r::classify_action(doc, action, code, uri_text, fp_text,
+                              dest_idx);
+    // Resolve the dest handle (action's first, falling back to the
+    // link's /Dest for the no-/A case) for view + location info.
+    FPDF_DEST dest_handle =
+        (action != nullptr) ? FPDFAction_GetDest(doc, action)
+                            : FPDFLink_GetDest(doc, link);
+    if (dest_handle != nullptr) {
+      if (dest_idx < 0) {
+        int p = FPDFDest_GetDestPageIndex(doc, dest_handle);
+        if (p >= 0) {
+          dest_idx = p;
+          if (action == nullptr) code = PDFACTION_GOTO;
+        }
       }
+      pdfium_r::read_dest_details(doc, dest_handle, dview, dx, dy,
+                                   dzoom);
     }
+    action_code.push_back(code);
     uri.emplace_back(uri_text);
-    // Destination page (only meaningful for GoTo / RemoteGoTo).
-    int dest_idx = -1;
-    if (act_type == PDFACTION_GOTO ||
-        act_type == PDFACTION_REMOTEGOTO) {
-      FPDF_DEST dest = FPDFAction_GetDest(doc, action);
-      if (dest != nullptr) {
-        dest_idx = FPDFDest_GetDestPageIndex(doc, dest);
+    filepath.emplace_back(fp_text);
+    dest_page.push_back(dest_idx < 0 ? NA_INTEGER : dest_idx + 1);
+    dest_view.push_back(dview);
+    dest_x.push_back(dx);
+    dest_y.push_back(dy);
+    dest_zoom.push_back(dzoom);
+    // Per-line quad points for multi-line links (the same shape as
+    // FPDFAnnot_GetAttachmentPoints uses for highlights). Single-
+    // line links produce a 1-row 8-column matrix; absent quads
+    // come back as R NULL.
+    int n_quads = FPDFLink_CountQuadPoints(link);
+    if (n_quads <= 0) {
+      quad_points.push_back(R_NilValue);
+    } else {
+      Rcpp::NumericMatrix m(n_quads, 8);
+      bool any = false;
+      for (int qi = 0; qi < n_quads; ++qi) {
+        FS_QUADPOINTSF q;
+        if (FPDFLink_GetQuadPoints(link, qi, &q)) {
+          m(qi, 0) = q.x1; m(qi, 1) = q.y1;
+          m(qi, 2) = q.x2; m(qi, 3) = q.y2;
+          m(qi, 4) = q.x3; m(qi, 5) = q.y3;
+          m(qi, 6) = q.x4; m(qi, 7) = q.y4;
+          any = true;
+        } else {
+          for (int k = 0; k < 8; ++k) m(qi, k) = NA_REAL;
+        }
+      }
+      if (any) {
+        Rcpp::CharacterVector cn = {"x1", "y1", "x2", "y2",
+                                      "x3", "y3", "x4", "y4"};
+        Rcpp::colnames(m) = cn;
+        quad_points.push_back(m);
+      } else {
+        quad_points.push_back(R_NilValue);
       }
     }
-    dest_page.push_back(dest_idx < 0 ? NA_INTEGER : dest_idx + 1);
   }
   return Rcpp::List::create(
       Rcpp::_["bounds_left"]   = left,
@@ -149,7 +180,13 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
       Rcpp::_["bounds_top"]    = top,
       Rcpp::_["action_code"]   = action_code,
       Rcpp::_["uri"]           = uri,
-      Rcpp::_["dest_page_num"] = dest_page);
+      Rcpp::_["filepath"]      = filepath,
+      Rcpp::_["dest_page_num"] = dest_page,
+      Rcpp::_["dest_view"]     = dest_view,
+      Rcpp::_["dest_x"]        = dest_x,
+      Rcpp::_["dest_y"]        = dest_y,
+      Rcpp::_["dest_zoom"]     = dest_zoom,
+      Rcpp::_["quad_points"]   = quad_points);
 }
 
 // [[Rcpp::export(name = "cpp_page_text_chars")]]
@@ -167,6 +204,11 @@ Rcpp::List cpp_page_text_chars(SEXP page_ptr) {
   Rcpp::NumericVector font_size(n);
   Rcpp::LogicalVector is_generated(n);
   Rcpp::LogicalVector is_hyphen(n);
+  Rcpp::NumericVector origin_x(n), origin_y(n);
+  Rcpp::NumericVector loose_left(n), loose_bottom(n),
+                       loose_right(n), loose_top(n);
+  Rcpp::LogicalVector unicode_map_error(n);
+  Rcpp::IntegerVector text_index(n);
   for (int i = 0; i < n; ++i) {
     unsigned int cp = FPDFText_GetUnicode(tp, i);
     codepoint[i] = static_cast<int>(cp);
@@ -205,6 +247,30 @@ Rcpp::List cpp_page_text_chars(SEXP page_ptr) {
     font_size[i]    = FPDFText_GetFontSize(tp, i);
     is_generated[i] = (FPDFText_IsGenerated(tp, i) != 0);
     is_hyphen[i]    = (FPDFText_IsHyphen(tp, i) != 0);
+    double ox = 0, oy = 0;
+    if (FPDFText_GetCharOrigin(tp, i, &ox, &oy)) {
+      origin_x[i] = ox; origin_y[i] = oy;
+    } else {
+      origin_x[i] = NA_REAL; origin_y[i] = NA_REAL;
+    }
+    FS_RECTF lr;
+    if (FPDFText_GetLooseCharBox(tp, i, &lr)) {
+      loose_left[i] = lr.left;
+      loose_bottom[i] = lr.bottom;
+      loose_right[i] = lr.right;
+      loose_top[i] = lr.top;
+    } else {
+      loose_left[i] = loose_bottom[i] = loose_right[i] =
+          loose_top[i] = NA_REAL;
+    }
+    int err = FPDFText_HasUnicodeMapError(tp, i);
+    unicode_map_error[i] = (err < 0) ? NA_LOGICAL : (err != 0);
+    // FPDFText_GetTextIndexFromCharIndex returns -1 when the
+    // character doesn't appear in the text page's "linear" text
+    // (e.g. PDFium-synthesised whitespace). The R wrapper maps
+    // negative values to NA_integer_.
+    int ti = FPDFText_GetTextIndexFromCharIndex(tp, i);
+    text_index[i] = (ti < 0) ? NA_INTEGER : ti;
   }
   FPDFText_ClosePage(tp);
   return Rcpp::List::create(
@@ -216,5 +282,51 @@ Rcpp::List cpp_page_text_chars(SEXP page_ptr) {
       Rcpp::_["bounds_top"]   = top,
       Rcpp::_["font_size"]    = font_size,
       Rcpp::_["is_generated"] = is_generated,
-      Rcpp::_["is_hyphen"]    = is_hyphen);
+      Rcpp::_["is_hyphen"]    = is_hyphen,
+      Rcpp::_["origin_x"]     = origin_x,
+      Rcpp::_["origin_y"]     = origin_y,
+      Rcpp::_["loose_left"]   = loose_left,
+      Rcpp::_["loose_bottom"] = loose_bottom,
+      Rcpp::_["loose_right"]  = loose_right,
+      Rcpp::_["loose_top"]    = loose_top,
+      Rcpp::_["unicode_map_error"] = unicode_map_error,
+      Rcpp::_["text_index"]   = text_index);
+}
+
+// Hit-test: look up the 0-based character index at (x, y) in PDF
+// user-space points, within xy_tolerance. Returns -1 when no char
+// is near.
+// [[Rcpp::export(name = "cpp_text_char_at_pos")]]
+int cpp_text_char_at_pos(SEXP page_ptr, double x, double y,
+                          double x_tol, double y_tol) {
+  FPDF_PAGE page = page_from_ptr(page_ptr);
+  FPDF_TEXTPAGE tp = FPDFText_LoadPage(page);
+  if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");
+  int idx = FPDFText_GetCharIndexAtPos(tp, x, y, x_tol, y_tol);
+  FPDFText_ClosePage(tp);
+  return idx;
+}
+
+// Bidirectional index conversion. char_index <-> text_index, where
+// char_index is the position in PDFium's "all characters" list
+// (including synthesised whitespace) and text_index is the position
+// in the "extractable text" string.
+// [[Rcpp::export(name = "cpp_text_text_index_from_char")]]
+int cpp_text_text_index_from_char(SEXP page_ptr, int char_index) {
+  FPDF_PAGE page = page_from_ptr(page_ptr);
+  FPDF_TEXTPAGE tp = FPDFText_LoadPage(page);
+  if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");
+  int idx = FPDFText_GetTextIndexFromCharIndex(tp, char_index);
+  FPDFText_ClosePage(tp);
+  return idx;
+}
+
+// [[Rcpp::export(name = "cpp_text_char_index_from_text")]]
+int cpp_text_char_index_from_text(SEXP page_ptr, int text_index) {
+  FPDF_PAGE page = page_from_ptr(page_ptr);
+  FPDF_TEXTPAGE tp = FPDFText_LoadPage(page);
+  if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");
+  int idx = FPDFText_GetCharIndexFromTextIndex(tp, text_index);
+  FPDFText_ClosePage(tp);
+  return idx;
 }

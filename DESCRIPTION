@@ -20,8 +20,10 @@ BugReports: https://github.com/humanpred/rpdfium/issues
 Depends:
     R (>= 4.2)
 Imports:
+    checkmate,
     Rcpp,
-    tibble
+    tibble,
+    withr
 LinkingTo:
     Rcpp
 Suggests:
@@ -32,8 +34,7 @@ Suggests:
     rmarkdown,
     spelling,
     styler,
-    testthat (>= 3.2.0),
-    withr
+    testthat (>= 3.2.0)
 SystemRequirements: C++17, libpdfium (downloaded automatically at install time)
 Encoding: UTF-8
 Language: en-US

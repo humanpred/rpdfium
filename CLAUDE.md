@@ -24,6 +24,27 @@ R user → R API (R/) → Rcpp glue (src/*.cpp) → PDFium C ABI → libpdfium.{
   arguments are already validated; it raises `Rcpp::stop` only for invariants
   that shouldn't normally trip.
 
+## Argument validation — use `checkmate`
+
+See [ADR-010](dev/decisions/ADR-010-checkmate-for-argument-validation.md)
+for the rationale. The short version:
+
+- **All new R-side validation** must use `checkmate::assert_*` (e.g.
+  `assert_count`, `assert_string`, `assert_number`, `assert_matrix`,
+  `assert_multi_class`). Do **not** hand-roll
+  `is.numeric(x) && length(x) == 1L && ...` chains — they trip
+  `cyclocomp_linter` and produce inconsistent error messages.
+- Reach for `assert_*` (the `stop()`-raising form), not `check_*` /
+  `test_*`. Keeps error semantics aligned with the rest of the API.
+- pdfium-specific assertions that have no single-call checkmate
+  equivalent (e.g. "must be `pdfium_page` OR `pdfium_doc`", "must be
+  an open page handle") get a small wrapper in `R/utils.R` that
+  itself calls `checkmate::assert_*` for the shape parts.
+- In tests, target the argument-name portion of checkmate's standard
+  message (e.g. `regexp = "Assertion on 'x' failed"`) rather than
+  matching exact phrasing — checkmate's wording can shift between
+  versions without churning the test suite.
+
 ## Memory model — the rule that bites if you forget it
 
 - Every PDFium handle (`FPDF_DOCUMENT`, `FPDF_PAGE`, etc.) lives behind an

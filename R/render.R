@@ -1,17 +1,17 @@
 # PDFium render-flag bitmask. Combined as needed by pdf_render_page.
 # Values copied from fpdfview.h:
 .pdfium_render_flags <- c(
-  annotations          = 0x01L,   # FPDF_ANNOT
-  lcd_text             = 0x02L,   # FPDF_LCD_TEXT
-  no_native_text       = 0x04L,   # FPDF_NO_NATIVETEXT
-  grayscale            = 0x08L,   # FPDF_GRAYSCALE
-  reverse_byte_order   = 0x10L,   # FPDF_REVERSE_BYTE_ORDER (we don't use)
-  limit_image_cache    = 0x200L,  # FPDF_RENDER_LIMITEDIMAGECACHE
-  force_halftone       = 0x400L,  # FPDF_RENDER_FORCEHALFTONE
-  printing             = 0x800L,  # FPDF_PRINTING
+  annotations          = 0x01L, # FPDF_ANNOT
+  lcd_text             = 0x02L, # FPDF_LCD_TEXT
+  no_native_text       = 0x04L, # FPDF_NO_NATIVETEXT
+  grayscale            = 0x08L, # FPDF_GRAYSCALE
+  reverse_byte_order   = 0x10L, # FPDF_REVERSE_BYTE_ORDER (we don't use)
+  limit_image_cache    = 0x200L, # FPDF_RENDER_LIMITEDIMAGECACHE
+  force_halftone       = 0x400L, # FPDF_RENDER_FORCEHALFTONE
+  printing             = 0x800L, # FPDF_PRINTING
   no_smooth_text       = 0x1000L, # FPDF_RENDER_NO_SMOOTHTEXT
   no_smooth_image      = 0x2000L, # FPDF_RENDER_NO_SMOOTHIMAGE
-  no_smooth_path       = 0x4000L  # FPDF_RENDER_NO_SMOOTHPATH
+  no_smooth_path       = 0x4000L # FPDF_RENDER_NO_SMOOTHPATH
 )
 
 #' Render a PDF page to a bitmap
@@ -55,11 +55,12 @@
 #'   page's dimensions.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   bmp <- pdf_render_page(pdf_open(fixture), dpi = 96)
-#'   bmp                                # human summary
-#'   if (interactive()) plot(bmp)       # render to the active device
+#'   bmp # human summary
+#'   if (interactive()) plot(bmp) # render to the active device
 #' }
 #' @export
 pdf_render_page <- function(page,
@@ -70,12 +71,13 @@ pdf_render_page <- function(page,
                             rotation = 0L) {
   validate_render_args(dpi, annotations, rotation)
   rot_code <- switch(as.character(rotation),
-                     "0" = 0L, "90" = 1L, "180" = 2L, "270" = 3L)
+    "0" = 0L,
+    "90" = 1L,
+    "180" = 2L,
+    "270" = 3L
+  )
 
   page <- as_open_page(page, page_num)
-  if (isTRUE(attr(page, ".close_on_exit"))) {
-    on.exit(pdf_close_page(page), add = TRUE)
-  }
 
   dims <- compute_render_pixels(page$ptr, dpi, rot_code)
   bg <- parse_bitmap_background(background)
@@ -96,33 +98,128 @@ pdf_render_page <- function(page,
   )
 }
 
+#' Render a PDF page with an arbitrary affine transformation
+#'
+#' Power-user counterpart to [pdf_render_page()]. Instead of
+#' choosing a DPI + rotation, the caller supplies a 3x2 affine
+#' transformation matrix and the destination bitmap's pixel
+#' dimensions, plus an optional clipping rectangle in PDF
+#' user-space points. Useful for:
+#'
+#' * Rendering a cropped region of a page (set the matrix to scale
+#'   + translate the desired region into the bitmap, plus a
+#'   matching `clip_rect` to discard everything outside).
+#' * Implementing zoom / pan in interactive viewers.
+#' * Pre-warping for non-rectilinear projections (the matrix can
+#'   include shear).
+#'
+#' Wraps `FPDF_RenderPageBitmapWithMatrix`.
+#'
+#' @section Matrix layout:
+#'
+#' `matrix` is a 3x2 numeric matrix (or a length-6 numeric vector)
+#' representing the PDFium-order affine transformation
+#' `(a, b, c, d, e, f)`, applied as:
+#'
+#' \deqn{x' = a\cdot x + c\cdot y + e}
+#' \deqn{y' = b\cdot x + d\cdot y + f}
+#'
+#' For a simple scale, use `matrix(c(s, 0, 0, s, 0, 0), 3, 2,
+#' byrow = TRUE)`. To crop to `(x0, y0)` -> `(x1, y1)` at scale
+#' `s`, use `matrix(c(s, 0, 0, s, -s*x0, -s*y0), 3, 2, byrow =
+#' TRUE)` plus `clip_rect = c(x0, y0, x1, y1)`.
+#'
+#' @inheritParams pdf_render_page
+#' @param matrix Length-6 numeric vector (or 3x2 / 2x3 matrix
+#'   coerced to length-6).
+#' @param pixel_width,pixel_height Output bitmap dimensions in
+#'   pixels (positive integers).
+#' @param clip_rect Length-4 numeric `c(left, bottom, right, top)`
+#'   in PDF user-space points, or `NULL` to skip clipping.
+#' @return A `pdfium_bitmap`.
+#' @seealso [pdf_render_page()] for the simpler dpi+rotation API.
+#' @export
+pdf_render_page_with_matrix <- function(page,
+                                        matrix,
+                                        pixel_width,
+                                        pixel_height,
+                                        clip_rect = NULL,
+                                        page_num = 1L,
+                                        background = "white",
+                                        annotations = FALSE) {
+  matrix <- validate_matrix6(matrix)
+  checkmate::assert_count(pixel_width, positive = TRUE)
+  checkmate::assert_count(pixel_height, positive = TRUE)
+  checkmate::assert_flag(annotations)
+  clip_vec <- validate_clip_rect(clip_rect)
+
+  page <- as_open_page(page, page_num)
+  bg <- parse_bitmap_background(background)
+  flags <- render_flags_bitmask(annotations)
+
+  data <- cpp_render_page_with_matrix(
+    page$ptr,
+    as.integer(pixel_width), as.integer(pixel_height),
+    as.numeric(matrix),
+    clip_vec,
+    render_flags = flags,
+    background_argb = bg$argb,
+    fill_background = bg$fill
+  )
+  attr(data, "channels") <- 4L
+  new_pdfium_bitmap(
+    data,
+    dpi              = NA_real_, # matrix path has no single DPI
+    source_page      = page$index,
+    source_path      = page$doc$path,
+    rotation_applied = 0L
+  )
+}
+
+# Internal: coerce a 3x2 / 2x3 matrix or length-6 numeric to a
+# length-6 numeric, raising on shape / finiteness violations.
+# Kept as a local helper rather than inlined because it does shape
+# coercion on top of the numeric assertion — checkmate's assert_*
+# can't express the matrix-OR-vector union cleanly.
+validate_matrix6 <- function(m) {
+  if (is.matrix(m)) {
+    ok_shape <- all(dim(m) == c(3L, 2L)) ||
+      all(dim(m) == c(2L, 3L)) || length(m) == 6L
+    if (!ok_shape) {
+      stop(
+        "Assertion on 'matrix' failed: ",
+        "Must be 3x2, 2x3, or a length-6 vector.",
+        call. = FALSE
+      )
+    }
+    m <- as.numeric(m)
+  }
+  checkmate::assert_numeric(m,
+    len = 6L, finite = TRUE,
+    any.missing = FALSE, .var.name = "matrix"
+  )
+  m
+}
+
+validate_clip_rect <- function(clip_rect) {
+  if (is.null(clip_rect)) {
+    return(numeric(0))
+  }
+  checkmate::assert_numeric(clip_rect, len = 4L)
+  as.numeric(clip_rect)
+}
+
 # Internal: input validation pulled out so pdf_render_page() stays
 # under lintr's cyclocomp_linter limit. Each per-arg validator is
 # itself simple enough to satisfy cyclocomp.
 validate_render_args <- function(dpi, annotations, rotation) {
-  validate_render_dpi(dpi)
-  validate_render_annotations(annotations)
-  validate_render_rotation(rotation)
+  checkmate::assert_number(dpi,
+    lower = .Machine$double.eps,
+    finite = TRUE
+  )
+  checkmate::assert_flag(annotations)
+  checkmate::assert_choice(rotation, c(0, 90, 180, 270))
   invisible(NULL)
-}
-
-validate_render_dpi <- function(dpi) {
-  ok <- is.numeric(dpi) && length(dpi) == 1L && !is.na(dpi) && dpi > 0
-  if (!ok) stop("`dpi` must be a single positive number.", call. = FALSE)
-}
-
-validate_render_annotations <- function(annotations) {
-  ok <- is.logical(annotations) && length(annotations) == 1L &&
-    !is.na(annotations)
-  if (!ok) stop("`annotations` must be a single TRUE/FALSE.", call. = FALSE)
-}
-
-validate_render_rotation <- function(rotation) {
-  ok <- is.numeric(rotation) && length(rotation) == 1L &&
-    !is.na(rotation) && rotation %in% c(0, 90, 180, 270)
-  if (!ok) {
-    stop("`rotation` must be one of 0, 90, 180, or 270.", call. = FALSE)
-  }
 }
 
 # Internal: page-size-in-points to bitmap dimensions, swapped for
@@ -130,7 +227,7 @@ validate_render_rotation <- function(rotation) {
 compute_render_pixels <- function(page_ptr, dpi, rot_code) {
   size_pt <- cpp_page_size(page_ptr)
   scale <- dpi / 72
-  pixel_w <- as.integer(round(size_pt[["width"]]  * scale))
+  pixel_w <- as.integer(round(size_pt[["width"]] * scale))
   pixel_h <- as.integer(round(size_pt[["height"]] * scale))
   if (rot_code %in% c(1L, 3L)) {
     list(width = pixel_h, height = pixel_w)
@@ -157,14 +254,16 @@ parse_bitmap_background <- function(x) {
   if (length(x) == 1L && is.na(x)) {
     return(list(argb = 0L, fill = FALSE))
   }
-  if (!is.character(x) && !is.numeric(x)) {
-    stop("`background` must be a color string, integer, or NA.",
-         call. = FALSE)
-  }
+  checkmate::assert(
+    checkmate::check_character(x),
+    checkmate::check_numeric(x),
+    .var.name = "background",
+    combine = "or"
+  )
   rgba <- grDevices::col2rgb(x, alpha = TRUE)[, 1L]
   argb <- bitwShiftL(as.integer(rgba[["alpha"]]), 24L) +
-    bitwShiftL(as.integer(rgba[["red"]]),   16L) +
-    bitwShiftL(as.integer(rgba[["green"]]),  8L) +
+    bitwShiftL(as.integer(rgba[["red"]]), 16L) +
+    bitwShiftL(as.integer(rgba[["green"]]), 8L) +
     as.integer(rgba[["blue"]])
   list(argb = argb, fill = TRUE)
 }
@@ -172,9 +271,9 @@ parse_bitmap_background <- function(x) {
 # Internal constructor.
 new_pdfium_bitmap <- function(data, dpi, source_page, source_path,
                               rotation_applied) {
-  attr(data, "dpi")              <- dpi
-  attr(data, "source_page")      <- source_page
-  attr(data, "source_path")      <- source_path
+  attr(data, "dpi") <- dpi
+  attr(data, "source_page") <- source_page
+  attr(data, "source_path") <- source_path
   attr(data, "rotation_applied") <- rotation_applied
   class(data) <- c("pdfium_bitmap", "nativeRaster")
   data
@@ -247,7 +346,8 @@ print.pdfium_bitmap <- function(x, ...) {
 #' @exportS3Method graphics::plot pdfium_bitmap
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture) && interactive()) {
 #'   bmp <- pdf_render_page(pdf_open(fixture), dpi = 96)
 #'   plot(bmp)
@@ -280,10 +380,10 @@ as.raster.pdfium_bitmap <- function(x, ...) {
   # dim is (height, width); used as-is for outputs that share the
   # bitmap's row-major shape.
   d <- dim(ints)
-  r <- bitwAnd(ints,                   0xFFL)
-  g <- bitwAnd(bitwShiftR(ints,  8L),  0xFFL)
-  b <- bitwAnd(bitwShiftR(ints, 16L),  0xFFL)
-  a <- bitwAnd(bitwShiftR(ints, 24L),  0xFFL)
+  r <- bitwAnd(ints, 0xFFL)
+  g <- bitwAnd(bitwShiftR(ints, 8L), 0xFFL)
+  b <- bitwAnd(bitwShiftR(ints, 16L), 0xFFL)
+  a <- bitwAnd(bitwShiftR(ints, 24L), 0xFFL)
   hex <- sprintf("#%02X%02X%02X%02X", r, g, b, a)
   dim(hex) <- d
   class(hex) <- "raster"
@@ -307,10 +407,10 @@ as.array.pdfium_bitmap <- function(x, ...) {
   # dim is (height, width); used as-is for outputs that share the
   # bitmap's row-major shape.
   d <- dim(ints)
-  r <- bitwAnd(ints,                   0xFFL)
-  g <- bitwAnd(bitwShiftR(ints,  8L),  0xFFL)
-  b <- bitwAnd(bitwShiftR(ints, 16L),  0xFFL)
-  a <- bitwAnd(bitwShiftR(ints, 24L),  0xFFL)
+  r <- bitwAnd(ints, 0xFFL)
+  g <- bitwAnd(bitwShiftR(ints, 8L), 0xFFL)
+  b <- bitwAnd(bitwShiftR(ints, 16L), 0xFFL)
+  a <- bitwAnd(bitwShiftR(ints, 24L), 0xFFL)
   out <- array(NA_real_, dim = c(d[1L], d[2L], 4L))
   out[, , 1L] <- r / 255
   out[, , 2L] <- g / 255
@@ -343,7 +443,8 @@ as.matrix.pdfium_bitmap <- function(x, ...) {
 #' @return Invisibly returns `file`.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture) && requireNamespace("png", quietly = TRUE)) {
 #'   out <- tempfile(fileext = ".png")
 #'   pdf_render_to_png(pdf_open(fixture), file = out, dpi = 96)
@@ -353,25 +454,27 @@ as.matrix.pdfium_bitmap <- function(x, ...) {
 pdf_render_to_png <- function(page, file, page_num = 1L, dpi = 72,
                               background = "white",
                               annotations = FALSE, rotation = 0L) {
+  # Validate file first so callers see "file must be ..." even when
+  # `png` isn't installed (e.g. R CMD check under
+  # _R_CHECK_DEPENDS_ONLY_=TRUE).
+  checkmate::assert_string(file, min.chars = 1L)
   # nocov start - "png not installed" guard; coverage runs always
   # have png available because it's in Suggests and gets installed
   # for tests, so this branch is unreachable here. The behavior is
   # exercised manually and via R CMD check on stripped-down setups.
   if (!requireNamespace("png", quietly = TRUE)) {
     stop("`pdf_render_to_png()` requires the `png` package: ",
-         "install.packages(\"png\")",
-         call. = FALSE)
+      "install.packages(\"png\")",
+      call. = FALSE
+    )
   }
   # nocov end
-  if (!is.character(file) || length(file) != 1L || is.na(file) ||
-        !nzchar(file)) {
-    stop("`file` must be a single non-empty character string.",
-         call. = FALSE)
-  }
-  bmp <- pdf_render_page(page, page_num = page_num, dpi = dpi,
-                         background = background,
-                         annotations = annotations,
-                         rotation = rotation)
+  bmp <- pdf_render_page(page,
+    page_num = page_num, dpi = dpi,
+    background = background,
+    annotations = annotations,
+    rotation = rotation
+  )
   png::writePNG(as.array(bmp), target = file)
   invisible(file)
 }

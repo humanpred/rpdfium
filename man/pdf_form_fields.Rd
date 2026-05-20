@@ -21,23 +21,52 @@ A tibble with columns:
 \code{"listbox"}, \code{"textfield"}, \code{"signature"}, or one of the
 XFA variants (\code{"xfa_*"}); \code{"unknown"} for non-AcroForm
 widgets PDFium can't classify.
-\item \code{field_flags} integer - PDF form-field flags bitmask
+\item \code{field_flags} integer - raw PDF form-field flags bitmask
 (bit 1 = ReadOnly, bit 2 = Required, bit 3 = NoExport,
 bit 13 = Password for textfields, bit 16 = MultiLine for
 textfields, etc.; see PDF spec Table 226).
+\item \code{is_readonly}, \code{is_required}, \code{is_no_export} logical -
+decoded universal flag bits (bits 1, 2, 3) for convenience.
+\item \code{is_checked} logical - current state of the widget;
+\code{TRUE} / \code{FALSE} for \code{checkbox} / \code{radiobutton} fields,
+\code{NA} for every other field type.
+\item \code{control_count} integer - total number of widgets in this
+field's control group (≥ 1; \verb{> 1} for radio button groups
+with multiple physical widgets). \code{NA} if PDFium reports
+failure.
+\item \code{control_index} integer - 0-based position of this row's
+widget within its control group. For a checkbox or a
+standalone widget this is \code{0}. \code{NA} if PDFium reports
+failure.
 \item \code{name} character - fully qualified field name, the
 period-joined dotted path PDFium reports (e.g.
 \code{"address.city"}).
 \item \code{alternate_name} character - the field's user-facing
 label (the \verb{/TU} entry), shown by viewers as a tooltip.
-\item \code{value} character - the field's current value as a
-string (text fields), the selected option label
-(combo/listbox), or the export value (check / radio).
+\item \code{value} character - the field's current display value.
+For text fields this is the entered text. For combo /
+listbox fields this is the \emph{label} of the selected
+option (use \code{export_value} for the underlying export
+name). For checkbox / radio fields this is the
+appearance-state name ("Off" or the on-state name).
+\item \code{export_value} character - the field's export value
+(\verb{/V}). Same as \code{value} for text fields. For buttons,
+the value that gets submitted in form data (e.g. "Yes"
+for a checkbox, or the radio's on-state name).
 \item \code{bounds_left}, \code{bounds_bottom}, \code{bounds_right},
 \code{bounds_top} - widget rectangle in PDF user space.
 \item \code{options} list-column of character vectors - the choice
 labels for \code{combobox} and \code{listbox} fields; empty
 character vector for other types.
+\item \code{is_option_selected} list-column of logical vectors,
+one element per option (matches \code{options}). \code{TRUE} when
+the option is currently selected. Empty for non-choice
+fields.
+\item \code{additional_actions_js} list-column of length-4 character
+vectors named \code{c("key_stroke", "format", "validate", "calculate")}. Each element is the JavaScript source
+string PDFium reports for the corresponding trigger
+event, or \code{""} when the trigger has no JS handler.
+Surfaced read-only here; v0.2.0 may expose a writer.
 }
 
 Returns a 0-row tibble of the same schema when the document
@@ -54,8 +83,9 @@ to R).
 \details{
 Wraps \code{FPDFDOC_InitFormFillEnvironment},
 \code{FPDFDOC_ExitFormFillEnvironment}, the
-\verb{FPDFAnnot_GetFormField*} family, and \verb{FPDFAnnot_GetOption*}
-for choice-list options.
+\verb{FPDFAnnot_GetFormField*} family, \code{FPDFAnnot_IsChecked} for the
+check/radio state, and \verb{FPDFAnnot_GetOption*} for choice-list
+options.
 }
 \seealso{
 \code{\link[=pdf_annotations]{pdf_annotations()}} for the page-level annotation

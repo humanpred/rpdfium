@@ -17,8 +17,11 @@ closed automatically).}
 \value{
 A tibble with columns:
 \itemize{
-\item \code{text_index} - 1-based page-object index (so this row is the
-\code{text_index}-th object returned by \code{\link[=pdf_page_objects]{pdf_page_objects()}})
+\item \code{obj_index} - 1-based page-object index (so this row is the
+\code{obj_index}-th object returned by \code{\link[=pdf_page_objects]{pdf_page_objects()}}).
+Renamed from \code{text_index} in the v0.1.0 reader/writer audit
+to avoid colliding with \code{pdf_text_chars()$text_index}, which
+is the \emph{extractable-text} offset.
 \item \code{bounds_left}, \code{bounds_bottom}, \code{bounds_right}, \code{bounds_top}
 \itemize{
 \item the object's bounding box in PDF points
@@ -43,7 +46,8 @@ produced by \code{\link[=pdf_extract_paths]{pdf_extract_paths()}}.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "unicode.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   doc <- pdf_open(fixture)
   pdf_text_runs(doc, 1)

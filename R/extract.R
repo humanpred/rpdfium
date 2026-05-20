@@ -63,7 +63,8 @@
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   paths <- pdf_extract_paths(fixture, page_num = 1)
 #'   head(paths)
@@ -83,7 +84,7 @@ pdf_extract_paths <- function(doc, page_num = 1L, password = NULL) {
   on.exit(pdf_close_page(page_obj), add = TRUE, after = FALSE)
 
   page_size <- pdf_page_size(page_obj)
-  page_rot  <- pdf_page_rotation(page_obj)
+  page_rot <- pdf_page_rotation(page_obj)
 
   objs <- pdf_page_objects(page_obj)
   paths <- which(vapply(objs, function(o) o$type == "path", logical(1)))
@@ -138,7 +139,7 @@ empty_paths_tibble <- function() {
 # returned object).
 empty_text_runs_tibble <- function() {
   tibble::tibble(
-    text_index    = integer(),
+    obj_index     = integer(),
     bounds_left   = double(),
     bounds_bottom = double(),
     bounds_right  = double(),
@@ -151,10 +152,10 @@ empty_text_runs_tibble <- function() {
 # Internal: build the per-segment rows for one path object,
 # replicating the path-level style and bounds across each row.
 one_path_rows <- function(obj, path_index) {
-  segs   <- pdf_path_segments(obj)
+  segs <- pdf_path_segments(obj)
   stroke <- pdf_path_stroke(obj)
-  fill   <- pdf_path_fill(obj)
-  bnds   <- pdf_obj_bounds(obj)
+  fill <- pdf_path_fill(obj)
+  bnds <- pdf_obj_bounds(obj)
 
   n <- nrow(segs)
   tibble::tibble(
@@ -164,19 +165,19 @@ one_path_rows <- function(obj, path_index) {
     x             = segs$x,
     y             = segs$y,
     close_figure  = segs$close_figure,
-    stroke_red    = rep(stroke[["red"]],   n),
+    stroke_red    = rep(stroke[["red"]], n),
     stroke_green  = rep(stroke[["green"]], n),
-    stroke_blue   = rep(stroke[["blue"]],  n),
+    stroke_blue   = rep(stroke[["blue"]], n),
     stroke_alpha  = rep(stroke[["alpha"]], n),
     stroke_width  = rep(stroke[["width"]], n),
-    fill_red      = rep(fill[["red"]],     n),
-    fill_green    = rep(fill[["green"]],   n),
-    fill_blue     = rep(fill[["blue"]],    n),
-    fill_alpha    = rep(fill[["alpha"]],   n),
-    bounds_left   = rep(bnds[["left"]],    n),
-    bounds_bottom = rep(bnds[["bottom"]],  n),
-    bounds_right  = rep(bnds[["right"]],   n),
-    bounds_top    = rep(bnds[["top"]],     n)
+    fill_red      = rep(fill[["red"]], n),
+    fill_green    = rep(fill[["green"]], n),
+    fill_blue     = rep(fill[["blue"]], n),
+    fill_alpha    = rep(fill[["alpha"]], n),
+    bounds_left   = rep(bnds[["left"]], n),
+    bounds_bottom = rep(bnds[["bottom"]], n),
+    bounds_right  = rep(bnds[["right"]], n),
+    bounds_top    = rep(bnds[["top"]], n)
   )
 }
 

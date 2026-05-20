@@ -1,14 +1,100 @@
-#' Resolve the bundled PDFium binary directory
-#'
-#' Returns the path inside the installed package where the configure script
-#' deposited `libpdfium.{so,dylib,dll}` and the public headers. Mostly useful
-#' for diagnostics — the package itself locates the library through the
-#' regular linker / `library.dynam` machinery.
-#'
-#' @return A character scalar — the absolute path to the `lib/` directory
-#'   under `inst/`. Empty string if the package was not installed.
-#' @keywords internal
-#' @noRd
-pdfium_lib_dir <- function() {
-  system.file("lib", package = "pdfium")
+# Argument validation across the package goes through `checkmate`
+# directly at the call site — see ADR-010. Earlier ad-hoc helpers
+# (validate_positive_int / _nonempty_char / _finite_numeric) were
+# retired in the same pass; new code uses
+# `checkmate::assert_count(x, positive = TRUE)` /
+# `checkmate::assert_string(x, min.chars = 1L)` /
+# `checkmate::assert_number(x, finite = TRUE)` instead.
+
+# Internal: resolve a doc-or-path argument into an open `pdfium_doc`,
+# scheduling `pdf_close()` on the caller's exit when (and only when)
+# this call opened the doc itself. Centralises the path-or-doc
+# pattern used by every doc-or-path public function (pdf_page_count,
+# pdf_doc_info, pdf_bookmarks, pdf_attachments, pdf_text, ...).
+#
+# `arg` is the public-facing argument name to surface in the
+# assertion message when the caller passes something other than a
+# `pdfium_doc`. `password` is only consulted on the path-string
+# branch; if the caller already holds an open doc the password was
+# supplied at open time.
+#
+# `.envir` is the frame the deferred close registers in — defaults
+# to the caller's frame, which is what every callsite wants.
+as_open_doc <- function(x, arg = "doc", password = NULL,
+                        .envir = parent.frame()) {
+  if (is.character(x)) {
+    doc <- pdf_open(x, password = password)
+    withr::defer(pdf_close(doc), envir = .envir)
+    return(doc)
+  }
+  checkmate::assert_class(x, "pdfium_doc", .var.name = arg)
+  if (!is_open(x)) {
+    stop("Document has been closed.", call. = FALSE)
+  }
+  x
+}
+
+# Internal: resolve a page-or-doc argument into an open `pdfium_page`,
+# scheduling `pdf_close_page()` on the caller's exit when (and only
+# when) this call loaded the page itself. The two-shape page
+# argument (already-open page or doc-plus-index) is the convention
+# used by every page-level wrapper in the package.
+as_open_page <- function(page, page_num = 1L, .envir = parent.frame()) {
+  checkmate::assert_multi_class(page, c("pdfium_page", "pdfium_doc"))
+  if (inherits(page, "pdfium_page")) {
+    if (!is_open(page)) stop("Page has been closed.", call. = FALSE)
+    return(page)
+  }
+  # `page` is a pdfium_doc — load `page_num` and arrange for close.
+  if (!is_open(page)) stop("Document has been closed.", call. = FALSE)
+  p <- pdf_load_page(page, page_num)
+  withr::defer(pdf_close_page(p), envir = .envir)
+  p
+}
+
+# Internal: vectorised lookup of a PDFium integer enum code to its
+# short character name. `names` is the lookup table; `base` is the
+# integer code corresponding to `names[1]` (0 for most PDFium enums,
+# 1 for FPDFACTION_* / FPDFDEST_VIEW_*). Out-of-range codes (whether
+# negative, NA, or above `base + length(names) - 1`) collapse to
+# `fallback`. Used by every `pdfium_*_name()` decoder.
+.pdfium_enum_name <- function(codes, names, base = 0L,
+                              fallback = "unknown") {
+  codes <- as.integer(codes)
+  out <- rep(fallback, length(codes))
+  # nocov start — defensive against future PDFium enum extensions
+  # above the current `length(names)` ceiling; today's codes always
+  # land inside the table for every wrapper that calls us.
+  hit <- !is.na(codes) & codes >= base & codes < base + length(names)
+  out[hit] <- names[codes[hit] - base + 1L]
+  # nocov end
+  out
+}
+
+# Internal: replace empty strings (length-zero or `""`) with NA.
+# PDFium reports "absent string entries" as `""`; callers typically
+# want NA so downstream `is.na()` / tibble printing behaves sensibly.
+# Works on length-N vectors and length-1 scalars uniformly.
+na_if_empty <- function(x) {
+  ifelse(nzchar(x), x, NA_character_)
+}
+
+# Internal: replace negative integers (PDFium's "no value" sentinel
+# for many integer accessors — page index, parent index, MCID, ...)
+# with NA. Coerces to integer first so numeric inputs work too.
+na_if_negative <- function(x) {
+  x <- as.integer(x)
+  x[!is.na(x) & x < 0L] <- NA_integer_
+  x
+}
+
+# Internal: assert that `key` is a non-empty single string AND
+# re-encode it to UTF-8 ready for the PDFium C ABI (which expects
+# UTF-8 byte sequences for every "name" argument — dict keys,
+# attachment-dict keys, viewer-preference keys, etc.). Consolidates
+# the assert-then-enc2utf8 pattern used in annot_probes.R,
+# tier3_extras.R, and doc_extra.R.
+assert_pdf_key <- function(key, arg = "key") {
+  checkmate::assert_string(key, min.chars = 1L, .var.name = arg)
+  enc2utf8(key)
 }

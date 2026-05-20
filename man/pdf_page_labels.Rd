@@ -19,7 +19,8 @@ of the document and returns the results as a character vector
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) pdf_page_labels(fixture)
 }
 \seealso{

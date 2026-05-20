@@ -82,7 +82,8 @@ PDFium does not expose them through its public C API; see
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-                       package = "pdfium")
+  package = "pdfium"
+)
 if (nzchar(fixture)) {
   paths <- pdf_extract_paths(fixture, page_num = 1)
   head(paths)

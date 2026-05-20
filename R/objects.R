@@ -29,7 +29,8 @@
 #' @seealso [pdf_obj_type()], [pdf_form_objects()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -41,13 +42,8 @@
 #' }
 #' @export
 pdf_page_objects <- function(page, page_num = 1L, recursive = FALSE) {
-  if (!is.logical(recursive) || length(recursive) != 1L ||
-        is.na(recursive)) {
-    stop("`recursive` must be a single TRUE or FALSE.", call. = FALSE)
-  }
+  checkmate::assert_flag(recursive)
   page <- as_open_page(page, page_num)
-  on_exit_close <- attr(page, ".close_on_exit")
-  if (isTRUE(on_exit_close)) on.exit(pdf_close_page(page), add = TRUE)
 
   n <- cpp_page_object_count(page$ptr)
   out <- vector("list", n)
@@ -57,7 +53,9 @@ pdf_page_objects <- function(page, page_num = 1L, recursive = FALSE) {
     type_name <- pdfium_obj_type_name(type_code)
     out[[i]] <- new_pdfium_obj(obj_ptr, page, i, type_name)
   }
-  if (!recursive) return(out)
+  if (!recursive) {
+    return(out)
+  }
   flatten_page_objs_recursive(out)
 }
 
@@ -86,14 +84,7 @@ flatten_page_objs_recursive <- function(objs) {
 #'   `"form"`, `"shading"`, or `"unknown"`.
 #' @export
 pdf_obj_type <- function(obj) {
-  if (!inherits(obj, "pdfium_obj")) {
-    stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-         call. = FALSE)
-  }
-  if (!is_open(obj)) {
-    stop("Parent page has been closed; object handle is no longer valid.",
-         call. = FALSE)
-  }
+  check_pdfium_obj(obj)
   # We cached the type at construction time. Verify against the live
   # query in case future PDFium versions allow runtime type mutation.
   pdfium_obj_type_name(cpp_obj_type(obj$ptr))
@@ -115,7 +106,8 @@ pdf_obj_type <- function(obj) {
 #'
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -126,14 +118,7 @@ pdf_obj_type <- function(obj) {
 #' }
 #' @export
 pdf_obj_bounds <- function(obj) {
-  if (!inherits(obj, "pdfium_obj")) {
-    stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-         call. = FALSE)
-  }
-  if (!is_open(obj)) {
-    stop("Parent page has been closed; object handle is no longer valid.",
-         call. = FALSE)
-  }
+  check_pdfium_obj(obj)
   cpp_obj_bounds(obj$ptr)
 }
 
@@ -167,7 +152,8 @@ pdf_obj_bounds <- function(obj) {
 #' @seealso [pdf_obj_bounds()], [pdf_path_segments()]
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   p <- pdf_load_page(doc, 1)
@@ -178,46 +164,21 @@ pdf_obj_bounds <- function(obj) {
 #' }
 #' @export
 pdf_obj_matrix <- function(obj) {
-  if (!inherits(obj, "pdfium_obj")) {
-    stop("`obj` must be a `pdfium_obj` (from `pdf_page_objects()`).",
-         call. = FALSE)
-  }
-  if (!is_open(obj)) {
-    stop("Parent page has been closed; object handle is no longer valid.",
-         call. = FALSE)
-  }
+  check_pdfium_obj(obj)
   m <- cpp_obj_matrix(obj$ptr)
   matrix(
-    c(m[["a"]], m[["b"]], 0,
+    c(
+      m[["a"]], m[["b"]], 0,
       m[["c"]], m[["d"]], 0,
-      m[["e"]], m[["f"]], 1),
+      m[["e"]], m[["f"]], 1
+    ),
     nrow = 3, ncol = 3, byrow = FALSE
   )
 }
 
 # Internal: convert a PDFium FPDF_PAGEOBJ_* code (int) to its short
-# character name. Unknown codes return "unknown" to keep the public
-# API stable against future PDFium enum additions.
+# character name. See R/utils.R::.pdfium_enum_name for the fallback
+# semantics.
 pdfium_obj_type_name <- function(code) {
-  idx <- as.integer(code) + 1L
-  if (idx < 1L || idx > length(.pdfium_obj_type_names)) "unknown"
-  else .pdfium_obj_type_names[[idx]]
-}
-
-# Internal: resolve a page argument that may be a pdfium_page or a
-# pdfium_doc + page_num into an open page. When opened transparently
-# from a doc, the returned page carries a `.close_on_exit = TRUE`
-# attribute so the caller can close it on exit.
-as_open_page <- function(x, page_num = 1L) {
-  if (inherits(x, "pdfium_page")) {
-    if (!is_open(x)) stop("Page has been closed.", call. = FALSE)
-    attr(x, ".close_on_exit") <- FALSE
-    return(x)
-  }
-  if (inherits(x, "pdfium_doc")) {
-    p <- pdf_load_page(x, page_num)
-    attr(p, ".close_on_exit") <- TRUE
-    return(p)
-  }
-  stop("`page` must be a `pdfium_page` or `pdfium_doc`.", call. = FALSE)
+  .pdfium_enum_name(code, .pdfium_obj_type_names)
 }

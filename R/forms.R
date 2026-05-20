@@ -34,7 +34,8 @@
 #'   [pdf_obj_matrix()] for the form's own transformation matrix.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "form_xobject.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) {
 #'   doc <- pdf_open(fixture)
 #'   page <- pdf_load_page(doc, 1L)
@@ -43,25 +44,16 @@
 #'     nested <- pdf_form_objects(forms[[1L]])
 #'     length(nested)
 #'   }
-#'   pdf_close_page(page); pdf_close(doc)
+#'   pdf_close_page(page)
+#'   pdf_close(doc)
 #' }
 #' @export
 pdf_form_objects <- function(form) {
-  if (!inherits(form, "pdfium_obj")) {
-    stop("`form` must be a `pdfium_obj` (from `pdf_page_objects()` ",
-         "or `pdf_form_objects()`).", call. = FALSE)
-  }
-  if (!is_open(form)) {
-    stop("Parent page has been closed; the page object is no longer valid.",
-         call. = FALSE)
-  }
-  if (!identical(form$type, "form")) {
-    stop(sprintf("`form` is a `%s` object; this function requires a form.",
-                 form$type),
-         call. = FALSE)
-  }
+  check_pdfium_obj(form, allowed_types = "form", arg = "form")
   n <- cpp_form_object_count(form$ptr)
-  if (n == 0L) return(list())
+  if (n == 0L) {
+    return(list())
+  }
 
   lapply(seq_len(n), function(i) {
     inner <- cpp_form_get_object(form$ptr, form$page$ptr, i - 1L)

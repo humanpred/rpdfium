@@ -77,6 +77,50 @@ std::vector<std::string> read_form_options(
   return out;
 }
 
+// Per-option "is currently selected" flags for combobox / listbox.
+// Length matches read_form_options; empty for other field types.
+Rcpp::LogicalVector read_option_selected(
+    FPDF_FORMHANDLE form, FPDF_ANNOTATION annot) {
+  int n = FPDFAnnot_GetOptionCount(form, annot);
+  if (n <= 0) return Rcpp::LogicalVector();
+  Rcpp::LogicalVector out(n);
+  for (int i = 0; i < n; ++i) {
+    out[i] = FPDFAnnot_IsOptionSelected(form, annot, i) ? TRUE : FALSE;
+  }
+  return out;
+}
+
+// Per-field-event JavaScript trigger strings. PDFium exposes four
+// events keyed by the FPDF_ANNOT_AACTION_* enum (12=KEY_STROKE,
+// 13=FORMAT, 14=VALIDATE, 15=CALCULATE). Returns a named character
+// vector of length 4; empty string for events without a JS handler.
+Rcpp::CharacterVector read_additional_actions_js(
+    FPDF_FORMHANDLE form, FPDF_ANNOTATION annot) {
+  const int events[] = {FPDF_ANNOT_AACTION_KEY_STROKE,
+                         FPDF_ANNOT_AACTION_FORMAT,
+                         FPDF_ANNOT_AACTION_VALIDATE,
+                         FPDF_ANNOT_AACTION_CALCULATE};
+  const char* names[] = {"key_stroke", "format", "validate", "calculate"};
+  Rcpp::CharacterVector out(4);
+  for (int i = 0; i < 4; ++i) {
+    unsigned long needed = FPDFAnnot_GetFormAdditionalActionJavaScript(
+        form, annot, events[i], nullptr, 0);
+    if (needed <= 2) {
+      out[i] = "";
+      continue;
+    }
+    std::vector<unsigned short> buf(needed / 2);
+    FPDFAnnot_GetFormAdditionalActionJavaScript(
+        form, annot, events[i],
+        reinterpret_cast<FPDF_WCHAR*>(buf.data()), needed);
+    size_t wchars = (needed >= 2 ? needed / 2 - 1 : needed / 2);
+    out[i] = pdfium_r::utf16le_to_utf8(buf.data(), wchars);
+  }
+  out.attr("names") = Rcpp::CharacterVector::create(
+      names[0], names[1], names[2], names[3]);
+  return out;
+}
+
 }  // namespace
 
 // [[Rcpp::export(name = "cpp_form_fields_list")]]
@@ -95,27 +139,39 @@ Rcpp::List cpp_form_fields_list(SEXP doc_ptr) {
         Rcpp::_["page_num"]      = Rcpp::IntegerVector(),
         Rcpp::_["field_type"]    = Rcpp::IntegerVector(),
         Rcpp::_["field_flags"]   = Rcpp::IntegerVector(),
+        Rcpp::_["is_checked"]    = Rcpp::IntegerVector(),
+        Rcpp::_["control_count"] = Rcpp::IntegerVector(),
+        Rcpp::_["control_index"] = Rcpp::IntegerVector(),
         Rcpp::_["name"]          = Rcpp::CharacterVector(),
         Rcpp::_["alternate_name"] = Rcpp::CharacterVector(),
         Rcpp::_["value"]         = Rcpp::CharacterVector(),
+        Rcpp::_["export_value"]  = Rcpp::CharacterVector(),
         Rcpp::_["bounds_left"]    = Rcpp::NumericVector(),
         Rcpp::_["bounds_bottom"]  = Rcpp::NumericVector(),
         Rcpp::_["bounds_right"]   = Rcpp::NumericVector(),
         Rcpp::_["bounds_top"]     = Rcpp::NumericVector(),
-        Rcpp::_["options"]       = Rcpp::List());
+        Rcpp::_["options"]       = Rcpp::List(),
+        Rcpp::_["is_option_selected"] = Rcpp::List(),
+        Rcpp::_["additional_actions_js"] = Rcpp::List());
   }
 
   std::vector<int> page_nums;
   std::vector<int> field_types;
   std::vector<int> field_flags;
+  std::vector<int> is_checked;  // 1=checked, 0=unchecked, -1=N/A
+  std::vector<int> control_count;
+  std::vector<int> control_index;
   std::vector<std::string> names;
   std::vector<std::string> alt_names;
   std::vector<std::string> values;
+  std::vector<std::string> export_values;
   std::vector<double> lefts;
   std::vector<double> bottoms;
   std::vector<double> rights;
   std::vector<double> tops;
   Rcpp::List options;
+  Rcpp::List is_option_selected;
+  Rcpp::List additional_actions_js;
 
   int page_count = FPDF_GetPageCount(doc);
   for (int p = 0; p < page_count; ++p) {
@@ -134,12 +190,41 @@ Rcpp::List cpp_form_fields_list(SEXP doc_ptr) {
       field_types.push_back(ftype < 0 ? NA_INTEGER : ftype);
       field_flags.push_back(
           FPDFAnnot_GetFormFieldFlags(form, annot));
+      // FPDFAnnot_IsChecked only returns meaningful values for
+      // checkbox / radiobutton fields whose control is registered
+      // in PDFium's ControlMap (PDFium keys the map by the field
+      // dict pointer, which can mismatch the annot dict pointer
+      // for hand-built PDFs). For everything else (and as a fallback
+      // for those mismatches), we surface -1 here and let the R
+      // wrapper infer from the field's value (PDFium reports
+      // "Off" when no control is checked, the on-state name
+      // otherwise — see CPDF_FormField::GetCheckValue).
+      bool checkable = (ftype == FPDF_FORMFIELD_CHECKBOX ||
+                         ftype == FPDF_FORMFIELD_RADIOBUTTON);
+      if (checkable) {
+        int rc = FPDFAnnot_IsChecked(form, annot) ? 1 : 0;
+        is_checked.push_back(rc);
+      } else {
+        is_checked.push_back(-1);
+      }
+      // Control group bookkeeping. For radio button widgets the
+      // field's /Kids array typically has N widgets and PDFium
+      // tells us both the total count and this widget's 0-based
+      // position via FPDFAnnot_GetFormControl*. For non-button
+      // fields PDFium returns 1/0; we surface the raw integers
+      // and let the R wrapper map negative-on-failure to NA.
+      control_count.push_back(
+          FPDFAnnot_GetFormControlCount(form, annot));
+      control_index.push_back(
+          FPDFAnnot_GetFormControlIndex(form, annot));
       names.push_back(
           read_form_string(form, annot, FPDFAnnot_GetFormFieldName));
       alt_names.push_back(read_form_string(
           form, annot, FPDFAnnot_GetFormFieldAlternateName));
       values.push_back(
           read_form_string(form, annot, FPDFAnnot_GetFormFieldValue));
+      export_values.push_back(read_form_string(
+          form, annot, FPDFAnnot_GetFormFieldExportValue));
       FS_RECTF rect;
       if (FPDFAnnot_GetRect(annot, &rect)) {
         lefts.push_back(rect.left);
@@ -153,6 +238,9 @@ Rcpp::List cpp_form_fields_list(SEXP doc_ptr) {
         tops.push_back(NA_REAL);
       }
       options.push_back(Rcpp::wrap(read_form_options(form, annot)));
+      is_option_selected.push_back(read_option_selected(form, annot));
+      additional_actions_js.push_back(
+          read_additional_actions_js(form, annot));
       FPDFPage_CloseAnnot(annot);
     }
     FPDF_ClosePage(page);
@@ -163,12 +251,18 @@ Rcpp::List cpp_form_fields_list(SEXP doc_ptr) {
       Rcpp::_["page_num"]       = page_nums,
       Rcpp::_["field_type"]     = field_types,
       Rcpp::_["field_flags"]    = field_flags,
+      Rcpp::_["is_checked"]     = is_checked,
+      Rcpp::_["control_count"]  = control_count,
+      Rcpp::_["control_index"]  = control_index,
       Rcpp::_["name"]           = names,
       Rcpp::_["alternate_name"] = alt_names,
       Rcpp::_["value"]          = values,
+      Rcpp::_["export_value"]   = export_values,
       Rcpp::_["bounds_left"]    = lefts,
       Rcpp::_["bounds_bottom"]  = bottoms,
       Rcpp::_["bounds_right"]   = rights,
       Rcpp::_["bounds_top"]     = tops,
-      Rcpp::_["options"]        = options);
+      Rcpp::_["options"]        = options,
+      Rcpp::_["is_option_selected"] = is_option_selected,
+      Rcpp::_["additional_actions_js"] = additional_actions_js);
 }

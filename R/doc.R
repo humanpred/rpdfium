@@ -9,33 +9,13 @@
 # convenience for one-shot inspection: the doc is opened, the
 # accessor runs, and the doc is closed before returning.
 
-# Internal: accept either an open pdfium_doc or a character path,
-# return a (doc, on_exit) pair where `on_exit` is a closure the
-# caller invokes when finished. Centralises the path-or-doc
-# pattern used by pdf_page_count(), pdf_doc_info(), and the three
-# accessors below.
-as_doc_handle <- function(x, arg = "doc") {
-  if (is.character(x)) {
-    doc <- pdf_open(x)
-    return(list(doc = doc, on_exit = function() pdf_close(doc)))
-  }
-  if (!inherits(x, "pdfium_doc")) {
-    stop(sprintf("`%s` must be a `pdfium_doc` or a path to a PDF file.",
-                 arg), call. = FALSE)
-  }
-  if (!is_open(x)) {
-    stop("Document has been closed.", call. = FALSE)
-  }
-  list(doc = x, on_exit = function() invisible(NULL))
-}
-
 #' Read the bookmark outline (table of contents) of a PDF
 #'
 #' Returns a tibble row per bookmark, walking PDFium's outline tree
 #' depth-first. Each row carries the bookmark's title, its position
-#' in the hierarchy, and the page it points to (or `NA` when the
-#' bookmark uses an action — URI, launch — rather than a
-#' destination).
+#' in the hierarchy, the page it points to (when resolvable), and the
+#' action it carries (URI, launch, remote_goto, embedded_goto, or
+#' the typical goto-within-this-document).
 #'
 #' The tree structure is recoverable from the `parent_index` column
 #' alone: top-level bookmarks have `parent_index == 0`, and every
@@ -44,7 +24,9 @@ as_doc_handle <- function(x, arg = "doc") {
 #' filtering ("show me chapter-level entries only").
 #'
 #' Wraps `FPDFBookmark_GetFirstChild`, `FPDFBookmark_GetNextSibling`,
-#' `FPDFBookmark_GetTitle`, `FPDFBookmark_GetDest`, and
+#' `FPDFBookmark_GetTitle`, `FPDFBookmark_GetDest`,
+#' `FPDFBookmark_GetAction`, `FPDFAction_GetType` /
+#' `FPDFAction_GetURIPath` / `FPDFAction_GetFilePath`, and
 #' `FPDFDest_GetDestPageIndex`.
 #'
 #' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
@@ -56,29 +38,53 @@ as_doc_handle <- function(x, arg = "doc") {
 #'   * `level` integer - 1-based nesting depth.
 #'   * `title` character - the bookmark's display text, UTF-8.
 #'   * `page_num` integer - 1-based destination page number, or
-#'     `NA` when the bookmark has no page destination.
+#'     `NA` when the bookmark has no resolvable page destination
+#'     (e.g. for URI / launch actions, or unresolvable dests).
+#'   * `action_type` character - one of `"goto"`, `"remote_goto"`,
+#'     `"uri"`, `"launch"`, `"embedded_goto"`.
+#'   * `uri` character - the action's target URL when
+#'     `action_type == "uri"`; `NA` otherwise.
+#'   * `filepath` character - the external file path when
+#'     `action_type` is `"remote_goto"` / `"launch"` /
+#'     `"embedded_goto"`; `NA` otherwise.
+#'   * `dest_view` character - the destination view mode (one of
+#'     `"xyz"`, `"fit"`, `"fith"`, `"fitv"`, `"fitr"`, `"fitb"`,
+#'     `"fitbh"`, `"fitbv"`, `"unknown"`).
+#'   * `dest_x`, `dest_y`, `dest_zoom` numeric - the explicit point
+#'     / zoom for XYZ destinations and the line offset for
+#'     FitH / FitV / FitBH / FitBV. `NA` for components the
+#'     destination doesn't specify.
 #'
 #' Returns a 0-row tibble of the same schema when the document has
 #' no outline.
 #'
-#' @seealso [pdf_page_labels()] for logical page numbering.
+#' @seealso [pdf_page_labels()] for logical page numbering,
+#'   [pdf_page_links()] for clickable link annotations on a page.
 #' @examples
-#' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#' fixture <- system.file("extdata", "fixtures", "outline.pdf",
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) pdf_bookmarks(fixture)
 #' @export
 pdf_bookmarks <- function(doc) {
-  h <- as_doc_handle(doc, "doc")
-  on.exit(h$on_exit(), add = TRUE)
-  raw <- cpp_bookmarks(h$doc$ptr)
-  page_num <- raw$page_num
-  page_num[page_num < 0L] <- NA_integer_
+  doc <- as_open_doc(doc)
+  raw <- cpp_bookmarks(doc$ptr)
+  # action_code 0 means "no /A and unresolvable /Dest" — surface as
+  # "unsupported" via the shared lookup. URI / filepath columns are
+  # NA in that case anyway.
   tibble::tibble(
     bookmark_index = seq_along(raw$title),
     parent_index   = as.integer(raw$parent_index),
     level          = as.integer(raw$level),
     title          = raw$title,
-    page_num       = as.integer(page_num)
+    page_num       = na_if_negative(raw$page_num),
+    action_type    = pdfium_action_type_name(raw$action_code),
+    uri            = na_if_empty(raw$uri),
+    filepath       = na_if_empty(raw$filepath),
+    dest_view      = pdfium_dest_view_name(raw$dest_view),
+    dest_x         = raw$dest_x,
+    dest_y         = raw$dest_y,
+    dest_zoom      = raw$dest_zoom
   )
 }
 
@@ -100,15 +106,9 @@ pdf_bookmarks <- function(doc) {
 #'   [pdf_bookmarks()].
 #' @export
 pdf_page_label <- function(doc, page_num = 1L) {
-  if (!is.numeric(page_num) || length(page_num) != 1L ||
-        is.na(page_num) || page_num != as.integer(page_num) ||
-        page_num < 1L) {
-    stop("`page_num` must be a single positive integer (1-based).",
-         call. = FALSE)
-  }
-  h <- as_doc_handle(doc, "doc")
-  on.exit(h$on_exit(), add = TRUE)
-  cpp_page_label(h$doc$ptr, as.integer(page_num) - 1L)
+  checkmate::assert_count(page_num, positive = TRUE)
+  doc <- as_open_doc(doc)
+  cpp_page_label(doc$ptr, as.integer(page_num) - 1L)
 }
 
 #' Read every page's logical label in one call
@@ -122,16 +122,18 @@ pdf_page_label <- function(doc, page_num = 1L) {
 #' @seealso [pdf_page_label()] for a single page.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
-#'                        package = "pdfium")
+#'   package = "pdfium"
+#' )
 #' if (nzchar(fixture)) pdf_page_labels(fixture)
 #' @export
 pdf_page_labels <- function(doc) {
-  h <- as_doc_handle(doc, "doc")
-  on.exit(h$on_exit(), add = TRUE)
-  n <- cpp_page_count(h$doc$ptr)
-  vapply(seq_len(n),
-         function(i) cpp_page_label(h$doc$ptr, i - 1L),
-         character(1L))
+  doc <- as_open_doc(doc)
+  n <- cpp_page_count(doc$ptr)
+  vapply(
+    seq_len(n),
+    function(i) cpp_page_label(doc$ptr, i - 1L),
+    character(1L)
+  )
 }
 
 # PDF spec 7.6.3.2 / Table 22: meaning of each /P (UserAccess) bit
@@ -182,8 +184,7 @@ pdf_page_labels <- function(doc) {
 #' @return A named logical vector with the eight flags listed above.
 #' @export
 pdf_doc_permissions <- function(doc) {
-  h <- as_doc_handle(doc, "doc")
-  on.exit(h$on_exit(), add = TRUE)
+  doc <- as_open_doc(doc)
   # cpp_doc_permissions returns the raw unsigned 32-bit mask as a
   # double (R's integer cannot hold 0xFFFFFFFF). All documented
   # permission bits are in bits 1-16, so reduce to the low 16 bits
@@ -191,11 +192,107 @@ pdf_doc_permissions <- function(doc) {
   # documents PDFium returns 0xFFFFFFFF and the low-16 reduction
   # gives 0xFFFF -- every flag is set, every operation allowed,
   # which is the correct contract.
-  mask <- cpp_doc_permissions(h$doc$ptr)
+  mask <- cpp_doc_permissions(doc$ptr)
+  decode_perm_mask(mask)
+}
+
+# Internal: shared low-16-bit decode used by pdf_doc_permissions()
+# and pdf_doc_user_permissions().
+decode_perm_mask <- function(mask) {
   low16 <- as.integer(mask %% 65536)
   vapply(
     .pdfium_permission_bits,
     function(b) bitwAnd(low16, bitwShiftL(1L, b - 1L)) != 0L,
     logical(1L)
   )
+}
+
+#' User-level document permissions
+#'
+#' Returns the *user* subset of the document's permission bitmask
+#' (the bits that apply to a user who opened the PDF without the
+#' owner password). Same shape as [pdf_doc_permissions()] — a named
+#' logical vector with one entry per permission flag — but with
+#' owner-only operations cleared. Wraps `FPDF_GetDocUserPermissions`.
+#'
+#' For unencrypted PDFs, every flag is `TRUE`.
+#'
+#' @inheritParams pdf_doc_permissions
+#' @return Named logical vector. Same names as
+#'   [pdf_doc_permissions()].
+#' @seealso [pdf_doc_permissions()], [pdf_doc_security()].
+#' @export
+pdf_doc_user_permissions <- function(doc) {
+  doc <- as_open_doc(doc)
+  decode_perm_mask(cpp_doc_user_permissions(doc$ptr))
+}
+
+#' Document security handler revision
+#'
+#' Returns the PDF security handler revision used by the document:
+#'
+#' * `NA` — unencrypted (PDFium reports `-1`, mapped to `NA` here).
+#' * `2` — original 40-bit RC4 (PDF 1.1).
+#' * `3` — 128-bit RC4 (PDF 1.4).
+#' * `4` — AES (PDF 1.6).
+#' * `5` — AES-256, Adobe Extension Level 3 (PDF 1.7).
+#' * `6` — AES-256 (PDF 2.0).
+#'
+#' Wraps `FPDF_GetSecurityHandlerRevision`. Useful when classifying
+#' PDFs as "encrypted vs not" and when reporting the encryption
+#' strength to downstream tools — combine with [pdf_doc_permissions()]
+#' to know whether a viewer would let a user print/copy/edit.
+#'
+#' @inheritParams pdf_doc_permissions
+#' @return Integer scalar. `NA` for unencrypted PDFs; one of
+#'   `2`, `3`, `4`, `5`, `6` otherwise.
+#' @seealso [pdf_doc_permissions()], [pdf_doc_user_permissions()].
+#' @export
+pdf_doc_security <- function(doc) {
+  doc <- as_open_doc(doc)
+  rev <- as.integer(cpp_doc_security_revision(doc$ptr))
+  # nocov start — non-NA branch needs an encrypted PDF; the
+  # fixture pipeline doesn't ship one. Behaviour verified against
+  # encrypted PDFs in ad-hoc local testing.
+  if (rev >= 0L) {
+    return(rev)
+  }
+  # nocov end
+  NA_integer_
+}
+
+#' Cross-reference table validity flag
+#'
+#' Returns `TRUE` when the document's `/XRef` table is structurally
+#' valid as PDFium found it, or `FALSE` when PDFium had to rebuild
+#' it from scratch (a sign of a damaged or non-conforming PDF).
+#' Wraps `FPDF_DocumentHasValidCrossReferenceTable`.
+#'
+#' @inheritParams pdf_doc_permissions
+#' @return Logical scalar.
+#' @export
+pdf_doc_xref_valid <- function(doc) {
+  doc <- as_open_doc(doc)
+  as.logical(cpp_doc_xref_valid(doc$ptr))
+}
+
+#' Byte offsets of every `%%EOF` trailer marker
+#'
+#' Returns one integer per trailer end-of-file marker in the source
+#' bytes. A clean single-revision PDF reports one value. Incremental
+#' updates append additional bodies / xref tables and trailers, each
+#' marked by another `%%EOF`. Wraps `FPDF_GetTrailerEnds`.
+#'
+#' Useful for incremental-update analysis, signature byte-range
+#' validation, and PDF repair workflows.
+#'
+#' @inheritParams pdf_doc_permissions
+#' @return Integer vector of byte offsets (one per trailer). Empty
+#'   when PDFium reports none. Returns `NA` for any offset that
+#'   exceeds R's 32-bit signed integer range (files larger than
+#'   2 GB).
+#' @export
+pdf_doc_trailer_ends <- function(doc) {
+  doc <- as_open_doc(doc)
+  cpp_doc_trailer_ends(doc$ptr)
 }

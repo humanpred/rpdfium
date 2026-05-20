@@ -48,9 +48,8 @@
 #'   ranges, [pdf_parse_date()] for parsing the `time` column.
 #' @export
 pdf_signatures <- function(doc) {
-  h <- as_doc_handle(doc, "doc")
-  on.exit(h$on_exit(), add = TRUE)
-  raw <- cpp_signatures_list(h$doc$ptr)
+  doc <- as_open_doc(doc)
+  raw <- cpp_signatures_list(doc$ptr)
   tibble::tibble(
     signature_index    = seq_along(raw$sub_filter),
     sub_filter         = raw$sub_filter,
@@ -79,16 +78,9 @@ pdf_signatures <- function(doc) {
 #' @seealso [pdf_signatures()], [pdf_signature_byte_range()].
 #' @export
 pdf_signature_contents <- function(doc, signature_index = 1L) {
-  if (!is.numeric(signature_index) || length(signature_index) != 1L ||
-        is.na(signature_index) ||
-        signature_index != as.integer(signature_index) ||
-        signature_index < 1L) {
-    stop("`signature_index` must be a single positive integer (1-based).",
-         call. = FALSE)
-  }
-  h <- as_doc_handle(doc, "doc")
-  on.exit(h$on_exit(), add = TRUE)
-  cpp_signature_contents(h$doc$ptr, as.integer(signature_index) - 1L)
+  checkmate::assert_count(signature_index, positive = TRUE)
+  doc <- as_open_doc(doc)
+  cpp_signature_contents(doc$ptr, as.integer(signature_index) - 1L)
 }
 
 #' Read the signed byte ranges of a PDF signature
@@ -110,14 +102,7 @@ pdf_signature_contents <- function(doc, signature_index = 1L) {
 #' @seealso [pdf_signatures()], [pdf_signature_contents()].
 #' @export
 pdf_signature_byte_range <- function(doc, signature_index = 1L) {
-  if (!is.numeric(signature_index) || length(signature_index) != 1L ||
-        is.na(signature_index) ||
-        signature_index != as.integer(signature_index) ||
-        signature_index < 1L) {
-    stop("`signature_index` must be a single positive integer (1-based).",
-         call. = FALSE)
-  }
-  h <- as_doc_handle(doc, "doc")
-  on.exit(h$on_exit(), add = TRUE)
-  cpp_signature_byte_range(h$doc$ptr, as.integer(signature_index) - 1L)
+  checkmate::assert_count(signature_index, positive = TRUE)
+  doc <- as_open_doc(doc)
+  cpp_signature_byte_range(doc$ptr, as.integer(signature_index) - 1L)
 }
