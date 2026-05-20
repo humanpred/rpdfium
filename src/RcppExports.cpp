@@ -243,6 +243,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_page_refresh_annot_aps
+int cpp_page_refresh_annot_aps(SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_page_refresh_annot_aps(SEXP page_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_page_refresh_annot_aps(page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_annot_count
 int cpp_annot_count(SEXP page_ptr);
 RcppExport SEXP _pdfium_cpp_annot_count(SEXP page_ptrSEXP) {
@@ -1936,6 +1947,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_link_annot_at_point", (DL_FUNC) &_pdfium_cpp_link_annot_at_point, 3},
     {"_pdfium_cpp_obj_marked_content_id", (DL_FUNC) &_pdfium_cpp_obj_marked_content_id, 1},
     {"_pdfium_cpp_doc_focusable_subtypes", (DL_FUNC) &_pdfium_cpp_doc_focusable_subtypes, 1},
+    {"_pdfium_cpp_page_refresh_annot_aps", (DL_FUNC) &_pdfium_cpp_page_refresh_annot_aps, 1},
     {"_pdfium_cpp_annot_count", (DL_FUNC) &_pdfium_cpp_annot_count, 1},
     {"_pdfium_cpp_annots_list", (DL_FUNC) &_pdfium_cpp_annots_list, 2},
     {"_pdfium_cpp_attachment_get", (DL_FUNC) &_pdfium_cpp_attachment_get, 2},

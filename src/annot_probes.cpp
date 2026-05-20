@@ -227,3 +227,41 @@ Rcpp::IntegerVector cpp_doc_focusable_subtypes(SEXP doc_ptr) {
   FPDFDOC_ExitFormFillEnvironment(form);
   return out;
 }
+
+// Force PDFium to regenerate the appearance stream on every
+// annotation of the page. Called from render paths after
+// flush_page_if_dirty so any annotation mutated since load is
+// visible in the rendered bitmap, even when downstream consumers
+// cache /AP and skip reconciliation (Acrobat, MuPDF). The trick:
+// FPDFAnnot_SetRect to the annotation's current rect is a no-op
+// for the rect value itself but flips PDFium's "AP needs regen"
+// flag, so the next render rebuilds the stream from the live
+// dict. Returns the number of annotations refreshed.
+//
+// Cost: one FPDFPage_GetAnnot + GetRect + SetRect + CloseAnnot per
+// annotation, plus the actual regen during render. For typical
+// docs (< 100 annots/page) the overhead is dominated by the
+// rasterization itself.
+//
+// Pages with no annotations short-circuit at the count check.
+// [[Rcpp::export(name = "cpp_page_refresh_annot_aps")]]
+int cpp_page_refresh_annot_aps(SEXP page_ptr) {
+  FPDF_PAGE page = ap_page_from_ptr(page_ptr);
+  int n = FPDFPage_GetAnnotCount(page);
+  if (n <= 0) return 0;
+  int refreshed = 0;
+  for (int i = 0; i < n; ++i) {
+    FPDF_ANNOTATION a = FPDFPage_GetAnnot(page, i);
+    if (a == nullptr) continue;
+    FS_RECTF r;
+    if (FPDFAnnot_GetRect(a, &r)) {
+      // Set the rect to itself. PDFium treats the call as a
+      // mutation and flips the AP-dirty flag even though the
+      // observable rect is unchanged.
+      FPDFAnnot_SetRect(a, &r);
+      ++refreshed;
+    }
+    FPDFPage_CloseAnnot(a);
+  }
+  return refreshed;
+}

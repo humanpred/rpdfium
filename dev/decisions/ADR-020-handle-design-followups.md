@@ -70,13 +70,28 @@ cost.
 
 ### 7. AP regeneration on every render
 
-`pdf_render_*()` walks dirty annotations after page content flush
-and refreshes each AP stream (via `FPDFAnnot_SetRect` to the
-current rect — a no-op for the rect itself but forces PDFium to
-mark AP dirty). Cost: O(N annots) per render call; negligible
-for typical docs. Guarantee: any render reflects every mutator
-that ran before it, even when consumed by downstream tools
-(Acrobat, MuPDF) that cache AP and don't reconcile.
+`pdf_render_*()` walks **every annotation** on the page after the
+page-content flush and forces each AP stream to regenerate
+(`FPDFAnnot_SetRect` to the annotation's current rect — a no-op
+for the rect value itself but flips PDFium's AP-dirty flag so the
+next render rebuilds the stream from the live dict).
+
+The original draft proposed walking a dirty-set instead of every
+annot; reviewer pushback flagged the dirty-tracking layer as a
+correctness hazard (any new mutator path has to remember to mark
+its annot, and missed marks degrade silently — the render still
+succeeds but with stale AP). Walking every annot is structurally
+correct: no missed-mutator class of bug, no extra state.
+
+Cost: one `FPDFPage_GetAnnot` + `GetRect` + `SetRect` +
+`CloseAnnot` per annotation per render. Typical docs (< 100
+annots/page) see sub-millisecond overhead, dwarfed by
+rasterization. Pages with zero annotations short-circuit at the
+count check.
+
+Guarantee: any render reflects every mutator that ran before it,
+even when consumed by downstream tools (Acrobat, MuPDF) that
+cache /AP and don't reconcile.
 
 ### 8. CRAN release timing: after all phases
 

@@ -81,6 +81,10 @@ cpp_doc_focusable_subtypes <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_focusable_subtypes`, doc_ptr)
 }
 
+cpp_page_refresh_annot_aps <- function(page_ptr) {
+    .Call(`_pdfium_cpp_page_refresh_annot_aps`, page_ptr)
+}
+
 cpp_annot_count <- function(page_ptr) {
     .Call(`_pdfium_cpp_annot_count`, page_ptr)
 }

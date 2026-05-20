@@ -224,3 +224,63 @@ test_that("pdf_render_page auto-flushes the page's dirty content", {
   # The render path should have flushed page 1.
   expect_length(doc$state$dirty_pages, 0L)
 })
+
+# AP regeneration on every render (ADR-020 §7) ---------------------
+
+test_that("cpp_page_refresh_annot_aps returns one per annot", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  n_annot <- length(pdf_annotations(page))
+  expect_equal(pdfium:::cpp_page_refresh_annot_aps(page$ptr), n_annot)
+})
+
+test_that("cpp_page_refresh_annot_aps short-circuits on annot-free page", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  expect_equal(pdfium:::cpp_page_refresh_annot_aps(page$ptr), 0L)
+})
+
+test_that("pdf_render_page on an annotated page produces a valid bitmap", {
+  # Two consecutive renders should both succeed and produce
+  # identical bitmaps (idempotent — the AP refresh shouldn't drift
+  # the output for unmutated annots).
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  bmp_a <- pdf_render_page(page, dpi = 24, annotations = TRUE)
+  bmp_b <- pdf_render_page(page, dpi = 24, annotations = TRUE)
+  expect_s3_class(bmp_a, "pdfium_bitmap")
+  expect_identical(dim(bmp_a), dim(bmp_b))
+  expect_identical(as.integer(bmp_a), as.integer(bmp_b))
+})
+
+test_that("pdf_render_page_with_matrix auto-regens APs too", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  # Identity-ish transform; just exercise the path.
+  bmp <- pdf_render_page_with_matrix(
+    page,
+    matrix = c(1, 0, 0, 1, 0, 0),
+    pixel_width = 100,
+    pixel_height = 100,
+    annotations = TRUE
+  )
+  expect_s3_class(bmp, "pdfium_bitmap")
+})
+
+test_that("cpp_page_refresh_annot_aps rejects a closed page", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  ptr <- page$ptr
+  pdf_page_close(page)
+  expect_error(pdfium:::cpp_page_refresh_annot_aps(ptr),
+               "[Pp]age handle")
+})
