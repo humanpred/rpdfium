@@ -1791,6 +1791,60 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_path_move_to
+bool cpp_path_move_to(SEXP obj_ptr, double x, double y);
+RcppExport SEXP _pdfium_cpp_path_move_to(SEXP obj_ptrSEXP, SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_path_move_to(obj_ptr, x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_path_line_to
+bool cpp_path_line_to(SEXP obj_ptr, double x, double y);
+RcppExport SEXP _pdfium_cpp_path_line_to(SEXP obj_ptrSEXP, SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_path_line_to(obj_ptr, x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_path_bezier_to
+bool cpp_path_bezier_to(SEXP obj_ptr, double x1, double y1, double x2, double y2, double x3, double y3);
+RcppExport SEXP _pdfium_cpp_path_bezier_to(SEXP obj_ptrSEXP, SEXP x1SEXP, SEXP y1SEXP, SEXP x2SEXP, SEXP y2SEXP, SEXP x3SEXP, SEXP y3SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type x1(x1SEXP);
+    Rcpp::traits::input_parameter< double >::type y1(y1SEXP);
+    Rcpp::traits::input_parameter< double >::type x2(x2SEXP);
+    Rcpp::traits::input_parameter< double >::type y2(y2SEXP);
+    Rcpp::traits::input_parameter< double >::type x3(x3SEXP);
+    Rcpp::traits::input_parameter< double >::type y3(y3SEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_path_bezier_to(obj_ptr, x1, y1, x2, y2, x3, y3));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_path_close
+bool cpp_path_close(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_path_close(SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_path_close(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_path_segment_count
 int cpp_path_segment_count(SEXP obj_ptr);
 RcppExport SEXP _pdfium_cpp_path_segment_count(SEXP obj_ptrSEXP) {
@@ -2284,6 +2338,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_page_thumbnail_raw", (DL_FUNC) &_pdfium_cpp_page_thumbnail_raw, 1},
     {"_pdfium_cpp_page_thumbnail_decoded", (DL_FUNC) &_pdfium_cpp_page_thumbnail_decoded, 1},
     {"_pdfium_cpp_page_weblinks", (DL_FUNC) &_pdfium_cpp_page_weblinks, 1},
+    {"_pdfium_cpp_path_move_to", (DL_FUNC) &_pdfium_cpp_path_move_to, 3},
+    {"_pdfium_cpp_path_line_to", (DL_FUNC) &_pdfium_cpp_path_line_to, 3},
+    {"_pdfium_cpp_path_bezier_to", (DL_FUNC) &_pdfium_cpp_path_bezier_to, 7},
+    {"_pdfium_cpp_path_close", (DL_FUNC) &_pdfium_cpp_path_close, 1},
     {"_pdfium_cpp_path_segment_count", (DL_FUNC) &_pdfium_cpp_path_segment_count, 1},
     {"_pdfium_cpp_path_segments", (DL_FUNC) &_pdfium_cpp_path_segments, 1},
     {"_pdfium_cpp_render_page", (DL_FUNC) &_pdfium_cpp_render_page, 7},
