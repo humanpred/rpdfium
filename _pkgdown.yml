@@ -260,11 +260,23 @@ reference:
     desc: >
       Appenders for path page-objects. PDFium's public API is
       append-only — there is no segment-removal or -replacement
-      symbol. To "rebuild" geometry, compose these with Phase 5's
-      `pdf_path_new()` (forthcoming).
+      symbol. Compose with `pdf_path_new()` and `pdf_obj_delete()`
+      below for the full read → edit → write workflow.
     contents:
       - pdf_path_move_to
       - pdf_path_line_to
       - pdf_path_bezier_to
       - pdf_path_close
       - pdf_path_append
+  - title: Page-object creation
+    desc: >
+      Create fresh page-objects (paths, rectangles, text) on a page
+      that's been opened with `readwrite = TRUE` or built via
+      `pdf_doc_new()`. Image creation is deferred to a later release
+      pending FPDF_BITMAP plumbing. Use `pdf_obj_delete()` for the
+      inverse — remove + destroy a page-object.
+    contents:
+      - pdf_path_new
+      - pdf_rect_new
+      - pdf_text_new
+      - pdf_obj_delete

@@ -413,6 +413,22 @@ cpp_form_field_at_point <- function(doc_ptr, page_ptr, x, y) {
     .Call(`_pdfium_cpp_form_field_at_point`, doc_ptr, page_ptr, x, y)
 }
 
+cpp_path_new <- function(page_ptr, x, y) {
+    .Call(`_pdfium_cpp_path_new`, page_ptr, x, y)
+}
+
+cpp_rect_new <- function(page_ptr, x, y, width, height) {
+    .Call(`_pdfium_cpp_rect_new`, page_ptr, x, y, width, height)
+}
+
+cpp_text_new <- function(doc_ptr, page_ptr, font_name, font_size, text_utf8, x, y) {
+    .Call(`_pdfium_cpp_text_new`, doc_ptr, page_ptr, font_name, font_size, text_utf8, x, y)
+}
+
+cpp_obj_delete <- function(page_ptr, obj_ptr) {
+    .Call(`_pdfium_cpp_obj_delete`, page_ptr, obj_ptr)
+}
+
 cpp_obj_line_cap <- function(obj_ptr) {
     .Call(`_pdfium_cpp_obj_line_cap`, obj_ptr)
 }

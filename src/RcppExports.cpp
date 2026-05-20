@@ -1210,6 +1210,63 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_path_new
+SEXP cpp_path_new(SEXP page_ptr, double x, double y);
+RcppExport SEXP _pdfium_cpp_path_new(SEXP page_ptrSEXP, SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_path_new(page_ptr, x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_rect_new
+SEXP cpp_rect_new(SEXP page_ptr, double x, double y, double width, double height);
+RcppExport SEXP _pdfium_cpp_rect_new(SEXP page_ptrSEXP, SEXP xSEXP, SEXP ySEXP, SEXP widthSEXP, SEXP heightSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type y(ySEXP);
+    Rcpp::traits::input_parameter< double >::type width(widthSEXP);
+    Rcpp::traits::input_parameter< double >::type height(heightSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_rect_new(page_ptr, x, y, width, height));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_text_new
+SEXP cpp_text_new(SEXP doc_ptr, SEXP page_ptr, std::string font_name, double font_size, std::string text_utf8, double x, double y);
+RcppExport SEXP _pdfium_cpp_text_new(SEXP doc_ptrSEXP, SEXP page_ptrSEXP, SEXP font_nameSEXP, SEXP font_sizeSEXP, SEXP text_utf8SEXP, SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type font_name(font_nameSEXP);
+    Rcpp::traits::input_parameter< double >::type font_size(font_sizeSEXP);
+    Rcpp::traits::input_parameter< std::string >::type text_utf8(text_utf8SEXP);
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_new(doc_ptr, page_ptr, font_name, font_size, text_utf8, x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_obj_delete
+bool cpp_obj_delete(SEXP page_ptr, SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_delete(SEXP page_ptrSEXP, SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_delete(page_ptr, obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_obj_line_cap
 int cpp_obj_line_cap(SEXP obj_ptr);
 RcppExport SEXP _pdfium_cpp_obj_line_cap(SEXP obj_ptrSEXP) {
@@ -2289,6 +2346,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_named_dest_by_name", (DL_FUNC) &_pdfium_cpp_named_dest_by_name, 2},
     {"_pdfium_cpp_bookmark_find_handle", (DL_FUNC) &_pdfium_cpp_bookmark_find_handle, 2},
     {"_pdfium_cpp_form_field_at_point", (DL_FUNC) &_pdfium_cpp_form_field_at_point, 4},
+    {"_pdfium_cpp_path_new", (DL_FUNC) &_pdfium_cpp_path_new, 3},
+    {"_pdfium_cpp_rect_new", (DL_FUNC) &_pdfium_cpp_rect_new, 5},
+    {"_pdfium_cpp_text_new", (DL_FUNC) &_pdfium_cpp_text_new, 7},
+    {"_pdfium_cpp_obj_delete", (DL_FUNC) &_pdfium_cpp_obj_delete, 2},
     {"_pdfium_cpp_obj_line_cap", (DL_FUNC) &_pdfium_cpp_obj_line_cap, 1},
     {"_pdfium_cpp_obj_line_join", (DL_FUNC) &_pdfium_cpp_obj_line_join, 1},
     {"_pdfium_cpp_obj_has_transparency", (DL_FUNC) &_pdfium_cpp_obj_has_transparency, 1},

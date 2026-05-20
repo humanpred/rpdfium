@@ -39,28 +39,21 @@ new_pdfium_doc <- function(ptr, path, readwrite = FALSE) {
 #' @keywords internal
 #' @noRd
 is_open <- function(x) {
-  if (inherits(x, "pdfium_obj")) {
-    return(is_open(x$page))
-  }
-  if (inherits(x, "pdfium_annot")) {
-    # The annot has its own finalizer (FPDFPage_CloseAnnot); its
-    # externalptr must be valid AND the parent page must still be
-    # open. Either being dead makes the annot unusable.
+  # Page-children: obj + annot lifetimes both pivot on their
+  # parent page. Object normally has no finalizer (page-borrowed)
+  # but `pdf_obj_delete()` clears its externalptr explicitly, so
+  # the own-ptr check is necessary alongside the page check.
+  # Annot has its own finalizer (FPDFPage_CloseAnnot); same
+  # combined-check semantics apply.
+  if (inherits(x, c("pdfium_obj", "pdfium_annot"))) {
     return(cpp_handle_is_valid(x$ptr) && is_open(x$page))
   }
-  if (inherits(x, "pdfium_attachment")) {
-    # Attachment has no finalizer; PDFium owns its memory via the
-    # parent doc. The externalptr stays valid as long as the doc
-    # does. `is_open(doc)` is the authoritative check.
-    return(cpp_handle_is_valid(x$ptr) && is_open(x$doc))
-  }
-  if (inherits(x, "pdfium_signature")) {
-    # Same lifetime model as attachment: doc-owned, no finalizer.
-    return(cpp_handle_is_valid(x$ptr) && is_open(x$doc))
-  }
-  if (inherits(x, "pdfium_bookmark")) {
-    # Same lifetime model as attachment / signature: doc-owned, no
-    # finalizer. The externalptr is valid as long as the doc is.
+  # Doc-children: attachment / signature / bookmark all carry no
+  # finalizer and live as long as the parent doc lives. The doc's
+  # is_open() is the authoritative liveness signal.
+  doc_owned_classes <- c("pdfium_attachment", "pdfium_signature",
+                          "pdfium_bookmark")
+  if (inherits(x, doc_owned_classes)) {
     return(cpp_handle_is_valid(x$ptr) && is_open(x$doc))
   }
   checkmate::assert_class(x, "pdfium_handle")
