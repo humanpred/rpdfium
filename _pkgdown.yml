@@ -64,6 +64,12 @@ reference:
   - title: Signatures
     contents:
       - pdf_signatures
+      - as_pdfium_signature_list
+      - as_tibble.pdfium_signature_list
+      - pdf_signature_sub_filter
+      - pdf_signature_reason
+      - pdf_signature_time
+      - pdf_signature_doc_mdp_permission
       - pdf_signature_contents
       - pdf_signature_byte_range
   - title: Pages

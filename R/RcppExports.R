@@ -493,6 +493,34 @@ cpp_save_to_raw <- function(doc_ptr, flags, version) {
     .Call(`_pdfium_cpp_save_to_raw`, doc_ptr, flags, version)
 }
 
+cpp_signature_get <- function(doc_ptr, index_zero_based) {
+    .Call(`_pdfium_cpp_signature_get`, doc_ptr, index_zero_based)
+}
+
+cpp_signature_sub_filter_handle <- function(sig_ptr) {
+    .Call(`_pdfium_cpp_signature_sub_filter_handle`, sig_ptr)
+}
+
+cpp_signature_reason_handle <- function(sig_ptr) {
+    .Call(`_pdfium_cpp_signature_reason_handle`, sig_ptr)
+}
+
+cpp_signature_time_handle <- function(sig_ptr) {
+    .Call(`_pdfium_cpp_signature_time_handle`, sig_ptr)
+}
+
+cpp_signature_docmdp_handle <- function(sig_ptr) {
+    .Call(`_pdfium_cpp_signature_docmdp_handle`, sig_ptr)
+}
+
+cpp_signature_contents_handle <- function(sig_ptr) {
+    .Call(`_pdfium_cpp_signature_contents_handle`, sig_ptr)
+}
+
+cpp_signature_byte_range_handle <- function(sig_ptr) {
+    .Call(`_pdfium_cpp_signature_byte_range_handle`, sig_ptr)
+}
+
 cpp_signature_count <- function(doc_ptr) {
     .Call(`_pdfium_cpp_signature_count`, doc_ptr)
 }

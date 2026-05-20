@@ -4,13 +4,10 @@
 \alias{pdf_signature_byte_range}
 \title{Read the signed byte ranges of a PDF signature}
 \usage{
-pdf_signature_byte_range(doc, signature_index = 1L)
+pdf_signature_byte_range(sig)
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}}, or a character path.}
-
-\item{signature_index}{One-based signature index (default \code{1}),
-as listed by \code{\link[=pdf_signatures]{pdf_signatures()}}.}
+\item{sig}{A \code{pdfium_signature} handle from \code{\link[=pdf_signatures]{pdf_signatures()}}.}
 }
 \value{
 An integer matrix with \code{byte_range_pairs} rows and two
@@ -28,5 +25,5 @@ and bytes just-after-Contents to end-of-file.
 Wraps \code{FPDFSignatureObj_GetByteRange}.
 }
 \seealso{
-\code{\link[=pdf_signatures]{pdf_signatures()}}, \code{\link[=pdf_signature_contents]{pdf_signature_contents()}}.
+\code{\link[=pdf_signature_contents]{pdf_signature_contents()}}.
 }

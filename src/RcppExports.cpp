@@ -1447,6 +1447,84 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_signature_get
+SEXP cpp_signature_get(SEXP doc_ptr, int index_zero_based);
+RcppExport SEXP _pdfium_cpp_signature_get(SEXP doc_ptrSEXP, SEXP index_zero_basedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type index_zero_based(index_zero_basedSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_signature_get(doc_ptr, index_zero_based));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_signature_sub_filter_handle
+std::string cpp_signature_sub_filter_handle(SEXP sig_ptr);
+RcppExport SEXP _pdfium_cpp_signature_sub_filter_handle(SEXP sig_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type sig_ptr(sig_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_signature_sub_filter_handle(sig_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_signature_reason_handle
+std::string cpp_signature_reason_handle(SEXP sig_ptr);
+RcppExport SEXP _pdfium_cpp_signature_reason_handle(SEXP sig_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type sig_ptr(sig_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_signature_reason_handle(sig_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_signature_time_handle
+std::string cpp_signature_time_handle(SEXP sig_ptr);
+RcppExport SEXP _pdfium_cpp_signature_time_handle(SEXP sig_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type sig_ptr(sig_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_signature_time_handle(sig_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_signature_docmdp_handle
+int cpp_signature_docmdp_handle(SEXP sig_ptr);
+RcppExport SEXP _pdfium_cpp_signature_docmdp_handle(SEXP sig_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type sig_ptr(sig_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_signature_docmdp_handle(sig_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_signature_contents_handle
+Rcpp::RawVector cpp_signature_contents_handle(SEXP sig_ptr);
+RcppExport SEXP _pdfium_cpp_signature_contents_handle(SEXP sig_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type sig_ptr(sig_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_signature_contents_handle(sig_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_signature_byte_range_handle
+Rcpp::IntegerMatrix cpp_signature_byte_range_handle(SEXP sig_ptr);
+RcppExport SEXP _pdfium_cpp_signature_byte_range_handle(SEXP sig_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type sig_ptr(sig_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_signature_byte_range_handle(sig_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_signature_count
 int cpp_signature_count(SEXP doc_ptr);
 RcppExport SEXP _pdfium_cpp_signature_count(SEXP doc_ptrSEXP) {
@@ -1749,6 +1827,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_render_page_with_matrix", (DL_FUNC) &_pdfium_cpp_render_page_with_matrix, 8},
     {"_pdfium_cpp_save_to_file", (DL_FUNC) &_pdfium_cpp_save_to_file, 4},
     {"_pdfium_cpp_save_to_raw", (DL_FUNC) &_pdfium_cpp_save_to_raw, 3},
+    {"_pdfium_cpp_signature_get", (DL_FUNC) &_pdfium_cpp_signature_get, 2},
+    {"_pdfium_cpp_signature_sub_filter_handle", (DL_FUNC) &_pdfium_cpp_signature_sub_filter_handle, 1},
+    {"_pdfium_cpp_signature_reason_handle", (DL_FUNC) &_pdfium_cpp_signature_reason_handle, 1},
+    {"_pdfium_cpp_signature_time_handle", (DL_FUNC) &_pdfium_cpp_signature_time_handle, 1},
+    {"_pdfium_cpp_signature_docmdp_handle", (DL_FUNC) &_pdfium_cpp_signature_docmdp_handle, 1},
+    {"_pdfium_cpp_signature_contents_handle", (DL_FUNC) &_pdfium_cpp_signature_contents_handle, 1},
+    {"_pdfium_cpp_signature_byte_range_handle", (DL_FUNC) &_pdfium_cpp_signature_byte_range_handle, 1},
     {"_pdfium_cpp_signature_count", (DL_FUNC) &_pdfium_cpp_signature_count, 1},
     {"_pdfium_cpp_signatures_list", (DL_FUNC) &_pdfium_cpp_signatures_list, 1},
     {"_pdfium_cpp_signature_contents", (DL_FUNC) &_pdfium_cpp_signature_contents, 2},

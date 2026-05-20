@@ -54,6 +54,10 @@ is_open <- function(x) {
     # does. `is_open(doc)` is the authoritative check.
     return(cpp_handle_is_valid(x$ptr) && is_open(x$doc))
   }
+  if (inherits(x, "pdfium_signature")) {
+    # Same lifetime model as attachment: doc-owned, no finalizer.
+    return(cpp_handle_is_valid(x$ptr) && is_open(x$doc))
+  }
   checkmate::assert_class(x, "pdfium_handle")
   cpp_handle_is_valid(x$ptr)
 }
@@ -403,6 +407,73 @@ format.pdfium_attachment_list <- function(x, ...) {
 
 #' @export
 print.pdfium_attachment_list <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  if (length(x) > 0L) {
+    n_show <- min(5L, length(x))
+    for (i in seq_len(n_show)) {
+      cat("  [[", i, "]] ", format(x[[i]]), "\n", sep = "")
+    }
+    if (length(x) > n_show) {
+      cat("  ... and ", length(x) - n_show, " more.\n", sep = "")
+    }
+  }
+  invisible(x)
+}
+
+#' Construct a `pdfium_signature` from an FPDF_SIGNATURE handle
+#'
+#' Internal helper. PDFium owns the signature via the parent
+#' `FPDF_DOCUMENT`; the externalptr has no finalizer, and the
+#' `prot` slot pins the doc.
+#'
+#' @param ptr Externalptr to FPDF_SIGNATURE.
+#' @param doc Parent `pdfium_doc`.
+#' @param index One-based signature index.
+#' @keywords internal
+#' @noRd
+new_pdfium_signature <- function(ptr, doc, index) {
+  checkmate::assert_class(ptr, "externalptr")
+  checkmate::assert_class(doc, "pdfium_doc")
+  checkmate::assert_number(index)
+  structure(
+    list(ptr = ptr, doc = doc, index = as.integer(index)),
+    class = c("pdfium_signature", "pdfium_handle")
+  )
+}
+
+#' @export
+format.pdfium_signature <- function(x, ...) {
+  state <- if (is_open(x)) "open" else "closed"
+  sf <- tryCatch(cpp_signature_sub_filter_handle(x$ptr),
+                 error = function(e) "?")
+  sprintf("<pdfium_signature [%s] %s, idx %d>", state, sf, x$index)
+}
+
+#' @export
+print.pdfium_signature <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  invisible(x)
+}
+
+# Internal: list wrapper.
+new_pdfium_signature_list <- function(handles, doc) {
+  checkmate::assert_list(handles,
+                         types = c("pdfium_signature", "NULL"))
+  checkmate::assert_class(doc, "pdfium_doc")
+  structure(
+    handles,
+    source = doc,
+    class = c("pdfium_signature_list", "list")
+  )
+}
+
+#' @export
+format.pdfium_signature_list <- function(x, ...) {
+  sprintf("<pdfium_signature_list: %d signature(s)>", length(x))
+}
+
+#' @export
+print.pdfium_signature_list <- function(x, ...) {
   cat(format(x, ...), "\n", sep = "")
   if (length(x) > 0L) {
     n_show <- min(5L, length(x))
