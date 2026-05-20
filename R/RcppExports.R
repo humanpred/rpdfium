@@ -441,6 +441,70 @@ cpp_obj_marks_list <- function(obj_ptr) {
     .Call(`_pdfium_cpp_obj_marks_list`, obj_ptr)
 }
 
+cpp_obj_set_matrix <- function(obj_ptr, m) {
+    .Call(`_pdfium_cpp_obj_set_matrix`, obj_ptr, m)
+}
+
+cpp_obj_set_active <- function(obj_ptr, active) {
+    .Call(`_pdfium_cpp_obj_set_active`, obj_ptr, active)
+}
+
+cpp_obj_set_blend_mode <- function(obj_ptr, mode) {
+    invisible(.Call(`_pdfium_cpp_obj_set_blend_mode`, obj_ptr, mode))
+}
+
+cpp_obj_set_stroke_color <- function(obj_ptr, r, g, b, a) {
+    .Call(`_pdfium_cpp_obj_set_stroke_color`, obj_ptr, r, g, b, a)
+}
+
+cpp_obj_set_fill_color <- function(obj_ptr, r, g, b, a) {
+    .Call(`_pdfium_cpp_obj_set_fill_color`, obj_ptr, r, g, b, a)
+}
+
+cpp_obj_set_stroke_width <- function(obj_ptr, w) {
+    .Call(`_pdfium_cpp_obj_set_stroke_width`, obj_ptr, w)
+}
+
+cpp_obj_set_line_cap <- function(obj_ptr, cap) {
+    .Call(`_pdfium_cpp_obj_set_line_cap`, obj_ptr, cap)
+}
+
+cpp_obj_set_line_join <- function(obj_ptr, join) {
+    .Call(`_pdfium_cpp_obj_set_line_join`, obj_ptr, join)
+}
+
+cpp_obj_set_dash <- function(obj_ptr, array, phase) {
+    .Call(`_pdfium_cpp_obj_set_dash`, obj_ptr, array, phase)
+}
+
+cpp_path_set_draw_mode <- function(obj_ptr, fillmode, stroke) {
+    .Call(`_pdfium_cpp_path_set_draw_mode`, obj_ptr, fillmode, stroke)
+}
+
+cpp_text_set_content <- function(obj_ptr, text_utf8) {
+    .Call(`_pdfium_cpp_text_set_content`, obj_ptr, text_utf8)
+}
+
+cpp_text_set_render_mode <- function(obj_ptr, mode) {
+    .Call(`_pdfium_cpp_text_set_render_mode`, obj_ptr, mode)
+}
+
+cpp_obj_add_mark <- function(obj_ptr, name) {
+    .Call(`_pdfium_cpp_obj_add_mark`, obj_ptr, name)
+}
+
+cpp_obj_remove_mark <- function(obj_ptr, mark_index_zero) {
+    .Call(`_pdfium_cpp_obj_remove_mark`, obj_ptr, mark_index_zero)
+}
+
+cpp_obj_mark_set_int_param <- function(doc_ptr, obj_ptr, mark_index_zero, key, value) {
+    .Call(`_pdfium_cpp_obj_mark_set_int_param`, doc_ptr, obj_ptr, mark_index_zero, key, value)
+}
+
+cpp_obj_mark_set_string_param <- function(doc_ptr, obj_ptr, mark_index_zero, key, value) {
+    .Call(`_pdfium_cpp_obj_mark_set_string_param`, doc_ptr, obj_ptr, mark_index_zero, key, value)
+}
+
 cpp_page_object_count <- function(page_ptr) {
     .Call(`_pdfium_cpp_page_object_count`, page_ptr)
 }
