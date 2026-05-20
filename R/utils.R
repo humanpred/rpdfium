@@ -39,7 +39,15 @@ as_open_doc <- function(x, arg = "doc", password = NULL,
 # when) this call loaded the page itself. The two-shape page
 # argument (already-open page or doc-plus-index) is the convention
 # used by every page-level wrapper in the package.
-as_open_page <- function(page, page_num = 1L, .envir = parent.frame()) {
+#
+# `defer_close` controls whether to schedule a close in the caller's
+# frame. Set to `FALSE` when the caller is returning a value that
+# borrows the page's lifetime (e.g. `pdf_annotations()` returns a
+# list of annot handles whose `prot` slots pin this page). The
+# caller then has to keep the returned page reachable for the value
+# to remain usable.
+as_open_page <- function(page, page_num = 1L, .envir = parent.frame(),
+                         defer_close = TRUE) {
   checkmate::assert_multi_class(page, c("pdfium_page", "pdfium_doc"))
   if (inherits(page, "pdfium_page")) {
     if (!is_open(page)) stop("Page has been closed.", call. = FALSE)
@@ -48,7 +56,9 @@ as_open_page <- function(page, page_num = 1L, .envir = parent.frame()) {
   # `page` is a pdfium_doc — load `page_num` and arrange for close.
   if (!is_open(page)) stop("Document has been closed.", call. = FALSE)
   p <- pdf_page_load(page, page_num)
-  withr::defer(pdf_page_close(p), envir = .envir)
+  if (isTRUE(defer_close)) {
+    withr::defer(pdf_page_close(p), envir = .envir)
+  }
   p
 }
 

@@ -7,7 +7,8 @@ test_that("pdf_annot_dict_value finds the highlight's /Subj", {
   doc <- pdf_doc_open(fixture_path("annotated"))
   on.exit(pdf_doc_close(doc), add = TRUE)
   # The highlight is annotation_index 2; it carries /Subj=(Important).
-  out <- pdf_annot_dict_value(doc, 2L, "Subj", page_num = 1L)
+  annot <- pdf_annot_at(doc, 2L, page_num = 1L)
+  out <- pdf_annot_dict_value(annot, "Subj")
   expect_named(out, c(
     "has_key", "value_type", "value_string",
     "value_number"
@@ -19,7 +20,8 @@ test_that("pdf_annot_dict_value finds the highlight's /Subj", {
 test_that("pdf_annot_dict_value reports has_key=FALSE for missing keys", {
   doc <- pdf_doc_open(fixture_path("annotated"))
   on.exit(pdf_doc_close(doc), add = TRUE)
-  out <- pdf_annot_dict_value(doc, 1L, "NoSuchKey", page_num = 1L)
+  annot <- pdf_annot_at(doc, 1L, page_num = 1L)
+  out <- pdf_annot_dict_value(annot, "NoSuchKey")
   expect_false(out$has_key)
   expect_true(is.na(out$value_type))
 })
@@ -27,25 +29,31 @@ test_that("pdf_annot_dict_value reports has_key=FALSE for missing keys", {
 test_that("pdf_annot_dict_value validates inputs", {
   doc <- pdf_doc_open(fixture_path("annotated"))
   on.exit(pdf_doc_close(doc), add = TRUE)
+  annot <- pdf_annot_at(doc, 1L, page_num = 1L)
   expect_error(
-    pdf_annot_dict_value(doc, 0L, "Subj"),
+    pdf_annot_dict_value(annot, ""),
     "Assertion on"
   )
   expect_error(
-    pdf_annot_dict_value(doc, 1L, ""),
+    pdf_annot_dict_value("not-an-annot", "Subj"),
     "Assertion on"
   )
+})
+
+test_that("pdf_annot_at validates the index", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  expect_error(pdf_annot_at(doc, 0L), "Assertion on")
+  expect_error(pdf_annot_at(doc, 99L), "exceeds")
 })
 
 test_that("pdf_annot_appearance returns a string or empty", {
   doc <- pdf_doc_open(fixture_path("annotated"))
   on.exit(pdf_doc_close(doc), add = TRUE)
+  annot <- pdf_annot_at(doc, 1L, page_num = 1L)
   # No /AP on any of annotated.pdf's annots — empty string.
-  expect_equal(pdf_annot_appearance(doc, 1L, page_num = 1L), "")
-  expect_equal(pdf_annot_appearance(doc, 1L,
-    mode = "rollover",
-    page_num = 1L
-  ), "")
+  expect_equal(pdf_annot_appearance(annot), "")
+  expect_equal(pdf_annot_appearance(annot, mode = "rollover"), "")
 })
 
 test_that("pdf_link_annot_at_point returns the link's annotation_index", {
@@ -84,10 +92,13 @@ test_that("pdf_link_annot_at_point validates x and y", {
 test_that("pdf_annot_appearance validates inputs", {
   doc <- pdf_doc_open(fixture_path("annotated"))
   on.exit(pdf_doc_close(doc), add = TRUE)
-  expect_error(pdf_annot_appearance(doc, 0L), "Assertion on")
-  expect_error(pdf_annot_appearance(doc, NA), "Assertion on")
   expect_error(
-    pdf_annot_appearance(doc, 1L, mode = "bogus"),
+    pdf_annot_appearance("not-an-annot"),
+    "Assertion on"
+  )
+  annot <- pdf_annot_at(doc, 1L, page_num = 1L)
+  expect_error(
+    pdf_annot_appearance(annot, mode = "bogus"),
     "should be one of"
   )
 })

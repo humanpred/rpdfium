@@ -42,6 +42,12 @@ is_open <- function(x) {
   if (inherits(x, "pdfium_obj")) {
     return(is_open(x$page))
   }
+  if (inherits(x, "pdfium_annot")) {
+    # The annot has its own finalizer (FPDFPage_CloseAnnot); its
+    # externalptr must be valid AND the parent page must still be
+    # open. Either being dead makes the annot unusable.
+    return(cpp_handle_is_valid(x$ptr) && is_open(x$page))
+  }
   checkmate::assert_class(x, "pdfium_handle")
   cpp_handle_is_valid(x$ptr)
 }
@@ -168,5 +174,81 @@ format.pdfium_obj <- function(x, ...) {
 #' @export
 print.pdfium_obj <- function(x, ...) {
   cat(format(x, ...), "\n", sep = "")
+  invisible(x)
+}
+
+#' Construct a `pdfium_annot` from an external pointer
+#'
+#' Internal helper. The `FPDF_ANNOTATION` handle has its own
+#' lifetime (released via `FPDFPage_CloseAnnot`), so the
+#' externalptr carries its OWN finalizer (registered C-side in
+#' `cpp_annot_get`). The parent page is pinned in the externalptr's
+#' `prot` slot so R's GC cannot reclaim the page while any annot
+#' handle is reachable.
+#'
+#' @param ptr An `externalptr` to an `FPDF_ANNOTATION`.
+#' @param page The parent `pdfium_page`.
+#' @param index One-based annotation index on the page.
+#' @return An object of class `c("pdfium_annot", "pdfium_handle")`.
+#' @keywords internal
+#' @noRd
+new_pdfium_annot <- function(ptr, page, index) {
+  checkmate::assert_class(ptr, "externalptr")
+  checkmate::assert_class(page, "pdfium_page")
+  checkmate::assert_number(index)
+  structure(
+    list(ptr = ptr, page = page, index = as.integer(index)),
+    class = c("pdfium_annot", "pdfium_handle")
+  )
+}
+
+#' @export
+format.pdfium_annot <- function(x, ...) {
+  state <- if (is_open(x)) "open" else "closed"
+  subtype <- tryCatch(pdf_annot_subtype(x),
+                      error = function(e) "unknown")
+  sprintf(
+    "<pdfium_annot [%s] %s, annot %d on page %d>",
+    state, subtype, x$index, x$page$index
+  )
+}
+
+#' @export
+print.pdfium_annot <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  invisible(x)
+}
+
+# Internal: list-of-pdfium_annot wrapper class. Holds the list of
+# handles plus the source page (for `as_tibble` and
+# `as_pdfium_annot` round-trip). The class is what dispatches the
+# S3 `as_tibble()` and `format()`/`print()` methods.
+new_pdfium_annot_list <- function(handles, page) {
+  checkmate::assert_list(handles, types = c("pdfium_annot", "NULL"))
+  checkmate::assert_class(page, "pdfium_page")
+  structure(
+    handles,
+    source = page,
+    class = c("pdfium_annot_list", "list")
+  )
+}
+
+#' @export
+format.pdfium_annot_list <- function(x, ...) {
+  sprintf("<pdfium_annot_list: %d annotation(s)>", length(x))
+}
+
+#' @export
+print.pdfium_annot_list <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  if (length(x) > 0L) {
+    n_show <- min(5L, length(x))
+    for (i in seq_len(n_show)) {
+      cat("  [[", i, "]] ", format(x[[i]]), "\n", sep = "")
+    }
+    if (length(x) > n_show) {
+      cat("  ... and ", length(x) - n_show, " more.\n", sep = "")
+    }
+  }
   invisible(x)
 }
