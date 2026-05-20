@@ -1513,7 +1513,7 @@
       </dl></div><div class="section level2">
       <h2 id="path-geometry">Path geometry<a class="anchor" aria-label="anchor" href="#path-geometry"></a></h2>
 
-      <div class="section-desc"><p>Appenders for path page-objects. PDFium’s public API is append-only — there is no segment-removal or -replacement symbol. To “rebuild” geometry, compose these with Phase 5’s <code>pdf_path_new()</code> (forthcoming).</p></div>
+      <div class="section-desc"><p>Appenders for path page-objects. PDFium’s public API is append-only — there is no segment-removal or -replacement symbol. Compose with <code><a href="../reference/pdf_path_new.html">pdf_path_new()</a></code> and <code><a href="../reference/pdf_obj_delete.html">pdf_obj_delete()</a></code> below for the full read → edit → write workflow.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -1554,6 +1554,43 @@
 
         </dt>
         <dd>Append a sequence of path segments in one call</dd>
+      </dl></div><div class="section level2">
+      <h2 id="page-object-creation">Page-object creation<a class="anchor" aria-label="anchor" href="#page-object-creation"></a></h2>
+
+      <div class="section-desc"><p>Create fresh page-objects (paths, rectangles, text) on a page that’s been opened with <code>readwrite = TRUE</code> or built via <code><a href="../reference/pdf_doc_new.html">pdf_doc_new()</a></code>. Image creation is deferred to a later release pending FPDF_BITMAP plumbing. Use <code><a href="../reference/pdf_obj_delete.html">pdf_obj_delete()</a></code> for the inverse — remove + destroy a page-object.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pdf_path_new.html">pdf_path_new()</a></code>
+
+        </dt>
+        <dd>Create a new path page-object on a page</dd>
+
+        <dt>
+
+          <code><a href="pdf_rect_new.html">pdf_rect_new()</a></code>
+
+        </dt>
+        <dd>Create a closed rectangle path on a page</dd>
+
+        <dt>
+
+          <code><a href="pdf_text_new.html">pdf_text_new()</a></code>
+
+        </dt>
+        <dd>Create a new text page-object on a page</dd>
+
+        <dt>
+
+          <code><a href="pdf_obj_delete.html">pdf_obj_delete()</a></code>
+
+        </dt>
+        <dd>Remove a page object and destroy it</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

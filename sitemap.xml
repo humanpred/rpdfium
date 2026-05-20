@@ -130,6 +130,7 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_add_mark.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_bounds.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_clip_path.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_delete.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_has_transparency.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_is_active.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_marked_content_id.html</loc></url>
@@ -170,6 +171,7 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_line_join.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_line_to.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_move_to.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_new.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_segments.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_set_dash.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_set_draw_mode.html</loc></url>
@@ -178,6 +180,7 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_set_line_join.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_set_stroke.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_stroke.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_rect_new.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_render_page.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_render_page_with_matrix.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_render_to_png.html</loc></url>
@@ -200,6 +203,7 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_font_metrics.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_font_size.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_index_from_char.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_new.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_obj_rendered_bitmap.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_render_mode.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_runs.html</loc></url>

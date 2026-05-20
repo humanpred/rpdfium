@@ -607,8 +607,11 @@ from
 ## Path geometry
 
 Appenders for path page-objects. PDFium’s public API is append-only —
-there is no segment-removal or -replacement symbol. To “rebuild”
-geometry, compose these with Phase 5’s `pdf_path_new()` (forthcoming).
+there is no segment-removal or -replacement symbol. Compose with
+[`pdf_path_new()`](https://humanpred.github.io/rpdfium/reference/pdf_path_new.md)
+and
+[`pdf_obj_delete()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_delete.md)
+below for the full read → edit → write workflow.
 
 - [`pdf_path_move_to()`](https://humanpred.github.io/rpdfium/reference/pdf_path_move_to.md)
   : Append a MoveTo command to a path object
@@ -620,3 +623,22 @@ geometry, compose these with Phase 5’s `pdf_path_new()` (forthcoming).
   : Close the current subpath of a path object
 - [`pdf_path_append()`](https://humanpred.github.io/rpdfium/reference/pdf_path_append.md)
   : Append a sequence of path segments in one call
+
+## Page-object creation
+
+Create fresh page-objects (paths, rectangles, text) on a page that’s
+been opened with `readwrite = TRUE` or built via
+[`pdf_doc_new()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_new.md).
+Image creation is deferred to a later release pending FPDF_BITMAP
+plumbing. Use
+[`pdf_obj_delete()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_delete.md)
+for the inverse — remove + destroy a page-object.
+
+- [`pdf_path_new()`](https://humanpred.github.io/rpdfium/reference/pdf_path_new.md)
+  : Create a new path page-object on a page
+- [`pdf_rect_new()`](https://humanpred.github.io/rpdfium/reference/pdf_rect_new.md)
+  : Create a closed rectangle path on a page
+- [`pdf_text_new()`](https://humanpred.github.io/rpdfium/reference/pdf_text_new.md)
+  : Create a new text page-object on a page
+- [`pdf_obj_delete()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_delete.md)
+  : Remove a page object and destroy it
