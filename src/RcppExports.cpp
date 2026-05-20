@@ -323,6 +323,40 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_bookmark_handles
+Rcpp::List cpp_bookmark_handles(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_bookmark_handles(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_bookmark_handles(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_bookmark_title_handle
+std::string cpp_bookmark_title_handle(SEXP bm_ptr);
+RcppExport SEXP _pdfium_cpp_bookmark_title_handle(SEXP bm_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type bm_ptr(bm_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_bookmark_title_handle(bm_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_bookmark_action_handle
+Rcpp::List cpp_bookmark_action_handle(SEXP bm_ptr, SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_bookmark_action_handle(SEXP bm_ptrSEXP, SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type bm_ptr(bm_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_bookmark_action_handle(bm_ptr, doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_obj_get_clip_path
 SEXP cpp_obj_get_clip_path(SEXP obj_ptr, SEXP page_ptr);
 RcppExport SEXP _pdfium_cpp_obj_get_clip_path(SEXP obj_ptrSEXP, SEXP page_ptrSEXP) {
@@ -366,17 +400,6 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type clip_ptr(clip_ptrSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_clip_path_segments_df(clip_ptr));
-    return rcpp_result_gen;
-END_RCPP
-}
-// cpp_bookmarks
-Rcpp::List cpp_bookmarks(SEXP doc_ptr);
-RcppExport SEXP _pdfium_cpp_bookmarks(SEXP doc_ptrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_bookmarks(doc_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1731,11 +1754,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_attachment_count", (DL_FUNC) &_pdfium_cpp_attachment_count, 1},
     {"_pdfium_cpp_attachments_list", (DL_FUNC) &_pdfium_cpp_attachments_list, 1},
     {"_pdfium_cpp_attachment_data", (DL_FUNC) &_pdfium_cpp_attachment_data, 2},
+    {"_pdfium_cpp_bookmark_handles", (DL_FUNC) &_pdfium_cpp_bookmark_handles, 1},
+    {"_pdfium_cpp_bookmark_title_handle", (DL_FUNC) &_pdfium_cpp_bookmark_title_handle, 1},
+    {"_pdfium_cpp_bookmark_action_handle", (DL_FUNC) &_pdfium_cpp_bookmark_action_handle, 2},
     {"_pdfium_cpp_obj_get_clip_path", (DL_FUNC) &_pdfium_cpp_obj_get_clip_path, 2},
     {"_pdfium_cpp_clip_path_count_paths", (DL_FUNC) &_pdfium_cpp_clip_path_count_paths, 1},
     {"_pdfium_cpp_clip_path_count_segments", (DL_FUNC) &_pdfium_cpp_clip_path_count_segments, 2},
     {"_pdfium_cpp_clip_path_segments_df", (DL_FUNC) &_pdfium_cpp_clip_path_segments_df, 1},
-    {"_pdfium_cpp_bookmarks", (DL_FUNC) &_pdfium_cpp_bookmarks, 1},
     {"_pdfium_cpp_page_label", (DL_FUNC) &_pdfium_cpp_page_label, 2},
     {"_pdfium_cpp_doc_permissions", (DL_FUNC) &_pdfium_cpp_doc_permissions, 1},
     {"_pdfium_cpp_doc_file_id", (DL_FUNC) &_pdfium_cpp_doc_file_id, 2},

@@ -9,19 +9,24 @@
 # convenience for one-shot inspection: the doc is opened, the
 # accessor runs, and the doc is closed before returning.
 
-#' Read the bookmark outline (table of contents) of a PDF
+#' List the bookmark outline (table of contents) of a PDF
 #'
-#' Returns a tibble row per bookmark, walking PDFium's outline tree
-#' depth-first. Each row carries the bookmark's title, its position
-#' in the hierarchy, the page it points to (when resolvable), and the
-#' action it carries (URI, launch, remote_goto, embedded_goto, or
-#' the typical goto-within-this-document).
+#' Returns a `pdfium_bookmark_list` — a list of `pdfium_bookmark`
+#' handles, one per bookmark in the document's outline tree, walked
+#' depth-first. Per-attribute getters
+#' ([pdf_bookmark_title()], [pdf_bookmark_page_num()],
+#' [pdf_bookmark_action_type()], [pdf_bookmark_uri()],
+#' [pdf_bookmark_filepath()], [pdf_bookmark_dest_view()],
+#' [pdf_bookmark_dest_x()], [pdf_bookmark_dest_y()],
+#' [pdf_bookmark_dest_zoom()]) operate on a single handle.
 #'
-#' The tree structure is recoverable from the `parent_index` column
-#' alone: top-level bookmarks have `parent_index == 0`, and every
-#' other bookmark's parent is the row whose `bookmark_index` matches
-#' its `parent_index`. The `level` column is a convenience for
-#' filtering ("show me chapter-level entries only").
+#' The list is flat; the tree shape is recovered from each handle's
+#' `parent_index` field. Top-level bookmarks have `parent_index == 0`;
+#' every other bookmark's parent is the entry whose `index` matches
+#' its `parent_index`. `level` is the 1-based nesting depth.
+#'
+#' Use `tibble::as_tibble(pdf_doc_bookmarks(doc))` for the tibble
+#' view.
 #'
 #' Wraps `FPDFBookmark_GetFirstChild`, `FPDFBookmark_GetNextSibling`,
 #' `FPDFBookmark_GetTitle`, `FPDFBookmark_GetDest`,
@@ -30,36 +35,10 @@
 #' `FPDFDest_GetDestPageIndex`.
 #'
 #' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
-#' @return A tibble with columns:
-#'   * `bookmark_index` integer - 1-based pre-order index across the
-#'     entire outline tree.
-#'   * `parent_index` integer - `bookmark_index` of the parent
-#'     entry, or `0` for top-level bookmarks.
-#'   * `level` integer - 1-based nesting depth.
-#'   * `title` character - the bookmark's display text, UTF-8.
-#'   * `page_num` integer - 1-based destination page number, or
-#'     `NA` when the bookmark has no resolvable page destination
-#'     (e.g. for URI / launch actions, or unresolvable dests).
-#'   * `action_type` character - one of `"goto"`, `"remote_goto"`,
-#'     `"uri"`, `"launch"`, `"embedded_goto"`.
-#'   * `uri` character - the action's target URL when
-#'     `action_type == "uri"`; `NA` otherwise.
-#'   * `filepath` character - the external file path when
-#'     `action_type` is `"remote_goto"` / `"launch"` /
-#'     `"embedded_goto"`; `NA` otherwise.
-#'   * `dest_view` character - the destination view mode (one of
-#'     `"xyz"`, `"fit"`, `"fith"`, `"fitv"`, `"fitr"`, `"fitb"`,
-#'     `"fitbh"`, `"fitbv"`, `"unknown"`).
-#'   * `dest_x`, `dest_y`, `dest_zoom` numeric - the explicit point
-#'     / zoom for XYZ destinations and the line offset for
-#'     FitH / FitV / FitBH / FitBV. `NA` for components the
-#'     destination doesn't specify.
-#'
-#' Returns a 0-row tibble of the same schema when the document has
-#' no outline.
-#'
+#' @return A `pdfium_bookmark_list` (empty if no outline).
 #' @seealso [pdf_page_labels()] for logical page numbering,
-#'   [pdf_page_links()] for clickable link annotations on a page.
+#'   [pdf_page_links()] for clickable link annotations on a page,
+#'   [pdf_parse_date()] for parsing date-shaped action strings.
 #' @examples
 #' fixture <- system.file("extdata", "fixtures", "outline.pdf",
 #'   package = "pdfium"
@@ -67,25 +46,256 @@
 #' if (nzchar(fixture)) pdf_doc_bookmarks(fixture)
 #' @export
 pdf_doc_bookmarks <- function(doc) {
-  doc <- as_open_doc(doc)
-  raw <- cpp_bookmarks(doc$ptr)
-  # action_code 0 means "no /A and unresolvable /Dest" — surface as
-  # "unsupported" via the shared lookup. URI / filepath columns are
-  # NA in that case anyway.
+  doc <- as_open_doc(doc, defer_close = FALSE)
+  raw <- cpp_bookmark_handles(doc$ptr)
+  ptrs    <- raw$handles
+  parents <- as.integer(raw$parent_indices)
+  levels  <- as.integer(raw$levels)
+  handles <- lapply(seq_along(ptrs), function(i) {
+    new_pdfium_bookmark(ptrs[[i]], doc,
+                        index        = i,
+                        parent_index = parents[[i]],
+                        level        = levels[[i]])
+  })
+  new_pdfium_bookmark_list(handles, doc)
+}
+
+#' Tibble view of a `pdfium_bookmark_list`
+#'
+#' Walks every bookmark in the list and reads its metadata into a
+#' tibble. Adds `handle` and `source` list-columns (ADR-017).
+#'
+#' @param x A `pdfium_bookmark_list` from [pdf_doc_bookmarks()].
+#' @param ... Unused (S3 generic compatibility).
+#' @return A tibble with the documented bookmark columns plus
+#'   `handle` and `source`.
+#' @importFrom tibble as_tibble
+#' @method as_tibble pdfium_bookmark_list
+#' @export
+as_tibble.pdfium_bookmark_list <- function(x, ...) {
+  src_doc <- attr(x, "source")
+  if (length(x) == 0L) {
+    return(empty_bookmark_tibble())
+  }
+  info <- lapply(x, function(bm) {
+    cpp_bookmark_action_handle(bm$ptr, src_doc$ptr)
+  })
+  titles <- vapply(x, function(bm) cpp_bookmark_title_handle(bm$ptr),
+                   character(1L))
+  action_codes <- vapply(info, `[[`, integer(1L), "action_code")
+  page_nums    <- vapply(info, `[[`, integer(1L), "page_num")
+  uris         <- vapply(info, `[[`, character(1L), "uri")
+  filepaths    <- vapply(info, `[[`, character(1L), "filepath")
+  dest_views   <- vapply(info, `[[`, integer(1L), "dest_view")
+  dest_xs      <- vapply(info, `[[`, numeric(1L), "dest_x")
+  dest_ys      <- vapply(info, `[[`, numeric(1L), "dest_y")
+  dest_zooms   <- vapply(info, `[[`, numeric(1L), "dest_zoom")
   tibble::tibble(
-    bookmark_index = seq_along(raw$title),
-    parent_index   = as.integer(raw$parent_index),
-    level          = as.integer(raw$level),
-    title          = raw$title,
-    page_num       = na_if_negative(raw$page_num),
-    action_type    = pdfium_action_type_name(raw$action_code),
-    uri            = na_if_empty(raw$uri),
-    filepath       = na_if_empty(raw$filepath),
-    dest_view      = pdfium_dest_view_name(raw$dest_view),
-    dest_x         = raw$dest_x,
-    dest_y         = raw$dest_y,
-    dest_zoom      = raw$dest_zoom
+    bookmark_index = seq_along(x),
+    parent_index   = vapply(x, `[[`, integer(1L), "parent_index"),
+    level          = vapply(x, `[[`, integer(1L), "level"),
+    title          = titles,
+    page_num       = na_if_negative(ifelse(page_nums < 0L,
+                                            page_nums,
+                                            page_nums + 1L)),
+    action_type    = pdfium_action_type_name(action_codes),
+    uri            = na_if_empty(uris),
+    filepath       = na_if_empty(filepaths),
+    dest_view      = pdfium_dest_view_name(dest_views),
+    dest_x         = dest_xs,
+    dest_y         = dest_ys,
+    dest_zoom      = dest_zooms,
+    handle         = unclass(x),
+    source         = rep(list(src_doc), length(x))
   )
+}
+
+empty_bookmark_tibble <- function() {
+  tibble::tibble(
+    bookmark_index = integer(),
+    parent_index   = integer(),
+    level          = integer(),
+    title          = character(),
+    page_num       = integer(),
+    action_type    = character(),
+    uri            = character(),
+    filepath       = character(),
+    dest_view      = character(),
+    dest_x         = numeric(),
+    dest_y         = numeric(),
+    dest_zoom      = numeric(),
+    handle         = list(),
+    source         = list()
+  )
+}
+
+#' Coerce input to a `pdfium_bookmark_list`
+#'
+#' Reverse companion to [as_tibble.pdfium_bookmark_list()].
+#'
+#' @param x Either a `pdfium_bookmark_list`, a list of
+#'   `pdfium_bookmark` handles, or a tibble with a `handle`
+#'   list-column.
+#' @return A `pdfium_bookmark_list`.
+#' @export
+as_pdfium_bookmark_list <- function(x) {
+  if (inherits(x, "pdfium_bookmark_list")) return(x)
+  if (is.list(x) && length(x) > 0L &&
+      all(vapply(x, inherits, logical(1L), "pdfium_bookmark"))) {
+    src_doc <- x[[1L]]$doc
+    return(new_pdfium_bookmark_list(x, src_doc))
+  }
+  if (tibble::is_tibble(x) && "handle" %in% names(x)) {
+    handles <- x$handle
+    if (length(handles) == 0L) {
+      stop("Cannot rebuild a `pdfium_bookmark_list` from a zero-",
+           "row tibble (source doc unknown).", call. = FALSE)
+    }
+    src_doc <- x$source[[1L]]
+    return(new_pdfium_bookmark_list(handles, src_doc))
+  }
+  stop("`x` must be a `pdfium_bookmark_list`, a list of ",
+       "`pdfium_bookmark`, or a tibble produced by ",
+       "`as_tibble(pdf_doc_bookmarks(doc))`.", call. = FALSE)
+}
+
+# Internal validator
+check_bookmark <- function(bm, arg = "bm") {
+  checkmate::assert_class(bm, "pdfium_bookmark", .var.name = arg)
+  if (!is_open(bm)) {
+    stop("Bookmark handle has been closed.", call. = FALSE)
+  }
+  invisible(bm)
+}
+
+# Internal: pull the action/dest bundle for a single handle.
+bookmark_action_info <- function(bm) {
+  cpp_bookmark_action_handle(bm$ptr, bm$doc$ptr)
+}
+
+#' Bookmark display title
+#'
+#' Returns the bookmark's display text (UTF-8). Wraps
+#' `FPDFBookmark_GetTitle`.
+#'
+#' @param bm A `pdfium_bookmark` handle from [pdf_doc_bookmarks()].
+#' @return Character scalar.
+#' @export
+pdf_bookmark_title <- function(bm) {
+  check_bookmark(bm)
+  cpp_bookmark_title_handle(bm$ptr)
+}
+
+#' Bookmark destination page number
+#'
+#' Returns the 1-based page number the bookmark resolves to, or
+#' `NA_integer_` when the bookmark has no resolvable in-document
+#' destination (URI / launch actions, or unresolvable
+#' /Dest entries).
+#'
+#' @inheritParams pdf_bookmark_title
+#' @return Integer scalar (1-based) or `NA`.
+#' @export
+pdf_bookmark_page_num <- function(bm) {
+  check_bookmark(bm)
+  page <- bookmark_action_info(bm)$page_num
+  if (page < 0L) NA_integer_ else as.integer(page + 1L)
+}
+
+#' Bookmark action type
+#'
+#' Returns one of `"goto"`, `"remote_goto"`, `"uri"`, `"launch"`,
+#' `"embedded_goto"`, or `"unsupported"`. Wraps
+#' `FPDFAction_GetType`.
+#'
+#' @inheritParams pdf_bookmark_title
+#' @return Character scalar.
+#' @export
+pdf_bookmark_action_type <- function(bm) {
+  check_bookmark(bm)
+  pdfium_action_type_name(bookmark_action_info(bm)$action_code)
+}
+
+#' Bookmark URI (for URI actions)
+#'
+#' Returns the action's target URL when the bookmark is a URI
+#' action, else `NA_character_`. Wraps `FPDFAction_GetURIPath`.
+#'
+#' @inheritParams pdf_bookmark_title
+#' @return Character scalar or `NA`.
+#' @export
+pdf_bookmark_uri <- function(bm) {
+  check_bookmark(bm)
+  na_if_empty(bookmark_action_info(bm)$uri)
+}
+
+#' Bookmark external file path
+#'
+#' Returns the external file path when the bookmark action is
+#' `"remote_goto"`, `"launch"`, or `"embedded_goto"`, else
+#' `NA_character_`. Wraps `FPDFAction_GetFilePath`.
+#'
+#' @inheritParams pdf_bookmark_title
+#' @return Character scalar or `NA`.
+#' @export
+pdf_bookmark_filepath <- function(bm) {
+  check_bookmark(bm)
+  na_if_empty(bookmark_action_info(bm)$filepath)
+}
+
+#' Bookmark destination view mode
+#'
+#' Returns the destination view mode (one of `"xyz"`, `"fit"`,
+#' `"fith"`, `"fitv"`, `"fitr"`, `"fitb"`, `"fitbh"`, `"fitbv"`,
+#' `"unknown"`). Wraps `FPDFDest_GetView`.
+#'
+#' @inheritParams pdf_bookmark_title
+#' @return Character scalar.
+#' @export
+pdf_bookmark_dest_view <- function(bm) {
+  check_bookmark(bm)
+  pdfium_dest_view_name(bookmark_action_info(bm)$dest_view)
+}
+
+#' Bookmark destination x coordinate
+#'
+#' Returns the X coordinate of the destination for XYZ / FitR /
+#' FitBH destinations; `NA` for view modes that don't carry one.
+#' Wraps `FPDFDest_GetLocationInPage`.
+#'
+#' @inheritParams pdf_bookmark_title
+#' @return Numeric scalar or `NA`.
+#' @export
+pdf_bookmark_dest_x <- function(bm) {
+  check_bookmark(bm)
+  bookmark_action_info(bm)$dest_x
+}
+
+#' Bookmark destination y coordinate
+#'
+#' Returns the Y coordinate of the destination for XYZ / FitR /
+#' FitBV destinations; `NA` for view modes that don't carry one.
+#' Wraps `FPDFDest_GetLocationInPage`.
+#'
+#' @inheritParams pdf_bookmark_title
+#' @return Numeric scalar or `NA`.
+#' @export
+pdf_bookmark_dest_y <- function(bm) {
+  check_bookmark(bm)
+  bookmark_action_info(bm)$dest_y
+}
+
+#' Bookmark destination zoom factor
+#'
+#' Returns the zoom factor for XYZ destinations; `NA` for view
+#' modes that don't carry one. Wraps `FPDFDest_GetLocationInPage`.
+#'
+#' @inheritParams pdf_bookmark_title
+#' @return Numeric scalar or `NA`.
+#' @export
+pdf_bookmark_dest_zoom <- function(bm) {
+  check_bookmark(bm)
+  bookmark_action_info(bm)$dest_zoom
 }
 
 #' Read the logical page label of a PDF page

@@ -109,6 +109,18 @@ cpp_attachment_data <- function(doc_ptr, index_zero) {
     .Call(`_pdfium_cpp_attachment_data`, doc_ptr, index_zero)
 }
 
+cpp_bookmark_handles <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_bookmark_handles`, doc_ptr)
+}
+
+cpp_bookmark_title_handle <- function(bm_ptr) {
+    .Call(`_pdfium_cpp_bookmark_title_handle`, bm_ptr)
+}
+
+cpp_bookmark_action_handle <- function(bm_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_bookmark_action_handle`, bm_ptr, doc_ptr)
+}
+
 cpp_obj_get_clip_path <- function(obj_ptr, page_ptr) {
     .Call(`_pdfium_cpp_obj_get_clip_path`, obj_ptr, page_ptr)
 }
@@ -123,10 +135,6 @@ cpp_clip_path_count_segments <- function(clip_ptr, path_index_zero) {
 
 cpp_clip_path_segments_df <- function(clip_ptr) {
     .Call(`_pdfium_cpp_clip_path_segments_df`, clip_ptr)
-}
-
-cpp_bookmarks <- function(doc_ptr) {
-    .Call(`_pdfium_cpp_bookmarks`, doc_ptr)
 }
 
 cpp_page_label <- function(doc_ptr, page_index_zero) {

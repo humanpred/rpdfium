@@ -72,6 +72,19 @@ reference:
       - pdf_signature_doc_mdp_permission
       - pdf_signature_contents
       - pdf_signature_byte_range
+  - title: Bookmarks
+    contents:
+      - as_pdfium_bookmark_list
+      - as_tibble.pdfium_bookmark_list
+      - pdf_bookmark_title
+      - pdf_bookmark_page_num
+      - pdf_bookmark_action_type
+      - pdf_bookmark_uri
+      - pdf_bookmark_filepath
+      - pdf_bookmark_dest_view
+      - pdf_bookmark_dest_x
+      - pdf_bookmark_dest_y
+      - pdf_bookmark_dest_zoom
   - title: Pages
     contents:
       - pdf_page_load
