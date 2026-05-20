@@ -235,3 +235,4 @@ reference:
       - pdf_page_set_rotation
       - pdf_page_set_box
       - pdf_doc_set_language
+      - pdf_page_flush

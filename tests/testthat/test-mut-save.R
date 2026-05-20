@@ -171,3 +171,56 @@ test_that("mark_page_dirty + flush_dirty_pages round-trip", {
   pdf_save(doc, tmp)
   expect_length(doc$state$dirty_pages, 0L)
 })
+
+# pdf_page_flush + auto-flush in render ----------------------------
+
+test_that("pdf_page_flush clears the dirty mark for a mutated page", {
+  fx <- fixture_path("shapes")
+  doc <- pdf_doc_open(fx, readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  pdf_page_set_rotation(doc, 90)
+  expect_setequal(doc$state$dirty_pages, 1L)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  ret <- pdf_page_flush(page)
+  expect_identical(ret, page)
+  expect_length(doc$state$dirty_pages, 0L)
+})
+
+test_that("pdf_page_flush is a no-op on a clean page", {
+  fx <- fixture_path("shapes")
+  doc <- pdf_doc_open(fx)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  expect_silent(pdf_page_flush(page))
+  expect_length(doc$state$dirty_pages, 0L)
+})
+
+test_that("pdf_page_flush refuses closed pages", {
+  fx <- fixture_path("shapes")
+  doc <- pdf_doc_open(fx)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  pdf_page_close(page)
+  expect_error(pdf_page_flush(page), "Page has been closed")
+})
+
+test_that("pdf_page_flush validates input", {
+  expect_error(pdf_page_flush("nope"), "Assertion on")
+  expect_error(pdf_page_flush(42L), "Assertion on")
+})
+
+test_that("pdf_render_page auto-flushes the page's dirty content", {
+  fx <- fixture_path("shapes")
+  doc <- pdf_doc_open(fx, readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  pdf_page_set_rotation(doc, 90)
+  expect_setequal(doc$state$dirty_pages, 1L)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  bmp <- pdf_render_page(page, dpi = 36)
+  expect_s3_class(bmp, "pdfium_bitmap")
+  # The render path should have flushed page 1.
+  expect_length(doc$state$dirty_pages, 0L)
+})

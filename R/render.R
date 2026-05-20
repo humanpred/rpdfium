@@ -78,6 +78,9 @@ pdf_render_page <- function(page,
   )
 
   page <- as_open_page(page, page_num)
+  # Auto-flush dirty page content so the render reflects every
+  # mutator that ran before it (ADR-020 §7).
+  flush_page_if_dirty(page)
 
   dims <- compute_render_pixels(page$ptr, dpi, rot_code)
   bg <- parse_bitmap_background(background)
@@ -154,6 +157,8 @@ pdf_render_page_with_matrix <- function(page,
   clip_vec <- validate_clip_rect(clip_rect)
 
   page <- as_open_page(page, page_num)
+  # Auto-flush dirty page content (ADR-020 §7).
+  flush_page_if_dirty(page)
   bg <- parse_bitmap_background(background)
   flags <- render_flags_bitmask(annotations)
 
