@@ -208,7 +208,7 @@
           <code><a href="pdf_doc_bookmarks.html">pdf_doc_bookmarks()</a></code>
 
         </dt>
-        <dd>Read the bookmark outline (table of contents) of a PDF</dd>
+        <dd>List the bookmark outline (table of contents) of a PDF</dd>
 
         <dt>
 
@@ -249,6 +249,41 @@
 
         <dt>
 
+          <code><a href="as_pdfium_attachment_list.html">as_pdfium_attachment_list()</a></code>
+
+        </dt>
+        <dd>Coerce input to a <code>pdfium_attachment_list</code></dd>
+
+        <dt>
+
+          <code><a href="as_tibble.pdfium_attachment_list.html">as_tibble(<i>&lt;pdfium_attachment_list&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Tibble view of a <code>pdfium_attachment_list</code></dd>
+
+        <dt>
+
+          <code><a href="pdf_attachment_name.html">pdf_attachment_name()</a></code>
+
+        </dt>
+        <dd>Attachment file name</dd>
+
+        <dt>
+
+          <code><a href="pdf_attachment_mime_type.html">pdf_attachment_mime_type()</a></code>
+
+        </dt>
+        <dd>Attachment MIME / subtype</dd>
+
+        <dt>
+
+          <code><a href="pdf_attachment_size_bytes.html">pdf_attachment_size_bytes()</a></code>
+
+        </dt>
+        <dd>Attachment decompressed size in bytes</dd>
+
+        <dt>
+
           <code><a href="pdf_attachment_data.html">pdf_attachment_data()</a></code>
 
         </dt>
@@ -279,6 +314,48 @@
 
         <dt>
 
+          <code><a href="as_pdfium_signature_list.html">as_pdfium_signature_list()</a></code>
+
+        </dt>
+        <dd>Coerce input to a <code>pdfium_signature_list</code></dd>
+
+        <dt>
+
+          <code><a href="as_tibble.pdfium_signature_list.html">as_tibble(<i>&lt;pdfium_signature_list&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Tibble view of a <code>pdfium_signature_list</code></dd>
+
+        <dt>
+
+          <code><a href="pdf_signature_sub_filter.html">pdf_signature_sub_filter()</a></code>
+
+        </dt>
+        <dd>Signature <code>/SubFilter</code> value</dd>
+
+        <dt>
+
+          <code><a href="pdf_signature_reason.html">pdf_signature_reason()</a></code>
+
+        </dt>
+        <dd>Signature reason / comment text</dd>
+
+        <dt>
+
+          <code><a href="pdf_signature_time.html">pdf_signature_time()</a></code>
+
+        </dt>
+        <dd>Signing time (raw PDF date string)</dd>
+
+        <dt>
+
+          <code><a href="pdf_signature_doc_mdp_permission.html">pdf_signature_doc_mdp_permission()</a></code>
+
+        </dt>
+        <dd>Signature DocMDP permission level</dd>
+
+        <dt>
+
           <code><a href="pdf_signature_contents.html">pdf_signature_contents()</a></code>
 
         </dt>
@@ -290,6 +367,92 @@
 
         </dt>
         <dd>Read the signed byte ranges of a PDF signature</dd>
+      </dl></div><div class="section level2">
+      <h2 id="bookmarks">Bookmarks<a class="anchor" aria-label="anchor" href="#bookmarks"></a></h2>
+
+
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="as_pdfium_bookmark_list.html">as_pdfium_bookmark_list()</a></code>
+
+        </dt>
+        <dd>Coerce input to a <code>pdfium_bookmark_list</code></dd>
+
+        <dt>
+
+          <code><a href="as_tibble.pdfium_bookmark_list.html">as_tibble(<i>&lt;pdfium_bookmark_list&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Tibble view of a <code>pdfium_bookmark_list</code></dd>
+
+        <dt>
+
+          <code><a href="pdf_bookmark_title.html">pdf_bookmark_title()</a></code>
+
+        </dt>
+        <dd>Bookmark display title</dd>
+
+        <dt>
+
+          <code><a href="pdf_bookmark_page_num.html">pdf_bookmark_page_num()</a></code>
+
+        </dt>
+        <dd>Bookmark destination page number</dd>
+
+        <dt>
+
+          <code><a href="pdf_bookmark_action_type.html">pdf_bookmark_action_type()</a></code>
+
+        </dt>
+        <dd>Bookmark action type</dd>
+
+        <dt>
+
+          <code><a href="pdf_bookmark_uri.html">pdf_bookmark_uri()</a></code>
+
+        </dt>
+        <dd>Bookmark URI (for URI actions)</dd>
+
+        <dt>
+
+          <code><a href="pdf_bookmark_filepath.html">pdf_bookmark_filepath()</a></code>
+
+        </dt>
+        <dd>Bookmark external file path</dd>
+
+        <dt>
+
+          <code><a href="pdf_bookmark_dest_view.html">pdf_bookmark_dest_view()</a></code>
+
+        </dt>
+        <dd>Bookmark destination view mode</dd>
+
+        <dt>
+
+          <code><a href="pdf_bookmark_dest_x.html">pdf_bookmark_dest_x()</a></code>
+
+        </dt>
+        <dd>Bookmark destination x coordinate</dd>
+
+        <dt>
+
+          <code><a href="pdf_bookmark_dest_y.html">pdf_bookmark_dest_y()</a></code>
+
+        </dt>
+        <dd>Bookmark destination y coordinate</dd>
+
+        <dt>
+
+          <code><a href="pdf_bookmark_dest_zoom.html">pdf_bookmark_dest_zoom()</a></code>
+
+        </dt>
+        <dd>Bookmark destination zoom factor</dd>
       </dl></div><div class="section level2">
       <h2 id="pages">Pages<a class="anchor" aria-label="anchor" href="#pages"></a></h2>
 
@@ -354,7 +517,7 @@
           <code><a href="pdf_link_annot_at_point.html">pdf_link_annot_at_point()</a></code>
 
         </dt>
-        <dd>Hit-test for a link annotation, returning its annotation index</dd>
+        <dd>Hit-test for a link annotation, returning the annotation handle</dd>
 
         <dt>
 
@@ -528,6 +691,48 @@
 
         <dt>
 
+          <code><a href="pdf_annot_quad_points.html">pdf_annot_quad_points()</a></code>
+
+        </dt>
+        <dd>Annotation quad points (attachment points)</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_vertices.html">pdf_annot_vertices()</a></code>
+
+        </dt>
+        <dd>Annotation vertices (polygon / polyline)</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_ink_paths.html">pdf_annot_ink_paths()</a></code>
+
+        </dt>
+        <dd>Annotation ink paths (ink strokes)</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_popup.html">pdf_annot_popup()</a></code>
+
+        </dt>
+        <dd>Annotation popup (<code>/Popup</code> linked annot)</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_in_reply_to.html">pdf_annot_in_reply_to()</a></code>
+
+        </dt>
+        <dd>Annotation reply-to (<code>/IRT</code> linked annot)</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_file_attachment_name.html">pdf_annot_file_attachment_name()</a></code>
+
+        </dt>
+        <dd>Name of the file attached to a file-attachment annotation</dd>
+
+        <dt>
+
           <code><a href="pdf_form_fields.html">pdf_form_fields()</a></code>
 
         </dt>
@@ -567,6 +772,90 @@
 
         </dt>
         <dd>Form-field page number</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_field_name.html">pdf_form_field_name()</a></code>
+
+        </dt>
+        <dd>Form-field name (<code>/T</code>)</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_field_alternate_name.html">pdf_form_field_alternate_name()</a></code>
+
+        </dt>
+        <dd>Form-field alternate (tooltip) name (<code>/TU</code>)</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_field_value.html">pdf_form_field_value()</a></code>
+
+        </dt>
+        <dd>Form-field current value (<code>/V</code>)</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_field_export_value.html">pdf_form_field_export_value()</a></code>
+
+        </dt>
+        <dd>Form-field export value</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_field_flags.html">pdf_form_field_flags()</a></code>
+
+        </dt>
+        <dd>Form-field flag bitmask (<code>/Ff</code>)</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_field_flags_decoded.html">pdf_form_field_flags_decoded()</a></code>
+
+        </dt>
+        <dd>Form-field universal flag bits, decoded</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_field_is_checked.html">pdf_form_field_is_checked()</a></code>
+
+        </dt>
+        <dd>Form-field checked state</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_field_control_count.html">pdf_form_field_control_count()</a></code>
+
+        </dt>
+        <dd>Number of controls in this radio group (or NA)</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_field_control_index.html">pdf_form_field_control_index()</a></code>
+
+        </dt>
+        <dd>1-based index of this control within its radio group</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_field_options.html">pdf_form_field_options()</a></code>
+
+        </dt>
+        <dd>Form-field option labels (combobox / listbox)</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_field_is_option_selected.html">pdf_form_field_is_option_selected()</a></code>
+
+        </dt>
+        <dd>Form-field option selected-state (combobox / listbox)</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_field_additional_actions_js.html">pdf_form_field_additional_actions_js()</a></code>
+
+        </dt>
+        <dd>Form-field JavaScript additional-action sources</dd>
       </dl></div><div class="section level2">
       <h2 id="page-objects">Page objects<a class="anchor" aria-label="anchor" href="#page-objects"></a></h2>
 
@@ -583,6 +872,20 @@
 
         </dt>
         <dd>Enumerate the objects on a page</dd>
+
+        <dt>
+
+          <code><a href="as_pdfium_obj_list.html">as_pdfium_obj_list()</a></code>
+
+        </dt>
+        <dd>Coerce input to a <code>pdfium_obj_list</code></dd>
+
+        <dt>
+
+          <code><a href="as_tibble.pdfium_obj_list.html">as_tibble(<i>&lt;pdfium_obj_list&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Tibble view of a <code>pdfium_obj_list</code></dd>
 
         <dt>
 
@@ -1100,6 +1403,13 @@
 
         </dt>
         <dd>Set the document's declared language</dd>
+
+        <dt>
+
+          <code><a href="pdf_page_flush.html">pdf_page_flush()</a></code>
+
+        </dt>
+        <dd>Force-flush a page's pending content edits</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

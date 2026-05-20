@@ -8,20 +8,14 @@ signature (e.g. `openssl::pkcs7_verify(bytes, data = signed_bytes)`).
 ## Usage
 
 ``` r
-pdf_signature_contents(doc, signature_index = 1L)
+pdf_signature_contents(sig)
 ```
 
 ## Arguments
 
-- doc:
+- sig:
 
-  A `pdfium_doc` from
-  [`pdf_doc_open()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_open.md),
-  or a character path.
-
-- signature_index:
-
-  One-based signature index (default `1`), as listed by
+  A `pdfium_signature` handle from
   [`pdf_signatures()`](https://humanpred.github.io/rpdfium/reference/pdf_signatures.md).
 
 ## Value
@@ -34,5 +28,4 @@ Wraps `FPDFSignatureObj_GetContents`.
 
 ## See also
 
-[`pdf_signatures()`](https://humanpred.github.io/rpdfium/reference/pdf_signatures.md),
 [`pdf_signature_byte_range()`](https://humanpred.github.io/rpdfium/reference/pdf_signature_byte_range.md).

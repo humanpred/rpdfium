@@ -73,7 +73,7 @@
   : Resolve a named destination by name
 
 - [`pdf_doc_bookmarks()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_bookmarks.md)
-  : Read the bookmark outline (table of contents) of a PDF
+  : List the bookmark outline (table of contents) of a PDF
 
 - [`pdf_doc_bookmark_find()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_bookmark_find.md)
   : Find a bookmark by its title
@@ -88,8 +88,29 @@
 
 - [`pdf_attachments()`](https://humanpred.github.io/rpdfium/reference/pdf_attachments.md)
   : List the files attached to a PDF document
+
+- [`as_pdfium_attachment_list()`](https://humanpred.github.io/rpdfium/reference/as_pdfium_attachment_list.md)
+  :
+
+  Coerce input to a `pdfium_attachment_list`
+
+- [`as_tibble(`*`<pdfium_attachment_list>`*`)`](https://humanpred.github.io/rpdfium/reference/as_tibble.pdfium_attachment_list.md)
+  :
+
+  Tibble view of a `pdfium_attachment_list`
+
+- [`pdf_attachment_name()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_name.md)
+  : Attachment file name
+
+- [`pdf_attachment_mime_type()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_mime_type.md)
+  : Attachment MIME / subtype
+
+- [`pdf_attachment_size_bytes()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_size_bytes.md)
+  : Attachment decompressed size in bytes
+
 - [`pdf_attachment_data()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_data.md)
   : Read the raw bytes of an embedded file attachment
+
 - [`pdf_attachment_dict_value()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_dict_value.md)
   : Look up an attachment-dictionary entry by key
 
@@ -97,10 +118,75 @@
 
 - [`pdf_signatures()`](https://humanpred.github.io/rpdfium/reference/pdf_signatures.md)
   : List the digital signatures attached to a PDF document
+
+- [`as_pdfium_signature_list()`](https://humanpred.github.io/rpdfium/reference/as_pdfium_signature_list.md)
+  :
+
+  Coerce input to a `pdfium_signature_list`
+
+- [`as_tibble(`*`<pdfium_signature_list>`*`)`](https://humanpred.github.io/rpdfium/reference/as_tibble.pdfium_signature_list.md)
+  :
+
+  Tibble view of a `pdfium_signature_list`
+
+- [`pdf_signature_sub_filter()`](https://humanpred.github.io/rpdfium/reference/pdf_signature_sub_filter.md)
+  :
+
+  Signature `/SubFilter` value
+
+- [`pdf_signature_reason()`](https://humanpred.github.io/rpdfium/reference/pdf_signature_reason.md)
+  : Signature reason / comment text
+
+- [`pdf_signature_time()`](https://humanpred.github.io/rpdfium/reference/pdf_signature_time.md)
+  : Signing time (raw PDF date string)
+
+- [`pdf_signature_doc_mdp_permission()`](https://humanpred.github.io/rpdfium/reference/pdf_signature_doc_mdp_permission.md)
+  : Signature DocMDP permission level
+
 - [`pdf_signature_contents()`](https://humanpred.github.io/rpdfium/reference/pdf_signature_contents.md)
   : Read the raw bytes of a PDF signature's contents blob
+
 - [`pdf_signature_byte_range()`](https://humanpred.github.io/rpdfium/reference/pdf_signature_byte_range.md)
   : Read the signed byte ranges of a PDF signature
+
+## Bookmarks
+
+- [`as_pdfium_bookmark_list()`](https://humanpred.github.io/rpdfium/reference/as_pdfium_bookmark_list.md)
+  :
+
+  Coerce input to a `pdfium_bookmark_list`
+
+- [`as_tibble(`*`<pdfium_bookmark_list>`*`)`](https://humanpred.github.io/rpdfium/reference/as_tibble.pdfium_bookmark_list.md)
+  :
+
+  Tibble view of a `pdfium_bookmark_list`
+
+- [`pdf_bookmark_title()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_title.md)
+  : Bookmark display title
+
+- [`pdf_bookmark_page_num()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_page_num.md)
+  : Bookmark destination page number
+
+- [`pdf_bookmark_action_type()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_action_type.md)
+  : Bookmark action type
+
+- [`pdf_bookmark_uri()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_uri.md)
+  : Bookmark URI (for URI actions)
+
+- [`pdf_bookmark_filepath()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_filepath.md)
+  : Bookmark external file path
+
+- [`pdf_bookmark_dest_view()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_dest_view.md)
+  : Bookmark destination view mode
+
+- [`pdf_bookmark_dest_x()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_dest_x.md)
+  : Bookmark destination x coordinate
+
+- [`pdf_bookmark_dest_y()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_dest_y.md)
+  : Bookmark destination y coordinate
+
+- [`pdf_bookmark_dest_zoom()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_dest_zoom.md)
+  : Bookmark destination zoom factor
 
 ## Pages
 
@@ -119,7 +205,7 @@
 - [`pdf_link_at_point()`](https://humanpred.github.io/rpdfium/reference/pdf_link_at_point.md)
   : Hit-test for the link annotation under a point
 - [`pdf_link_annot_at_point()`](https://humanpred.github.io/rpdfium/reference/pdf_link_annot_at_point.md)
-  : Hit-test for a link annotation, returning its annotation index
+  : Hit-test for a link annotation, returning the annotation handle
 - [`pdf_form_field_at_point()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_at_point.md)
   : Form-field hit-test for a point
 - [`pdf_page_actions()`](https://humanpred.github.io/rpdfium/reference/pdf_page_actions.md)
@@ -204,6 +290,28 @@
 - [`pdf_annot_appearance()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_appearance.md)
   : Appearance-stream string for an annotation
 
+- [`pdf_annot_quad_points()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_quad_points.md)
+  : Annotation quad points (attachment points)
+
+- [`pdf_annot_vertices()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_vertices.md)
+  : Annotation vertices (polygon / polyline)
+
+- [`pdf_annot_ink_paths()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_ink_paths.md)
+  : Annotation ink paths (ink strokes)
+
+- [`pdf_annot_popup()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_popup.md)
+  :
+
+  Annotation popup (`/Popup` linked annot)
+
+- [`pdf_annot_in_reply_to()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_in_reply_to.md)
+  :
+
+  Annotation reply-to (`/IRT` linked annot)
+
+- [`pdf_annot_file_attachment_name()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_file_attachment_name.md)
+  : Name of the file attached to a file-attachment annotation
+
 - [`pdf_form_fields()`](https://humanpred.github.io/rpdfium/reference/pdf_form_fields.md)
   : Enumerate AcroForm fields across the whole document
 
@@ -226,24 +334,86 @@
 - [`pdf_form_field_page_num()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_page_num.md)
   : Form-field page number
 
+- [`pdf_form_field_name()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_name.md)
+  :
+
+  Form-field name (`/T`)
+
+- [`pdf_form_field_alternate_name()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_alternate_name.md)
+  :
+
+  Form-field alternate (tooltip) name (`/TU`)
+
+- [`pdf_form_field_value()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_value.md)
+  :
+
+  Form-field current value (`/V`)
+
+- [`pdf_form_field_export_value()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_export_value.md)
+  : Form-field export value
+
+- [`pdf_form_field_flags()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_flags.md)
+  :
+
+  Form-field flag bitmask (`/Ff`)
+
+- [`pdf_form_field_flags_decoded()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_flags_decoded.md)
+  : Form-field universal flag bits, decoded
+
+- [`pdf_form_field_is_checked()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_is_checked.md)
+  : Form-field checked state
+
+- [`pdf_form_field_control_count()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_control_count.md)
+  : Number of controls in this radio group (or NA)
+
+- [`pdf_form_field_control_index()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_control_index.md)
+  : 1-based index of this control within its radio group
+
+- [`pdf_form_field_options()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_options.md)
+  : Form-field option labels (combobox / listbox)
+
+- [`pdf_form_field_is_option_selected()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_is_option_selected.md)
+  : Form-field option selected-state (combobox / listbox)
+
+- [`pdf_form_field_additional_actions_js()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_additional_actions_js.md)
+  : Form-field JavaScript additional-action sources
+
 ## Page objects
 
 - [`pdf_page_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_page_objects.md)
   : Enumerate the objects on a page
+
+- [`as_pdfium_obj_list()`](https://humanpred.github.io/rpdfium/reference/as_pdfium_obj_list.md)
+  :
+
+  Coerce input to a `pdfium_obj_list`
+
+- [`as_tibble(`*`<pdfium_obj_list>`*`)`](https://humanpred.github.io/rpdfium/reference/as_tibble.pdfium_obj_list.md)
+  :
+
+  Tibble view of a `pdfium_obj_list`
+
 - [`pdf_obj_type()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_type.md)
   : Report the type of a page object
+
 - [`pdf_obj_bounds()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_bounds.md)
   : Axis-aligned bounding box of a page object
+
 - [`pdf_obj_rotated_bounds()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_rotated_bounds.md)
   : Rotated bounding quadpoints of a page object
+
 - [`pdf_obj_matrix()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_matrix.md)
   : Transformation matrix of a page object
+
 - [`pdf_obj_has_transparency()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_has_transparency.md)
   : Does a page object use alpha blending?
+
 - [`pdf_obj_is_active()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_is_active.md)
   : Active flag of a page object
+
 - [`pdf_obj_marks()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_marks.md)
   : Content marks attached to a page object
+
 - [`pdf_obj_marked_content_id()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_marked_content_id.md)
   : Direct marked-content ID for a page object
 
@@ -395,3 +565,5 @@ to enable these. See ADRs 011-018 for the writer-surface conventions.
   : Set one of a page's named bounding boxes
 - [`pdf_doc_set_language()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_set_language.md)
   : Set the document's declared language
+- [`pdf_page_flush()`](https://humanpred.github.io/rpdfium/reference/pdf_page_flush.md)
+  : Force-flush a page's pending content edits

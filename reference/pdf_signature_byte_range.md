@@ -9,20 +9,14 @@ just-before-Contents, and bytes just-after-Contents to end-of-file.
 ## Usage
 
 ``` r
-pdf_signature_byte_range(doc, signature_index = 1L)
+pdf_signature_byte_range(sig)
 ```
 
 ## Arguments
 
-- doc:
+- sig:
 
-  A `pdfium_doc` from
-  [`pdf_doc_open()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_open.md),
-  or a character path.
-
-- signature_index:
-
-  One-based signature index (default `1`), as listed by
+  A `pdfium_signature` handle from
   [`pdf_signatures()`](https://humanpred.github.io/rpdfium/reference/pdf_signatures.md).
 
 ## Value
@@ -36,5 +30,4 @@ Wraps `FPDFSignatureObj_GetByteRange`.
 
 ## See also
 
-[`pdf_signatures()`](https://humanpred.github.io/rpdfium/reference/pdf_signatures.md),
 [`pdf_signature_contents()`](https://humanpred.github.io/rpdfium/reference/pdf_signature_contents.md).

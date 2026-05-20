@@ -1,10 +1,10 @@
 # Enumerate the objects on a page
 
-Returns a list of `pdfium_obj` handles - one per drawing primitive on
-the page, in PDFium's z-order (back to front). Each element carries its
-type ("path", "text", "image", "form", "shading", "unknown"), a 1-based
-index within the page, and an internal pointer suitable for passing to
-downstream object queries.
+Returns a `pdfium_obj_list` — a list of `pdfium_obj` handles, one per
+drawing primitive on the page in PDFium's z-order (back to front). Each
+handle carries its type (`"path"`, `"text"`, `"image"`, `"form"`,
+`"shading"`, `"unknown"`), a 1-based index within the page, and an
+internal pointer for downstream queries.
 
 ## Usage
 
@@ -40,11 +40,15 @@ pdf_page_objects(page, page_num = 1L, recursive = FALSE)
 
 ## Value
 
-A list (possibly empty) of `pdfium_obj` objects.
+A `pdfium_obj_list` (possibly empty).
 
 ## Details
 
-Page objects do not own their own lifetime - they remain valid only as
+Use `tibble::as_tibble(pdf_page_objects(p))` for the tibble view (one
+row per object with `bbox_*` / `has_transparency` / `is_active` columns
+plus `handle` and `source` list-cols, per ADR-017).
+
+Page objects do not own their own lifetime — they remain valid only as
 long as the parent `pdfium_page` is open. The handle's internal parent
 reference keeps the page (and transitively the document) alive for as
 long as you hold the object, but calling
@@ -54,7 +58,8 @@ explicitly invalidates all returned objects.
 ## See also
 
 [`pdf_obj_type()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_type.md),
-[`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md)
+[`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md),
+[`as_tibble.pdfium_obj_list()`](https://humanpred.github.io/rpdfium/reference/as_tibble.pdfium_obj_list.md).
 
 ## Examples
 
