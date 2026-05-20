@@ -17,32 +17,26 @@
 #include <vector>
 #include "fpdfview.h"
 #include "fpdf_attachment.h"
+#include "handle_validation.h"
 #include "utf16.h"
 
 namespace {
 
 FPDF_DOCUMENT doc_from_ptr(SEXP doc_ptr) {
-  if (TYPEOF(doc_ptr) != EXTPTRSXP) {
-    Rcpp::stop("doc_ptr is not an externalptr.");
-  }
-  FPDF_DOCUMENT doc =
-      static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr));
-  if (doc == nullptr) {
-    Rcpp::stop("Document handle is NULL (closed?).");
-  }
-  return doc;
+  return static_cast<FPDF_DOCUMENT>(
+      pdfium_r::validate_handle(doc_ptr, "Document",
+                                  /*require_prot_alive=*/false));
 }
 
 FPDF_ATTACHMENT att_from_ptr(SEXP att_ptr) {
-  if (TYPEOF(att_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the attachment.");
-  }
-  FPDF_ATTACHMENT a =
-      static_cast<FPDF_ATTACHMENT>(R_ExternalPtrAddr(att_ptr));
-  if (a == nullptr) {
-    Rcpp::stop("Attachment handle is NULL (was the doc closed?).");
-  }
-  return a;
+  // require_prot_alive: the attachment is doc-owned (no finalizer);
+  // its prot slot pins the parent doc externalptr. When the doc
+  // closes, the doc's address goes NULL — that's the signal the
+  // underlying attachment memory has been freed and the local
+  // pointer is dangling.
+  return static_cast<FPDF_ATTACHMENT>(
+      pdfium_r::validate_handle(att_ptr, "Attachment",
+                                  /*require_prot_alive=*/true));
 }
 
 std::string read_utf16_call(

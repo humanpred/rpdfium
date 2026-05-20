@@ -10,32 +10,23 @@
 #include <vector>
 #include "fpdfview.h"
 #include "fpdf_signature.h"
+#include "handle_validation.h"
 #include "utf16.h"
 
 namespace {
 
 FPDF_DOCUMENT doc_from_ptr(SEXP doc_ptr) {
-  if (TYPEOF(doc_ptr) != EXTPTRSXP) {
-    Rcpp::stop("doc_ptr is not an externalptr.");
-  }
-  FPDF_DOCUMENT doc =
-      static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr));
-  if (doc == nullptr) {
-    Rcpp::stop("Document handle is NULL (closed?).");
-  }
-  return doc;
+  return static_cast<FPDF_DOCUMENT>(
+      pdfium_r::validate_handle(doc_ptr, "Document",
+                                  /*require_prot_alive=*/false));
 }
 
 FPDF_SIGNATURE sig_from_ptr(SEXP sig_ptr) {
-  if (TYPEOF(sig_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the signature.");
-  }
-  FPDF_SIGNATURE s =
-      static_cast<FPDF_SIGNATURE>(R_ExternalPtrAddr(sig_ptr));
-  if (s == nullptr) {
-    Rcpp::stop("Signature handle is NULL (was the doc closed?).");
-  }
-  return s;
+  // Signature is doc-owned (no finalizer); prot pins the parent
+  // doc. Same parent-liveness check as attachments.
+  return static_cast<FPDF_SIGNATURE>(
+      pdfium_r::validate_handle(sig_ptr, "Signature",
+                                  /*require_prot_alive=*/true));
 }
 
 std::string read_sig_reason(FPDF_SIGNATURE s) {

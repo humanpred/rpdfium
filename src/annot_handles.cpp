@@ -19,29 +19,27 @@
 #include "fpdf_annot.h"
 #include "fpdf_attachment.h"
 #include "fpdf_formfill.h"
+#include "handle_validation.h"
 #include "utf16.h"
 
 namespace {
 
 FPDF_ANNOTATION annot_from_ptr(SEXP annot_ptr) {
-  if (TYPEOF(annot_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the annotation.");
-  }
-  FPDF_ANNOTATION annot =
-      static_cast<FPDF_ANNOTATION>(R_ExternalPtrAddr(annot_ptr));
-  if (annot == nullptr) {
-    Rcpp::stop("Annotation handle is NULL (closed?).");
-  }
-  return annot;
+  // Annot has its own finalizer (FPDFPage_CloseAnnot); its prot
+  // slot pins the parent page externalptr. When the page closes,
+  // the page externalptr's address goes NULL — that's the signal
+  // the annot's underlying memory has been freed (the annot
+  // belongs to the page, even though the annot finalizer is what
+  // calls FPDFPage_CloseAnnot).
+  return static_cast<FPDF_ANNOTATION>(
+      pdfium_r::validate_handle(annot_ptr, "Annotation",
+                                  /*require_prot_alive=*/true));
 }
 
 FPDF_PAGE page_from_ptr_local(SEXP page_ptr) {
-  if (TYPEOF(page_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the page.");
-  }
-  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
-  if (page == nullptr) Rcpp::stop("Page handle is closed.");
-  return page;
+  return static_cast<FPDF_PAGE>(
+      pdfium_r::validate_handle(page_ptr, "Page",
+                                  /*require_prot_alive=*/false));
 }
 
 void finalize_annot(SEXP ptr) {

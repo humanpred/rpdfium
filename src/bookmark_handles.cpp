@@ -16,32 +16,22 @@
 #include "fpdfview.h"
 #include "fpdf_doc.h"
 #include "action_helpers.h"
+#include "handle_validation.h"
 #include "utf16.h"
 
 namespace {
 
 FPDF_DOCUMENT doc_from_ptr(SEXP doc_ptr) {
-  if (TYPEOF(doc_ptr) != EXTPTRSXP) {
-    Rcpp::stop("doc_ptr is not an externalptr.");
-  }
-  FPDF_DOCUMENT doc =
-      static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr));
-  if (doc == nullptr) {
-    Rcpp::stop("Document handle is NULL (closed?).");
-  }
-  return doc;
+  return static_cast<FPDF_DOCUMENT>(
+      pdfium_r::validate_handle(doc_ptr, "Document",
+                                  /*require_prot_alive=*/false));
 }
 
 FPDF_BOOKMARK bm_from_ptr(SEXP bm_ptr) {
-  if (TYPEOF(bm_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the bookmark.");
-  }
-  FPDF_BOOKMARK b =
-      static_cast<FPDF_BOOKMARK>(R_ExternalPtrAddr(bm_ptr));
-  if (b == nullptr) {
-    Rcpp::stop("Bookmark handle is NULL (was the doc closed?).");
-  }
-  return b;
+  // Bookmark is doc-owned (no finalizer); prot pins the parent doc.
+  return static_cast<FPDF_BOOKMARK>(
+      pdfium_r::validate_handle(bm_ptr, "Bookmark",
+                                  /*require_prot_alive=*/true));
 }
 
 // Depth-first walk over the bookmark tree, collecting handles plus
