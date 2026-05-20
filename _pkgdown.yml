@@ -236,3 +236,23 @@ reference:
       - pdf_page_set_box
       - pdf_doc_set_language
       - pdf_page_flush
+  - title: Page-object styling
+    desc: >
+      Setters for page-object attributes. Each takes a `pdfium_obj`
+      handle from `pdf_page_objects()` (parent doc must be readwrite)
+      and marks the parent page dirty so `pdf_save()` /
+      `pdf_render_*()` see the change.
+    contents:
+      - pdf_obj_set_matrix
+      - pdf_obj_set_active
+      - pdf_obj_set_blend_mode
+      - pdf_path_set_stroke
+      - pdf_path_set_fill
+      - pdf_path_set_line_cap
+      - pdf_path_set_line_join
+      - pdf_path_set_dash
+      - pdf_path_set_draw_mode
+      - pdf_text_set_content
+      - pdf_text_set_render_mode
+      - pdf_obj_add_mark
+      - pdf_obj_remove_mark

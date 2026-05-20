@@ -44,3 +44,4 @@ coverage.xml
 *.gcov
 docs
 *.dll
+.claude
