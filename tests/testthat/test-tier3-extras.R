@@ -42,31 +42,9 @@ test_that("pdf_text_obj_rendered_bitmap validates scale and obj type", {
   )
 })
 
-test_that("pdf_attachment_dict_value returns the right shape", {
-  doc <- pdf_doc_open(fixture_path("attachments"))
-  on.exit(pdf_doc_close(doc), add = TRUE)
-  # A real key on the attachment dict; "Subtype" if present, "Size"
-  # otherwise. The fixture's attachments don't carry a Subtype, so
-  # we expect has_key = FALSE and value = NA.
-  out <- pdf_attachment_dict_value(doc, 1L, "Subtype")
-  expect_named(out, c("has_key", "value_type", "value"))
-  expect_type(out$has_key, "logical")
-  expect_type(out$value_type, "integer")
-  expect_type(out$value, "character")
-})
-
-test_that("pdf_attachment_dict_value validates inputs", {
-  doc <- pdf_doc_open(fixture_path("attachments"))
-  on.exit(pdf_doc_close(doc), add = TRUE)
-  expect_error(
-    pdf_attachment_dict_value(doc, 0L, "Subtype"),
-    "Assertion on"
-  )
-  expect_error(
-    pdf_attachment_dict_value(doc, 1L, ""),
-    "Assertion on"
-  )
-})
+# pdf_attachment_dict_value moved to test-attachments.R (handle-based)
+# when attachments switched to a list-of-handles reader in
+# ADR-017 / Phase 2.5c.
 
 test_that("pdf_text_char_obj_index reverse-maps chars to text-obj indices", {
   doc <- pdf_doc_open(fixture_path("shapes"))

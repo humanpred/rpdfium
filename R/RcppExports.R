@@ -69,6 +69,34 @@ cpp_annots_list <- function(doc_ptr, page_ptr) {
     .Call(`_pdfium_cpp_annots_list`, doc_ptr, page_ptr)
 }
 
+cpp_attachment_get <- function(doc_ptr, index_zero_based) {
+    .Call(`_pdfium_cpp_attachment_get`, doc_ptr, index_zero_based)
+}
+
+cpp_attachment_name <- function(att_ptr) {
+    .Call(`_pdfium_cpp_attachment_name`, att_ptr)
+}
+
+cpp_attachment_subtype <- function(att_ptr) {
+    .Call(`_pdfium_cpp_attachment_subtype`, att_ptr)
+}
+
+cpp_attachment_size_bytes <- function(att_ptr) {
+    .Call(`_pdfium_cpp_attachment_size_bytes`, att_ptr)
+}
+
+cpp_attachment_data_handle <- function(att_ptr) {
+    .Call(`_pdfium_cpp_attachment_data_handle`, att_ptr)
+}
+
+cpp_attachment_has_key_handle <- function(att_ptr, key) {
+    .Call(`_pdfium_cpp_attachment_has_key_handle`, att_ptr, key)
+}
+
+cpp_attachment_dict_value_handle <- function(att_ptr, key) {
+    .Call(`_pdfium_cpp_attachment_dict_value_handle`, att_ptr, key)
+}
+
 cpp_attachment_count <- function(doc_ptr) {
     .Call(`_pdfium_cpp_attachment_count`, doc_ptr)
 }

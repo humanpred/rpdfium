@@ -48,6 +48,12 @@ is_open <- function(x) {
     # open. Either being dead makes the annot unusable.
     return(cpp_handle_is_valid(x$ptr) && is_open(x$page))
   }
+  if (inherits(x, "pdfium_attachment")) {
+    # Attachment has no finalizer; PDFium owns its memory via the
+    # parent doc. The externalptr stays valid as long as the doc
+    # does. `is_open(doc)` is the authoritative check.
+    return(cpp_handle_is_valid(x$ptr) && is_open(x$doc))
+  }
   checkmate::assert_class(x, "pdfium_handle")
   cpp_handle_is_valid(x$ptr)
 }
@@ -328,6 +334,75 @@ format.pdfium_form_field_list <- function(x, ...) {
 
 #' @export
 print.pdfium_form_field_list <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  if (length(x) > 0L) {
+    n_show <- min(5L, length(x))
+    for (i in seq_len(n_show)) {
+      cat("  [[", i, "]] ", format(x[[i]]), "\n", sep = "")
+    }
+    if (length(x) > n_show) {
+      cat("  ... and ", length(x) - n_show, " more.\n", sep = "")
+    }
+  }
+  invisible(x)
+}
+
+#' Construct a `pdfium_attachment` from an FPDF_ATTACHMENT handle
+#'
+#' Internal helper. PDFium has no documented attachment-close
+#' function — attachments are owned by their parent
+#' `FPDF_DOCUMENT`, so the externalptr has no finalizer; the
+#' `prot` slot pins the parent doc.
+#'
+#' @param ptr Externalptr to an FPDF_ATTACHMENT.
+#' @param doc Parent `pdfium_doc`.
+#' @param index One-based attachment index.
+#' @return An object of class `c("pdfium_attachment", "pdfium_handle")`.
+#' @keywords internal
+#' @noRd
+new_pdfium_attachment <- function(ptr, doc, index) {
+  checkmate::assert_class(ptr, "externalptr")
+  checkmate::assert_class(doc, "pdfium_doc")
+  checkmate::assert_number(index)
+  structure(
+    list(ptr = ptr, doc = doc, index = as.integer(index)),
+    class = c("pdfium_attachment", "pdfium_handle")
+  )
+}
+
+#' @export
+format.pdfium_attachment <- function(x, ...) {
+  state <- if (is_open(x)) "open" else "closed"
+  nm <- tryCatch(cpp_attachment_name(x$ptr),
+                 error = function(e) "?")
+  sprintf("<pdfium_attachment [%s] %s, idx %d>", state, nm, x$index)
+}
+
+#' @export
+print.pdfium_attachment <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  invisible(x)
+}
+
+# Internal: list wrapper.
+new_pdfium_attachment_list <- function(handles, doc) {
+  checkmate::assert_list(handles,
+                         types = c("pdfium_attachment", "NULL"))
+  checkmate::assert_class(doc, "pdfium_doc")
+  structure(
+    handles,
+    source = doc,
+    class = c("pdfium_attachment_list", "list")
+  )
+}
+
+#' @export
+format.pdfium_attachment_list <- function(x, ...) {
+  sprintf("<pdfium_attachment_list: %d attachment(s)>", length(x))
+}
+
+#' @export
+print.pdfium_attachment_list <- function(x, ...) {
   cat(format(x, ...), "\n", sep = "")
   if (length(x) > 0L) {
     n_show <- min(5L, length(x))

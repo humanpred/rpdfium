@@ -54,6 +54,11 @@ reference:
   - title: Attachments
     contents:
       - pdf_attachments
+      - as_pdfium_attachment_list
+      - as_tibble.pdfium_attachment_list
+      - pdf_attachment_name
+      - pdf_attachment_mime_type
+      - pdf_attachment_size_bytes
       - pdf_attachment_data
       - pdf_attachment_dict_value
   - title: Signatures

@@ -7,33 +7,27 @@
 pdf_attachments(doc)
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}}, or a character path.}
+\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}}, or a character
+path.}
 }
 \value{
-A tibble with columns:
-\itemize{
-\item \code{attachment_index} integer - 1-based index into the
-document's attachment table; pass this to
-\code{\link[=pdf_attachment_data]{pdf_attachment_data()}} to read the file's bytes.
-\item \code{name} character - filename declared in the attachment's
-\verb{/F} (preferred) or \verb{/UF} entry.
-\item \code{mime_type} character - the attachment's \verb{/Subtype}
-(e.g. \code{"application/xml"}, \code{"image/png"}). Empty string if
-none declared.
-\item \code{size_bytes} numeric - the embedded file's decompressed
-byte size. \code{NA} when PDFium reports the contents are
-unreadable.
-}
-
-Returns a 0-row tibble of the same schema when the document
-has no attachments.
+A \code{pdfium_attachment_list} (empty if the document has
+no attachments).
 }
 \description{
-Returns a tibble row per \verb{/EmbeddedFile} object in the
-document. Wraps \code{FPDFDoc_GetAttachmentCount},
-\code{FPDFDoc_GetAttachment}, \code{FPDFAttachment_GetName},
-\code{FPDFAttachment_GetSubtype}, and \code{FPDFAttachment_GetFile}'s
-size-query form.
+Returns a \code{pdfium_attachment_list} — a list of
+\code{pdfium_attachment} handles, one per \verb{/EmbeddedFile} in the
+document. Each handle is a thin wrapper around an
+\code{FPDF_ATTACHMENT} owned by the parent doc; the per-attribute
+getters (\code{\link[=pdf_attachment_name]{pdf_attachment_name()}}, \code{\link[=pdf_attachment_mime_type]{pdf_attachment_mime_type()}},
+\code{\link[=pdf_attachment_size_bytes]{pdf_attachment_size_bytes()}}, \code{\link[=pdf_attachment_data]{pdf_attachment_data()}},
+\code{\link[=pdf_attachment_dict_value]{pdf_attachment_dict_value()}}) operate on a single handle.
+}
+\details{
+Use \code{tibble::as_tibble(pdf_attachments(doc))} for the tibble
+view; the resulting tibble carries \code{handle} and \code{source}
+list-columns that survive round-trip through
+\code{\link[=as_pdfium_attachment_list]{as_pdfium_attachment_list()}}.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
@@ -42,5 +36,5 @@ fixture <- system.file("extdata", "fixtures", "shapes.pdf",
 if (nzchar(fixture)) pdf_attachments(fixture)
 }
 \seealso{
-\code{\link[=pdf_attachment_data]{pdf_attachment_data()}}.
+\code{\link[=pdf_attachment_data]{pdf_attachment_data()}}, \code{\link[=pdf_attachment_dict_value]{pdf_attachment_dict_value()}}.
 }

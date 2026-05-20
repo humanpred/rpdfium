@@ -209,6 +209,86 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_attachment_get
+SEXP cpp_attachment_get(SEXP doc_ptr, int index_zero_based);
+RcppExport SEXP _pdfium_cpp_attachment_get(SEXP doc_ptrSEXP, SEXP index_zero_basedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type index_zero_based(index_zero_basedSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_attachment_get(doc_ptr, index_zero_based));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_attachment_name
+std::string cpp_attachment_name(SEXP att_ptr);
+RcppExport SEXP _pdfium_cpp_attachment_name(SEXP att_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type att_ptr(att_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_attachment_name(att_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_attachment_subtype
+std::string cpp_attachment_subtype(SEXP att_ptr);
+RcppExport SEXP _pdfium_cpp_attachment_subtype(SEXP att_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type att_ptr(att_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_attachment_subtype(att_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_attachment_size_bytes
+double cpp_attachment_size_bytes(SEXP att_ptr);
+RcppExport SEXP _pdfium_cpp_attachment_size_bytes(SEXP att_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type att_ptr(att_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_attachment_size_bytes(att_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_attachment_data_handle
+Rcpp::RawVector cpp_attachment_data_handle(SEXP att_ptr);
+RcppExport SEXP _pdfium_cpp_attachment_data_handle(SEXP att_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type att_ptr(att_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_attachment_data_handle(att_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_attachment_has_key_handle
+bool cpp_attachment_has_key_handle(SEXP att_ptr, std::string key);
+RcppExport SEXP _pdfium_cpp_attachment_has_key_handle(SEXP att_ptrSEXP, SEXP keySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type att_ptr(att_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type key(keySEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_attachment_has_key_handle(att_ptr, key));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_attachment_dict_value_handle
+Rcpp::List cpp_attachment_dict_value_handle(SEXP att_ptr, std::string key);
+RcppExport SEXP _pdfium_cpp_attachment_dict_value_handle(SEXP att_ptrSEXP, SEXP keySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type att_ptr(att_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type key(keySEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_attachment_dict_value_handle(att_ptr, key));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_attachment_count
 int cpp_attachment_count(SEXP doc_ptr);
 RcppExport SEXP _pdfium_cpp_attachment_count(SEXP doc_ptrSEXP) {
@@ -1563,6 +1643,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_doc_focusable_subtypes", (DL_FUNC) &_pdfium_cpp_doc_focusable_subtypes, 1},
     {"_pdfium_cpp_annot_count", (DL_FUNC) &_pdfium_cpp_annot_count, 1},
     {"_pdfium_cpp_annots_list", (DL_FUNC) &_pdfium_cpp_annots_list, 2},
+    {"_pdfium_cpp_attachment_get", (DL_FUNC) &_pdfium_cpp_attachment_get, 2},
+    {"_pdfium_cpp_attachment_name", (DL_FUNC) &_pdfium_cpp_attachment_name, 1},
+    {"_pdfium_cpp_attachment_subtype", (DL_FUNC) &_pdfium_cpp_attachment_subtype, 1},
+    {"_pdfium_cpp_attachment_size_bytes", (DL_FUNC) &_pdfium_cpp_attachment_size_bytes, 1},
+    {"_pdfium_cpp_attachment_data_handle", (DL_FUNC) &_pdfium_cpp_attachment_data_handle, 1},
+    {"_pdfium_cpp_attachment_has_key_handle", (DL_FUNC) &_pdfium_cpp_attachment_has_key_handle, 2},
+    {"_pdfium_cpp_attachment_dict_value_handle", (DL_FUNC) &_pdfium_cpp_attachment_dict_value_handle, 2},
     {"_pdfium_cpp_attachment_count", (DL_FUNC) &_pdfium_cpp_attachment_count, 1},
     {"_pdfium_cpp_attachments_list", (DL_FUNC) &_pdfium_cpp_attachments_list, 1},
     {"_pdfium_cpp_attachment_data", (DL_FUNC) &_pdfium_cpp_attachment_data, 2},
