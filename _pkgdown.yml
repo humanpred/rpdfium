@@ -280,3 +280,23 @@ reference:
       - pdf_rect_new
       - pdf_text_new
       - pdf_obj_delete
+  - title: Annotation authoring
+    desc: >
+      Create / delete annotations and mutate their properties.
+      Mirrors the `pdf_annot_*` readers; each setter takes a
+      `pdfium_annot` whose parent doc is readwrite. PDFium supports
+      creating these subtypes: circle, fileattachment, freetext,
+      highlight, ink, link, popup, square, squiggly, stamp,
+      strikeout, text, underline.
+    contents:
+      - pdf_annot_new
+      - pdf_annot_delete
+      - pdf_annot_set_bounds
+      - pdf_annot_set_color
+      - pdf_annot_set_interior_color
+      - pdf_annot_set_flags
+      - pdf_annot_set_contents
+      - pdf_annot_set_title
+      - pdf_annot_set_subject
+      - pdf_annot_set_dict_value
+      - pdf_annot_append_quad

@@ -22,6 +22,31 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_annot_new
+SEXP cpp_annot_new(SEXP page_ptr, int subtype_code);
+RcppExport SEXP _pdfium_cpp_annot_new(SEXP page_ptrSEXP, SEXP subtype_codeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type subtype_code(subtype_codeSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_new(page_ptr, subtype_code));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_annot_delete
+bool cpp_annot_delete(SEXP page_ptr, SEXP annot_ptr, int index_zero_based);
+RcppExport SEXP _pdfium_cpp_annot_delete(SEXP page_ptrSEXP, SEXP annot_ptrSEXP, SEXP index_zero_basedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type annot_ptr(annot_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type index_zero_based(index_zero_basedSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_delete(page_ptr, annot_ptr, index_zero_based));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_annot_subtype_code
 int cpp_annot_subtype_code(SEXP annot_ptr);
 RcppExport SEXP _pdfium_cpp_annot_subtype_code(SEXP annot_ptrSEXP) {
@@ -251,6 +276,81 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_page_refresh_annot_aps(page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_annot_set_rect
+bool cpp_annot_set_rect(SEXP annot_ptr, double left, double bottom, double right, double top);
+RcppExport SEXP _pdfium_cpp_annot_set_rect(SEXP annot_ptrSEXP, SEXP leftSEXP, SEXP bottomSEXP, SEXP rightSEXP, SEXP topSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type annot_ptr(annot_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type left(leftSEXP);
+    Rcpp::traits::input_parameter< double >::type bottom(bottomSEXP);
+    Rcpp::traits::input_parameter< double >::type right(rightSEXP);
+    Rcpp::traits::input_parameter< double >::type top(topSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_set_rect(annot_ptr, left, bottom, right, top));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_annot_set_color
+bool cpp_annot_set_color(SEXP annot_ptr, int color_type, double r, double g, double b, double a_);
+RcppExport SEXP _pdfium_cpp_annot_set_color(SEXP annot_ptrSEXP, SEXP color_typeSEXP, SEXP rSEXP, SEXP gSEXP, SEXP bSEXP, SEXP a_SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type annot_ptr(annot_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type color_type(color_typeSEXP);
+    Rcpp::traits::input_parameter< double >::type r(rSEXP);
+    Rcpp::traits::input_parameter< double >::type g(gSEXP);
+    Rcpp::traits::input_parameter< double >::type b(bSEXP);
+    Rcpp::traits::input_parameter< double >::type a_(a_SEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_set_color(annot_ptr, color_type, r, g, b, a_));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_annot_set_flags
+bool cpp_annot_set_flags(SEXP annot_ptr, int flags);
+RcppExport SEXP _pdfium_cpp_annot_set_flags(SEXP annot_ptrSEXP, SEXP flagsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type annot_ptr(annot_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type flags(flagsSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_set_flags(annot_ptr, flags));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_annot_set_string_value
+bool cpp_annot_set_string_value(SEXP annot_ptr, std::string key, std::string value_utf8);
+RcppExport SEXP _pdfium_cpp_annot_set_string_value(SEXP annot_ptrSEXP, SEXP keySEXP, SEXP value_utf8SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type annot_ptr(annot_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type key(keySEXP);
+    Rcpp::traits::input_parameter< std::string >::type value_utf8(value_utf8SEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_set_string_value(annot_ptr, key, value_utf8));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_annot_append_quad
+bool cpp_annot_append_quad(SEXP annot_ptr, double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4);
+RcppExport SEXP _pdfium_cpp_annot_append_quad(SEXP annot_ptrSEXP, SEXP x1SEXP, SEXP y1SEXP, SEXP x2SEXP, SEXP y2SEXP, SEXP x3SEXP, SEXP y3SEXP, SEXP x4SEXP, SEXP y4SEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type annot_ptr(annot_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type x1(x1SEXP);
+    Rcpp::traits::input_parameter< double >::type y1(y1SEXP);
+    Rcpp::traits::input_parameter< double >::type x2(x2SEXP);
+    Rcpp::traits::input_parameter< double >::type y2(y2SEXP);
+    Rcpp::traits::input_parameter< double >::type x3(x3SEXP);
+    Rcpp::traits::input_parameter< double >::type y3(y3SEXP);
+    Rcpp::traits::input_parameter< double >::type x4(x4SEXP);
+    Rcpp::traits::input_parameter< double >::type y4(y4SEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_append_quad(annot_ptr, x1, y1, x2, y2, x3, y3, x4, y4));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -2244,6 +2344,8 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_annot_get", (DL_FUNC) &_pdfium_cpp_annot_get, 2},
+    {"_pdfium_cpp_annot_new", (DL_FUNC) &_pdfium_cpp_annot_new, 2},
+    {"_pdfium_cpp_annot_delete", (DL_FUNC) &_pdfium_cpp_annot_delete, 3},
     {"_pdfium_cpp_annot_subtype_code", (DL_FUNC) &_pdfium_cpp_annot_subtype_code, 1},
     {"_pdfium_cpp_annot_flags", (DL_FUNC) &_pdfium_cpp_annot_flags, 1},
     {"_pdfium_cpp_annot_bounds", (DL_FUNC) &_pdfium_cpp_annot_bounds, 1},
@@ -2264,6 +2366,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_obj_marked_content_id", (DL_FUNC) &_pdfium_cpp_obj_marked_content_id, 1},
     {"_pdfium_cpp_doc_focusable_subtypes", (DL_FUNC) &_pdfium_cpp_doc_focusable_subtypes, 1},
     {"_pdfium_cpp_page_refresh_annot_aps", (DL_FUNC) &_pdfium_cpp_page_refresh_annot_aps, 1},
+    {"_pdfium_cpp_annot_set_rect", (DL_FUNC) &_pdfium_cpp_annot_set_rect, 5},
+    {"_pdfium_cpp_annot_set_color", (DL_FUNC) &_pdfium_cpp_annot_set_color, 6},
+    {"_pdfium_cpp_annot_set_flags", (DL_FUNC) &_pdfium_cpp_annot_set_flags, 2},
+    {"_pdfium_cpp_annot_set_string_value", (DL_FUNC) &_pdfium_cpp_annot_set_string_value, 3},
+    {"_pdfium_cpp_annot_append_quad", (DL_FUNC) &_pdfium_cpp_annot_append_quad, 9},
     {"_pdfium_cpp_annot_count", (DL_FUNC) &_pdfium_cpp_annot_count, 1},
     {"_pdfium_cpp_annots_list", (DL_FUNC) &_pdfium_cpp_annots_list, 2},
     {"_pdfium_cpp_attachment_get", (DL_FUNC) &_pdfium_cpp_attachment_get, 2},

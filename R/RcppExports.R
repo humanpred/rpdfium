@@ -5,6 +5,14 @@ cpp_annot_get <- function(page_ptr, index_zero_based) {
     .Call(`_pdfium_cpp_annot_get`, page_ptr, index_zero_based)
 }
 
+cpp_annot_new <- function(page_ptr, subtype_code) {
+    .Call(`_pdfium_cpp_annot_new`, page_ptr, subtype_code)
+}
+
+cpp_annot_delete <- function(page_ptr, annot_ptr, index_zero_based) {
+    .Call(`_pdfium_cpp_annot_delete`, page_ptr, annot_ptr, index_zero_based)
+}
+
 cpp_annot_subtype_code <- function(annot_ptr) {
     .Call(`_pdfium_cpp_annot_subtype_code`, annot_ptr)
 }
@@ -83,6 +91,26 @@ cpp_doc_focusable_subtypes <- function(doc_ptr) {
 
 cpp_page_refresh_annot_aps <- function(page_ptr) {
     .Call(`_pdfium_cpp_page_refresh_annot_aps`, page_ptr)
+}
+
+cpp_annot_set_rect <- function(annot_ptr, left, bottom, right, top) {
+    .Call(`_pdfium_cpp_annot_set_rect`, annot_ptr, left, bottom, right, top)
+}
+
+cpp_annot_set_color <- function(annot_ptr, color_type, r, g, b, a_) {
+    .Call(`_pdfium_cpp_annot_set_color`, annot_ptr, color_type, r, g, b, a_)
+}
+
+cpp_annot_set_flags <- function(annot_ptr, flags) {
+    .Call(`_pdfium_cpp_annot_set_flags`, annot_ptr, flags)
+}
+
+cpp_annot_set_string_value <- function(annot_ptr, key, value_utf8) {
+    .Call(`_pdfium_cpp_annot_set_string_value`, annot_ptr, key, value_utf8)
+}
+
+cpp_annot_append_quad <- function(annot_ptr, x1, y1, x2, y2, x3, y3, x4, y4) {
+    .Call(`_pdfium_cpp_annot_append_quad`, annot_ptr, x1, y1, x2, y2, x3, y3, x4, y4)
 }
 
 cpp_annot_count <- function(page_ptr) {
