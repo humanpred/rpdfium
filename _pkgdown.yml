@@ -300,3 +300,18 @@ reference:
       - pdf_annot_set_subject
       - pdf_annot_set_dict_value
       - pdf_annot_append_quad
+  - title: Form filling
+    desc: >
+      Write `/V` (the field value) on AcroForm widget annotations
+      and flatten the page when the form-fill workflow finishes.
+      `pdf_form_field_set_value()` dispatches by the field's type:
+      character for text / choice fields, logical-or-character for
+      checkable fields. `pdf_page_flatten()` bakes both form widgets
+      and annotations into the page's content stream — irreversible
+      and intended as the final step before saving a non-editable
+      copy.
+    contents:
+      - pdf_form_field_set_value
+      - pdf_form_field_clear
+      - pdf_form_reset
+      - pdf_page_flatten
