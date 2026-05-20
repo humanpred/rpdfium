@@ -126,6 +126,18 @@ reference:
       - pdf_form_field_type
       - pdf_form_field_type_code
       - pdf_form_field_page_num
+      - pdf_form_field_name
+      - pdf_form_field_alternate_name
+      - pdf_form_field_value
+      - pdf_form_field_export_value
+      - pdf_form_field_flags
+      - pdf_form_field_flags_decoded
+      - pdf_form_field_is_checked
+      - pdf_form_field_control_count
+      - pdf_form_field_control_index
+      - pdf_form_field_options
+      - pdf_form_field_is_option_selected
+      - pdf_form_field_additional_actions_js
   - title: Page objects
     contents:
       - pdf_page_objects

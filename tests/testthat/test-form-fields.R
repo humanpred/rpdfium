@@ -243,3 +243,73 @@ test_that("pdfium_form_field_list print method truncates beyond 5 entries", {
   txt <- capture.output(print(many))
   expect_true(any(grepl("more", txt)))
 })
+
+# Per-handle form_field getters -------------------------------------
+
+test_that("per-handle getters read the textfield's documented attrs", {
+  fields <- pdf_form_fields(fixture_path("annotated"))
+  type_names <- vapply(fields, pdf_form_field_type, character(1L))
+  tf <- fields[type_names == "textfield"][[1L]]
+  expect_identical(pdf_form_field_name(tf), "name")
+  expect_identical(pdf_form_field_alternate_name(tf), "Full name")
+  expect_identical(pdf_form_field_value(tf), "Bob")
+  expect_type(pdf_form_field_export_value(tf), "character")
+  expect_type(pdf_form_field_flags(tf), "integer")
+  decoded <- pdf_form_field_flags_decoded(tf)
+  expect_named(decoded, c("is_readonly", "is_required", "is_no_export"))
+  expect_false(decoded[["is_readonly"]])
+  expect_false(decoded[["is_required"]])
+  expect_false(decoded[["is_no_export"]])
+  expect_true(is.na(pdf_form_field_is_checked(tf)))
+  expect_true(is.na(pdf_form_field_control_count(tf)) ||
+                pdf_form_field_control_count(tf) >= 0L)
+  expect_length(pdf_form_field_options(tf), 0L)
+  expect_length(pdf_form_field_is_option_selected(tf), 0L)
+  aa <- pdf_form_field_additional_actions_js(tf)
+  expect_length(aa, 4L)
+  expect_named(aa, c("key_stroke", "format", "validate", "calculate"))
+  expect_true(all(aa == ""))
+})
+
+test_that("per-handle getters read the checkbox's documented attrs", {
+  fields <- pdf_form_fields(fixture_path("annotated"))
+  type_names <- vapply(fields, pdf_form_field_type, character(1L))
+  cb <- fields[type_names == "checkbox"][[1L]]
+  expect_identical(pdf_form_field_name(cb), "agree")
+  expect_identical(pdf_form_field_alternate_name(cb), "I agree")
+  expect_true(pdf_form_field_is_checked(cb))
+})
+
+test_that("per-handle getters reject non-form-field input", {
+  expect_error(pdf_form_field_name("nope"), "Assertion on")
+  expect_error(pdf_form_field_value(42), "Assertion on")
+  expect_error(pdf_form_field_flags(NULL), "Assertion on")
+  expect_error(pdf_form_field_flags_decoded(0L), "Assertion on")
+  expect_error(pdf_form_field_is_checked(0L), "Assertion on")
+  expect_error(pdf_form_field_control_count(0L), "Assertion on")
+  expect_error(pdf_form_field_control_index(0L), "Assertion on")
+  expect_error(pdf_form_field_options(0L), "Assertion on")
+  expect_error(pdf_form_field_is_option_selected(0L), "Assertion on")
+  expect_error(pdf_form_field_additional_actions_js(0L), "Assertion on")
+  expect_error(pdf_form_field_alternate_name(0L), "Assertion on")
+  expect_error(pdf_form_field_export_value(0L), "Assertion on")
+})
+
+test_that("per-handle getters reject closed-page form fields", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  fields <- pdf_form_fields(doc)
+  f1 <- fields[[1L]]
+  pdf_page_close(f1$page)
+  for (fn in list(
+    pdf_form_field_name, pdf_form_field_alternate_name,
+    pdf_form_field_value, pdf_form_field_export_value,
+    pdf_form_field_flags, pdf_form_field_flags_decoded,
+    pdf_form_field_is_checked, pdf_form_field_control_count,
+    pdf_form_field_control_index, pdf_form_field_options,
+    pdf_form_field_is_option_selected,
+    pdf_form_field_additional_actions_js
+  )) {
+    expect_error(fn(f1), "has been closed")
+  }
+})

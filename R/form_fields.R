@@ -293,10 +293,7 @@ as_pdfium_form_field_list <- function(x) {
 #'   `"text"`, `"signature"`.
 #' @export
 pdf_form_field_type <- function(field) {
-  checkmate::assert_class(field, "pdfium_form_field")
-  if (!is_open(field)) {
-    stop("Form-field handle has been closed.", call. = FALSE)
-  }
+  check_form_field(field)
   form_field_type_name(field$field_type_code)
 }
 
@@ -308,7 +305,7 @@ pdf_form_field_type <- function(field) {
 #' @return Integer scalar.
 #' @export
 pdf_form_field_type_code <- function(field) {
-  checkmate::assert_class(field, "pdfium_form_field")
+  check_form_field(field)
   field$field_type_code
 }
 
@@ -320,11 +317,218 @@ pdf_form_field_type_code <- function(field) {
 #' @return Integer scalar.
 #' @export
 pdf_form_field_page_num <- function(field) {
-  checkmate::assert_class(field, "pdfium_form_field")
+  check_form_field(field)
   field$page_num
 }
 
 # Internal: PDFium field-type code -> name, vectorized.
 form_field_type_name <- function(codes) {
   .pdfium_enum_name(codes, .pdfium_form_field_types)
+}
+
+# Internal validator. The C++ per-handle shims expect both the
+# field's widget annot pointer AND the parent doc pointer.
+check_form_field <- function(field, arg = "field") {
+  checkmate::assert_class(field, "pdfium_form_field", .var.name = arg)
+  if (!is_open(field)) {
+    stop("Form-field handle has been closed.", call. = FALSE)
+  }
+  invisible(field)
+}
+
+#' Form-field name (`/T`)
+#'
+#' Returns the field's fully-qualified `/T` name, UTF-8. Wraps
+#' `FPDFAnnot_GetFormFieldName`. Empty string when the doc has no
+#' AcroForm dict.
+#'
+#' @inheritParams pdf_form_field_type
+#' @return Character scalar.
+#' @export
+pdf_form_field_name <- function(field) {
+  check_form_field(field)
+  cpp_form_field_name_handle(field$ptr, field$page$doc$ptr)
+}
+
+#' Form-field alternate (tooltip) name (`/TU`)
+#'
+#' Returns the field's `/TU` alternate name (the human-readable
+#' label PDF readers use as the field tooltip). Empty when absent.
+#' Wraps `FPDFAnnot_GetFormFieldAlternateName`.
+#'
+#' @inheritParams pdf_form_field_type
+#' @return Character scalar.
+#' @export
+pdf_form_field_alternate_name <- function(field) {
+  check_form_field(field)
+  cpp_form_field_alternate_name_handle(field$ptr, field$page$doc$ptr)
+}
+
+#' Form-field current value (`/V`)
+#'
+#' Returns the field's current value as text. For checkbox /
+#' radio fields this is the export name when checked or `"Off"`
+#' otherwise. Wraps `FPDFAnnot_GetFormFieldValue`.
+#'
+#' @inheritParams pdf_form_field_type
+#' @return Character scalar.
+#' @export
+pdf_form_field_value <- function(field) {
+  check_form_field(field)
+  cpp_form_field_value_handle(field$ptr, field$page$doc$ptr)
+}
+
+#' Form-field export value
+#'
+#' Returns the field's PDF export value for checkbox / radio
+#' / button fields (the `/V` value used when checked). Empty for
+#' non-applicable field types. Wraps
+#' `FPDFAnnot_GetFormFieldExportValue`.
+#'
+#' @inheritParams pdf_form_field_type
+#' @return Character scalar.
+#' @export
+pdf_form_field_export_value <- function(field) {
+  check_form_field(field)
+  cpp_form_field_export_value_handle(field$ptr, field$page$doc$ptr)
+}
+
+#' Form-field flag bitmask (`/Ff`)
+#'
+#' Returns the raw PDF AcroForm flag bitmask. See PDF spec Table
+#' 226/227 for bit semantics; common bits include `ReadOnly` (1),
+#' `Required` (2), `NoExport` (3). Use
+#' [pdf_form_field_flags_decoded()] for the named-logical view.
+#' Wraps `FPDFAnnot_GetFormFieldFlags`.
+#'
+#' @inheritParams pdf_form_field_type
+#' @return Integer scalar.
+#' @export
+pdf_form_field_flags <- function(field) {
+  check_form_field(field)
+  cpp_form_field_flags_handle(field$ptr, field$page$doc$ptr)
+}
+
+#' Form-field universal flag bits, decoded
+#'
+#' Decodes the three universal AcroForm flag bits (ReadOnly,
+#' Required, NoExport) into a named logical vector.
+#'
+#' @inheritParams pdf_form_field_type
+#' @return Named logical vector with elements `is_readonly`,
+#'   `is_required`, `is_no_export`.
+#' @seealso [pdf_form_field_flags()].
+#' @export
+pdf_form_field_flags_decoded <- function(field) {
+  check_form_field(field)
+  flags <- cpp_form_field_flags_handle(field$ptr, field$page$doc$ptr)
+  vapply(names(.pdfium_field_flag_bits), function(nm) {
+    form_field_flag_decode(flags, .pdfium_field_flag_bits[[nm]])
+  }, logical(1L))
+}
+
+#' Form-field checked state
+#'
+#' Returns `TRUE` / `FALSE` for checkbox / radiobutton fields,
+#' `NA` for other field types. The check honours the current
+#' selection state PDFium tracks; it falls back to inferring
+#' `TRUE` when the field value is non-empty and not the
+#' `"Off"` sentinel (matching the tibble view's inferred-checked
+#' logic). Wraps `FPDFAnnot_IsChecked`.
+#'
+#' @inheritParams pdf_form_field_type
+#' @return Logical scalar or `NA`.
+#' @export
+pdf_form_field_is_checked <- function(field) {
+  check_form_field(field)
+  type <- field$field_type_code
+  # Only checkbox (2) and radiobutton (3) sensibly have a check
+  # state. XFA checkbox (9) too. Everything else: NA.
+  checkable_codes <- c(2L, 3L, 9L)
+  if (!type %in% checkable_codes) return(NA)
+  raw <- cpp_form_field_is_checked_handle(field$ptr,
+                                           field$page$doc$ptr)
+  if (is.na(raw)) return(NA)
+  if (raw != 0L) return(TRUE)
+  # Fallback: PDFium reports 0 for some radio/checkbox set states.
+  # Match the tibble logic — if the field's value is a non-empty
+  # non-"Off" string, treat as checked.
+  v <- cpp_form_field_value_handle(field$ptr, field$page$doc$ptr)
+  nzchar(v) && v != "Off"
+}
+
+#' Number of controls in this radio group (or NA)
+#'
+#' For a radio button widget, returns the number of siblings in
+#' its group; `NA` otherwise. Wraps
+#' `FPDFAnnot_GetFormControlCount`.
+#'
+#' @inheritParams pdf_form_field_type
+#' @return Integer scalar or `NA`.
+#' @export
+pdf_form_field_control_count <- function(field) {
+  check_form_field(field)
+  cpp_form_field_control_count_handle(field$ptr, field$page$doc$ptr)
+}
+
+#' 1-based index of this control within its radio group
+#'
+#' For a radio button widget, returns this control's 1-based
+#' index among its siblings; `NA` otherwise. Wraps
+#' `FPDFAnnot_GetFormControlIndex` (1-based conversion applied).
+#'
+#' @inheritParams pdf_form_field_type
+#' @return Integer scalar or `NA`.
+#' @export
+pdf_form_field_control_index <- function(field) {
+  check_form_field(field)
+  raw <- cpp_form_field_control_index_handle(field$ptr,
+                                              field$page$doc$ptr)
+  if (is.na(raw)) NA_integer_ else raw + 1L
+}
+
+#' Form-field option labels (combobox / listbox)
+#'
+#' Returns a character vector of option labels, one per choice
+#' in a combobox / listbox field. Empty for non-choice fields.
+#' Wraps `FPDFAnnot_GetOptionCount` + `FPDFAnnot_GetOptionLabel`.
+#'
+#' @inheritParams pdf_form_field_type
+#' @return Character vector (possibly empty).
+#' @export
+pdf_form_field_options <- function(field) {
+  check_form_field(field)
+  cpp_form_field_options_handle(field$ptr, field$page$doc$ptr)
+}
+
+#' Form-field option selected-state (combobox / listbox)
+#'
+#' Returns a logical vector parallel to [pdf_form_field_options()]
+#' reporting which options are currently selected. Wraps
+#' `FPDFAnnot_IsOptionSelected`.
+#'
+#' @inheritParams pdf_form_field_type
+#' @return Logical vector (possibly empty).
+#' @export
+pdf_form_field_is_option_selected <- function(field) {
+  check_form_field(field)
+  cpp_form_field_is_option_selected_handle(field$ptr,
+                                            field$page$doc$ptr)
+}
+
+#' Form-field JavaScript additional-action sources
+#'
+#' Returns a named character vector with the JS source attached
+#' to each of the four `additional action` events PDFium exposes
+#' for AcroForm fields. Empty strings when no JS is attached.
+#' Wraps `FPDFAnnot_GetFormAdditionalActionJavaScript`.
+#'
+#' @inheritParams pdf_form_field_type
+#' @return Character vector of length 4, named
+#'   `c("key_stroke", "format", "validate", "calculate")`.
+#' @export
+pdf_form_field_additional_actions_js <- function(field) {
+  check_form_field(field)
+  cpp_form_field_additional_actions_handle(field$ptr,
+                                            field$page$doc$ptr)
 }

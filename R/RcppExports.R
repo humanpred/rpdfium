@@ -209,6 +209,50 @@ cpp_form_field_handles <- function(doc_ptr) {
     .Call(`_pdfium_cpp_form_field_handles`, doc_ptr)
 }
 
+cpp_form_field_name_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_name_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_alternate_name_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_alternate_name_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_value_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_value_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_export_value_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_export_value_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_flags_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_flags_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_is_checked_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_is_checked_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_control_count_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_control_count_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_control_index_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_control_index_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_options_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_options_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_is_option_selected_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_is_option_selected_handle`, annot_ptr, doc_ptr)
+}
+
+cpp_form_field_additional_actions_handle <- function(annot_ptr, doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_additional_actions_handle`, annot_ptr, doc_ptr)
+}
+
 cpp_form_fields_list <- function(doc_ptr) {
     .Call(`_pdfium_cpp_form_fields_list`, doc_ptr)
 }
