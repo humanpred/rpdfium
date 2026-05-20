@@ -4,25 +4,14 @@
 \alias{pdf_annot_appearance}
 \title{Appearance-stream string for an annotation}
 \usage{
-pdf_annot_appearance(
-  page,
-  annotation_index,
-  mode = c("normal", "rollover", "down"),
-  page_num = 1L
-)
+pdf_annot_appearance(annot, mode = c("normal", "rollover", "down"))
 }
 \arguments{
-\item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a
-\code{pdfium_doc}.}
-
-\item{annotation_index}{One-based index into the page's
-annotations.}
+\item{annot}{A \code{pdfium_annot} handle (e.g. one element of
+\code{pdf_annotations(page)}).}
 
 \item{mode}{One of \code{"normal"} (default), \code{"rollover"}, or
 \code{"down"}.}
-
-\item{page_num}{One-based page index. Only used when \code{page} is a
-\code{pdfium_doc}. Ignored otherwise.}
 }
 \value{
 Character scalar — the appearance-stream content, or

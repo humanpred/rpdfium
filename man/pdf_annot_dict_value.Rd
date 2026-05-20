@@ -4,20 +4,14 @@
 \alias{pdf_annot_dict_value}
 \title{Read an annotation-dict entry by key}
 \usage{
-pdf_annot_dict_value(page, annotation_index, key, page_num = 1L)
+pdf_annot_dict_value(annot, key)
 }
 \arguments{
-\item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a
-\code{pdfium_doc}.}
-
-\item{annotation_index}{One-based index into the page's
-annotations.}
+\item{annot}{A \code{pdfium_annot} handle (e.g. one element of
+\code{pdf_annotations(page)}).}
 
 \item{key}{The annotation-dict key as a single non-empty
 character string (ASCII PDF name, e.g. \code{"M"}, \code{"NM"}, \code{"CA"}).}
-
-\item{page_num}{One-based page index. Only used when \code{page} is a
-\code{pdfium_doc}. Ignored otherwise.}
 }
 \value{
 A list with four fields:

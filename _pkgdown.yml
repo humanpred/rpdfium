@@ -78,9 +78,30 @@ reference:
   - title: Annotations and form fields
     contents:
       - pdf_annotations
+      - pdf_annot_at
+      - as_pdfium_annot_list
+      - as_tibble.pdfium_annot_list
+      - pdf_annot_subtype
+      - pdf_annot_subtype_code
+      - pdf_annot_flags
+      - pdf_annot_flags_decoded
+      - pdf_annot_bounds
+      - pdf_annot_contents
+      - pdf_annot_title
+      - pdf_annot_subject
+      - pdf_annot_color
+      - pdf_annot_interior_color
+      - pdf_annot_border_width
+      - pdf_annot_font_size
+      - pdf_annot_font_color
       - pdf_annot_dict_value
       - pdf_annot_appearance
       - pdf_form_fields
+      - as_pdfium_form_field_list
+      - as_tibble.pdfium_form_field_list
+      - pdf_form_field_type
+      - pdf_form_field_type_code
+      - pdf_form_field_page_num
   - title: Page objects
     contents:
       - pdf_page_objects

@@ -158,8 +158,48 @@ annot_flag_decode <- function(flags, bit) {
 #' @seealso [pdf_form_fields()] for AcroForm-specific accessors.
 #' @export
 pdf_annotations <- function(page, page_num = 1L) {
-  page <- as_open_page(page, page_num)
-  raw <- cpp_annots_list(page$doc$ptr, page$ptr)
+  # Don't defer-close the transient page when the caller passed a
+  # doc — the returned annot handles pin the page in their `prot`
+  # slot, so the page must outlive the list. R's GC handles
+  # cleanup via the page externalptr's finalizer when the list
+  # itself is collected.
+  page <- as_open_page(page, page_num, defer_close = FALSE)
+  n <- cpp_annot_count(page$ptr)
+  handles <- lapply(seq_len(n), function(i) {
+    ptr <- cpp_annot_get(page$ptr, as.integer(i - 1L))
+    new_pdfium_annot(ptr, page, i)
+  })
+  new_pdfium_annot_list(handles, page)
+}
+
+#' Tibble view of a `pdfium_annot_list`
+#'
+#' Walks the list of annotation handles and reads every documented
+#' attribute into a wide tibble. The tibble carries two extra
+#' list-columns relative to a simple data extraction:
+#'
+#' * `handle` — the original `pdfium_annot` handle for that row,
+#'   so the round-trip back via [as_pdfium_annot_list()] preserves
+#'   R-object identity.
+#' * `source` — the parent `pdfium_page` for every row.
+#'
+#' @param x A `pdfium_annot_list` from [pdf_annotations()].
+#' @param ... Unused (S3 generic compatibility).
+#' @return A tibble with one row per annotation. Columns mirror
+#'   the previous `pdf_annotations()` tibble plus `handle` and
+#'   `source`.
+#' @importFrom tibble as_tibble
+#' @method as_tibble pdfium_annot_list
+#' @export
+as_tibble.pdfium_annot_list <- function(x, ...) {
+  src_page <- attr(x, "source")
+  if (length(x) == 0L) {
+    return(empty_annot_tibble(src_page))
+  }
+  # Bulk-read all attributes via the existing aggregate shim — it's
+  # one PDFium loop instead of N per-handle calls. Then attach the
+  # handle + source list-columns alongside.
+  raw <- cpp_annots_list(src_page$doc$ptr, src_page$ptr)
   flags <- as.integer(raw$flags)
   decode <- function(bit_name) {
     annot_flag_decode(flags, .pdfium_annot_flag_bits[[bit_name]])
@@ -200,7 +240,54 @@ pdf_annotations <- function(page, page_num = 1L) {
     font_size = raw$font_size,
     popup_index = as.integer(raw$popup_index),
     irt_index = as.integer(raw$irt_index),
-    file_attachment_name = as.character(raw$file_attachment_name)
+    file_attachment_name = as.character(raw$file_attachment_name),
+    handle = unclass(x),
+    source = rep(list(src_page), length(x))
+  )
+}
+
+# Internal: zero-row tibble matching as_tibble.pdfium_annot_list's
+# schema. Used when the page has no annotations.
+empty_annot_tibble <- function(src_page) {
+  tibble::tibble(
+    annotation_index = integer(),
+    subtype_code = integer(),
+    subtype = character(),
+    flags = integer(),
+    is_invisible = logical(),
+    is_hidden = logical(),
+    is_print = logical(),
+    is_no_view = logical(),
+    is_read_only = logical(),
+    is_locked = logical(),
+    bounds_left = numeric(),
+    bounds_bottom = numeric(),
+    bounds_right = numeric(),
+    bounds_top = numeric(),
+    contents = character(),
+    title = character(),
+    subject = character(),
+    color_red = numeric(),
+    color_green = numeric(),
+    color_blue = numeric(),
+    color_alpha = numeric(),
+    interior_red = numeric(),
+    interior_green = numeric(),
+    interior_blue = numeric(),
+    interior_alpha = numeric(),
+    border_width = numeric(),
+    quad_points = list(),
+    vertices = list(),
+    ink_paths = list(),
+    font_color_red = numeric(),
+    font_color_green = numeric(),
+    font_color_blue = numeric(),
+    font_size = numeric(),
+    popup_index = integer(),
+    irt_index = integer(),
+    file_attachment_name = character(),
+    handle = list(),
+    source = list()
   )
 }
 

@@ -27,14 +27,10 @@
 #' value types (dict / array / stream / reference) report
 #' `value_type` accordingly but leave the typed accessors as `NA`.
 #'
-#' @param page A `pdfium_page` from [pdf_page_load()], or a
-#'   `pdfium_doc`.
-#' @param annotation_index One-based index into the page's
-#'   annotations.
+#' @param annot A `pdfium_annot` handle (e.g. one element of
+#'   `pdf_annotations(page)`).
 #' @param key The annotation-dict key as a single non-empty
 #'   character string (ASCII PDF name, e.g. `"M"`, `"NM"`, `"CA"`).
-#' @param page_num One-based page index. Only used when `page` is a
-#'   `pdfium_doc`. Ignored otherwise.
 #' @return A list with four fields:
 #'   * `has_key` (logical) — `TRUE` when the annotation dict
 #'     contains `key`.
@@ -49,14 +45,12 @@
 #'   readout, [pdf_annot_appearance()] for the `/AP` appearance
 #'   stream.
 #' @export
-pdf_annot_dict_value <- function(page, annotation_index, key,
-                                 page_num = 1L) {
-  checkmate::assert_count(annotation_index, positive = TRUE)
+pdf_annot_dict_value <- function(annot, key) {
+  check_annot(annot)
   key <- assert_pdf_key(key)
-  page <- as_open_page(page, page_num)
   raw <- cpp_annot_dict_value(
-    page$ptr,
-    as.integer(annotation_index - 1L),
+    annot$page$ptr,
+    as.integer(annot$index - 1L),
     key
   )
   vs <- as.character(raw$value_string)
@@ -91,19 +85,17 @@ pdf_annot_dict_value <- function(page, annotation_index, key,
 #'   `""` when no appearance is set for the requested mode.
 #' @seealso [pdf_annotations()], [pdf_annot_dict_value()].
 #' @export
-pdf_annot_appearance <- function(page, annotation_index,
+pdf_annot_appearance <- function(annot,
                                  mode = c(
                                    "normal", "rollover",
                                    "down"
-                                 ),
-                                 page_num = 1L) {
+                                 )) {
   mode <- match.arg(mode)
-  checkmate::assert_count(annotation_index, positive = TRUE)
-  page <- as_open_page(page, page_num)
+  check_annot(annot)
   code <- .pdfium_annot_appearance_modes[[mode]]
   as.character(cpp_annot_appearance(
-    page$ptr,
-    as.integer(annotation_index - 1L),
+    annot$page$ptr,
+    as.integer(annot$index - 1L),
     as.integer(code)
   ))
 }

@@ -1,4 +1,5 @@
-# Tests for pdf_annotations(). annotated.pdf is a hand-built
+# Tests for pdf_annotations() (now returns a `pdfium_annot_list`)
+# and its `as_tibble()` companion. annotated.pdf is a hand-built
 # fixture with five annotations on page 1:
 #   1. text     /Rect [20 250 40 270]  /Contents="Hello" /T="Alice"
 #   2. highlight /Rect [50 200 200 220]
@@ -6,15 +7,18 @@
 #   4. widget   /Rect [50 100 200 120]  (form text field, name="name")
 #   5. widget   /Rect [50  60  70  80]  (form checkbox,  name="agree")
 
-test_that("pdf_annotations returns 0 rows for a page with no annots", {
+test_that("pdf_annotations returns 0 handles for a page with no annots", {
   doc <- pdf_doc_open(fixture_path("shapes"))
   on.exit(pdf_doc_close(doc), add = TRUE)
   page <- pdf_page_load(doc, 1L)
   on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   res <- pdf_annotations(page)
-  expect_s3_class(res, "tbl_df")
-  expect_equal(nrow(res), 0L)
-  expect_named(res, c(
+  expect_s3_class(res, "pdfium_annot_list")
+  expect_length(res, 0L)
+  tbl <- tibble::as_tibble(res)
+  expect_s3_class(tbl, "tbl_df")
+  expect_equal(nrow(tbl), 0L)
+  expect_named(tbl, c(
     "annotation_index", "subtype_code", "subtype",
     "flags", "is_invisible", "is_hidden", "is_print",
     "is_no_view", "is_read_only", "is_locked",
@@ -29,14 +33,15 @@ test_that("pdf_annotations returns 0 rows for a page with no annots", {
     "font_color_red", "font_color_green",
     "font_color_blue", "font_size",
     "popup_index", "irt_index",
-    "file_attachment_name"
+    "file_attachment_name",
+    "handle", "source"
   ))
 })
 
 test_that("pdf_annotations populates quad_points / vertices / ink_paths", {
-  res <- pdf_annotations(pdf_doc_open(fixture_path("annot_geom")),
-    page_num = 1L
-  )
+  doc <- pdf_doc_open(fixture_path("annot_geom"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- tibble::as_tibble(pdf_annotations(doc, page_num = 1L))
   expect_equal(nrow(res), 3L)
   # The polygon row has /Vertices but no quads or ink.
   poly <- res[res$subtype == "polygon", ]
@@ -94,9 +99,9 @@ test_that("pdfium_annot_subtype_code round-trips with the name helper", {
 })
 
 test_that("pdf_annotations reads color and subject when set", {
-  res <- pdf_annotations(pdf_doc_open(fixture_path("annotated")),
-    page_num = 1L
-  )
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- tibble::as_tibble(pdf_annotations(doc, page_num = 1L))
   # Highlight annot (annotation_index 2) carries /C [0.9 0.9 0.2]
   # and /Subj (Important) per the fixture.
   hl <- res[res$subtype == "highlight", ]
@@ -116,9 +121,9 @@ test_that("pdf_annotations reads color and subject when set", {
 test_that("pdf_annotations decodes the universal /F flag bits", {
   # Bits 1, 2, 3, 6, 7, 8 decode independently; annotated.pdf has
   # no /F set on any annot so all flags should be FALSE.
-  res <- pdf_annotations(pdf_doc_open(fixture_path("annotated")),
-    page_num = 1L
-  )
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- tibble::as_tibble(pdf_annotations(doc, page_num = 1L))
   expect_true(all(!res$is_invisible))
   expect_true(all(!res$is_hidden))
   expect_true(all(!res$is_print))
@@ -144,7 +149,7 @@ test_that("pdf_annotations decodes the universal /F flag bits", {
 test_that("pdf_annotations enumerates the documented annots", {
   doc <- pdf_doc_open(fixture_path("annotated"))
   on.exit(pdf_doc_close(doc), add = TRUE)
-  res <- pdf_annotations(doc, page_num = 1L)
+  res <- tibble::as_tibble(pdf_annotations(doc, page_num = 1L))
   expect_equal(nrow(res), 5L)
   expect_identical(res$annotation_index, 1L:5L)
   expect_identical(
@@ -154,17 +159,17 @@ test_that("pdf_annotations enumerates the documented annots", {
 })
 
 test_that("pdf_annotations surfaces the text annotation's strings", {
-  res <- pdf_annotations(pdf_doc_open(fixture_path("annotated")),
-    page_num = 1L
-  )
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- tibble::as_tibble(pdf_annotations(doc, page_num = 1L))
   expect_identical(res$contents[[1L]], "Hello")
   expect_identical(res$title[[1L]], "Alice")
 })
 
 test_that("pdf_annotations reads the rectangles", {
-  res <- pdf_annotations(pdf_doc_open(fixture_path("annotated")),
-    page_num = 1L
-  )
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- tibble::as_tibble(pdf_annotations(doc, page_num = 1L))
   expect_equal(res$bounds_left[[1L]], 20)
   expect_equal(res$bounds_bottom[[1L]], 250)
   expect_equal(res$bounds_right[[1L]], 40)
@@ -178,9 +183,12 @@ test_that("pdf_annotations accepts an open page directly", {
   on.exit(pdf_doc_close(doc), add = TRUE)
   page <- pdf_page_load(doc, 1L)
   on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
-  by_page <- pdf_annotations(page)
-  by_doc <- pdf_annotations(doc, page_num = 1L)
-  expect_identical(by_page, by_doc)
+  by_page <- tibble::as_tibble(pdf_annotations(page))
+  by_doc <- tibble::as_tibble(pdf_annotations(doc, page_num = 1L))
+  # Drop handle + source columns because the live R objects differ
+  # between calls; the underlying data should match.
+  drop_handle <- function(t) t[, !names(t) %in% c("handle", "source")]
+  expect_identical(drop_handle(by_page), drop_handle(by_doc))
 })
 
 test_that("pdf_annotations rejects bad inputs", {
@@ -200,21 +208,4 @@ test_that("pdf_annotations refuses a closed page handle", {
   pdf_page_close(page)
   expect_error(pdf_annotations(page), "Page has been closed")
   pdf_doc_close(doc)
-})
-
-test_that("annotation_subtype_name maps codes to documented strings", {
-  expect_identical(
-    pdfium:::annotation_subtype_name(0L:9L),
-    c(
-      "unknown", "text", "link", "freetext", "line", "square",
-      "circle", "polygon", "polyline", "highlight"
-    )
-  )
-  # Out-of-range codes fall through to "unknown".
-  expect_identical(pdfium:::annotation_subtype_name(99L), "unknown")
-  expect_identical(pdfium:::annotation_subtype_name(-1L), "unknown")
-  expect_identical(
-    pdfium:::annotation_subtype_name(NA_integer_),
-    "unknown"
-  )
 })

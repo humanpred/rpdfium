@@ -126,17 +126,62 @@ form_field_flag_decode <- function(flags, bit) {
 #'   highlights, ink, etc.
 #' @export
 pdf_form_fields <- function(doc) {
-  doc <- as_open_doc(doc)
-  raw <- cpp_form_fields_list(doc$ptr)
+  # Don't defer-close the transient doc — the returned form-field
+  # list pins the doc on its `source` attribute. R's GC handles
+  # the close when the list itself is collected.
+  doc <- as_open_doc(doc, defer_close = FALSE)
+  raw <- cpp_form_field_handles(doc$ptr)
+  # Build pdfium_page wrappers for every kept page; the externalptrs
+  # have their own finalizers so each page closes via R's GC when
+  # the form-field list is reclaimed.
+  page_handles <- raw$page_handles
+  page_nums <- as.integer(raw$page_nums)
+  pages_used <- lapply(seq_along(page_handles), function(i) {
+    new_pdfium_page(page_handles[[i]], doc, page_nums[i])
+  })
+  # Build pdfium_form_field handles, one per widget annot.
+  annot_page_idx <- as.integer(raw$annot_page_idx)
+  field_types <- as.integer(raw$field_types)
+  fields <- lapply(seq_along(raw$annot_handles), function(i) {
+    new_pdfium_form_field(
+      ptr = raw$annot_handles[[i]],
+      page = pages_used[[annot_page_idx[i]]],
+      field_index = i,
+      page_num = page_nums[annot_page_idx[i]],
+      field_type_code = field_types[i]
+    )
+  })
+  new_pdfium_form_field_list(fields, doc, pages_used)
+}
+
+#' Tibble view of a `pdfium_form_field_list`
+#'
+#' Walks the list of field handles and reads every documented
+#' AcroForm property into a wide tibble. Adds two list-columns
+#' relative to a simple data extraction: `handle` (the
+#' `pdfium_form_field` per row) and `source` (the parent
+#' `pdfium_doc`).
+#'
+#' Internally calls the existing bulk reader (`cpp_form_fields_list`)
+#' for speed; per-row handles are pulled from the list itself so
+#' R-object identity survives round-trip.
+#'
+#' @param x A `pdfium_form_field_list` from [pdf_form_fields()].
+#' @param ... Unused (S3 generic compatibility).
+#' @return A tibble matching the previous `pdf_form_fields()`
+#'   shape plus `handle` + `source` columns.
+#' @importFrom tibble as_tibble
+#' @method as_tibble pdfium_form_field_list
+#' @export
+as_tibble.pdfium_form_field_list <- function(x, ...) {
+  src_doc <- attr(x, "source")
+  if (length(x) == 0L) {
+    return(empty_form_field_tibble(src_doc))
+  }
+  raw <- cpp_form_fields_list(src_doc$ptr)
   type_name <- form_field_type_name(raw$field_type)
   field_flags <- as.integer(raw$field_flags)
   is_checked <- as.integer(raw$is_checked)
-  # cpp sends -1 for "not a checkable type"; map to NA logical.
-  # For checkable types where FPDFAnnot_IsChecked returned false but
-  # PDFium's reported `value` is the on-state name (i.e. anything
-  # other than "Off" / empty), trust the value-side answer — this
-  # closes a known PDFium quirk where the ControlMap lookup misses
-  # for some hand-built PDFs.
   is_checked_lgl <- ifelse(is_checked < 0L, NA, is_checked != 0L)
   checkable <- !is.na(is_checked_lgl)
   inferred <- checkable & !is_checked_lgl &
@@ -169,8 +214,114 @@ pdf_form_fields <- function(doc) {
     bounds_top = raw$bounds_top,
     options = raw$options,
     is_option_selected = raw$is_option_selected,
-    additional_actions_js = raw$additional_actions_js
+    additional_actions_js = raw$additional_actions_js,
+    handle = unclass(x),
+    source = rep(list(src_doc), length(x))
   )
+}
+
+# Internal: zero-row tibble matching as_tibble.pdfium_form_field_list.
+empty_form_field_tibble <- function(src_doc) {
+  tibble::tibble(
+    field_index = integer(),
+    page_num = integer(),
+    field_type = character(),
+    field_flags = integer(),
+    is_readonly = logical(),
+    is_required = logical(),
+    is_no_export = logical(),
+    is_checked = logical(),
+    control_count = integer(),
+    control_index = integer(),
+    name = character(),
+    alternate_name = character(),
+    value = character(),
+    export_value = character(),
+    bounds_left = numeric(),
+    bounds_bottom = numeric(),
+    bounds_right = numeric(),
+    bounds_top = numeric(),
+    options = list(),
+    is_option_selected = list(),
+    additional_actions_js = list(),
+    handle = list(),
+    source = list()
+  )
+}
+
+#' Coerce input to a `pdfium_form_field_list`
+#'
+#' Reverse companion to [as_tibble.pdfium_form_field_list()].
+#'
+#' @param x Either a `pdfium_form_field_list`, a plain list of
+#'   `pdfium_form_field` handles, or a tibble with a `handle`
+#'   list-column.
+#' @return A `pdfium_form_field_list`.
+#' @export
+as_pdfium_form_field_list <- function(x) {
+  if (inherits(x, "pdfium_form_field_list")) return(x)
+  if (is.list(x) && length(x) > 0L &&
+      all(vapply(x, inherits, logical(1L), "pdfium_form_field"))) {
+    src_doc <- x[[1L]]$page$doc
+    pages_used <- unique(lapply(x, function(f) f$page))
+    return(new_pdfium_form_field_list(x, src_doc, pages_used))
+  }
+  if (tibble::is_tibble(x) && "handle" %in% names(x)) {
+    handles <- x$handle
+    if (length(handles) == 0L) {
+      stop("Cannot rebuild a `pdfium_form_field_list` from a zero-",
+           "row tibble (source doc unknown).", call. = FALSE)
+    }
+    src_doc <- x$source[[1L]]
+    pages_used <- unique(lapply(handles, function(f) f$page))
+    return(new_pdfium_form_field_list(handles, src_doc, pages_used))
+  }
+  stop("`x` must be a `pdfium_form_field_list`, a list of ",
+       "`pdfium_form_field`, or a tibble produced by ",
+       "`as_tibble(pdf_form_fields(doc))`.", call. = FALSE)
+}
+
+#' Form-field type (string)
+#'
+#' Returns the AcroForm field type as a short name. Wraps
+#' `FPDFAnnot_GetFormFieldType`.
+#'
+#' @param field A `pdfium_form_field` handle from
+#'   [pdf_form_fields()].
+#' @return Character scalar; one of `"unknown"`, `"pushbutton"`,
+#'   `"checkbox"`, `"radiobutton"`, `"combobox"`, `"listbox"`,
+#'   `"text"`, `"signature"`.
+#' @export
+pdf_form_field_type <- function(field) {
+  checkmate::assert_class(field, "pdfium_form_field")
+  if (!is_open(field)) {
+    stop("Form-field handle has been closed.", call. = FALSE)
+  }
+  form_field_type_name(field$field_type_code)
+}
+
+#' Form-field type code (integer enum)
+#'
+#' Returns the raw `FPDF_FORMFIELD_*` integer.
+#'
+#' @inheritParams pdf_form_field_type
+#' @return Integer scalar.
+#' @export
+pdf_form_field_type_code <- function(field) {
+  checkmate::assert_class(field, "pdfium_form_field")
+  field$field_type_code
+}
+
+#' Form-field page number
+#'
+#' Returns the 1-based index of the page carrying this field.
+#'
+#' @inheritParams pdf_form_field_type
+#' @return Integer scalar.
+#' @export
+pdf_form_field_page_num <- function(field) {
+  checkmate::assert_class(field, "pdfium_form_field")
+  field$page_num
 }
 
 # Internal: PDFium field-type code -> name, vectorized.
