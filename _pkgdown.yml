@@ -120,6 +120,12 @@ reference:
       - pdf_annot_font_color
       - pdf_annot_dict_value
       - pdf_annot_appearance
+      - pdf_annot_quad_points
+      - pdf_annot_vertices
+      - pdf_annot_ink_paths
+      - pdf_annot_popup
+      - pdf_annot_in_reply_to
+      - pdf_annot_file_attachment_name
       - pdf_form_fields
       - as_pdfium_form_field_list
       - as_tibble.pdfium_form_field_list
