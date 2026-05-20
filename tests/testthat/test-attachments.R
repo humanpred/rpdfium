@@ -28,16 +28,16 @@ test_that("pdf_attachment_data returns the embedded bytes verbatim", {
 
 test_that("pdf_attachments accepts a path or an open doc", {
   by_path <- pdf_attachments(fixture_path("attachments"))
-  doc <- pdf_open(fixture_path("attachments"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("attachments"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   by_doc <- pdf_attachments(doc)
   expect_identical(by_path, by_doc)
 })
 
 test_that("pdf_attachment_data accepts a path or an open doc", {
   by_path <- pdf_attachment_data(fixture_path("attachments"), 1L)
-  doc <- pdf_open(fixture_path("attachments"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("attachments"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   by_doc <- pdf_attachment_data(doc, 1L)
   expect_identical(by_path, by_doc)
 })
@@ -53,7 +53,7 @@ test_that("pdf_attachment_data validates attachment_index", {
 
 test_that("pdf_attachments rejects bad inputs and closed docs", {
   expect_error(pdf_attachments(42), "class .pdfium_doc.")
-  doc <- pdf_open(fixture_path("attachments"))
-  pdf_close(doc)
+  doc <- pdf_doc_open(fixture_path("attachments"))
+  pdf_doc_close(doc)
   expect_error(pdf_attachments(doc), "Document has been closed")
 })

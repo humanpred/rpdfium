@@ -14,13 +14,13 @@ mutator deep in a pipeline, save it, lose data).
 
 ## Decision
 
-`pdf_open(path, source = NULL, password = NULL, readwrite = FALSE)`
+`pdf_doc_open(path, source = NULL, password = NULL, readwrite = FALSE)`
 defaults to read-only. The flag is stored on the `pdfium_doc` S3
 object as `doc$readwrite` and is checked by an internal
 `assert_readwrite(doc)` helper that every mutator calls first. If
 the doc is read-only, the helper raises:
 
-> Document opened read-only; reopen with `pdf_open(..., readwrite = TRUE)`.
+> Document opened read-only; reopen with `pdf_doc_open(..., readwrite = TRUE)`.
 
 `pdf_new_doc()` (creates an empty document via
 `FPDF_CreateNewDocument`) returns a doc with `readwrite = TRUE`

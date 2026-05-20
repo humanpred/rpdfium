@@ -26,7 +26,7 @@
 #' [as.array.pdfium_bitmap()], [as.matrix.pdfium_bitmap()]) cover
 #' the other common bitmap shapes downstream packages expect.
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc` (the page given by `page_num` will be loaded and
 #'   closed internally).
 #' @param page_num One-based page index. Only used when `page` is a
@@ -58,7 +58,7 @@
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture)) {
-#'   bmp <- pdf_render_page(pdf_open(fixture), dpi = 96)
+#'   bmp <- pdf_render_page(pdf_doc_open(fixture), dpi = 96)
 #'   bmp # human summary
 #'   if (interactive()) plot(bmp) # render to the active device
 #' }
@@ -349,7 +349,7 @@ print.pdfium_bitmap <- function(x, ...) {
 #'   package = "pdfium"
 #' )
 #' if (nzchar(fixture) && interactive()) {
-#'   bmp <- pdf_render_page(pdf_open(fixture), dpi = 96)
+#'   bmp <- pdf_render_page(pdf_doc_open(fixture), dpi = 96)
 #'   plot(bmp)
 #' }
 plot.pdfium_bitmap <- function(x, interpolate = TRUE, ...) {
@@ -447,7 +447,7 @@ as.matrix.pdfium_bitmap <- function(x, ...) {
 #' )
 #' if (nzchar(fixture) && requireNamespace("png", quietly = TRUE)) {
 #'   out <- tempfile(fileext = ".png")
-#'   pdf_render_to_png(pdf_open(fixture), file = out, dpi = 96)
+#'   pdf_render_to_png(pdf_doc_open(fixture), file = out, dpi = 96)
 #'   file.exists(out)
 #' }
 #' @export

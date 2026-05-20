@@ -49,7 +49,7 @@ pdfium_dest_view_name <- function(codes) {
 #' bottom-left; page width and height in points come from
 #' [pdf_page_size()]).
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc` (the page given by `page_num` will be loaded
 #'   and closed internally).
 #' @param x,y Point coordinates in PDF user-space points.

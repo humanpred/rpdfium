@@ -24,6 +24,60 @@ R user → R API (R/) → Rcpp glue (src/*.cpp) → PDFium C ABI → libpdfium.{
   arguments are already validated; it raises `Rcpp::stop` only for invariants
   that shouldn't normally trip.
 
+## Naming — accessors vs. verbs
+
+See [ADR-019](dev/decisions/ADR-019-naming-conventions.md) for the
+rationale and the full table. The short version, in priority order:
+
+1. **Accessors are object-first.** If the function reads or sets an
+   attribute of a specific PDFium object (doc, page, obj, path, text,
+   image, annot, form_field, attachment, signature, bookmark, …), the
+   name starts with the object's short name:
+
+   ```
+   pdf_<object>_<attribute>()          # reader
+   pdf_<object>_set_<attribute>()      # setter
+   pdf_<object>_new()                  # constructor (fresh instance)
+   pdf_<object>_open()                 # constructor (from external source)
+   pdf_<object>_load()                 # constructor (by index from parent)
+   pdf_<object>_close()                # release handle
+   pdf_<object>_delete()               # remove from parent
+   ```
+
+   Examples: `pdf_doc_open`, `pdf_doc_close`, `pdf_doc_info`,
+   `pdf_page_load`, `pdf_page_close`, `pdf_page_size`,
+   `pdf_page_set_rotation`, `pdf_obj_bounds`, `pdf_path_segments`.
+
+2. **Verbs / actions are verb-first.** If the function performs an
+   action — render, extract, merge, parse, search — that doesn't
+   naturally belong to one object's attribute namespace, the name
+   starts with the verb:
+
+   ```
+   pdf_<verb>()
+   pdf_<verb>_<modifier>()
+   pdf_<verb>_<object>()              # plural object name when the
+                                      # verb acts on a collection
+   ```
+
+   Examples: `pdf_render_page`, `pdf_render_to_png`,
+   `pdf_extract_paths`, `pdf_docs_merge`, `pdf_n_up`,
+   `pdf_parse_date`.
+
+3. **At-point hit testers** use a spatial-query suffix:
+
+   ```
+   pdf_<thing>_at_point(parent, x, y, ...)
+   ```
+
+   Examples: `pdf_link_at_point`, `pdf_link_annot_at_point`,
+   `pdf_form_field_at_point`, `pdf_text_char_at_point`.
+
+When you add a function, pick the convention by asking: *does this
+function read or set an attribute of one PDFium object?* If yes,
+object-first. If it performs an action across multiple objects or
+is a pure utility, verb-first.
+
 ## Argument validation — use `checkmate`
 
 See [ADR-010](dev/decisions/ADR-010-checkmate-for-argument-validation.md)
@@ -51,13 +105,13 @@ for the rationale. The short version:
   R `externalptr` with a C finalizer registered via `R_RegisterCFinalizerEx(..., TRUE)`.
 - The finalizer is the **only** path that calls `FPDF_*Close*`. After it
   runs, it calls `R_ClearExternalPtr` so the pointer reads as NULL on
-  subsequent access. This makes `pdf_close()` safely idempotent.
+  subsequent access. This makes `pdf_doc_close()` safely idempotent.
 - Children (pages, page objects) hold an R-level reference to their parent
   (doc, page) so GC can't reclaim the parent before the child. Always set
   the parent into the `prot` slot of the child's externalptr.
 - Automatic close on GC works — see `vignettes/architecture.Rmd`. But for
   large documents or platform-sensitive code (Windows file-handle blocking
-  deletion), call `pdf_close()` explicitly.
+  deletion), call `pdf_doc_close()` explicitly.
 
 ## Testing — must be safe under parallel execution
 

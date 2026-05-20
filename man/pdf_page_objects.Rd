@@ -7,7 +7,7 @@
 pdf_page_objects(page, page_num = 1L, recursive = FALSE)
 }
 \arguments{
-\item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a \code{pdfium_doc}
+\item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a \code{pdfium_doc}
 (in which case the first page is loaded and closed automatically).}
 
 \item{page_num}{One-based page index. Only used when \code{page} is a
@@ -37,20 +37,20 @@ Page objects do not own their own lifetime - they remain valid only
 as long as the parent \code{pdfium_page} is open. The handle's internal
 parent reference keeps the page (and transitively the document)
 alive for as long as you hold the object, but calling
-\code{\link[=pdf_close_page]{pdf_close_page()}} explicitly invalidates all returned objects.
+\code{\link[=pdf_page_close]{pdf_page_close()}} explicitly invalidates all returned objects.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",
   package = "pdfium"
 )
 if (nzchar(fixture)) {
-  doc <- pdf_open(fixture)
-  p <- pdf_load_page(doc, 1)
+  doc <- pdf_doc_open(fixture)
+  p <- pdf_page_load(doc, 1)
   objs <- pdf_page_objects(p)
   length(objs)
   vapply(objs, pdf_obj_type, character(1))
-  pdf_close_page(p)
-  pdf_close(doc)
+  pdf_page_close(p)
+  pdf_doc_close(doc)
 }
 }
 \seealso{

@@ -7,7 +7,7 @@
 pdf_text_chars(page, page_num = 1L)
 }
 \arguments{
-\item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a
+\item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a
 \code{pdfium_doc}.}
 
 \item{page_num}{One-based page index. Only used when \code{page} is
@@ -44,7 +44,7 @@ that the character's ToUnicode CMap is malformed for this
 glyph (the codepoint reported may be the PDF's `
 fallback rather than the intended character).
 \item \code{text_index} integer - 0-based position in the \emph{extractable}
-text string (i.e. the linear \code{pdf_text()} output) for this
+text string (i.e. the linear \code{pdf_doc_text()} output) for this
 character, or \code{NA} for synthesised whitespace and other
 characters that don't appear in the extracted text.
 \item \code{char_font_name} character - the font name PDFium reports
@@ -73,12 +73,12 @@ positioned glyphs) and end-of-line "soft" hyphens. Wraps
 }
 \details{
 This is the per-character analog of \code{\link[=pdf_text_runs]{pdf_text_runs()}}
-(per-text-object) and \code{\link[=pdf_text]{pdf_text()}} (per-page). The three
-coexist: use \code{pdf_text()} when you just want the strings,
+(per-text-object) and \code{\link[=pdf_doc_text]{pdf_doc_text()}} (per-page). The three
+coexist: use \code{pdf_doc_text()} when you just want the strings,
 \code{pdf_text_runs()} for object-level positions, and
 \code{pdf_text_chars()} when you need glyph-level geometry (e.g.
 word segmentation, character-by-character layout analysis).
 }
 \seealso{
-\code{\link[=pdf_text_runs]{pdf_text_runs()}}, \code{\link[=pdf_text]{pdf_text()}}.
+\code{\link[=pdf_text_runs]{pdf_text_runs()}}, \code{\link[=pdf_doc_text]{pdf_doc_text()}}.
 }

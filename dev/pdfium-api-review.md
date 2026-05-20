@@ -704,7 +704,7 @@ forces, and a recommended choice.
 1. **Password-protected PDFs.** PDFium accepts `password` in
    `FPDF_LoadDocument`, `FPDF_LoadMemDocument`/`64`, `FPDF_LoadCustomDocument`,
    and `FPDFAvail_GetDocument`. `NULL` is valid for "no password".
-   - Day-1 API decision: does `pdf_open()` accept a `password=` argument?
+   - Day-1 API decision: does `pdf_doc_open()` accept a `password=` argument?
    - Recommendation: **yes, add `password = NULL` from day 1**. Passing through
      a `NULL` `FPDF_BYTESTRING` is what PDFium expects when no password is
      needed, so the wrapper can implement this cheaply and the absent argument
@@ -724,7 +724,7 @@ forces, and a recommended choice.
      environment or a slot on the S7/R7 object) so that any future annotation,
      destination, or form-field accessor that needs the document handle works
      without changing the page object's class layout. Failing to do this means
-     that future versions need to either (a) change `pdf_load_page()`'s return
+     that future versions need to either (a) change `pdf_page_load()`'s return
      shape, or (b) re-derive the document by storing it in a hidden global
      registry.
 
@@ -749,9 +749,9 @@ forces, and a recommended choice.
    `FPDF_DOCUMENT` handle but via different code paths, and the progressive
    path requires `FX_FILEAVAIL`/`FX_DOWNLOADHINTS` callbacks plus
    `FPDFAvail_IsDocAvail`/`_IsPageAvail` checks before use.
-   - Day-1 API decision: do we expose `pdf_open()` only, or also a
+   - Day-1 API decision: do we expose `pdf_doc_open()` only, or also a
      `pdf_open_stream()` that is willing to deferred-load?
-   - Recommendation: **expose only `pdf_open()` in 0.1.0**, but make sure its
+   - Recommendation: **expose only `pdf_doc_open()` in 0.1.0**, but make sure its
      return type is the same `pdfium_document` class that a future
      `pdf_open_stream()` would return. Treat the question of streaming as
      internal: 0.1.0 can use `FPDF_LoadMemDocument64` for raw vectors and
@@ -763,7 +763,7 @@ forces, and a recommended choice.
    `FPDF_FILEACCESS` struct with a `m_GetBlock` callback. If we ever want to
    read directly from R `connection` objects (gz-compressed, HTTP, etc.)
    without slurping into memory, we will need this.
-   - Day-1 API decision: does `pdf_open()` allow connection objects?
+   - Day-1 API decision: does `pdf_doc_open()` allow connection objects?
    - Recommendation: **document path/raw-only in 0.1.0**. Adding a
      `pdf_open_connection()` later is additive and non-breaking, so no day-1
      decision is forced beyond keeping the per-document handle abstraction.
@@ -850,7 +850,7 @@ Two minor observations worth surfacing for the implementation phase:
   exposes `FPDFText_GetCharBox`, `FPDFText_GetCharOrigin`, `FPDFText_GetMatrix`,
   `FPDFText_GetCharAngle`, `FPDFText_GetUnicode`, `FPDFText_GetFontSize`,
   `FPDFText_GetFontWeight`, `FPDFText_GetFillColor`, `FPDFText_GetStrokeColor`,
-  `FPDFText_GetFontInfo`. The R-level `pdf_text()` (or similar) can return a
+  `FPDFText_GetFontInfo`. The R-level `pdf_doc_text()` (or similar) can return a
   data frame with one row per character. This is richer than what was implicit
   in the original Tier 1 extension list, but does not require a new tier.
 - **Form-object enumeration is Tier 2-only because it requires

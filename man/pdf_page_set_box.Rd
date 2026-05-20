@@ -7,7 +7,7 @@
 pdf_page_set_box(page, box, rect, page_num = 1L)
 }
 \arguments{
-\item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a
+\item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a
 \code{pdfium_doc} (in which case \code{page_num} selects the page).}
 
 \item{box}{One of \code{"media"}, \code{"crop"}, \code{"bleed"}, \code{"trim"},

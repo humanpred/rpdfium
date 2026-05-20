@@ -26,7 +26,7 @@
 #' Most PDFs produced by Cairo, LaTeX, or web tools do not embed
 #' thumbnails — this function returns `raw(0)` in that common case.
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc`.
 #' @param page_num One-based page index. Only used when `page` is a
 #'   `pdfium_doc`. Ignored otherwise.

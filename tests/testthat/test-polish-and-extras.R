@@ -1,7 +1,7 @@
 # Tests for the phase-6 polish-and-extras additions:
 #   * pdf_obj_matrix() returning a 3x3 matrix
-#   * pdf_open(source = <raw>)
-#   * pdf_text(), pdf_fonts(), pdf_file_id(), pdf_doc_page_mode()
+#   * pdf_doc_open(source = <raw>)
+#   * pdf_doc_text(), pdf_doc_fonts(), pdf_doc_file_id(), pdf_doc_page_mode()
 #   * password= argument propagation
 #   * pdf_text_chars(), pdf_page_box(), pdf_page_links()
 #   * pdf_page_objects(recursive = TRUE)
@@ -9,10 +9,10 @@
 # pdf_obj_matrix ---------------------------------------------------
 
 test_that("pdf_obj_matrix returns a 3x3 matrix in homogeneous form", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   for (o in pdf_page_objects(page)) {
     M <- pdf_obj_matrix(o)
@@ -23,10 +23,10 @@ test_that("pdf_obj_matrix returns a 3x3 matrix in homogeneous form", {
 })
 
 test_that("pdf_obj_matrix composes with point %*% to transform coords", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   M <- pdf_obj_matrix(paths[[1L]])
@@ -36,55 +36,55 @@ test_that("pdf_obj_matrix composes with point %*% to transform coords", {
   expect_equal(pt[2L, 1L], 166, tolerance = 1e-3)
 })
 
-# pdf_open(source = <raw>) ----------------------------------------
+# pdf_doc_open(source = <raw>) ----------------------------------------
 
-test_that("pdf_open(source = raw) loads from in-memory bytes", {
+test_that("pdf_doc_open(source = raw) loads from in-memory bytes", {
   fx <- fixture_path("shapes")
   bytes <- readBin(fx, "raw", file.info(fx)$size)
-  doc <- pdf_open(source = bytes)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(source = bytes)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   expect_s3_class(doc, "pdfium_doc")
   expect_identical(pdf_page_count(doc), 1L)
   # Round-trip: text from raw matches text from path.
-  expect_identical(pdf_text(doc), pdf_text(fx))
+  expect_identical(pdf_doc_text(doc), pdf_doc_text(fx))
 })
 
-test_that("pdf_open validates source / path / password", {
+test_that("pdf_doc_open validates source / path / password", {
   expect_error(
-    pdf_open(),
+    pdf_doc_open(),
     "One of `path` or `source` must be provided"
   )
   fx <- fixture_path("shapes")
   expect_error(
-    pdf_open(path = fx, source = readBin(fx, "raw", 100L)),
+    pdf_doc_open(path = fx, source = readBin(fx, "raw", 100L)),
     "Pass exactly one of"
   )
   expect_error(
-    pdf_open(source = "not raw"),
+    pdf_doc_open(source = "not raw"),
     "Assertion on"
   )
   expect_error(
-    pdf_open(source = raw(0L)),
+    pdf_doc_open(source = raw(0L)),
     "Assertion on"
   )
   expect_error(
-    pdf_open(fx, password = 42),
+    pdf_doc_open(fx, password = 42),
     "Assertion on"
   )
 })
 
-# pdf_text / pdf_fonts / pdf_file_id / pdf_doc_page_mode ----------
+# pdf_doc_text / pdf_doc_fonts / pdf_doc_file_id / pdf_doc_page_mode ----------
 
-test_that("pdf_text returns one string per page", {
-  txt <- pdf_text(fixture_path("shapes"))
+test_that("pdf_doc_text returns one string per page", {
+  txt <- pdf_doc_text(fixture_path("shapes"))
   expect_type(txt, "character")
   expect_length(txt, 1L)
   expect_match(txt, "Hello")
 })
 
-test_that("pdf_fonts rolls up document fonts with first_seen_page", {
-  fonts <- pdf_fonts(fixture_path("shapes"))
+test_that("pdf_doc_fonts rolls up document fonts with first_seen_page", {
+  fonts <- pdf_doc_fonts(fixture_path("shapes"))
   expect_s3_class(fonts, "tbl_df")
   expect_named(fonts, c(
     "font_base_name", "font_family",
@@ -96,8 +96,8 @@ test_that("pdf_fonts rolls up document fonts with first_seen_page", {
   expect_true(all(fonts$first_seen_page >= 1L))
 })
 
-test_that("pdf_file_id returns raw bytes, possibly empty", {
-  id <- pdf_file_id(fixture_path("shapes"))
+test_that("pdf_doc_file_id returns raw bytes, possibly empty", {
+  id <- pdf_doc_file_id(fixture_path("shapes"))
   expect_type(id, "raw")
   # Cairo doesn't write a /ID entry for our fixture, so empty is
   # expected. The contract is still "raw vector"; just verify it
@@ -105,9 +105,9 @@ test_that("pdf_file_id returns raw bytes, possibly empty", {
   expect_gte(length(id), 0L)
 })
 
-test_that("pdf_file_id rejects unknown id_type", {
+test_that("pdf_doc_file_id rejects unknown id_type", {
   expect_error(
-    pdf_file_id(fixture_path("shapes"), id_type = "neither"),
+    pdf_doc_file_id(fixture_path("shapes"), id_type = "neither"),
     "should be one of"
   )
 })
@@ -145,8 +145,8 @@ test_that("password= flows through path-shortcut wrappers", {
 # pdf_text_chars -------------------------------------------------
 
 test_that("pdf_text_char_at_point hits a known glyph in shapes.pdf", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   chars <- pdf_text_chars(doc, page_num = 1L)
   visible <- chars[!chars$is_generated, ]
   # Pick the centre of the first visible char's bounding box.
@@ -158,8 +158,8 @@ test_that("pdf_text_char_at_point hits a known glyph in shapes.pdf", {
 })
 
 test_that("pdf_text_char_at_point returns NA when no glyph is near", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   # Sample a corner well outside any character.
   expect_true(is.na(pdf_text_char_at_point(doc, -100, -100,
     page_num = 1L
@@ -167,8 +167,8 @@ test_that("pdf_text_char_at_point returns NA when no glyph is near", {
 })
 
 test_that("text-index <-> char-index round trip is consistent", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   chars <- pdf_text_chars(doc, page_num = 1L)
   # Walk every char that has a non-NA text_index; round-tripping
   # back through cpp's GetCharIndexFromTextIndex should land on
@@ -186,8 +186,8 @@ test_that("text-index <-> char-index round trip is consistent", {
 })
 
 test_that("pdf_text_char_at_point / index helpers validate inputs", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   expect_error(pdf_text_char_at_point(doc, NA, 1), "Assertion on")
   expect_error(pdf_text_char_at_point(doc, 1, NA), "Assertion on")
   expect_error(
@@ -202,7 +202,7 @@ test_that("pdf_text_char_at_point / index helpers validate inputs", {
 })
 
 test_that("pdf_text_chars returns one row per character with bounds + flags", {
-  chars <- pdf_text_chars(pdf_open(fixture_path("shapes")), page_num = 1L)
+  chars <- pdf_text_chars(pdf_doc_open(fixture_path("shapes")), page_num = 1L)
   expect_s3_class(chars, "tbl_df")
   expect_named(chars, c(
     "char_index", "codepoint", "char",
@@ -233,10 +233,10 @@ test_that("pdf_text_chars returns one row per character with bounds + flags", {
 # pdf_page_box ----------------------------------------------------
 
 test_that("pdf_page_box(media) matches pdf_page_size dimensions", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   media <- pdf_page_box(page, box = "media")
   sz <- pdf_page_size(page)
@@ -245,7 +245,7 @@ test_that("pdf_page_box(media) matches pdf_page_size dimensions", {
 })
 
 test_that("pdf_page_box returns NAs for boxes the PDF doesn't declare", {
-  page <- pdf_load_page(pdf_open(fixture_path("shapes")), 1L)
+  page <- pdf_page_load(pdf_doc_open(fixture_path("shapes")), 1L)
   for (b in c("crop", "bleed", "trim", "art")) {
     res <- pdf_page_box(page, box = b)
     expect_named(res, c("left", "bottom", "right", "top"))
@@ -256,7 +256,7 @@ test_that("pdf_page_box returns NAs for boxes the PDF doesn't declare", {
 })
 
 test_that("pdf_page_box rejects unknown box names", {
-  page <- pdf_load_page(pdf_open(fixture_path("shapes")), 1L)
+  page <- pdf_page_load(pdf_doc_open(fixture_path("shapes")), 1L)
   expect_error(
     pdf_page_box(page, box = "noBox"),
     "should be one of"
@@ -266,8 +266,8 @@ test_that("pdf_page_box rejects unknown box names", {
 # pdf_page_links --------------------------------------------------
 
 test_that("pdf_page_links returns 0 rows for a page with no links", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   links <- pdf_page_links(doc, page_num = 1L)
   expect_s3_class(links, "tbl_df")
   expect_equal(nrow(links), 0L)
@@ -285,8 +285,8 @@ test_that("pdf_page_links reports a URI link's target correctly", {
   # targeting https://example.com. Previously the action_type lookup
   # was off by one and reported this as "launch" — the test guards
   # against that regression.
-  doc <- pdf_open(fixture_path("annotated"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   links <- pdf_page_links(doc, page_num = 1L)
   expect_equal(nrow(links), 1L)
   expect_equal(links$action_type, "uri")
@@ -302,10 +302,10 @@ test_that("pdf_page_links reports a URI link's target correctly", {
 # pdf_page_objects(recursive) -----------------------------------
 
 test_that("pdf_page_objects(recursive = TRUE) is a no-op when no forms", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   flat <- pdf_page_objects(page)
   recurs <- pdf_page_objects(page, recursive = TRUE)
@@ -313,10 +313,10 @@ test_that("pdf_page_objects(recursive = TRUE) is a no-op when no forms", {
 })
 
 test_that("pdf_page_objects(recursive = TRUE) descends into form objects", {
-  doc <- pdf_open(fixture_path("form_xobject"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("form_xobject"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   flat <- pdf_page_objects(page)
   recurs <- pdf_page_objects(page, recursive = TRUE)
@@ -331,10 +331,10 @@ test_that("pdf_page_objects(recursive = TRUE) descends into form objects", {
 })
 
 test_that("pdf_page_objects(recursive) validates its flag", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   expect_error(
     pdf_page_objects(page, recursive = NA),
@@ -348,9 +348,9 @@ test_that("pdf_page_objects(recursive) validates its flag", {
 
 # Edge-case coverage for the page-level helpers --------------------
 
-test_that("pdf_fonts returns the empty schema for a doc with no text", {
+test_that("pdf_doc_fonts returns the empty schema for a doc with no text", {
   # minimal.pdf is a blank Cairo page with no text runs anywhere.
-  fonts <- pdf_fonts(fixture_path("minimal"))
+  fonts <- pdf_doc_fonts(fixture_path("minimal"))
   expect_s3_class(fonts, "tbl_df")
   expect_equal(nrow(fonts), 0L)
   expect_named(fonts, c(
@@ -379,12 +379,12 @@ test_that("pdf_doc_page_mode handles unexpected codes gracefully", {
 })
 
 test_that("as_open_page_pair refuses closed pages, closed docs, and bad inputs", {
-  doc <- pdf_open(fixture_path("shapes"))
-  page <- pdf_load_page(doc, 1L)
-  pdf_close_page(page)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  page <- pdf_page_load(doc, 1L)
+  pdf_page_close(page)
   expect_error(pdf_page_box(page), "Page has been closed")
 
-  pdf_close(doc)
+  pdf_doc_close(doc)
   expect_error(pdf_page_box(doc), "Document has been closed")
 
   expect_error(
@@ -394,22 +394,22 @@ test_that("as_open_page_pair refuses closed pages, closed docs, and bad inputs",
 })
 
 test_that("doc_extra's internal as_doc_handle rejects bad inputs and closed docs", {
-  # The doc-level helpers in R/doc_extra.R (pdf_text, pdf_fonts,
-  # pdf_file_id, pdf_doc_page_mode) all share the as_doc_handle
-  # validator. Exercise both rejection paths via pdf_text() and
-  # pdf_file_id() so the helper's branches are covered.
+  # The doc-level helpers in R/doc_extra.R (pdf_doc_text, pdf_doc_fonts,
+  # pdf_doc_file_id, pdf_doc_page_mode) all share the as_doc_handle
+  # validator. Exercise both rejection paths via pdf_doc_text() and
+  # pdf_doc_file_id() so the helper's branches are covered.
   expect_error(
-    pdf_text(42L),
+    pdf_doc_text(42L),
     "class .pdfium_doc."
   )
-  doc <- pdf_open(fixture_path("shapes"))
-  pdf_close(doc)
-  expect_error(pdf_text(doc), "Document has been closed")
-  expect_error(pdf_file_id(doc), "Document has been closed")
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  pdf_doc_close(doc)
+  expect_error(pdf_doc_text(doc), "Document has been closed")
+  expect_error(pdf_doc_file_id(doc), "Document has been closed")
 })
 
-test_that("pdf_text returns the empty string for pages with no text", {
+test_that("pdf_doc_text returns the empty string for pages with no text", {
   # minimal.pdf is a single blank Cairo page with no text runs.
-  txt <- pdf_text(fixture_path("minimal"))
+  txt <- pdf_doc_text(fixture_path("minimal"))
   expect_identical(txt, "")
 })

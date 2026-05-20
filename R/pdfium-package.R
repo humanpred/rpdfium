@@ -7,7 +7,7 @@
 #'
 #' @section Where to start:
 #'
-#' Open a document with [pdf_open()] and inspect basic facts with
+#' Open a document with [pdf_doc_open()] and inspect basic facts with
 #' [pdf_page_count()]. Higher-level helpers (path extraction, text runs,
 #' rendering) arrive in subsequent releases.
 #'

@@ -8,7 +8,7 @@
 
 test_that("pdf_structure_tree returns 0 rows for an untagged PDF", {
   for (name in c("shapes", "minimal", "annotated")) {
-    out <- pdf_structure_tree(pdf_open(fixture_path(name)), 1L)
+    out <- pdf_structure_tree(pdf_doc_open(fixture_path(name)), 1L)
     expect_s3_class(out, "tbl_df")
     expect_equal(nrow(out), 0L)
     expect_named(out, c(
@@ -21,8 +21,8 @@ test_that("pdf_structure_tree returns 0 rows for an untagged PDF", {
 })
 
 test_that("pdf_structure_tree walks the tagged-PDF tree", {
-  doc <- pdf_open(fixture_path("tagged"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("tagged"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   res <- pdf_structure_tree(doc, page_num = 1L)
   expect_s3_class(res, "tbl_df")
   # PDFium's per-page view only returns elements with content on
@@ -40,11 +40,11 @@ test_that("pdf_structure_tree walks the tagged-PDF tree", {
 })
 
 test_that("pdf_structure_tree accepts a doc + page_num or a page", {
-  doc <- pdf_open(fixture_path("tagged"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("tagged"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   by_doc <- pdf_structure_tree(doc, page_num = 1L)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   by_page <- pdf_structure_tree(page)
   expect_identical(by_doc, by_page)
 })
@@ -54,9 +54,9 @@ test_that("pdf_structure_tree rejects bad inputs and closed pages", {
     pdf_structure_tree("nope"),
     "class .pdfium_page./.pdfium_doc."
   )
-  doc <- pdf_open(fixture_path("tagged"))
-  page <- pdf_load_page(doc, 1L)
-  pdf_close_page(page)
+  doc <- pdf_doc_open(fixture_path("tagged"))
+  page <- pdf_page_load(doc, 1L)
+  pdf_page_close(page)
   expect_error(pdf_structure_tree(page), "closed")
-  pdf_close(doc)
+  pdf_doc_close(doc)
 })

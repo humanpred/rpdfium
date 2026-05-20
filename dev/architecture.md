@@ -11,7 +11,7 @@ sections plus worked examples) lives at
 R user
   │
   ▼
-R API (R/)                  pdf_open, pdf_close, pdf_page_count, ...
+R API (R/)                  pdf_doc_open, pdf_doc_close, pdf_page_count, ...
   │                         S3 classes: pdfium_doc, pdfium_page, pdfium_obj
   ▼
 Rcpp glue (src/*.cpp)       cpp_* helpers; one .cpp per logical group
@@ -40,7 +40,7 @@ Read [ADR-005](decisions/ADR-005-memory-model.md) first. Summary:
 2. The finalizer is the **only** path that calls `FPDF_*Close*`.
 3. After closing, the finalizer calls `R_ClearExternalPtr` so the
    pointer reads as NULL on subsequent access. This makes
-   user-visible `pdf_close()` and equivalents safely idempotent.
+   user-visible `pdf_doc_close()` and equivalents safely idempotent.
 4. Children (pages, page objects) hold an R-level reference to their
    parent (doc, page) through the `prot` slot of the child
    externalptr. R's GC keeps the parent alive while a child exists.

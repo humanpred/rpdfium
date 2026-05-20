@@ -1,10 +1,10 @@
 # Tests for the small additional page-object read accessors.
 
 test_that("pdf_path_line_cap / line_join return human-readable strings", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  p <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  p <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(p), add = TRUE, after = FALSE)
 
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(p))
   skip_if(length(paths) == 0L, "no path objects on shapes.pdf")
@@ -16,10 +16,10 @@ test_that("pdf_path_line_cap / line_join return human-readable strings", {
 })
 
 test_that("pdf_path_line_cap / line_join reject non-path objects", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  p <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  p <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(p), add = TRUE, after = FALSE)
 
   texts <- Filter(function(o) o$type == "text", pdf_page_objects(p))
   skip_if(length(texts) == 0L, "no text objects on shapes.pdf")
@@ -29,10 +29,10 @@ test_that("pdf_path_line_cap / line_join reject non-path objects", {
 })
 
 test_that("pdf_obj_has_transparency returns a logical scalar", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  p <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  p <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(p), add = TRUE, after = FALSE)
 
   objs <- pdf_page_objects(p)
   skip_if(length(objs) == 0L, "no page objects")
@@ -45,10 +45,10 @@ test_that("pdf_obj_has_transparency returns a logical scalar", {
 })
 
 test_that("pdf_obj_is_active is TRUE for objects on a freshly loaded page", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  p <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  p <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(p), add = TRUE, after = FALSE)
 
   objs <- pdf_page_objects(p)
   skip_if(length(objs) == 0L, "no page objects")
@@ -57,10 +57,10 @@ test_that("pdf_obj_is_active is TRUE for objects on a freshly loaded page", {
 })
 
 test_that("pdf_obj_rotated_bounds returns 8 named coordinates", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  p <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  p <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(p), add = TRUE, after = FALSE)
 
   texts <- Filter(function(o) o$type == "text", pdf_page_objects(p))
   skip_if(length(texts) == 0L, "no text objects on shapes.pdf")
@@ -82,10 +82,10 @@ test_that("the new accessors all reject bad inputs", {
 })
 
 test_that("pdf_path_draw_mode classifies stroke / fill / clip-only paths", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  p <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  p <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(p), add = TRUE, after = FALSE)
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(p))
   expect_gt(length(paths), 0L)
   for (path_obj in paths) {
@@ -110,13 +110,13 @@ test_that("pdf_path_draw_mode classifies stroke / fill / clip-only paths", {
 })
 
 test_that("pdf_path_draw_mode rejects non-path objects and closed pages", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  p <- pdf_load_page(doc, 1L)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  p <- pdf_page_load(doc, 1L)
   objs <- pdf_page_objects(p)
   path_obj <- Filter(function(o) o$type == "path", objs)[[1L]]
   expect_error(pdf_path_draw_mode("nope"), "class .pdfium_obj.")
-  pdf_close_page(p)
+  pdf_page_close(p)
   expect_error(
     pdf_path_draw_mode(path_obj),
     "Parent page has been closed"
@@ -124,10 +124,10 @@ test_that("pdf_path_draw_mode rejects non-path objects and closed pages", {
 })
 
 test_that("pdf_obj_marks returns an empty tibble for untagged content", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  p <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  p <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(p), add = TRUE, after = FALSE)
   for (obj in pdf_page_objects(p)) {
     res <- pdf_obj_marks(obj)
     expect_s3_class(res, "tbl_df")
@@ -137,10 +137,10 @@ test_that("pdf_obj_marks returns an empty tibble for untagged content", {
 })
 
 test_that("pdf_obj_marks surfaces BDC tags on tagged content", {
-  doc <- pdf_open(fixture_path("tagged"))
-  on.exit(pdf_close(doc), add = TRUE)
-  p <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("tagged"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  p <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(p), add = TRUE, after = FALSE)
   objs <- pdf_page_objects(p)
   expect_gte(length(objs), 1L)
   marks <- pdf_obj_marks(objs[[1L]])
@@ -151,31 +151,31 @@ test_that("pdf_obj_marks surfaces BDC tags on tagged content", {
 })
 
 test_that("pdf_obj_marked_content_id reads the direct MCID", {
-  doc <- pdf_open(fixture_path("tagged"))
-  on.exit(pdf_close(doc), add = TRUE)
-  p <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(p), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("tagged"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  p <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(p), add = TRUE, after = FALSE)
   obj <- pdf_page_objects(p)[[1L]]
   expect_equal(pdf_obj_marked_content_id(obj), 0L)
 })
 
 test_that("pdf_obj_marks rejects non-objects and closed parents", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  p <- pdf_load_page(doc, 1L)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  p <- pdf_page_load(doc, 1L)
   obj <- pdf_page_objects(p)[[1L]]
   expect_error(pdf_obj_marks("nope"), "class .pdfium_obj.")
-  pdf_close_page(p)
+  pdf_page_close(p)
   expect_error(pdf_obj_marks(obj), "Parent page has been closed")
 })
 
 test_that("accessors refuse a closed parent page", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  p <- pdf_load_page(doc, 1L)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  p <- pdf_page_load(doc, 1L)
   objs <- pdf_page_objects(p)
   skip_if(length(objs) == 0L, "no page objects")
-  pdf_close_page(p)
+  pdf_page_close(p)
 
   expect_error(
     pdf_obj_has_transparency(objs[[1L]]),

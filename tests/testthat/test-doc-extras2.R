@@ -16,8 +16,8 @@ test_that("pdf_doc_is_tagged returns FALSE on plain Cairo fixtures", {
 })
 
 test_that("pdf_doc_is_tagged accepts doc or path equivalently", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   expect_identical(
     pdf_doc_is_tagged(doc),
     pdf_doc_is_tagged(fixture_path("shapes"))
@@ -26,13 +26,13 @@ test_that("pdf_doc_is_tagged accepts doc or path equivalently", {
 
 test_that("pdf_doc_is_tagged rejects bad inputs and closed docs", {
   expect_error(pdf_doc_is_tagged(42), "class .pdfium_doc.")
-  doc <- pdf_open(fixture_path("shapes"))
-  pdf_close(doc)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  pdf_doc_close(doc)
   expect_error(pdf_doc_is_tagged(doc), "closed")
 })
 
-test_that("pdf_viewer_preferences reports PDFium defaults on fixtures", {
-  prefs <- pdf_viewer_preferences(fixture_path("shapes"))
+test_that("pdf_doc_viewer_preferences reports PDFium defaults on fixtures", {
+  prefs <- pdf_doc_viewer_preferences(fixture_path("shapes"))
   expect_named(prefs, c(
     "print_scaling", "num_copies", "duplex",
     "print_page_ranges"
@@ -51,17 +51,17 @@ test_that("pdf_viewer_preferences reports PDFium defaults on fixtures", {
   expect_type(prefs$print_page_ranges, "integer")
 })
 
-test_that("pdf_viewer_preferences accepts doc or path", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+test_that("pdf_doc_viewer_preferences accepts doc or path", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   expect_identical(
-    pdf_viewer_preferences(doc),
-    pdf_viewer_preferences(fixture_path("shapes"))
+    pdf_doc_viewer_preferences(doc),
+    pdf_doc_viewer_preferences(fixture_path("shapes"))
   )
 })
 
-test_that("pdf_named_dests returns an empty tibble of the right shape", {
-  out <- pdf_named_dests(fixture_path("shapes"))
+test_that("pdf_doc_named_dests returns an empty tibble of the right shape", {
+  out <- pdf_doc_named_dests(fixture_path("shapes"))
   expect_s3_class(out, "tbl_df")
   expect_named(out, c(
     "name", "page", "dest_view", "dest_x", "dest_y",
@@ -73,11 +73,11 @@ test_that("pdf_named_dests returns an empty tibble of the right shape", {
   expect_type(out$dest_x, "double")
 })
 
-test_that("pdf_named_dests rejects bad doc inputs", {
-  expect_error(pdf_named_dests(list()), "class .pdfium_doc.")
-  doc <- pdf_open(fixture_path("shapes"))
-  pdf_close(doc)
-  expect_error(pdf_named_dests(doc), "closed")
+test_that("pdf_doc_named_dests rejects bad doc inputs", {
+  expect_error(pdf_doc_named_dests(list()), "class .pdfium_doc.")
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  pdf_doc_close(doc)
+  expect_error(pdf_doc_named_dests(doc), "closed")
 })
 
 test_that("pdf_doc_javascript returns an empty tibble for JS-free PDFs", {
@@ -90,27 +90,27 @@ test_that("pdf_doc_javascript returns an empty tibble for JS-free PDFs", {
 })
 
 test_that("pdf_doc_javascript accepts doc or path", {
-  doc <- pdf_open(fixture_path("outline"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("outline"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   expect_identical(
     pdf_doc_javascript(doc),
     pdf_doc_javascript(fixture_path("outline"))
   )
 })
 
-test_that("pdf_viewer_preference_by_name returns NA when key absent", {
+test_that("pdf_doc_viewer_preference_by_name returns NA when key absent", {
   expect_true(is.na(
-    pdf_viewer_preference_by_name(fixture_path("shapes"), "Direction")
+    pdf_doc_viewer_preference_by_name(fixture_path("shapes"), "Direction")
   ))
 })
 
-test_that("pdf_viewer_preference_by_name validates key", {
+test_that("pdf_doc_viewer_preference_by_name validates key", {
   expect_error(
-    pdf_viewer_preference_by_name(fixture_path("shapes"), ""),
+    pdf_doc_viewer_preference_by_name(fixture_path("shapes"), ""),
     "Assertion on"
   )
   expect_error(
-    pdf_viewer_preference_by_name(
+    pdf_doc_viewer_preference_by_name(
       fixture_path("shapes"),
       NA_character_
     ),

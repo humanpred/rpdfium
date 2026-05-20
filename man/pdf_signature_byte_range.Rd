@@ -7,7 +7,7 @@
 pdf_signature_byte_range(doc, signature_index = 1L)
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}}, or a character path.}
+\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}}, or a character path.}
 
 \item{signature_index}{One-based signature index (default \code{1}),
 as listed by \code{\link[=pdf_signatures]{pdf_signatures()}}.}

@@ -34,10 +34,10 @@ R has no compile-time lifetime checking; option 3 is unavailable.
 - The finalizer is the **only** code path that calls `FPDF_*Close*` on
   a live pointer. After closing, it calls `R_ClearExternalPtr` so the
   pointer reads as NULL. This makes the explicit user-facing close
-  function (e.g. `pdf_close()`) safely idempotent.
-- Public `pdf_close()` and equivalents flip the pointer to NULL,
+  function (e.g. `pdf_doc_close()`) safely idempotent.
+- Public `pdf_doc_close()` and equivalents flip the pointer to NULL,
   triggering the finalizer's `FPDF_*Close*` call. A second
-  `pdf_close()` is a no-op.
+  `pdf_doc_close()` is a no-op.
 - **Parent-tracking** uses the `externalptr`'s `prot` slot: the child
   externalptr holds an R-level reference to its parent's externalptr
   through `prot`. R's GC promises that as long as a child is live,
@@ -51,7 +51,7 @@ R has no compile-time lifetime checking; option 3 is unavailable.
   iterations and calling `gc()` to confirm no crash.
 - **Eventual, not deterministic.** GC is non-deterministic; users who
   need immediate release (large documents, Windows file deletion)
-  must call `pdf_close()`. Documented in `vignettes/architecture.Rmd`.
+  must call `pdf_doc_close()`. Documented in `vignettes/architecture.Rmd`.
 - **Library lifecycle.** PDFium's process-global init/destroy
   (`FPDF_InitLibraryWithConfig` / `FPDF_DestroyLibrary`) run in
   `.onLoad` / `.onUnload`. A module-level boolean tracks
@@ -66,7 +66,7 @@ R has no compile-time lifetime checking; option 3 is unavailable.
 - Implementing this correctly requires every Rcpp function that
   returns a handle to register a finalizer and (for children) set
   `prot` to the parent's externalptr. CLAUDE.md documents this.
-- `pdf_close()` is idempotent; this is a permanent contract.
+- `pdf_doc_close()` is idempotent; this is a permanent contract.
 - The auto-finalizer test in `test-document.R` is load-bearing — it's
   the only test that catches finalizer regressions. Don't remove it.
 - valgrind (weekly CI) is our backstop for missed handles.
@@ -77,7 +77,7 @@ R has no compile-time lifetime checking; option 3 is unavailable.
   per object and obscures the lifetime in places that should be
   obvious (the parent-child reference is conceptually simple). The
   pypdfium2-style "externalptr + finalizer + prot" is cleaner.
-- **No automatic close, require explicit `pdf_close()`.** Rejected.
+- **No automatic close, require explicit `pdf_doc_close()`.** Rejected.
   Users will forget. Forgetting must be safe.
 - **Use `weakref` instead of `externalptr` finalizers.** R's weak
   references are designed for caches, not for managing C resources.

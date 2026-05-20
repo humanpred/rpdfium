@@ -7,7 +7,7 @@
 pdf_text_runs(page, page_num = 1L)
 }
 \arguments{
-\item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a
+\item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a
 \code{pdfium_doc} (in which case the first page is loaded and
 closed automatically).}
 
@@ -49,9 +49,9 @@ fixture <- system.file("extdata", "fixtures", "unicode.pdf",
   package = "pdfium"
 )
 if (nzchar(fixture)) {
-  doc <- pdf_open(fixture)
+  doc <- pdf_doc_open(fixture)
   pdf_text_runs(doc, 1)
-  pdf_close(doc)
+  pdf_doc_close(doc)
 }
 }
 \seealso{

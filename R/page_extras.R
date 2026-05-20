@@ -19,7 +19,7 @@
 #' Wraps `FPDFPage_GetMediaBox` / `_GetCropBox` / `_GetBleedBox`
 #' / `_GetTrimBox` / `_GetArtBox`.
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc`.
 #' @param page_num One-based page index. Only used when `page` is
 #'   a `pdfium_doc`. Ignored otherwise.
@@ -57,13 +57,13 @@ pdf_page_box <- function(page, page_num = 1L,
 #' `_IsGenerated` / `_IsHyphen`.
 #'
 #' This is the per-character analog of [pdf_text_runs()]
-#' (per-text-object) and [pdf_text()] (per-page). The three
-#' coexist: use `pdf_text()` when you just want the strings,
+#' (per-text-object) and [pdf_doc_text()] (per-page). The three
+#' coexist: use `pdf_doc_text()` when you just want the strings,
 #' `pdf_text_runs()` for object-level positions, and
 #' `pdf_text_chars()` when you need glyph-level geometry (e.g.
 #' word segmentation, character-by-character layout analysis).
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc`.
 #' @param page_num One-based page index. Only used when `page` is
 #'   a `pdfium_doc`. Ignored otherwise.
@@ -96,7 +96,7 @@ pdf_page_box <- function(page, page_num = 1L,
 #'     glyph (the codepoint reported may be the PDF's `
 #'     fallback rather than the intended character).
 #'   * `text_index` integer - 0-based position in the *extractable*
-#'     text string (i.e. the linear `pdf_text()` output) for this
+#'     text string (i.e. the linear `pdf_doc_text()` output) for this
 #'     character, or `NA` for synthesised whitespace and other
 #'     characters that don't appear in the extracted text.
 #'   * `char_font_name` character - the font name PDFium reports
@@ -112,7 +112,7 @@ pdf_page_box <- function(page, page_num = 1L,
 #' Returns a 0-row tibble of the same schema when the page has no
 #' text.
 #'
-#' @seealso [pdf_text_runs()], [pdf_text()].
+#' @seealso [pdf_text_runs()], [pdf_doc_text()].
 #' @export
 pdf_text_chars <- function(page, page_num = 1L) {
   page <- as_open_page(page, page_num)
@@ -189,7 +189,7 @@ pdf_text_char_at_point <- function(page, x, y, tolerance = 2,
 #' PDFium's text page surfaces two parallel views of the page's text:
 #' the full *character* list (positioned glyphs including
 #' PDFium-synthesised whitespace between them), and the *extractable
-#' text* string (only characters that appear in [pdf_text()]'s
+#' text* string (only characters that appear in [pdf_doc_text()]'s
 #' output). These helpers translate between the two indexing systems.
 #'
 #' `pdf_text_index_from_char()` converts a 1-based `char_index`
@@ -210,7 +210,7 @@ pdf_text_char_at_point <- function(page, x, y, tolerance = 2,
 #'   string.
 #' @return An integer scalar — the converted index, or `NA` when the
 #'   character has no counterpart in the other indexing system.
-#' @seealso [pdf_text_chars()], [pdf_text()], [pdf_text_search()].
+#' @seealso [pdf_text_chars()], [pdf_doc_text()], [pdf_text_search()].
 #' @export
 pdf_text_index_from_char <- function(page, char_index, page_num = 1L) {
   checkmate::assert_int(char_index)
@@ -245,7 +245,7 @@ pdf_text_char_from_text_index <- function(page, text_index,
 #' `FPDFAction_GetType`, `FPDFAction_GetURIPath`,
 #' `FPDFAction_GetFilePath`, and `FPDFDest_GetDestPageIndex`.
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc`.
 #' @param page_num One-based page index. Only used when `page` is
 #'   a `pdfium_doc`. Ignored otherwise.

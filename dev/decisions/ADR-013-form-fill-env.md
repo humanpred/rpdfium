@@ -16,7 +16,7 @@ Two lifetime strategies were considered:
 
 | Option | Shape | Pros | Cons |
 |---|---|---|---|
-| Lazy + cached | Spin up on first form mutation; cache on doc; release on `pdf_close` | Read-only users don't pay the cost | More state to track; ordering is subtle |
+| Lazy + cached | Spin up on first form mutation; cache on doc; release on `pdf_doc_close` | Read-only users don't pay the cost | More state to track; ordering is subtle |
 | Eager when `readwrite = TRUE` | Init at open; release at close | Simpler lifecycle | Read-only form *reads* (rare but valid) need one too |
 
 ## Decision
@@ -25,7 +25,7 @@ Adopt lazy + cached. The `pdfium_doc` carries an optional `ffl_env`
 externalptr that's NULL on open. An internal helper `ensure_ffl_env(doc)`
 populates it on first call by invoking `cpp_form_fill_env_init`. The
 form-fill env carries its own R-level finalizer that calls
-`FPDFDOC_ExitFormFillEnvironment` on GC. `pdf_close()` runs that
+`FPDFDOC_ExitFormFillEnvironment` on GC. `pdf_doc_close()` runs that
 finalizer eagerly so the lifecycle ordering is correct: form-fill
 env releases before the doc handle.
 
@@ -35,7 +35,7 @@ env releases before the doc handle.
   initialising the FFL env.
 - Mutators that need it call `ensure_ffl_env(doc)` and read the
   cached handle thereafter.
-- Lifecycle ordering matters: `pdf_close(doc)` must run the FFL
+- Lifecycle ordering matters: `pdf_doc_close(doc)` must run the FFL
   env's finalizer *before* `FPDF_CloseDocument`. Implemented by
   detaching the FFL env's externalptr from `doc` and explicitly
   invoking its finalizer before the doc's close call.

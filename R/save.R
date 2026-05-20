@@ -2,7 +2,7 @@
 # pdf_doc_new(), pdf_page_new(), plus the internal readwrite-state machinery.
 #
 # Layering:
-#   * `pdf_open(..., readwrite = TRUE)` flips `doc$readwrite` to TRUE.
+#   * `pdf_doc_open(..., readwrite = TRUE)` flips `doc$readwrite` to TRUE.
 #   * Every mutator function calls `assert_readwrite(doc)` at the
 #     top, raising if the doc was opened read-only.
 #   * `pdf_save()` and `pdf_save_to_raw()` work on read-only docs
@@ -50,7 +50,7 @@ assert_readwrite <- function(doc, .var.name = "doc") {
   if (!isTRUE(doc$readwrite)) {
     stop(
       "Document opened read-only; ",
-      "reopen with `pdf_open(..., readwrite = TRUE)`.",
+      "reopen with `pdf_doc_open(..., readwrite = TRUE)`.",
       call. = FALSE
     )
   }
@@ -63,7 +63,7 @@ assert_readwrite <- function(doc, .var.name = "doc") {
 #' Save a PDF document to disk
 #'
 #' Serialises an in-memory `pdfium_doc` (typically produced by
-#' [pdf_open()] with `readwrite = TRUE` and one or more mutators)
+#' [pdf_doc_open()] with `readwrite = TRUE` and one or more mutators)
 #' to a file. Wraps `FPDF_SaveAsCopy` and `FPDF_SaveWithVersion`.
 #'
 #' `pdf_save()` writes atomically: PDFium's bytes go into a
@@ -76,7 +76,7 @@ assert_readwrite <- function(doc, .var.name = "doc") {
 #' a PDF (rebuild the xref table, etc.) without modifying its
 #' content.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()] or [pdf_doc_new()].
+#' @param doc A `pdfium_doc` from [pdf_doc_open()] or [pdf_doc_new()].
 #' @param file Destination path. The directory must exist.
 #' @param incremental Logical. If `TRUE`, append an incremental
 #'   update preserving the original byte layout (required for
@@ -93,7 +93,7 @@ assert_readwrite <- function(doc, .var.name = "doc") {
 #'   (default) preserves the input file's declared version.
 #' @return Invisibly returns `file`, the path written to.
 #' @seealso [pdf_save_to_raw()] for in-memory output;
-#'   [pdf_open()] for the read side; [pdf_doc_new()] for a fresh
+#'   [pdf_doc_open()] for the read side; [pdf_doc_new()] for a fresh
 #'   document.
 #' @export
 pdf_save <- function(doc, file, incremental = FALSE,
@@ -212,7 +212,7 @@ pdf_save_to_raw <- function(doc, incremental = FALSE,
 #' pdf_page_new(doc, 1, 612, 792)
 #' tmp <- tempfile(fileext = ".pdf")
 #' pdf_save(doc, tmp)
-#' pdf_close(doc)
+#' pdf_doc_close(doc)
 #' @export
 pdf_doc_new <- function() {
   ptr <- cpp_create_new_document()
@@ -233,9 +233,9 @@ flush_dirty_pages <- function(doc) {
   dirty <- state$dirty_pages
   if (length(dirty) == 0L) return(invisible(NULL))
   for (i in dirty) {
-    page <- pdf_load_page(doc, i)
+    page <- pdf_page_load(doc, i)
     cpp_page_generate_content(page$ptr)
-    pdf_close_page(page)
+    pdf_page_close(page)
   }
   # Reset the dirty set so a re-save (incremental or no-op) doesn't
   # double-flush. The state environment IS reference-semantics so

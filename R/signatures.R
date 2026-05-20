@@ -17,7 +17,7 @@
 #' Wraps `FPDF_GetSignatureCount`, `FPDF_GetSignatureObject`, and
 #' the `FPDFSignatureObj_*` scalar accessors.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @return A tibble with columns:
 #'   * `signature_index` integer - 1-based; pass to
 #'     [pdf_signature_contents()] / [pdf_signature_byte_range()].
@@ -71,7 +71,7 @@ pdf_signatures <- function(doc) {
 #'
 #' Wraps `FPDFSignatureObj_GetContents`.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param signature_index One-based signature index (default `1`),
 #'   as listed by [pdf_signatures()].
 #' @return A raw vector of the signature blob.
@@ -94,7 +94,7 @@ pdf_signature_contents <- function(doc, signature_index = 1L) {
 #'
 #' Wraps `FPDFSignatureObj_GetByteRange`.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param signature_index One-based signature index (default `1`),
 #'   as listed by [pdf_signatures()].
 #' @return An integer matrix with `byte_range_pairs` rows and two

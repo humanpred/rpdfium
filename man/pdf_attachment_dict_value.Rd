@@ -7,7 +7,7 @@
 pdf_attachment_dict_value(doc, attachment_index, key, password = NULL)
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}}, or a character path.}
+\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}}, or a character path.}
 
 \item{attachment_index}{One-based index into the attachment list.}
 

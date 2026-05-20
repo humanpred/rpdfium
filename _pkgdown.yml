@@ -25,15 +25,15 @@ home:
 reference:
   - title: Documents
     contents:
-      - pdf_open
-      - pdf_close
+      - pdf_doc_open
+      - pdf_doc_close
       - pdf_page_count
       - pdf_doc_info
       - pdf_doc_meta
       - pdf_parse_date
-      - pdf_text
-      - pdf_fonts
-      - pdf_file_id
+      - pdf_doc_text
+      - pdf_doc_fonts
+      - pdf_doc_file_id
       - pdf_doc_page_mode
       - pdf_doc_permissions
       - pdf_doc_user_permissions
@@ -43,12 +43,12 @@ reference:
       - pdf_doc_is_tagged
       - pdf_doc_javascript
       - pdf_doc_focusable_subtypes
-      - pdf_viewer_preferences
-      - pdf_viewer_preference_by_name
-      - pdf_named_dests
-      - pdf_named_dest_by_name
-      - pdf_bookmarks
-      - pdf_bookmark_find
+      - pdf_doc_viewer_preferences
+      - pdf_doc_viewer_preference_by_name
+      - pdf_doc_named_dests
+      - pdf_doc_named_dest_by_name
+      - pdf_doc_bookmarks
+      - pdf_doc_bookmark_find
       - pdf_page_label
       - pdf_page_labels
   - title: Attachments
@@ -63,8 +63,8 @@ reference:
       - pdf_signature_byte_range
   - title: Pages
     contents:
-      - pdf_load_page
-      - pdf_close_page
+      - pdf_page_load
+      - pdf_page_close
       - pdf_page_size
       - pdf_page_rotation
       - pdf_page_box
@@ -165,7 +165,7 @@ reference:
       - pdf_page_new
       - pdf_page_delete
       - pdf_pages_reorder
-      - pdf_merge
+      - pdf_docs_merge
       - pdf_n_up
       - pdf_page_set_rotation
       - pdf_page_set_box

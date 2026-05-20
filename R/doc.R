@@ -1,7 +1,7 @@
 # Document-level accessors that don't fit cleanly under document.R
 # (the metadata module). Three independent features:
 #
-#   pdf_bookmarks(doc)       table of contents
+#   pdf_doc_bookmarks(doc)       table of contents
 #   pdf_page_label(doc, n)   logical page label like "i", "1", "A-1"
 #   pdf_doc_permissions(doc) named logical of allowed operations
 #
@@ -29,7 +29,7 @@
 #' `FPDFAction_GetURIPath` / `FPDFAction_GetFilePath`, and
 #' `FPDFDest_GetDestPageIndex`.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @return A tibble with columns:
 #'   * `bookmark_index` integer - 1-based pre-order index across the
 #'     entire outline tree.
@@ -64,9 +64,9 @@
 #' fixture <- system.file("extdata", "fixtures", "outline.pdf",
 #'   package = "pdfium"
 #' )
-#' if (nzchar(fixture)) pdf_bookmarks(fixture)
+#' if (nzchar(fixture)) pdf_doc_bookmarks(fixture)
 #' @export
-pdf_bookmarks <- function(doc) {
+pdf_doc_bookmarks <- function(doc) {
   doc <- as_open_doc(doc)
   raw <- cpp_bookmarks(doc$ptr)
   # action_code 0 means "no /A and unresolvable /Dest" — surface as
@@ -95,7 +95,7 @@ pdf_bookmarks <- function(doc) {
 #' "1", "2", "3" for the body, or "A-1", "A-2" for an appendix).
 #' Wraps `FPDF_GetPageLabel`.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param page_num One-based physical page index (default `1`).
 #' @return Character scalar - the page's logical label, UTF-8
 #'   encoded. Empty string when the PDF doesn't carry a labels
@@ -103,7 +103,7 @@ pdf_bookmarks <- function(doc) {
 #'   number's string form in some cases, but the contract is "may
 #'   be empty").
 #' @seealso [pdf_page_labels()] for every page's label at once,
-#'   [pdf_bookmarks()].
+#'   [pdf_doc_bookmarks()].
 #' @export
 pdf_page_label <- function(doc, page_num = 1L) {
   checkmate::assert_count(page_num, positive = TRUE)
@@ -117,7 +117,7 @@ pdf_page_label <- function(doc, page_num = 1L) {
 #' of the document and returns the results as a character vector
 #' (positionally aligned: element `i` is the label of page `i`).
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @return Character vector of length `pdf_page_count(doc)`.
 #' @seealso [pdf_page_label()] for a single page.
 #' @examples
@@ -180,7 +180,7 @@ pdf_page_labels <- function(doc) {
 #'   `FALSE` while `print` is `TRUE`, the document may print only
 #'   at low resolution.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @return A named logical vector with the eight flags listed above.
 #' @export
 pdf_doc_permissions <- function(doc) {

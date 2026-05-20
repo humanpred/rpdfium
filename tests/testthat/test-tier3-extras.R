@@ -3,10 +3,10 @@
 # pdf_text_char_obj_index().
 
 test_that("pdf_text_obj_rendered_bitmap returns a pdfium_bitmap", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   text <- Filter(function(o) o$type == "text", pdf_page_objects(page))
   skip_if(length(text) == 0L, "shapes.pdf has no text objects")
   bmp <- pdf_text_obj_rendered_bitmap(text[[1L]], scale = 1)
@@ -18,10 +18,10 @@ test_that("pdf_text_obj_rendered_bitmap returns a pdfium_bitmap", {
 })
 
 test_that("pdf_text_obj_rendered_bitmap validates scale and obj type", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   text <- Filter(function(o) o$type == "text", pdf_page_objects(page))
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   skip_if(
@@ -43,8 +43,8 @@ test_that("pdf_text_obj_rendered_bitmap validates scale and obj type", {
 })
 
 test_that("pdf_attachment_dict_value returns the right shape", {
-  doc <- pdf_open(fixture_path("attachments"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("attachments"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   # A real key on the attachment dict; "Subtype" if present, "Size"
   # otherwise. The fixture's attachments don't carry a Subtype, so
   # we expect has_key = FALSE and value = NA.
@@ -56,8 +56,8 @@ test_that("pdf_attachment_dict_value returns the right shape", {
 })
 
 test_that("pdf_attachment_dict_value validates inputs", {
-  doc <- pdf_open(fixture_path("attachments"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("attachments"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   expect_error(
     pdf_attachment_dict_value(doc, 0L, "Subtype"),
     "Assertion on"
@@ -69,10 +69,10 @@ test_that("pdf_attachment_dict_value validates inputs", {
 })
 
 test_that("pdf_text_char_obj_index reverse-maps chars to text-obj indices", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   chars <- pdf_text_chars(page)
   visible <- chars[!chars$is_generated, ]
   skip_if(nrow(visible) == 0L, "shapes.pdf has no visible chars")
@@ -89,8 +89,8 @@ test_that("pdf_text_char_obj_index reverse-maps chars to text-obj indices", {
 })
 
 test_that("pdf_text_char_obj_index validates char_index", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   expect_error(pdf_text_char_obj_index(doc, 0L), "Assertion on")
   expect_error(pdf_text_char_obj_index(doc, NA), "Assertion on")
 })

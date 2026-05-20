@@ -7,7 +7,7 @@
 pdf_page_count(doc, password = NULL)
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}}, or a character scalar path.}
+\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}}, or a character scalar path.}
 
 \item{password}{Optional password for encrypted PDFs when \code{doc} is
 a path. Ignored when \code{doc} is already an open \code{pdfium_doc}.}

@@ -73,7 +73,7 @@ in terms of one or more of these.
 
 ## Findings
 
-### `pdf_open` / `pdf_close` / `pdf_close_page` / `pdf_load_page`
+### `pdf_doc_open` / `pdf_doc_close` / `pdf_page_close` / `pdf_page_load`
 
 Lifecycle, not data. No tibble involved. Writers: `pdf_save()` and
 `pdf_save_as_copy()` will be peers. **No change needed.**
@@ -102,7 +102,7 @@ Returns a named `logical` vector with eight permission flags.
   encryption layer, which we do not plan to mutate in 0.2.0.
 * **No change needed** (read-only by design).
 
-### `pdf_doc_is_tagged` / `pdf_doc_page_mode` / `pdf_doc_javascript` / `pdf_viewer_preferences` / `pdf_named_dests` / `pdf_file_id`
+### `pdf_doc_is_tagged` / `pdf_doc_page_mode` / `pdf_doc_javascript` / `pdf_doc_viewer_preferences` / `pdf_doc_named_dests` / `pdf_doc_file_id`
 
 Scalar / small-tibble readouts. No writer counterparts planned (PDFium
 exposes only `FPDF_CopyViewerPreferences` and a small set of catalog
@@ -110,7 +110,7 @@ mutators that aren't on the 0.2.0 roadmap).
 
 **Status:** **OK as is.**
 
-### `pdf_fonts`
+### `pdf_doc_fonts`
 
 Doc-wide font inventory (font name, type, embedded flag, etc.).
 
@@ -126,7 +126,7 @@ font *names* and font *handles*, not metadata. No reshape required
 because the writer API operates by handle/name lookup. Status:
 **OK as is.**
 
-### `pdf_bookmarks`
+### `pdf_doc_bookmarks`
 
 Pre-order tibble: `bookmark_index`, `parent_index`, `level`, `title`,
 `page_num`, `action_type`, `uri`, `filepath`.

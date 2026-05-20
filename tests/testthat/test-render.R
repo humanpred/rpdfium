@@ -9,8 +9,8 @@
 # point-sampling correctness checks.
 
 test_that("pdf_render_page() validates dpi/annotations/rotation", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   expect_error(pdf_render_page(doc, dpi = 0), "Assertion on")
   expect_error(pdf_render_page(doc, dpi = -1), "Assertion on")
@@ -46,8 +46,8 @@ test_that("pdf_render_page() validates dpi/annotations/rotation", {
 })
 
 test_that("pdf_render_page() returns the documented shape", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   bmp <- pdf_render_page(doc, dpi = 72)
   expect_s3_class(bmp, c("pdfium_bitmap", "nativeRaster"), exact = TRUE)
@@ -60,8 +60,8 @@ test_that("pdf_render_page() returns the documented shape", {
 })
 
 test_that("pdf_render_page() scales linearly with dpi", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   bmp_72 <- pdf_render_page(doc, dpi = 72)
   bmp_144 <- pdf_render_page(doc, dpi = 144)
@@ -70,8 +70,8 @@ test_that("pdf_render_page() scales linearly with dpi", {
 })
 
 test_that("pdf_render_page() rotation swaps dimensions for 90/270", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   bmp_0 <- pdf_render_page(doc, rotation = 0)
   bmp_90 <- pdf_render_page(doc, rotation = 90)
@@ -88,8 +88,8 @@ test_that("pdf_render_page() rotation swaps dimensions for 90/270", {
 })
 
 test_that("pdf_render_page() pixel sampling matches the fixture", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   bmp <- pdf_render_page(doc, dpi = 72)
 
@@ -157,8 +157,8 @@ test_that("parse_bitmap_background() rejects malformed colors", {
 })
 
 test_that("as.array.pdfium_bitmap() returns RGBA doubles in 0..1", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   bmp <- pdf_render_page(doc, dpi = 72)
   arr <- as.array(bmp)
@@ -169,8 +169,8 @@ test_that("as.array.pdfium_bitmap() returns RGBA doubles in 0..1", {
 })
 
 test_that("as.raster.pdfium_bitmap() returns a hex-color raster", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   bmp <- pdf_render_page(doc, dpi = 72)
   ras <- as.raster(bmp)
@@ -188,8 +188,8 @@ test_that("as.raster.pdfium_bitmap() returns a hex-color raster", {
 })
 
 test_that("as.matrix.pdfium_bitmap() returns a plain character matrix", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   bmp <- pdf_render_page(doc, dpi = 72)
   mtx <- as.matrix(bmp)
@@ -201,8 +201,8 @@ test_that("as.matrix.pdfium_bitmap() returns a plain character matrix", {
 })
 
 test_that("format/print methods describe the bitmap", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   bmp <- pdf_render_page(doc, dpi = 72)
   expect_match(format(bmp), "^<pdfium_bitmap 288x216 @ 72 dpi")
@@ -215,13 +215,13 @@ test_that("format/print methods describe the bitmap", {
 })
 
 test_that("pdf_render_page() accepts a doc, a doc + page_num, or a page", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   by_doc <- pdf_render_page(doc)
   by_doc_pn <- pdf_render_page(doc, page_num = 1L)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   by_page <- pdf_render_page(page)
 
   # Same dimensions; the integer matrices should be bit-identical
@@ -232,17 +232,17 @@ test_that("pdf_render_page() accepts a doc, a doc + page_num, or a page", {
 })
 
 test_that("pdf_render_page() refuses a closed page", {
-  doc <- pdf_open(fixture_path("shapes"))
-  page <- pdf_load_page(doc, 1L)
-  pdf_close_page(page)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  page <- pdf_page_load(doc, 1L)
+  pdf_page_close(page)
   expect_error(pdf_render_page(page), "Page has been closed")
-  pdf_close(doc)
+  pdf_doc_close(doc)
 })
 
 test_that("pdf_render_to_png() writes a valid PNG", {
   skip_if_not_installed("png")
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   out <- withr::local_tempfile(fileext = ".png")
   res <- pdf_render_to_png(doc, file = out, dpi = 72)
@@ -256,8 +256,8 @@ test_that("pdf_render_to_png() writes a valid PNG", {
 })
 
 test_that("pdf_render_page_with_matrix renders at the requested size", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   m <- c(2, 0, 0, 2, 0, 0)
   bmp <- pdf_render_page_with_matrix(doc, m,
     pixel_width = 200,
@@ -268,8 +268,8 @@ test_that("pdf_render_page_with_matrix renders at the requested size", {
 })
 
 test_that("pdf_render_page_with_matrix accepts clip_rect", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bmp <- pdf_render_page_with_matrix(doc, c(1, 0, 0, 1, 0, 0),
     pixel_width = 100,
     pixel_height = 100,
@@ -280,8 +280,8 @@ test_that("pdf_render_page_with_matrix accepts clip_rect", {
 })
 
 test_that("pdf_render_page_with_matrix validates inputs", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   expect_error(
     pdf_render_page_with_matrix(doc, c(1, 2),
       pixel_width = 100,
@@ -340,8 +340,8 @@ test_that("pdf_render_page_with_matrix validates inputs", {
 })
 
 test_that("pdf_render_to_png() validates file argument", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   expect_error(
     pdf_render_to_png(doc, file = ""),
@@ -365,8 +365,8 @@ test_that("annotations flag is plumbed through (smoke)", {
   # shapes.pdf has no annotations, so this is purely a smoke check
   # that the flag reaches PDFium without erroring. A real annotation
   # round-trip belongs in a fixture that has annots.
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   bmp_no <- pdf_render_page(doc, annotations = FALSE)
   bmp_yes <- pdf_render_page(doc, annotations = TRUE)
@@ -374,8 +374,8 @@ test_that("annotations flag is plumbed through (smoke)", {
 })
 
 test_that("plot(bmp) draws into a PDF device without erroring", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   bmp <- pdf_render_page(doc, dpi = 72)
 
   out <- withr::local_tempfile(fileext = ".pdf")

@@ -79,7 +79,7 @@ annot_flag_decode <- function(flags, bit) {
 #' `_CountAttachmentPoints`, `FPDFAnnot_GetVertices`, and
 #' `FPDFAnnot_GetInkListCount` / `_GetInkListPath`.
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc` (in which case `page_num` selects the page).
 #' @param page_num One-based page index. Only used when `page` is
 #'   a `pdfium_doc`. Ignored otherwise.

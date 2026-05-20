@@ -7,10 +7,10 @@
 #   5. widget   /Rect [50  60  70  80]  (form checkbox,  name="agree")
 
 test_that("pdf_annotations returns 0 rows for a page with no annots", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   res <- pdf_annotations(page)
   expect_s3_class(res, "tbl_df")
   expect_equal(nrow(res), 0L)
@@ -34,7 +34,7 @@ test_that("pdf_annotations returns 0 rows for a page with no annots", {
 })
 
 test_that("pdf_annotations populates quad_points / vertices / ink_paths", {
-  res <- pdf_annotations(pdf_open(fixture_path("annot_geom")),
+  res <- pdf_annotations(pdf_doc_open(fixture_path("annot_geom")),
     page_num = 1L
   )
   expect_equal(nrow(res), 3L)
@@ -94,7 +94,7 @@ test_that("pdfium_annot_subtype_code round-trips with the name helper", {
 })
 
 test_that("pdf_annotations reads color and subject when set", {
-  res <- pdf_annotations(pdf_open(fixture_path("annotated")),
+  res <- pdf_annotations(pdf_doc_open(fixture_path("annotated")),
     page_num = 1L
   )
   # Highlight annot (annotation_index 2) carries /C [0.9 0.9 0.2]
@@ -116,7 +116,7 @@ test_that("pdf_annotations reads color and subject when set", {
 test_that("pdf_annotations decodes the universal /F flag bits", {
   # Bits 1, 2, 3, 6, 7, 8 decode independently; annotated.pdf has
   # no /F set on any annot so all flags should be FALSE.
-  res <- pdf_annotations(pdf_open(fixture_path("annotated")),
+  res <- pdf_annotations(pdf_doc_open(fixture_path("annotated")),
     page_num = 1L
   )
   expect_true(all(!res$is_invisible))
@@ -142,8 +142,8 @@ test_that("pdf_annotations decodes the universal /F flag bits", {
 })
 
 test_that("pdf_annotations enumerates the documented annots", {
-  doc <- pdf_open(fixture_path("annotated"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   res <- pdf_annotations(doc, page_num = 1L)
   expect_equal(nrow(res), 5L)
   expect_identical(res$annotation_index, 1L:5L)
@@ -154,7 +154,7 @@ test_that("pdf_annotations enumerates the documented annots", {
 })
 
 test_that("pdf_annotations surfaces the text annotation's strings", {
-  res <- pdf_annotations(pdf_open(fixture_path("annotated")),
+  res <- pdf_annotations(pdf_doc_open(fixture_path("annotated")),
     page_num = 1L
   )
   expect_identical(res$contents[[1L]], "Hello")
@@ -162,7 +162,7 @@ test_that("pdf_annotations surfaces the text annotation's strings", {
 })
 
 test_that("pdf_annotations reads the rectangles", {
-  res <- pdf_annotations(pdf_open(fixture_path("annotated")),
+  res <- pdf_annotations(pdf_doc_open(fixture_path("annotated")),
     page_num = 1L
   )
   expect_equal(res$bounds_left[[1L]], 20)
@@ -174,10 +174,10 @@ test_that("pdf_annotations reads the rectangles", {
 })
 
 test_that("pdf_annotations accepts an open page directly", {
-  doc <- pdf_open(fixture_path("annotated"))
-  on.exit(pdf_close(doc), add = TRUE)
-  page <- pdf_load_page(doc, 1L)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   by_page <- pdf_annotations(page)
   by_doc <- pdf_annotations(doc, page_num = 1L)
   expect_identical(by_page, by_doc)
@@ -195,11 +195,11 @@ test_that("pdf_annotations rejects bad inputs", {
 })
 
 test_that("pdf_annotations refuses a closed page handle", {
-  doc <- pdf_open(fixture_path("annotated"))
-  page <- pdf_load_page(doc, 1L)
-  pdf_close_page(page)
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  page <- pdf_page_load(doc, 1L)
+  pdf_page_close(page)
   expect_error(pdf_annotations(page), "Page has been closed")
-  pdf_close(doc)
+  pdf_doc_close(doc)
 })
 
 test_that("annotation_subtype_name maps codes to documented strings", {

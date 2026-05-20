@@ -7,7 +7,7 @@
 pdf_page_labels(doc)
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}}, or a character path.}
+\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_doc_open]{pdf_doc_open()}}, or a character path.}
 }
 \value{
 Character vector of length \code{pdf_page_count(doc)}.

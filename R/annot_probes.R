@@ -27,7 +27,7 @@
 #' value types (dict / array / stream / reference) report
 #' `value_type` accordingly but leave the typed accessors as `NA`.
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc`.
 #' @param annotation_index One-based index into the page's
 #'   annotations.
@@ -174,7 +174,7 @@ pdf_obj_marked_content_id <- function(obj) {
 #' Mostly a viewer-UI concern; exposed here for round-trip
 #' completeness against the v0.2.0 setter.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()], or a character path.
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return Character vector of annotation-subtype names. Empty when

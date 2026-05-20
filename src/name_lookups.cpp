@@ -2,13 +2,13 @@
 // the bulk enumeration readers. Three small accessors:
 //
 //   FPDF_GetNamedDestByName            pdf_named_dest(doc, name)
-//   FPDFBookmark_Find                  pdf_bookmark_find(doc, title)
+//   FPDFBookmark_Find                  pdf_doc_bookmark_find(doc, title)
 //   FPDFAnnot_GetFormFieldAtPoint /
 //   FPDFPage_HasFormFieldAtPoint /
 //   FPDFPage_FormFieldZOrderAtPoint    pdf_form_field_at_point(page, x, y)
 //
 // All three resolve to identity/index data; richer details come from
-// the bulk enumerators (pdf_named_dests / pdf_bookmarks /
+// the bulk enumerators (pdf_doc_named_dests / pdf_doc_bookmarks /
 // pdf_form_fields).
 
 #include <Rcpp.h>
@@ -74,7 +74,7 @@ Rcpp::List cpp_named_dest_by_name(SEXP doc_ptr, std::string name) {
 
 // Returns the bookmark_index of the first bookmark matching `title`
 // in the document's outline tree, or NA when none match. The
-// matching index numbers the pre-order walk pdf_bookmarks() uses.
+// matching index numbers the pre-order walk pdf_doc_bookmarks() uses.
 // [[Rcpp::export(name = "cpp_bookmark_find")]]
 int cpp_bookmark_find(SEXP doc_ptr, std::string title_utf8) {
   FPDF_DOCUMENT doc = lookups_doc_from_ptr(doc_ptr);

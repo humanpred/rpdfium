@@ -58,7 +58,7 @@ pdf_text_render_mode <- function(obj) {
 #' Wraps `FPDFText_GetFillColor`, `FPDFText_GetStrokeColor`, and
 #' `FPDFText_GetTextIndexFromCharIndex`.
 #'
-#' @param page A `pdfium_page` from [pdf_load_page()], or a
+#' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc` (the page given by `page_num` will be loaded and
 #'   closed internally).
 #' @param page_num One-based page index. Only used when `page` is a

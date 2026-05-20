@@ -15,7 +15,7 @@ pdf_render_to_png(
 )
 }
 \arguments{
-\item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a
+\item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a
 \code{pdfium_doc} (the page given by \code{page_num} will be loaded and
 closed internally).}
 
@@ -55,7 +55,7 @@ fixture <- system.file("extdata", "fixtures", "shapes.pdf",
 )
 if (nzchar(fixture) && requireNamespace("png", quietly = TRUE)) {
   out <- tempfile(fileext = ".png")
-  pdf_render_to_png(pdf_open(fixture), file = out, dpi = 96)
+  pdf_render_to_png(pdf_doc_open(fixture), file = out, dpi = 96)
   file.exists(out)
 }
 }

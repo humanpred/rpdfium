@@ -12,7 +12,7 @@ pdf_annot_appearance(
 )
 }
 \arguments{
-\item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a
+\item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a
 \code{pdfium_doc}.}
 
 \item{annotation_index}{One-based index into the page's

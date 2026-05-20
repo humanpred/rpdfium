@@ -14,7 +14,7 @@ pdf_render_page(
 )
 }
 \arguments{
-\item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a
+\item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a
 \code{pdfium_doc} (the page given by \code{page_num} will be loaded and
 closed internally).}
 
@@ -59,7 +59,7 @@ fixture <- system.file("extdata", "fixtures", "shapes.pdf",
   package = "pdfium"
 )
 if (nzchar(fixture)) {
-  bmp <- pdf_render_page(pdf_open(fixture), dpi = 96)
+  bmp <- pdf_render_page(pdf_doc_open(fixture), dpi = 96)
   bmp # human summary
   if (interactive()) plot(bmp) # render to the active device
 }

@@ -34,8 +34,8 @@ test_that("pdf_doc_info exposes Cairo's Producer string", {
 
 test_that("pdf_doc_info accepts a path or an open doc", {
   by_path <- pdf_doc_info(fixture_path("shapes"))
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
   by_doc <- pdf_doc_info(doc)
   expect_identical(by_path$producer, by_doc$producer)
   expect_true(is_open(doc)) # not closed by the helper
@@ -45,14 +45,14 @@ test_that("pdf_doc_info refuses bad inputs and closed docs", {
   expect_error(pdf_doc_info(42), "class .pdfium_doc.")
   expect_error(pdf_doc_info("nope.pdf"), "not found")
 
-  doc <- pdf_open(fixture_path("shapes"))
-  pdf_close(doc)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  pdf_doc_close(doc)
   expect_error(pdf_doc_info(doc), "Document has been closed")
 })
 
 test_that("pdf_doc_meta returns standard tags and validates input", {
-  doc <- pdf_open(fixture_path("shapes"))
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
   expect_match(pdf_doc_meta(doc, "Producer"), "^cairo ", ignore.case = TRUE)
   # Absent standard tag returns the empty string.
@@ -68,8 +68,8 @@ test_that("pdf_doc_meta returns standard tags and validates input", {
 })
 
 test_that("pdf_doc_meta refuses a closed doc", {
-  doc <- pdf_open(fixture_path("shapes"))
-  pdf_close(doc)
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  pdf_doc_close(doc)
   expect_error(
     pdf_doc_meta(doc, "Producer"),
     "Document has been closed"

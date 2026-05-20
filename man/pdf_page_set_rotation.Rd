@@ -7,7 +7,7 @@
 pdf_page_set_rotation(page, degrees, page_num = 1L)
 }
 \arguments{
-\item{page}{A \code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}}, or a
+\item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a
 \code{pdfium_doc} (in which case \code{page_num} selects the page).}
 
 \item{degrees}{Integer; one of \code{0}, \code{90}, \code{180}, \code{270}.}
@@ -27,7 +27,7 @@ value as 0.
 }
 \details{
 Polymorphic in \code{page}: accepts either an already-loaded
-\code{pdfium_page} from \code{\link[=pdf_load_page]{pdf_load_page()}} (with \code{readwrite = TRUE}
+\code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}} (with \code{readwrite = TRUE}
 on the parent doc) or a \code{pdfium_doc} plus \code{page_num}.
 }
 \seealso{

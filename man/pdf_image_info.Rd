@@ -29,12 +29,12 @@ fixture <- system.file("extdata", "fixtures", "image.pdf",
   package = "pdfium"
 )
 if (nzchar(fixture)) {
-  doc <- pdf_open(fixture)
-  page <- pdf_load_page(doc, 1L)
+  doc <- pdf_doc_open(fixture)
+  page <- pdf_page_load(doc, 1L)
   imgs <- Filter(function(o) o$type == "image", pdf_page_objects(page))
   if (length(imgs) > 0L) pdf_image_info(imgs[[1L]])
-  pdf_close_page(page)
-  pdf_close(doc)
+  pdf_page_close(page)
+  pdf_doc_close(doc)
 }
 }
 \seealso{

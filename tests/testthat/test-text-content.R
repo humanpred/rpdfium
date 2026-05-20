@@ -2,11 +2,11 @@
 
 test_that("pdf_text_content extracts the 'Hello' text from shapes.pdf", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   text_obj <- Filter(
     function(o) o$type == "text",
@@ -27,11 +27,11 @@ test_that("pdf_text_content extracts the 'Hello' text from shapes.pdf", {
 
 test_that("pdf_text_content handles a multi-text-object page (unicode.pdf)", {
   pdf <- fixture_path("unicode")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   texts <- Filter(function(o) o$type == "text", pdf_page_objects(page))
   contents <- vapply(texts, pdf_text_content, character(1))
@@ -46,11 +46,11 @@ test_that("pdf_text_content validates input and refuses non-text objects", {
   expect_error(pdf_text_content("nope"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   path_obj <- Filter(
     function(o) o$type == "path",
@@ -64,15 +64,15 @@ test_that("pdf_text_content validates input and refuses non-text objects", {
 
 test_that("pdf_text_content refuses objects whose parent page has closed", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
+  page <- pdf_page_load(doc, 1)
   text_obj <- Filter(
     function(o) o$type == "text",
     pdf_page_objects(page)
   )[[1]]
-  pdf_close_page(page)
+  pdf_page_close(page)
   expect_error(
     pdf_text_content(text_obj),
     "Parent page has been closed"

@@ -20,7 +20,7 @@ doc <- pdf_doc_new()
 pdf_page_new(doc, 1, 612, 792)
 tmp <- tempfile(fileext = ".pdf")
 pdf_save(doc, tmp)
-pdf_close(doc)
+pdf_doc_close(doc)
 }
 \seealso{
 \code{\link[=pdf_page_new]{pdf_page_new()}} to add a page;

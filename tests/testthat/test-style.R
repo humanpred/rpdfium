@@ -5,11 +5,11 @@ test_that("pdf_path_stroke / _fill validate inputs and refuse non-path objs", {
   expect_error(pdf_path_fill("nope"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   text_obj <- Filter(function(o) o$type == "text", pdf_page_objects(page))[[1]]
   expect_error(
@@ -24,26 +24,26 @@ test_that("pdf_path_stroke / _fill validate inputs and refuse non-path objs", {
 
 test_that("pdf_path_stroke / _fill refuse objects whose parent page has closed", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
+  page <- pdf_page_load(doc, 1)
   path_obj <- Filter(
     function(o) o$type == "path",
     pdf_page_objects(page)
   )[[1]]
-  pdf_close_page(page)
+  pdf_page_close(page)
   expect_error(pdf_path_stroke(path_obj), "Parent page has been closed")
   expect_error(pdf_path_fill(path_obj), "Parent page has been closed")
 })
 
 test_that("pdf_path_stroke returns the expected shape", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   s <- pdf_path_stroke(paths[[2]]) # the user-drawn rectangle
@@ -55,11 +55,11 @@ test_that("pdf_path_stroke returns the expected shape", {
 
 test_that("rectangle stroke is red (border = 'red'), fill is lightblue", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   rect <- paths[[2]]
@@ -81,11 +81,11 @@ test_that("rectangle stroke is red (border = 'red'), fill is lightblue", {
 
 test_that("diagonal line stroke is darkgreen, no fill set or fill carries default", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   paths <- Filter(function(o) o$type == "path", pdf_page_objects(page))
   line <- paths[[3]] # first diagonal line segment
@@ -100,11 +100,11 @@ test_that("diagonal line stroke is darkgreen, no fill set or fill carries defaul
 
 test_that("pdf_text_font_size returns a numeric scalar for text objs", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   text_obj <- Filter(
     function(o) o$type == "text",
@@ -123,11 +123,11 @@ test_that("pdf_text_font_size validates input and refuses non-text objects", {
   expect_error(pdf_text_font_size("nope"), "class .pdfium_obj.")
 
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
-  on.exit(pdf_close_page(page), add = TRUE, after = FALSE)
+  page <- pdf_page_load(doc, 1)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
 
   path_obj <- Filter(
     function(o) o$type == "path",
@@ -141,15 +141,15 @@ test_that("pdf_text_font_size validates input and refuses non-text objects", {
 
 test_that("pdf_text_font_size refuses objects whose parent page has closed", {
   pdf <- fixture_path("shapes")
-  doc <- pdf_open(pdf)
-  on.exit(pdf_close(doc), add = TRUE)
+  doc <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
 
-  page <- pdf_load_page(doc, 1)
+  page <- pdf_page_load(doc, 1)
   text_obj <- Filter(
     function(o) o$type == "text",
     pdf_page_objects(page)
   )[[1]]
-  pdf_close_page(page)
+  pdf_page_close(page)
   expect_error(
     pdf_text_font_size(text_obj),
     "Parent page has been closed"
