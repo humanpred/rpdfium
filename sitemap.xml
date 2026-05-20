@@ -127,6 +127,7 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_link_annot_at_point.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_link_at_point.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_n_up.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_add_mark.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_bounds.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_clip_path.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_has_transparency.html</loc></url>
@@ -134,7 +135,11 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_marked_content_id.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_marks.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_matrix.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_remove_mark.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_rotated_bounds.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_set_active.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_set_blend_mode.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_set_matrix.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_obj_type.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_actions.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_box.html</loc></url>
@@ -161,6 +166,12 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_line_cap.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_line_join.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_segments.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_set_dash.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_set_draw_mode.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_set_fill.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_set_line_cap.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_set_line_join.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_set_stroke.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_stroke.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_render_page.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_render_page_with_matrix.html</loc></url>
@@ -188,6 +199,8 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_render_mode.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_runs.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_search.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_set_content.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_set_render_mode.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_weblinks.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdfium-package.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/plot.pdfium_bitmap.html</loc></url>

@@ -567,3 +567,39 @@ to enable these. See ADRs 011-018 for the writer-surface conventions.
   : Set the document's declared language
 - [`pdf_page_flush()`](https://humanpred.github.io/rpdfium/reference/pdf_page_flush.md)
   : Force-flush a page's pending content edits
+
+## Page-object styling
+
+Setters for page-object attributes. Each takes a `pdfium_obj` handle
+from
+[`pdf_page_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_page_objects.md)
+(parent doc must be readwrite) and marks the parent page dirty so
+[`pdf_save()`](https://humanpred.github.io/rpdfium/reference/pdf_save.md)
+/ `pdf_render_*()` see the change.
+
+- [`pdf_obj_set_matrix()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_set_matrix.md)
+  : Set the affine transformation matrix of a page object
+- [`pdf_obj_set_active()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_set_active.md)
+  : Set whether a page object renders
+- [`pdf_obj_set_blend_mode()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_set_blend_mode.md)
+  : Set the blend mode of a page object
+- [`pdf_path_set_stroke()`](https://humanpred.github.io/rpdfium/reference/pdf_path_set_stroke.md)
+  : Set the stroke style of a path page object
+- [`pdf_path_set_fill()`](https://humanpred.github.io/rpdfium/reference/pdf_path_set_fill.md)
+  : Set the fill color of a path page object
+- [`pdf_path_set_line_cap()`](https://humanpred.github.io/rpdfium/reference/pdf_path_set_line_cap.md)
+  : Set the line cap style of a path stroke
+- [`pdf_path_set_line_join()`](https://humanpred.github.io/rpdfium/reference/pdf_path_set_line_join.md)
+  : Set the line join style of a path stroke
+- [`pdf_path_set_dash()`](https://humanpred.github.io/rpdfium/reference/pdf_path_set_dash.md)
+  : Set the dash array + phase of a path stroke
+- [`pdf_path_set_draw_mode()`](https://humanpred.github.io/rpdfium/reference/pdf_path_set_draw_mode.md)
+  : Set the draw mode of a path page object
+- [`pdf_text_set_content()`](https://humanpred.github.io/rpdfium/reference/pdf_text_set_content.md)
+  : Replace the text content of a text page object
+- [`pdf_text_set_render_mode()`](https://humanpred.github.io/rpdfium/reference/pdf_text_set_render_mode.md)
+  : Set the render mode of a text page object
+- [`pdf_obj_add_mark()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_add_mark.md)
+  : Add a content mark to a page object
+- [`pdf_obj_remove_mark()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_remove_mark.md)
+  : Remove a content mark from a page object

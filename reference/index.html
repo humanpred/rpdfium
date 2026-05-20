@@ -1410,6 +1410,106 @@
 
         </dt>
         <dd>Force-flush a page's pending content edits</dd>
+      </dl></div><div class="section level2">
+      <h2 id="page-object-styling">Page-object styling<a class="anchor" aria-label="anchor" href="#page-object-styling"></a></h2>
+
+      <div class="section-desc"><p>Setters for page-object attributes. Each takes a <code>pdfium_obj</code> handle from <code><a href="../reference/pdf_page_objects.html">pdf_page_objects()</a></code> (parent doc must be readwrite) and marks the parent page dirty so <code><a href="../reference/pdf_save.html">pdf_save()</a></code> / <code>pdf_render_*()</code> see the change.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pdf_obj_set_matrix.html">pdf_obj_set_matrix()</a></code>
+
+        </dt>
+        <dd>Set the affine transformation matrix of a page object</dd>
+
+        <dt>
+
+          <code><a href="pdf_obj_set_active.html">pdf_obj_set_active()</a></code>
+
+        </dt>
+        <dd>Set whether a page object renders</dd>
+
+        <dt>
+
+          <code><a href="pdf_obj_set_blend_mode.html">pdf_obj_set_blend_mode()</a></code>
+
+        </dt>
+        <dd>Set the blend mode of a page object</dd>
+
+        <dt>
+
+          <code><a href="pdf_path_set_stroke.html">pdf_path_set_stroke()</a></code>
+
+        </dt>
+        <dd>Set the stroke style of a path page object</dd>
+
+        <dt>
+
+          <code><a href="pdf_path_set_fill.html">pdf_path_set_fill()</a></code>
+
+        </dt>
+        <dd>Set the fill color of a path page object</dd>
+
+        <dt>
+
+          <code><a href="pdf_path_set_line_cap.html">pdf_path_set_line_cap()</a></code>
+
+        </dt>
+        <dd>Set the line cap style of a path stroke</dd>
+
+        <dt>
+
+          <code><a href="pdf_path_set_line_join.html">pdf_path_set_line_join()</a></code>
+
+        </dt>
+        <dd>Set the line join style of a path stroke</dd>
+
+        <dt>
+
+          <code><a href="pdf_path_set_dash.html">pdf_path_set_dash()</a></code>
+
+        </dt>
+        <dd>Set the dash array + phase of a path stroke</dd>
+
+        <dt>
+
+          <code><a href="pdf_path_set_draw_mode.html">pdf_path_set_draw_mode()</a></code>
+
+        </dt>
+        <dd>Set the draw mode of a path page object</dd>
+
+        <dt>
+
+          <code><a href="pdf_text_set_content.html">pdf_text_set_content()</a></code>
+
+        </dt>
+        <dd>Replace the text content of a text page object</dd>
+
+        <dt>
+
+          <code><a href="pdf_text_set_render_mode.html">pdf_text_set_render_mode()</a></code>
+
+        </dt>
+        <dd>Set the render mode of a text page object</dd>
+
+        <dt>
+
+          <code><a href="pdf_obj_add_mark.html">pdf_obj_add_mark()</a></code>
+
+        </dt>
+        <dd>Add a content mark to a page object</dd>
+
+        <dt>
+
+          <code><a href="pdf_obj_remove_mark.html">pdf_obj_remove_mark()</a></code>
+
+        </dt>
+        <dd>Remove a content mark from a page object</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
