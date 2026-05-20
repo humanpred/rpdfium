@@ -20,7 +20,9 @@ their own machine.
 
 ### `pdfium-FPDFTextObj_SetFontSize.patch`
 
-**Status:** Staged 2026-05-20, awaiting first Gerrit upload.
+**Status:** Ready to upload (2026-05-20). CLA on file; the
+[per-patch upload commands](#submission-walk-through) below cover
+the first run.
 
 Adds the public symbol
 
