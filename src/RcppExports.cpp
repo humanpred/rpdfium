@@ -984,15 +984,15 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// cpp_bookmark_find
-int cpp_bookmark_find(SEXP doc_ptr, std::string title_utf8);
-RcppExport SEXP _pdfium_cpp_bookmark_find(SEXP doc_ptrSEXP, SEXP title_utf8SEXP) {
+// cpp_bookmark_find_handle
+Rcpp::List cpp_bookmark_find_handle(SEXP doc_ptr, std::string title_utf8);
+RcppExport SEXP _pdfium_cpp_bookmark_find_handle(SEXP doc_ptrSEXP, SEXP title_utf8SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     Rcpp::traits::input_parameter< std::string >::type title_utf8(title_utf8SEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_bookmark_find(doc_ptr, title_utf8));
+    rcpp_result_gen = Rcpp::wrap(cpp_bookmark_find_handle(doc_ptr, title_utf8));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1811,7 +1811,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_catalog_set_language", (DL_FUNC) &_pdfium_cpp_catalog_set_language, 2},
     {"_pdfium_cpp_page_generate_content", (DL_FUNC) &_pdfium_cpp_page_generate_content, 1},
     {"_pdfium_cpp_named_dest_by_name", (DL_FUNC) &_pdfium_cpp_named_dest_by_name, 2},
-    {"_pdfium_cpp_bookmark_find", (DL_FUNC) &_pdfium_cpp_bookmark_find, 2},
+    {"_pdfium_cpp_bookmark_find_handle", (DL_FUNC) &_pdfium_cpp_bookmark_find_handle, 2},
     {"_pdfium_cpp_form_field_at_point", (DL_FUNC) &_pdfium_cpp_form_field_at_point, 4},
     {"_pdfium_cpp_obj_line_cap", (DL_FUNC) &_pdfium_cpp_obj_line_cap, 1},
     {"_pdfium_cpp_obj_line_join", (DL_FUNC) &_pdfium_cpp_obj_line_join, 1},

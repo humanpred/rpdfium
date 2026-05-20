@@ -56,22 +56,20 @@ test_that("pdf_annot_appearance returns a string or empty", {
   expect_equal(pdf_annot_appearance(annot, mode = "rollover"), "")
 })
 
-test_that("pdf_link_annot_at_point returns the link's annotation_index", {
+test_that("pdf_link_annot_at_point returns the link's annot handle", {
   doc <- pdf_doc_open(fixture_path("annotated"))
   on.exit(pdf_doc_close(doc), add = TRUE)
   out <- pdf_link_annot_at_point(doc, 125, 160, page_num = 1L)
-  expect_true(out$found)
+  expect_s3_class(out, "pdfium_annot")
   # Link is annotation_index 3 in annotated.pdf.
-  expect_equal(out$annotation_index, 3L)
-  expect_type(out$z_order, "integer")
+  expect_equal(out$index, 3L)
+  expect_identical(pdf_annot_subtype(out), "link")
 })
 
-test_that("pdf_link_annot_at_point returns found=FALSE when miss", {
+test_that("pdf_link_annot_at_point returns NULL when no link is near", {
   doc <- pdf_doc_open(fixture_path("annotated"))
   on.exit(pdf_doc_close(doc), add = TRUE)
-  out <- pdf_link_annot_at_point(doc, 5, 5, page_num = 1L)
-  expect_false(out$found)
-  expect_true(is.na(out$annotation_index))
+  expect_null(pdf_link_annot_at_point(doc, 5, 5, page_num = 1L))
 })
 
 test_that("pdf_link_annot_at_point validates x and y", {

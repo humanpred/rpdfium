@@ -337,8 +337,8 @@ cpp_named_dest_by_name <- function(doc_ptr, name) {
     .Call(`_pdfium_cpp_named_dest_by_name`, doc_ptr, name)
 }
 
-cpp_bookmark_find <- function(doc_ptr, title_utf8) {
-    .Call(`_pdfium_cpp_bookmark_find`, doc_ptr, title_utf8)
+cpp_bookmark_find_handle <- function(doc_ptr, title_utf8) {
+    .Call(`_pdfium_cpp_bookmark_find_handle`, doc_ptr, title_utf8)
 }
 
 cpp_form_field_at_point <- function(doc_ptr, page_ptr, x, y) {

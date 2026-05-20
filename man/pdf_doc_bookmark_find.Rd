@@ -15,19 +15,21 @@ pdf_doc_bookmark_find(doc, title, password = NULL)
 is a path. Ignored when \code{doc} is already an open \code{pdfium_doc}.}
 }
 \value{
-Integer scalar — the 1-based bookmark_index, or \code{NA}.
+A \code{pdfium_bookmark} handle, or \code{NULL} when no match.
 }
 \description{
-Returns the 1-based \code{bookmark_index} of the first outline entry
-matching \code{title}, suitable for indexing back into
-\code{\link[=pdf_doc_bookmarks]{pdf_doc_bookmarks()}}'s tibble. \code{NA} when no bookmark matches.
-Wraps \code{FPDFBookmark_Find} and walks the outline pre-order to map
-the PDFium handle back to the row index.
+Returns the matching \code{pdfium_bookmark} handle, or \code{NULL} when no
+outline entry matches \code{title}. The returned handle is usable with
+every per-attribute getter (\code{\link[=pdf_bookmark_title]{pdf_bookmark_title()}},
+\code{\link[=pdf_bookmark_page_num]{pdf_bookmark_page_num()}}, ...) and can be slotted back into
+\code{\link[=as_pdfium_bookmark_list]{as_pdfium_bookmark_list()}} with other handles. Wraps
+\code{FPDFBookmark_Find} plus a pre-order walk to recover the
+structural \code{index} / \code{parent_index} / \code{level} fields.
 }
 \details{
 PDFium's matching is case-sensitive and matches the full title
 string.
 }
 \seealso{
-\code{\link[=pdf_doc_bookmarks]{pdf_doc_bookmarks()}}.
+\code{\link[=pdf_doc_bookmarks]{pdf_doc_bookmarks()}}, \code{\link[=pdf_bookmark_title]{pdf_bookmark_title()}}.
 }

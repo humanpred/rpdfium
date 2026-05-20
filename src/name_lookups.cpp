@@ -72,53 +72,88 @@ Rcpp::List cpp_named_dest_by_name(SEXP doc_ptr, std::string name) {
       Rcpp::_["dest_zoom"] = zoom);
 }
 
-// Returns the bookmark_index of the first bookmark matching `title`
-// in the document's outline tree, or NA when none match. The
-// matching index numbers the pre-order walk pdf_doc_bookmarks() uses.
-// [[Rcpp::export(name = "cpp_bookmark_find")]]
-int cpp_bookmark_find(SEXP doc_ptr, std::string title_utf8) {
+// Walk the outline tree in the same depth-first pre-order as
+// bookmark_handles.cpp::collect_bookmarks() and track each node's
+// parent_index + level so we can return the structural fields the
+// pdfium_bookmark handle needs. Returns true when `target` was
+// reached, leaving the resolved index/parent/level in the outparams.
+namespace {
+
+bool find_bookmark_in_walk(FPDF_DOCUMENT doc, FPDF_BOOKMARK current,
+                            int parent_index, int level,
+                            int& counter,
+                            FPDF_BOOKMARK target,
+                            int& found_index,
+                            int& found_parent,
+                            int& found_level) {
+  while (current != nullptr) {
+    counter++;
+    if (current == target) {
+      found_index  = counter;
+      found_parent = parent_index;
+      found_level  = level;
+      return true;
+    }
+    int this_index = counter;
+    FPDF_BOOKMARK child = FPDFBookmark_GetFirstChild(doc, current);
+    if (child != nullptr &&
+        find_bookmark_in_walk(doc, child, this_index, level + 1,
+                               counter, target,
+                               found_index, found_parent,
+                               found_level)) {
+      return true;
+    }
+    current = FPDFBookmark_GetNextSibling(doc, current);
+  }
+  return false;
+}
+
+}  // namespace
+
+// Locate the first bookmark matching `title` in the document's
+// outline tree and return its handle plus the structural fields
+// (1-based pre-order index, parent_index, level) the
+// `pdfium_bookmark` class expects. Returns `found = FALSE` (and NULL
+// handle / NA fields) when no bookmark matches.
+// [[Rcpp::export(name = "cpp_bookmark_find_handle")]]
+Rcpp::List cpp_bookmark_find_handle(SEXP doc_ptr,
+                                     std::string title_utf8) {
   FPDF_DOCUMENT doc = lookups_doc_from_ptr(doc_ptr);
   std::vector<unsigned short> utf16 =
       pdfium_r::utf8_to_utf16le_nul(title_utf8);
   FPDF_BOOKMARK target = FPDFBookmark_Find(
       doc, reinterpret_cast<FPDF_WIDESTRING>(utf16.data()));
-  if (target == nullptr) return -1;
-  // Walk the outline tree in the same pre-order as
-  // walk_bookmarks() to translate the FPDF_BOOKMARK handle back to
-  // its 1-based bookmark_index. PDFium does not expose the index
-  // directly.
+  if (target == nullptr) {
+    return Rcpp::List::create(
+        Rcpp::_["found"]        = false,
+        Rcpp::_["handle"]       = R_NilValue,
+        Rcpp::_["index"]        = NA_INTEGER,
+        Rcpp::_["parent_index"] = NA_INTEGER,
+        Rcpp::_["level"]        = NA_INTEGER);
+  }
   int counter = 0;
-  // Iterative DFS via an explicit stack of bookmark handles to
-  // visit. We push siblings right-to-left so left-most is popped
-  // first (matching the recursive walker).
-  std::vector<FPDF_BOOKMARK> stack;
-  FPDF_BOOKMARK first = FPDFBookmark_GetFirstChild(doc, nullptr);
-  if (first == nullptr) return -1;
-  // Build a sibling list and push reversed.
-  std::vector<FPDF_BOOKMARK> roots;
-  for (FPDF_BOOKMARK b = first; b != nullptr;
-       b = FPDFBookmark_GetNextSibling(doc, b)) {
-    roots.push_back(b);
+  int idx = NA_INTEGER, parent_idx = NA_INTEGER, lvl = NA_INTEGER;
+  FPDF_BOOKMARK root = FPDFBookmark_GetFirstChild(doc, nullptr);
+  bool ok = find_bookmark_in_walk(doc, root, /*parent=*/0, /*level=*/1,
+                                   counter, target,
+                                   idx, parent_idx, lvl);
+  if (!ok) {
+    return Rcpp::List::create(
+        Rcpp::_["found"]        = false,
+        Rcpp::_["handle"]       = R_NilValue,
+        Rcpp::_["index"]        = NA_INTEGER,
+        Rcpp::_["parent_index"] = NA_INTEGER,
+        Rcpp::_["level"]        = NA_INTEGER);
   }
-  for (auto it = roots.rbegin(); it != roots.rend(); ++it) {
-    stack.push_back(*it);
-  }
-  while (!stack.empty()) {
-    FPDF_BOOKMARK cur = stack.back();
-    stack.pop_back();
-    counter++;
-    if (cur == target) return counter;
-    std::vector<FPDF_BOOKMARK> kids;
-    for (FPDF_BOOKMARK k = FPDFBookmark_GetFirstChild(doc, cur);
-         k != nullptr;
-         k = FPDFBookmark_GetNextSibling(doc, k)) {
-      kids.push_back(k);
-    }
-    for (auto it = kids.rbegin(); it != kids.rend(); ++it) {
-      stack.push_back(*it);
-    }
-  }
-  return -1;
+  // Doc owns the bookmark; no finalizer. prot pins the doc.
+  SEXP handle = R_MakeExternalPtr(static_cast<void*>(target),
+                                   R_NilValue, doc_ptr);
+  return Rcpp::List::create(
+      Rcpp::_["found"]        = true,
+      Rcpp::_["handle"]       = handle,
+      Rcpp::_["index"]        = idx,
+      Rcpp::_["parent_index"] = parent_idx,
+      Rcpp::_["level"]        = lvl);
 }
 
 // Form-field hit-test. Returns the field_type code (0..7 + XFA) at

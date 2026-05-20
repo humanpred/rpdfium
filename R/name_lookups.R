@@ -44,11 +44,13 @@ pdf_doc_named_dest_by_name <- function(doc, name, password = NULL) {
 
 #' Find a bookmark by its title
 #'
-#' Returns the 1-based `bookmark_index` of the first outline entry
-#' matching `title`, suitable for indexing back into
-#' [pdf_doc_bookmarks()]'s tibble. `NA` when no bookmark matches.
-#' Wraps `FPDFBookmark_Find` and walks the outline pre-order to map
-#' the PDFium handle back to the row index.
+#' Returns the matching `pdfium_bookmark` handle, or `NULL` when no
+#' outline entry matches `title`. The returned handle is usable with
+#' every per-attribute getter ([pdf_bookmark_title()],
+#' [pdf_bookmark_page_num()], ...) and can be slotted back into
+#' [as_pdfium_bookmark_list()] with other handles. Wraps
+#' `FPDFBookmark_Find` plus a pre-order walk to recover the
+#' structural `index` / `parent_index` / `level` fields.
 #'
 #' PDFium's matching is case-sensitive and matches the full title
 #' string.
@@ -57,14 +59,20 @@ pdf_doc_named_dest_by_name <- function(doc, name, password = NULL) {
 #' @param title Single non-empty character string.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
-#' @return Integer scalar — the 1-based bookmark_index, or `NA`.
-#' @seealso [pdf_doc_bookmarks()].
+#' @return A `pdfium_bookmark` handle, or `NULL` when no match.
+#' @seealso [pdf_doc_bookmarks()], [pdf_bookmark_title()].
 #' @export
 pdf_doc_bookmark_find <- function(doc, title, password = NULL) {
   title <- assert_pdf_key(title, arg = "title")
-  doc <- as_open_doc(doc, password = password)
-  idx <- cpp_bookmark_find(doc$ptr, title)
-  na_if_negative(idx)
+  doc <- as_open_doc(doc, password = password, defer_close = FALSE)
+  raw <- cpp_bookmark_find_handle(doc$ptr, title)
+  if (!isTRUE(raw$found)) return(NULL)
+  new_pdfium_bookmark(
+    raw$handle, doc,
+    index        = raw$index,
+    parent_index = raw$parent_index,
+    level        = raw$level
+  )
 }
 
 #' Form-field hit-test for a point
