@@ -492,6 +492,17 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_form_field_handles
+Rcpp::List cpp_form_field_handles(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_form_field_handles(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_form_field_handles(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_form_fields_list
 Rcpp::List cpp_form_fields_list(SEXP doc_ptr);
 RcppExport SEXP _pdfium_cpp_form_fields_list(SEXP doc_ptrSEXP) {
@@ -1577,6 +1588,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_doc_meta_text", (DL_FUNC) &_pdfium_cpp_doc_meta_text, 2},
     {"_pdfium_cpp_doc_info", (DL_FUNC) &_pdfium_cpp_doc_info, 1},
     {"_pdfium_cpp_doc_file_version", (DL_FUNC) &_pdfium_cpp_doc_file_version, 1},
+    {"_pdfium_cpp_form_field_handles", (DL_FUNC) &_pdfium_cpp_form_field_handles, 1},
     {"_pdfium_cpp_form_fields_list", (DL_FUNC) &_pdfium_cpp_form_fields_list, 1},
     {"_pdfium_cpp_form_object_count", (DL_FUNC) &_pdfium_cpp_form_object_count, 1},
     {"_pdfium_cpp_form_get_object", (DL_FUNC) &_pdfium_cpp_form_get_object, 3},

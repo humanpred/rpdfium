@@ -97,6 +97,11 @@ reference:
       - pdf_annot_dict_value
       - pdf_annot_appearance
       - pdf_form_fields
+      - as_pdfium_form_field_list
+      - as_tibble.pdfium_form_field_list
+      - pdf_form_field_type
+      - pdf_form_field_type_code
+      - pdf_form_field_page_num
   - title: Page objects
     contents:
       - pdf_page_objects

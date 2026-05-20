@@ -252,3 +252,91 @@ print.pdfium_annot_list <- function(x, ...) {
   }
   invisible(x)
 }
+
+#' Construct a `pdfium_form_field` from an `FPDF_ANNOTATION` widget
+#'
+#' Internal helper. Form fields are AcroForm widget-subtype
+#' annotations; the externalptr is shared with `new_pdfium_annot`
+#' (same finalizer, same `prot`-slot page pinning). The R-side
+#' class inherits from `pdfium_annot` so every `pdf_annot_*`
+#' reader works on a form field too.
+#'
+#' @param ptr Externalptr to the widget annotation.
+#' @param page Parent `pdfium_page`.
+#' @param field_index One-based field index in the doc-wide list.
+#' @param page_num One-based page index.
+#' @param field_type_code PDFium `FPDF_FORMFIELD_*` enum code.
+#' @return An object of class `c("pdfium_form_field",
+#'   "pdfium_annot", "pdfium_handle")`.
+#' @keywords internal
+#' @noRd
+new_pdfium_form_field <- function(ptr, page, field_index, page_num,
+                                  field_type_code) {
+  checkmate::assert_class(ptr, "externalptr")
+  checkmate::assert_class(page, "pdfium_page")
+  checkmate::assert_number(field_index)
+  checkmate::assert_number(page_num)
+  structure(
+    list(
+      ptr = ptr,
+      page = page,
+      index = as.integer(field_index),       # field_index for tibble
+      annot_index = NA_integer_,             # filled in by reader
+      page_num = as.integer(page_num),
+      field_type_code = as.integer(field_type_code)
+    ),
+    class = c("pdfium_form_field", "pdfium_annot", "pdfium_handle")
+  )
+}
+
+#' @export
+format.pdfium_form_field <- function(x, ...) {
+  state <- if (is_open(x)) "open" else "closed"
+  field_type <- form_field_type_name(x$field_type_code)
+  sprintf(
+    "<pdfium_form_field [%s] %s, field %d on page %d>",
+    state, field_type, x$index, x$page_num
+  )
+}
+
+#' @export
+print.pdfium_form_field <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  invisible(x)
+}
+
+# Internal: list wrapper for the form-field handles. Holds the
+# parent doc + the list of unique pages-with-widgets so R's GC
+# keeps all of them alive while the list is reachable.
+new_pdfium_form_field_list <- function(fields, doc, pages_used) {
+  checkmate::assert_list(fields, types = c("pdfium_form_field", "NULL"))
+  checkmate::assert_class(doc, "pdfium_doc")
+  checkmate::assert_list(pages_used,
+                         types = c("pdfium_page", "NULL"))
+  structure(
+    fields,
+    source = doc,
+    pages_used = pages_used,
+    class = c("pdfium_form_field_list", "list")
+  )
+}
+
+#' @export
+format.pdfium_form_field_list <- function(x, ...) {
+  sprintf("<pdfium_form_field_list: %d field(s)>", length(x))
+}
+
+#' @export
+print.pdfium_form_field_list <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  if (length(x) > 0L) {
+    n_show <- min(5L, length(x))
+    for (i in seq_len(n_show)) {
+      cat("  [[", i, "]] ", format(x[[i]]), "\n", sep = "")
+    }
+    if (length(x) > n_show) {
+      cat("  ... and ", length(x) - n_show, " more.\n", sep = "")
+    }
+  }
+  invisible(x)
+}

@@ -169,6 +169,10 @@ cpp_doc_file_version <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_file_version`, doc_ptr)
 }
 
+cpp_form_field_handles <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_form_field_handles`, doc_ptr)
+}
+
 cpp_form_fields_list <- function(doc_ptr) {
     .Call(`_pdfium_cpp_form_fields_list`, doc_ptr)
 }

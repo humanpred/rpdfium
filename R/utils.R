@@ -21,10 +21,13 @@
 # `.envir` is the frame the deferred close registers in — defaults
 # to the caller's frame, which is what every callsite wants.
 as_open_doc <- function(x, arg = "doc", password = NULL,
-                        .envir = parent.frame()) {
+                        .envir = parent.frame(),
+                        defer_close = TRUE) {
   if (is.character(x)) {
     doc <- pdf_doc_open(x, password = password)
-    withr::defer(pdf_doc_close(doc), envir = .envir)
+    if (isTRUE(defer_close)) {
+      withr::defer(pdf_doc_close(doc), envir = .envir)
+    }
     return(doc)
   }
   checkmate::assert_class(x, "pdfium_doc", .var.name = arg)
