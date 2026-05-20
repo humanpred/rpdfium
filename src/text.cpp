@@ -14,15 +14,30 @@
 #include "fpdfview.h"
 #include "fpdf_edit.h"
 #include "fpdf_text.h"
+#include "handle_validation.h"
 #include "utf16.h"
 
 using pdfium_r::utf16le_to_utf8;
 
+namespace {
+
+inline FPDF_PAGEOBJECT text_obj_from_ptr(SEXP obj_ptr) {
+  return static_cast<FPDF_PAGEOBJECT>(
+      pdfium_r::validate_handle(obj_ptr, "Page-object",
+                                  /*require_prot_alive=*/true));
+}
+
+inline FPDF_PAGE text_page_from_ptr(SEXP page_ptr) {
+  return static_cast<FPDF_PAGE>(
+      pdfium_r::validate_handle(page_ptr, "Page",
+                                  /*require_prot_alive=*/false));
+}
+
+}  // namespace
+
 // [[Rcpp::export(name = "cpp_text_font_size")]]
 double cpp_text_font_size(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
-  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+  FPDF_PAGEOBJECT obj = text_obj_from_ptr(obj_ptr);
   float size = 0.0f;
   FPDF_BOOL ok = FPDFTextObj_GetFontSize(obj, &size);
   if (!ok) return NA_REAL;
@@ -64,18 +79,12 @@ std::string read_font_name(
 
 // [[Rcpp::export(name = "cpp_text_content")]]
 SEXP cpp_text_content(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
-  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
-
-  // Recover the parent FPDF_PAGE via the externalptr's prot slot,
-  // which we set in cpp_page_get_object() (see src/objects.cpp).
+  FPDF_PAGEOBJECT obj = text_obj_from_ptr(obj_ptr);
+  // text_obj_from_ptr already verified the parent page externalptr
+  // is alive via require_prot_alive=true; recover the raw page
+  // handle from the prot slot now that we know it's safe.
   SEXP page_ptr = R_ExternalPtrProtected(obj_ptr);
-  if (TYPEOF(page_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Page-object externalptr has no parent-page reference.");
-  }
   FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
-  if (page == nullptr) Rcpp::stop("Parent page is closed.");
 
   FPDF_TEXTPAGE text_page = FPDFText_LoadPage(page);
   if (text_page == nullptr) {
@@ -95,9 +104,7 @@ SEXP cpp_text_content(SEXP obj_ptr) {
 
 // [[Rcpp::export(name = "cpp_text_font")]]
 Rcpp::List cpp_text_font(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
-  FPDF_PAGEOBJECT obj = static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+  FPDF_PAGEOBJECT obj = text_obj_from_ptr(obj_ptr);
 
   FPDF_FONT font = FPDFTextObj_GetFont(obj);
   if (font == nullptr) {
@@ -132,9 +139,7 @@ Rcpp::List cpp_text_font(SEXP obj_ptr) {
 
 // [[Rcpp::export(name = "cpp_page_text_runs")]]
 Rcpp::List cpp_page_text_runs(SEXP page_ptr) {
-  if (TYPEOF(page_ptr) != EXTPTRSXP) Rcpp::stop("Expected an external pointer.");
-  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
-  if (page == nullptr) Rcpp::stop("Page handle is closed.");
+  FPDF_PAGE page = text_page_from_ptr(page_ptr);
 
   FPDF_TEXTPAGE text_page = FPDFText_LoadPage(page);
   if (text_page == nullptr) {

@@ -108,10 +108,36 @@ test_that("cpp_annot_* shims reject a closed annotation", {
                "[Aa]nnotation handle")
 })
 
-# Page-object shims still inline their own validation (each
-# cpp_obj_* duplicates the EXTPTRSXP + null check). The parent-
-# liveness fix on src/objects.cpp lands as a follow-up; skip the
-# closed-page page-object case for now.
+test_that("cpp_obj_* shims reject a closed page-object handle", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  objs <- pdf_page_objects(page)
+  skip_if(length(objs) == 0L, "no page objects in fixture")
+  ptr <- objs[[1L]]$ptr
+  pdf_page_close(page)
+  # Page-object externalptrs don't have their own finalizer; their
+  # prot slot pins the parent page externalptr. Closing the page
+  # clears the parent's address, which the C-side parent-liveness
+  # check (handle_validation.h) catches before dereferencing the
+  # dangling obj pointer.
+  for (fn in list(
+    function() pdfium:::cpp_obj_type(ptr),
+    function() pdfium:::cpp_obj_bounds(ptr),
+    function() pdfium:::cpp_obj_matrix(ptr),
+    function() pdfium:::cpp_obj_stroke_color(ptr),
+    function() pdfium:::cpp_obj_fill_color(ptr),
+    function() pdfium:::cpp_obj_stroke_width(ptr),
+    function() pdfium:::cpp_obj_dash_count(ptr),
+    function() pdfium:::cpp_path_segment_count(ptr),
+    function() pdfium:::cpp_text_font_size(ptr),
+    function() pdfium:::cpp_obj_line_cap(ptr),
+    function() pdfium:::cpp_obj_marks_list(ptr),
+    function() pdfium:::cpp_text_render_mode(ptr)
+  )) {
+    expect_error(fn(), "[Pp]age-object handle")
+  }
+})
 
 test_that("cpp_* shims reject non-externalptr arguments", {
   # Each of the shims below validates TYPEOF == EXTPTRSXP. Feeding

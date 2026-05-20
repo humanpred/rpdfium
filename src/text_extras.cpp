@@ -18,15 +18,27 @@
 #include "fpdf_edit.h"
 #include "fpdf_text.h"
 #include "fpdf_searchex.h"
+#include "handle_validation.h"
+
+namespace {
+
+inline FPDF_PAGEOBJECT te_obj_from_ptr(SEXP obj_ptr) {
+  return static_cast<FPDF_PAGEOBJECT>(
+      pdfium_r::validate_handle(obj_ptr, "Page-object",
+                                  /*require_prot_alive=*/true));
+}
+
+inline FPDF_PAGE te_page_from_ptr(SEXP page_ptr) {
+  return static_cast<FPDF_PAGE>(
+      pdfium_r::validate_handle(page_ptr, "Page",
+                                  /*require_prot_alive=*/false));
+}
+
+}  // namespace
 
 // [[Rcpp::export(name = "cpp_text_render_mode")]]
 int cpp_text_render_mode(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer.");
-  }
-  FPDF_PAGEOBJECT obj =
-      static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
+  FPDF_PAGEOBJECT obj = te_obj_from_ptr(obj_ptr);
   // Returns -1 (FPDF_TEXTRENDERMODE_UNKNOWN) on failure, 0..7 on
   // success. The R wrapper maps to a string.
   return static_cast<int>(FPDFTextObj_GetTextRenderMode(obj));
@@ -37,11 +49,7 @@ int cpp_text_render_mode(SEXP obj_ptr) {
 // generated / formatting chars return -1 here).
 // [[Rcpp::export(name = "cpp_page_text_colors")]]
 Rcpp::List cpp_page_text_colors(SEXP page_ptr) {
-  if (TYPEOF(page_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the page.");
-  }
-  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
-  if (page == nullptr) Rcpp::stop("Page handle is closed.");
+  FPDF_PAGE page = te_page_from_ptr(page_ptr);
 
   FPDF_TEXTPAGE tp = FPDFText_LoadPage(page);
   if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");

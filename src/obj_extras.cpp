@@ -9,19 +9,17 @@
 #include <Rcpp.h>
 #include "fpdfview.h"
 #include "fpdf_edit.h"
+#include "handle_validation.h"
 
 namespace {
 
 inline FPDF_PAGEOBJECT validated_pageobj(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer.");
-  }
-  FPDF_PAGEOBJECT obj =
-      static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) {
-    Rcpp::stop("Page-object handle is closed.");
-  }
-  return obj;
+  // Page objects are page-owned; their prot slot pins the parent
+  // page externalptr. Closing the page strands the obj's address,
+  // so we require the prot to still be alive.
+  return static_cast<FPDF_PAGEOBJECT>(
+      pdfium_r::validate_handle(obj_ptr, "Page-object",
+                                  /*require_prot_alive=*/true));
 }
 
 }  // namespace

@@ -18,17 +18,16 @@
 #include <Rcpp.h>
 #include "fpdfview.h"
 #include "fpdf_edit.h"
+#include "handle_validation.h"
 
 namespace {
 
 FPDF_PAGEOBJECT form_from_ptr(SEXP form_ptr) {
-  if (TYPEOF(form_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the form object.");
-  }
-  FPDF_PAGEOBJECT form =
-      static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(form_ptr));
-  if (form == nullptr) Rcpp::stop("Form-object handle is closed.");
-  return form;
+  // Form XObject page-objects are themselves page-owned; their
+  // prot slot pins the parent page externalptr.
+  return static_cast<FPDF_PAGEOBJECT>(
+      pdfium_r::validate_handle(form_ptr, "Form page-object",
+                                  /*require_prot_alive=*/true));
 }
 
 }  // namespace

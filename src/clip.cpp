@@ -23,27 +23,21 @@
 #include "fpdfview.h"
 #include "fpdf_transformpage.h"
 #include "fpdf_edit.h"
+#include "handle_validation.h"
 
 namespace {
 
 FPDF_PAGEOBJECT obj_from_ptr(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the page object.");
-  }
-  FPDF_PAGEOBJECT obj =
-      static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page-object handle is closed.");
-  return obj;
+  return static_cast<FPDF_PAGEOBJECT>(
+      pdfium_r::validate_handle(obj_ptr, "Page-object",
+                                  /*require_prot_alive=*/true));
 }
 
 FPDF_CLIPPATH clip_from_ptr(SEXP clip_ptr) {
-  if (TYPEOF(clip_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the clip path.");
-  }
-  FPDF_CLIPPATH clip =
-      static_cast<FPDF_CLIPPATH>(R_ExternalPtrAddr(clip_ptr));
-  if (clip == nullptr) Rcpp::stop("Clip-path handle is closed.");
-  return clip;
+  // Clip paths are page-owned (no finalizer); prot pins the page.
+  return static_cast<FPDF_CLIPPATH>(
+      pdfium_r::validate_handle(clip_ptr, "Clip-path",
+                                  /*require_prot_alive=*/true));
 }
 
 }  // namespace
@@ -51,12 +45,11 @@ FPDF_CLIPPATH clip_from_ptr(SEXP clip_ptr) {
 // [[Rcpp::export(name = "cpp_obj_get_clip_path")]]
 SEXP cpp_obj_get_clip_path(SEXP obj_ptr, SEXP page_ptr) {
   FPDF_PAGEOBJECT obj = obj_from_ptr(obj_ptr);
-  if (TYPEOF(page_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the parent page.");
-  }
-  if (R_ExternalPtrAddr(page_ptr) == nullptr) {
-    Rcpp::stop("Parent page handle is closed.");
-  }
+  // Explicit page-ptr validation: this shim takes the page as a
+  // separate argument (not via the obj's prot slot) so we still
+  // need to verify it directly.
+  (void)pdfium_r::validate_handle(page_ptr, "Page",
+                                   /*require_prot_alive=*/false);
   FPDF_CLIPPATH clip = FPDFPageObj_GetClipPath(obj);
   if (clip == nullptr) return R_NilValue;
   // No finalizer: the clip path is owned by the page. Keep the

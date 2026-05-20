@@ -21,37 +21,27 @@
 #include "fpdf_doc.h"
 #include "fpdf_edit.h"
 #include "fpdf_formfill.h"
+#include "handle_validation.h"
 #include "utf16.h"
 
 namespace {
 
 FPDF_DOCUMENT ap_doc_from_ptr(SEXP doc_ptr) {
-  if (TYPEOF(doc_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the document.");
-  }
-  FPDF_DOCUMENT doc =
-      static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr));
-  if (doc == nullptr) Rcpp::stop("Document handle is closed.");
-  return doc;
+  return static_cast<FPDF_DOCUMENT>(
+      pdfium_r::validate_handle(doc_ptr, "Document",
+                                  /*require_prot_alive=*/false));
 }
 
 FPDF_PAGE ap_page_from_ptr(SEXP page_ptr) {
-  if (TYPEOF(page_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the page.");
-  }
-  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
-  if (page == nullptr) Rcpp::stop("Page handle is closed.");
-  return page;
+  return static_cast<FPDF_PAGE>(
+      pdfium_r::validate_handle(page_ptr, "Page",
+                                  /*require_prot_alive=*/false));
 }
 
 FPDF_PAGEOBJECT ap_obj_from_ptr(SEXP obj_ptr) {
-  if (TYPEOF(obj_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the page object.");
-  }
-  FPDF_PAGEOBJECT obj =
-      static_cast<FPDF_PAGEOBJECT>(R_ExternalPtrAddr(obj_ptr));
-  if (obj == nullptr) Rcpp::stop("Page object handle is closed.");
-  return obj;
+  return static_cast<FPDF_PAGEOBJECT>(
+      pdfium_r::validate_handle(obj_ptr, "Page-object",
+                                  /*require_prot_alive=*/true));
 }
 
 }  // namespace
