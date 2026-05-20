@@ -160,11 +160,16 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_thumbnail.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_pages_reorder.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_parse_date.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_append.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_bezier_to.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_close.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_dash.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_draw_mode.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_fill.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_line_cap.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_line_join.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_line_to.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_move_to.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_segments.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_set_dash.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_path_set_draw_mode.html</loc></url>

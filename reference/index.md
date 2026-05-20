@@ -603,3 +603,20 @@ from
   : Add a content mark to a page object
 - [`pdf_obj_remove_mark()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_remove_mark.md)
   : Remove a content mark from a page object
+
+## Path geometry
+
+Appenders for path page-objects. PDFium’s public API is append-only —
+there is no segment-removal or -replacement symbol. To “rebuild”
+geometry, compose these with Phase 5’s `pdf_path_new()` (forthcoming).
+
+- [`pdf_path_move_to()`](https://humanpred.github.io/rpdfium/reference/pdf_path_move_to.md)
+  : Append a MoveTo command to a path object
+- [`pdf_path_line_to()`](https://humanpred.github.io/rpdfium/reference/pdf_path_line_to.md)
+  : Append a LineTo command to a path object
+- [`pdf_path_bezier_to()`](https://humanpred.github.io/rpdfium/reference/pdf_path_bezier_to.md)
+  : Append a cubic Bezier curve to a path object
+- [`pdf_path_close()`](https://humanpred.github.io/rpdfium/reference/pdf_path_close.md)
+  : Close the current subpath of a path object
+- [`pdf_path_append()`](https://humanpred.github.io/rpdfium/reference/pdf_path_append.md)
+  : Append a sequence of path segments in one call

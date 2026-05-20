@@ -1510,6 +1510,50 @@
 
         </dt>
         <dd>Remove a content mark from a page object</dd>
+      </dl></div><div class="section level2">
+      <h2 id="path-geometry">Path geometry<a class="anchor" aria-label="anchor" href="#path-geometry"></a></h2>
+
+      <div class="section-desc"><p>Appenders for path page-objects. PDFium’s public API is append-only — there is no segment-removal or -replacement symbol. To “rebuild” geometry, compose these with Phase 5’s <code>pdf_path_new()</code> (forthcoming).</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pdf_path_move_to.html">pdf_path_move_to()</a></code>
+
+        </dt>
+        <dd>Append a MoveTo command to a path object</dd>
+
+        <dt>
+
+          <code><a href="pdf_path_line_to.html">pdf_path_line_to()</a></code>
+
+        </dt>
+        <dd>Append a LineTo command to a path object</dd>
+
+        <dt>
+
+          <code><a href="pdf_path_bezier_to.html">pdf_path_bezier_to()</a></code>
+
+        </dt>
+        <dd>Append a cubic Bezier curve to a path object</dd>
+
+        <dt>
+
+          <code><a href="pdf_path_close.html">pdf_path_close()</a></code>
+
+        </dt>
+        <dd>Close the current subpath of a path object</dd>
+
+        <dt>
+
+          <code><a href="pdf_path_append.html">pdf_path_append()</a></code>
+
+        </dt>
+        <dd>Append a sequence of path segments in one call</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
