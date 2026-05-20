@@ -13,7 +13,7 @@ pdf_save_to_raw(
 )
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}} or \code{\link[=pdf_new_doc]{pdf_new_doc()}}.}
+\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}} or \code{\link[=pdf_doc_new]{pdf_doc_new()}}.}
 
 \item{incremental}{Logical. If \code{TRUE}, append an incremental
 update preserving the original byte layout (required for

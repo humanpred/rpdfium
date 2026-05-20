@@ -14,7 +14,7 @@ pdf_save(
 )
 }
 \arguments{
-\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}} or \code{\link[=pdf_new_doc]{pdf_new_doc()}}.}
+\item{doc}{A \code{pdfium_doc} from \code{\link[=pdf_open]{pdf_open()}} or \code{\link[=pdf_doc_new]{pdf_doc_new()}}.}
 
 \item{file}{Destination path. The directory must exist.}
 
@@ -56,6 +56,6 @@ content.
 }
 \seealso{
 \code{\link[=pdf_save_to_raw]{pdf_save_to_raw()}} for in-memory output;
-\code{\link[=pdf_open]{pdf_open()}} for the read side; \code{\link[=pdf_new_doc]{pdf_new_doc()}} for a fresh
+\code{\link[=pdf_open]{pdf_open()}} for the read side; \code{\link[=pdf_doc_new]{pdf_doc_new()}} for a fresh
 document.
 }

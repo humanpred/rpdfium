@@ -263,8 +263,12 @@ pdf_page_set_box <- function(page, box, rect, page_num = 1L) {
 pdf_doc_set_language <- function(doc, lang) {
   assert_readwrite(doc)
   checkmate::assert_string(lang, min.chars = 1L)
+  # nocov start — FPDFCatalog_SetLanguage accepts any UTF-8 string;
+  # the only documented failure path is a NULL doc handle which we
+  # guard against above. Defensive against PDFium changes.
   if (!cpp_catalog_set_language(doc$ptr, enc2utf8(lang))) {
     stop("FPDFCatalog_SetLanguage returned failure.", call. = FALSE)
   }
+  # nocov end
   invisible(doc)
 }

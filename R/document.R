@@ -26,7 +26,7 @@
 #'   (the default) passes no password to PDFium.
 #' @param readwrite Logical. If `TRUE`, the document is opened in
 #'   read-write mode and every mutator function ([pdf_save()],
-#'   [pdf_set_page_rotation()], the `pdf_*_set_*()` family,
+#'   [pdf_page_set_rotation()], the `pdf_*_set_*()` family,
 #'   annotation authoring, form filling, …) will accept it.
 #'   Defaults `FALSE` — a read-only handle that refuses mutations
 #'   with a clear error message. See ADR-012 in

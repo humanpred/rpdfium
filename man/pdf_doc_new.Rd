@@ -11,7 +11,7 @@ A \code{pdfium_doc} with zero pages.
 }
 \description{
 Wraps \code{FPDF_CreateNewDocument}. The returned \code{pdfium_doc} has
-no pages — add some with \code{\link[=pdf_new_page]{pdf_new_page()}} before saving.
+no pages — add some with \code{\link[=pdf_page_new]{pdf_page_new()}} before saving.
 Always returned with \code{readwrite = TRUE}; there is no read-only
 new document.
 }
@@ -23,6 +23,6 @@ pdf_save(doc, tmp)
 pdf_close(doc)
 }
 \seealso{
-\code{\link[=pdf_new_page]{pdf_new_page()}} to add a page;
+\code{\link[=pdf_page_new]{pdf_page_new()}} to add a page;
 \code{\link[=pdf_save]{pdf_save()}} to persist the result.
 }

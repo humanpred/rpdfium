@@ -151,3 +151,22 @@ reference:
   - title: One-call extraction
     contents:
       - pdf_extract_paths
+  - title: Document creation and serialisation
+    contents:
+      - pdf_doc_new
+      - pdf_save
+      - pdf_save_to_raw
+  - title: Structural mutation
+    desc: >
+      Open a document with `readwrite = TRUE` (or build one with
+      `pdf_doc_new()`) to enable these. See ADRs 011-018 for the
+      writer-surface conventions.
+    contents:
+      - pdf_page_new
+      - pdf_page_delete
+      - pdf_pages_reorder
+      - pdf_merge
+      - pdf_n_up
+      - pdf_page_set_rotation
+      - pdf_page_set_box
+      - pdf_doc_set_language

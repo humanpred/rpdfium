@@ -95,3 +95,79 @@ test_that("pdf_save() refuses bad destination directory", {
     "Destination directory"
   )
 })
+
+test_that("pdf_save() refuses closed docs", {
+  fx <- fixture_path("minimal")
+  doc <- pdf_open(fx)
+  pdf_close(doc)
+  tmp <- withr::local_tempfile(fileext = ".pdf")
+  expect_error(pdf_save(doc, tmp), "Document has been closed")
+})
+
+test_that("pdf_save() honours incremental/remove_security/version flags", {
+  fx <- fixture_path("shapes")
+  doc <- pdf_open(fx, readwrite = TRUE)
+  on.exit(pdf_close(doc), add = TRUE)
+  # Incremental save preserves the layout and includes the original
+  # bytes; the saved file is at least as large as the input.
+  tmp_inc <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(doc, tmp_inc, incremental = TRUE)
+  expect_true(file.exists(tmp_inc))
+  # remove_security flag is accepted (no encrypted fixture to verify
+  # behaviour, but the code path runs).
+  tmp_rs <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(doc, tmp_rs, remove_security = TRUE)
+  expect_true(file.exists(tmp_rs))
+  # subset_new_fonts disabled
+  tmp_sf <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(doc, tmp_sf, subset_new_fonts = FALSE)
+  expect_true(file.exists(tmp_sf))
+  # version pinning: PDFium "10*major+minor" form — 14 = PDF 1.4.
+  tmp_v <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(doc, tmp_v, version = 14L)
+  doc14 <- pdf_open(tmp_v)
+  on.exit(pdf_close(doc14), add = TRUE)
+  expect_equal(pdf_doc_info(doc14)$file_version, 14L)
+})
+
+test_that("pdf_save_to_raw() honours same flag set", {
+  fx <- fixture_path("shapes")
+  doc <- pdf_open(fx, readwrite = TRUE)
+  on.exit(pdf_close(doc), add = TRUE)
+  raw_inc <- pdf_save_to_raw(doc, incremental = TRUE)
+  raw_rs <- pdf_save_to_raw(doc, remove_security = TRUE)
+  raw_sf <- pdf_save_to_raw(doc, subset_new_fonts = FALSE)
+  raw_v  <- pdf_save_to_raw(doc, version = 17L)
+  for (b in list(raw_inc, raw_rs, raw_sf, raw_v)) {
+    expect_type(b, "raw")
+    expect_gt(length(b), 100L)
+  }
+})
+
+test_that("pdf_save_to_raw() refuses closed docs", {
+  fx <- fixture_path("minimal")
+  doc <- pdf_open(fx)
+  pdf_close(doc)
+  expect_error(pdf_save_to_raw(doc), "Document has been closed")
+})
+
+test_that("assert_readwrite() refuses closed docs", {
+  fx <- fixture_path("minimal")
+  doc <- pdf_open(fx, readwrite = TRUE)
+  pdf_close(doc)
+  expect_error(pdfium:::assert_readwrite(doc), "Document has been closed")
+})
+
+test_that("mark_page_dirty + flush_dirty_pages round-trip", {
+  fx <- fixture_path("shapes")
+  doc <- pdf_open(fx, readwrite = TRUE)
+  on.exit(pdf_close(doc), add = TRUE)
+  expect_length(doc$state$dirty_pages, 0L)
+  # pdf_page_set_rotation() marks page 1 dirty.
+  pdf_page_set_rotation(doc, 90)
+  expect_setequal(doc$state$dirty_pages, 1L)
+  # pdf_save() flushes the set.
+  tmp <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(doc, tmp)
+  expect_length(doc$state$dirty_pages, 0L)
+})

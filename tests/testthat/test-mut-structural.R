@@ -133,6 +133,45 @@ test_that("pdf_doc_set_language() persists across save", {
   expect_true(file.exists(tmp))  # smoke
 })
 
+test_that("pdf_pages_reorder() accepts a full permutation", {
+  fx <- fixture_path("minimal")
+  src <- withr::local_tempfile(fileext = ".pdf")
+  pdf_merge(list(fx, fx, fx), src)
+  doc <- pdf_open(src, readwrite = TRUE)
+  on.exit(pdf_close(doc), add = TRUE)
+  pdf_pages_reorder(doc, new_order = c(3L, 1L, 2L))
+  # No regression visible at the page-count level — just exercise the
+  # cpp_move_pages branch successfully.
+  expect_equal(pdf_page_count(doc), 3L)
+  out <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(doc, out)
+  doc2 <- pdf_open(out)
+  on.exit(pdf_close(doc2), add = TRUE)
+  expect_equal(pdf_page_count(doc2), 3L)
+})
+
+test_that("pdf_pages_reorder() accepts contiguous-move shape", {
+  fx <- fixture_path("minimal")
+  src <- withr::local_tempfile(fileext = ".pdf")
+  pdf_merge(list(fx, fx, fx), src)
+  doc <- pdf_open(src, readwrite = TRUE)
+  on.exit(pdf_close(doc), add = TRUE)
+  pdf_pages_reorder(doc, move_pages = c(1L, 2L), dest = 2L)
+  expect_equal(pdf_page_count(doc), 3L)
+})
+
+test_that("pdf_merge() accepts open pdfium_doc handles", {
+  fx <- fixture_path("minimal")
+  d1 <- pdf_open(fx)
+  d2 <- pdf_open(fx)
+  on.exit(pdf_close(d1), add = TRUE)
+  on.exit(pdf_close(d2), add = TRUE)
+  out <- pdf_merge(list(d1, d2))
+  on.exit(pdf_close(out), add = TRUE)
+  expect_equal(pdf_page_count(out), 2L)
+  expect_true(out$readwrite)
+})
+
 test_that("pdf_pages_reorder() rejects bad permutations", {
   fx <- fixture_path("minimal")
   tmp <- withr::local_tempfile(fileext = ".pdf")

@@ -21,7 +21,7 @@ Mutually exclusive with \code{path}.}
 
 \item{readwrite}{Logical. If \code{TRUE}, the document is opened in
 read-write mode and every mutator function (\code{\link[=pdf_save]{pdf_save()}},
-\code{\link[=pdf_set_page_rotation]{pdf_set_page_rotation()}}, the \verb{pdf_*_set_*()} family,
+\code{\link[=pdf_page_set_rotation]{pdf_page_set_rotation()}}, the \verb{pdf_*_set_*()} family,
 annotation authoring, form filling, …) will accept it.
 Defaults \code{FALSE} — a read-only handle that refuses mutations
 with a clear error message. See ADR-012 in

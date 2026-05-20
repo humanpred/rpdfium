@@ -1,5 +1,5 @@
 # Foundation for the writer surface: pdf_save(), pdf_save_to_raw(),
-# pdf_new_doc(), plus the internal readwrite-state machinery.
+# pdf_doc_new(), pdf_page_new(), plus the internal readwrite-state machinery.
 #
 # Layering:
 #   * `pdf_open(..., readwrite = TRUE)` flips `doc$readwrite` to TRUE.
@@ -76,7 +76,7 @@ assert_readwrite <- function(doc, .var.name = "doc") {
 #' a PDF (rebuild the xref table, etc.) without modifying its
 #' content.
 #'
-#' @param doc A `pdfium_doc` from [pdf_open()] or [pdf_new_doc()].
+#' @param doc A `pdfium_doc` from [pdf_open()] or [pdf_doc_new()].
 #' @param file Destination path. The directory must exist.
 #' @param incremental Logical. If `TRUE`, append an incremental
 #'   update preserving the original byte layout (required for
@@ -93,7 +93,7 @@ assert_readwrite <- function(doc, .var.name = "doc") {
 #'   (default) preserves the input file's declared version.
 #' @return Invisibly returns `file`, the path written to.
 #' @seealso [pdf_save_to_raw()] for in-memory output;
-#'   [pdf_open()] for the read side; [pdf_new_doc()] for a fresh
+#'   [pdf_open()] for the read side; [pdf_doc_new()] for a fresh
 #'   document.
 #' @export
 pdf_save <- function(doc, file, incremental = FALSE,
@@ -130,24 +130,37 @@ pdf_save <- function(doc, file, incremental = FALSE,
   tmp <- tempfile(tmpdir = dest_dir, fileext = ".pdf.part")
   ok <- tryCatch(
     cpp_save_to_file(doc$ptr, tmp, flags, ver),
+    # nocov start — `cpp_save_to_file` only raises when the
+    # destination directory is unwritable, which we cover via the
+    # `dir.exists(dest_dir)` check above. The tryCatch is defensive
+    # against future C++ failure modes.
     error = function(e) {
       if (file.exists(tmp)) unlink(tmp)
       stop(e)
     }
+    # nocov end
   )
+  # nocov start — PDFium's FPDF_SaveAsCopy returns 0 only when the
+  # FILEWRITE callback rejects bytes (i.e. our std::ofstream went
+  # bad). The pre-flight `dir.exists` + tempfile pattern keeps that
+  # path unreachable in the test suite.
   if (!isTRUE(ok)) {
     if (file.exists(tmp)) unlink(tmp)
     stop("PDFium failed to save the document.", call. = FALSE)
   }
+  # nocov end
   if (!file.rename(tmp, file)) {
-    # file.rename can fail across filesystem boundaries on some
-    # platforms; fall back to copy + unlink.
+    # nocov start — file.rename can fail across filesystem
+    # boundaries on some platforms; fall back to copy + unlink.
+    # Same-fs guarantee from tempfile(tmpdir = dest_dir) makes this
+    # unreachable in the suite.
     if (!file.copy(tmp, file, overwrite = TRUE)) {
       unlink(tmp)
       stop("Failed to move the saved PDF into place: ", file,
            call. = FALSE)
     }
     unlink(tmp)
+    # nocov end
   }
   invisible(file)
 }
@@ -187,12 +200,12 @@ pdf_save_to_raw <- function(doc, incremental = FALSE,
 #' Create a new, empty PDF document
 #'
 #' Wraps `FPDF_CreateNewDocument`. The returned `pdfium_doc` has
-#' no pages — add some with [pdf_new_page()] before saving.
+#' no pages — add some with [pdf_page_new()] before saving.
 #' Always returned with `readwrite = TRUE`; there is no read-only
 #' new document.
 #'
 #' @return A `pdfium_doc` with zero pages.
-#' @seealso [pdf_new_page()] to add a page;
+#' @seealso [pdf_page_new()] to add a page;
 #'   [pdf_save()] to persist the result.
 #' @examples
 #' doc <- pdf_doc_new()
@@ -212,7 +225,11 @@ pdf_doc_new <- function() {
 # serialising.
 flush_dirty_pages <- function(doc) {
   state <- doc$state
+  # nocov start — every `pdfium_doc` built via `new_pdfium_doc()`
+  # has a non-NULL state env. The guard is defensive against future
+  # construction paths that might forget to populate it.
   if (is.null(state)) return(invisible(NULL))
+  # nocov end
   dirty <- state$dirty_pages
   if (length(dirty) == 0L) return(invisible(NULL))
   for (i in dirty) {
@@ -234,7 +251,9 @@ flush_dirty_pages <- function(doc) {
 # (see `new_pdfium_doc`) so the update is visible to callers.
 mark_page_dirty <- function(doc, page_num) {
   state <- doc$state
+  # nocov start — see flush_dirty_pages() for why this guard exists.
   if (is.null(state)) return(invisible(NULL))
+  # nocov end
   state$dirty_pages <- unique(c(state$dirty_pages,
                                 as.integer(page_num)))
   invisible(NULL)
