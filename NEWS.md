@@ -1,3 +1,15 @@
+# pdfium (development version)
+
+## New features
+
+* `pdf_doc_summary()` — one-call helper that returns a single-row
+  tibble aggregating the most-asked-for facts about a PDF: path,
+  page count, Info-dictionary metadata, structural feature flags
+  (tagged, encrypted, has-forms, has-attachments, …), counts for
+  each feature group, and the file-ID tuple. Replaces the
+  eight-or-so individual calls users typically chain together when
+  triaging a PDF.
+
 # pdfium 0.1.0
 
 Initial CRAN release. This is the first public version of `pdfium`,

@@ -506,3 +506,132 @@ pdf_doc_trailer_ends <- function(doc) {
   doc <- as_open_doc(doc)
   cpp_doc_trailer_ends(doc$ptr)
 }
+
+#' One-call summary of a PDF document
+#'
+#' Returns a single-row tibble that aggregates the most-asked-for
+#' facts about a PDF document: file path, page count, Info-dictionary
+#' metadata, structural feature flags (forms, attachments, bookmarks,
+#' signatures, JavaScript, tagged-PDF), counts for each of those
+#' feature groups, encryption state, and the file-ID tuple. Designed
+#' to replace the eight-or-so individual calls users typically chain
+#' together when triaging a PDF.
+#'
+#' Each column either exposes an existing reader or is a `length()`
+#' over the matching `pdfium_*_list`. No new C-side work — purely an
+#' R-side aggregation. See **Columns** below for the source reader
+#' for each entry.
+#'
+#' @section Columns:
+#' * `path` — character; canonical path the doc was opened from, or
+#'   `"<raw bytes>"` for in-memory loads.
+#' * `page_count`, `file_version` — from [pdf_doc_info()].
+#' * `title`, `author`, `subject`, `keywords`, `creator`, `producer`,
+#'   `creation_date`, `mod_date`, `trapped` — from [pdf_doc_info()];
+#'   missing entries appear as `""`.
+#' * `creation_date_parsed`, `mod_date_parsed` — POSIXct (UTC), `NA`
+#'   when the source date is empty or unparseable. From
+#'   [pdf_parse_date()].
+#' * `is_tagged` — from [pdf_doc_is_tagged()].
+#' * `is_encrypted` — `TRUE` when [pdf_doc_security()] returns a
+#'   non-NA revision; `FALSE` otherwise.
+#' * `security_revision` — from [pdf_doc_security()]; `NA` for
+#'   unencrypted PDFs.
+#' * `xref_valid` — from [pdf_doc_xref_valid()].
+#' * `bookmark_count`, `attachment_count`, `signature_count`,
+#'   `form_field_count`, `javascript_count`, `named_dest_count` —
+#'   `length()` of [pdf_doc_bookmarks()], [pdf_attachments()],
+#'   [pdf_signatures()], [pdf_form_fields()], [pdf_doc_javascript()],
+#'   and [pdf_doc_named_dests()] respectively. Zero when the
+#'   document has none of the corresponding entries.
+#' * `has_page_labels` — `TRUE` when [pdf_page_labels()] returns
+#'   non-NA strings.
+#' * `file_id_permanent`, `file_id_changing` — from
+#'   [pdf_doc_file_id()]; UTF-8 hex strings or `NA`.
+#'
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character
+#'   path.
+#' @param password Optional password for encrypted PDFs when `doc`
+#'   is a path. Ignored when `doc` is an open `pdfium_doc`.
+#' @return A one-row tibble.
+#' @seealso [pdf_doc_info()] for the Info-dictionary subset alone,
+#'   the per-feature readers listed under **Columns** for richer
+#'   per-row data.
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "annotated.pdf",
+#'   package = "pdfium"
+#' )
+#' if (nzchar(fixture)) pdf_doc_summary(fixture)
+#' @export
+pdf_doc_summary <- function(doc, password = NULL) {
+  if (is.character(doc)) {
+    handle <- pdf_doc_open(doc, password = password)
+    on.exit(pdf_doc_close(handle), add = TRUE)
+    return(pdf_doc_summary(handle))
+  }
+  checkmate::assert_class(doc, "pdfium_doc")
+  if (!is_open(doc)) stop("Document has been closed.", call. = FALSE)
+
+  info <- pdf_doc_info(doc)
+  rev <- pdf_doc_security(doc)
+  page_labels <- tryCatch(pdf_page_labels(doc),
+                          error = function(e) NULL)
+  file_id <- list(
+    permanent = file_id_hex_or_na(tryCatch(
+      pdf_doc_file_id(doc, "permanent"),
+      error = function(e) raw(0)
+    )),
+    changing = file_id_hex_or_na(tryCatch(
+      pdf_doc_file_id(doc, "changing"),
+      error = function(e) raw(0)
+    ))
+  )
+
+  tibble::tibble(
+    path                 = doc$path,
+    page_count           = info$page_count,
+    file_version         = info$file_version,
+    title                = info$title %||% "",
+    author               = info$author %||% "",
+    subject              = info$subject %||% "",
+    keywords             = info$keywords %||% "",
+    creator              = info$creator %||% "",
+    producer             = info$producer %||% "",
+    creation_date        = info$creation_date %||% "",
+    mod_date             = info$mod_date %||% "",
+    trapped              = info$trapped %||% "",
+    creation_date_parsed = info$creation_date_parsed,
+    mod_date_parsed      = info$mod_date_parsed,
+    is_tagged            = pdf_doc_is_tagged(doc),
+    is_encrypted         = !is.na(rev),
+    security_revision    = rev,
+    xref_valid           = pdf_doc_xref_valid(doc),
+    bookmark_count       = length(pdf_doc_bookmarks(doc)),
+    attachment_count     = length(pdf_attachments(doc)),
+    signature_count      = length(pdf_signatures(doc)),
+    form_field_count     = length(pdf_form_fields(doc)),
+    javascript_count     = length(pdf_doc_javascript(doc)),
+    named_dest_count     = length(pdf_doc_named_dests(doc)),
+    has_page_labels      = !is.null(page_labels) &&
+                             any(!is.na(page_labels) & nzchar(page_labels)),
+    file_id_permanent    = file_id$permanent,
+    file_id_changing     = file_id$changing
+  )
+}
+
+# Internal: tiny version of rlang's %||% so we don't pull rlang in
+# just for the summary path. Returns `b` when `a` is NULL or NA.
+`%||%` <- function(a, b) {
+  if (is.null(a) || (length(a) == 1L && is.na(a))) b else a
+}
+
+# Internal: convert pdf_doc_file_id()'s raw return to a hex string,
+# or NA_character_ when empty. Hoisted from pdf_doc_summary so its
+# two branches can be unit-tested without a fixture that carries an
+# `/ID` array (no shipped fixture does).
+file_id_hex_or_na <- function(r) {
+  if (length(r) == 0L) {
+    return(NA_character_)
+  }
+  paste(format(r), collapse = "")
+}

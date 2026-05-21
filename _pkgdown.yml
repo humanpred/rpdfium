@@ -30,6 +30,7 @@ reference:
       - pdf_page_count
       - pdf_doc_info
       - pdf_doc_meta
+      - pdf_doc_summary
       - pdf_parse_date
       - pdf_doc_text
       - pdf_doc_fonts
