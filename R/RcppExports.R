@@ -253,6 +253,26 @@ cpp_annot_set_form_field_flags <- function(doc_ptr, annot_ptr, flags) {
     .Call(`_pdfium_cpp_annot_set_form_field_flags`, doc_ptr, annot_ptr, flags)
 }
 
+cpp_clip_path_new <- function(left, bottom, right, top) {
+    .Call(`_pdfium_cpp_clip_path_new`, left, bottom, right, top)
+}
+
+cpp_clip_path_close <- function(cp_ptr) {
+    invisible(.Call(`_pdfium_cpp_clip_path_close`, cp_ptr))
+}
+
+cpp_page_insert_clip_path <- function(page_ptr, cp_ptr) {
+    invisible(.Call(`_pdfium_cpp_page_insert_clip_path`, page_ptr, cp_ptr))
+}
+
+cpp_obj_transform_clip_path <- function(obj_ptr, a, b, c, d, e, f) {
+    invisible(.Call(`_pdfium_cpp_obj_transform_clip_path`, obj_ptr, a, b, c, d, e, f))
+}
+
+cpp_page_transform_with_clip <- function(page_ptr, matrix, clip_rect) {
+    .Call(`_pdfium_cpp_page_transform_with_clip`, page_ptr, matrix, clip_rect)
+}
+
 cpp_attachment_new <- function(doc_ptr, name_utf8) {
     .Call(`_pdfium_cpp_attachment_new`, doc_ptr, name_utf8)
 }

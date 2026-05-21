@@ -404,6 +404,81 @@ test_that("pdf_annot_set_border accepts radii + width", {
   expect_identical(ret, s$doc)
 })
 
+# =========================================================================
+# Phase C — clip-path authoring
+# =========================================================================
+
+test_that("pdf_clip_path_new builds a pdfium_clip_box", {
+  cp <- pdf_clip_path_new(c(72, 72, 540, 720))
+  expect_s3_class(cp, "pdfium_clip_box")
+  expect_match(format(cp), "left=72")
+})
+
+test_that("pdf_clip_path_new validates the bounds vector", {
+  expect_error(pdf_clip_path_new(c(72, 72, 540)), "Assertion on")
+  expect_error(pdf_clip_path_new(c(NA, 72, 540, 720)), "Assertion on")
+})
+
+test_that("pdf_clip_path_close is idempotent", {
+  cp <- pdf_clip_path_new(c(0, 0, 100, 100))
+  pdf_clip_path_close(cp)
+  expect_silent(pdf_clip_path_close(cp))
+})
+
+test_that("pdf_page_insert_clip_path transfers ownership", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 612, height = 792)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  cp <- pdf_clip_path_new(c(72, 72, 540, 720))
+  expect_true(pdfium:::cpp_handle_is_valid(cp$ptr))
+  ret <- pdf_page_insert_clip_path(page, cp)
+  expect_identical(ret, doc)
+  # After insert, the externalptr is cleared (page owns the path).
+  expect_false(pdfium:::cpp_handle_is_valid(cp$ptr))
+})
+
+test_that("pdf_page_insert_clip_path refuses a closed clip box", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 100, height = 100)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  cp <- pdf_clip_path_new(c(0, 0, 50, 50))
+  pdf_clip_path_close(cp)
+  expect_error(pdf_page_insert_clip_path(page, cp),
+               "Clip-path handle has been closed")
+})
+
+test_that("pdf_obj_transform_clip_path runs on a rect with a clip", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 612, height = 792)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  rect <- pdf_rect_new(page, 0, 0, 100, 100)
+  # No prior clip path; TransformClipPath is still safe to call.
+  ret <- pdf_obj_transform_clip_path(rect, c(1, 0, 0, 1, 10, 20))
+  expect_identical(ret, doc)
+})
+
+test_that("pdf_page_transform_with_clip works on a fixture page", {
+  doc <- pdf_doc_open(fixture_path("shapes"), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  ret <- pdf_page_transform_with_clip(page, c(1, 0, 0, 1, 0, 0),
+                                        c(0, 0, 612, 792))
+  expect_identical(ret, doc)
+})
+
+test_that("pdf_page_transform_with_clip validates matrix shape", {
+  doc <- pdf_doc_open(fixture_path("shapes"), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  expect_error(pdf_page_transform_with_clip(page, c(1, 0, 0)),
+               "Assertion on")
+})
+
 test_that("pdf_annot_add_file_attachment returns a pdfium_attachment", {
   s <- annot_blank_page()
   a <- pdf_annot_new(s$page, "fileattachment",

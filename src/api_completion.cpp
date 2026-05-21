@@ -21,6 +21,7 @@
 #include "fpdf_edit.h"
 #include "fpdf_formfill.h"
 #include "fpdf_text.h"
+#include "fpdf_transformpage.h"
 #include "action_helpers.h"
 #include "handle_validation.h"
 
@@ -784,4 +785,110 @@ bool cpp_annot_set_form_field_flags(SEXP doc_ptr, SEXP annot_ptr,
     Rcpp::stop("FPDFDOC_InitFormFillEnvironment returned NULL.");
   }
   return FPDFAnnot_SetFormFieldFlags(env.handle, annot, flags) != 0;
+}
+
+// ===========================================================================
+// Phase C — clip-path authoring.
+// ===========================================================================
+
+namespace {
+
+inline FPDF_CLIPPATH acomp_clip_from_ptr(SEXP cp_ptr) {
+  return static_cast<FPDF_CLIPPATH>(
+      pdfium_r::validate_handle(cp_ptr, "Clip-path",
+                                  /*require_prot_alive=*/false));
+}
+
+void clip_path_finalizer(SEXP cp_ptr) {
+  if (TYPEOF(cp_ptr) != EXTPTRSXP) return;
+  FPDF_CLIPPATH cp = static_cast<FPDF_CLIPPATH>(R_ExternalPtrAddr(cp_ptr));
+  if (cp == nullptr) return;
+  FPDF_DestroyClipPath(cp);
+  R_ClearExternalPtr(cp_ptr);
+}
+
+}  // namespace
+
+// Create a fresh clip path covering the given rectangle. Returns
+// an externalptr with a finalizer that calls FPDF_DestroyClipPath.
+// [[Rcpp::export(name = "cpp_clip_path_new")]]
+SEXP cpp_clip_path_new(double left, double bottom,
+                        double right, double top) {
+  FPDF_CLIPPATH cp = FPDF_CreateClipPath(
+      static_cast<float>(left), static_cast<float>(bottom),
+      static_cast<float>(right), static_cast<float>(top));
+  if (cp == nullptr) {
+    Rcpp::stop("FPDF_CreateClipPath returned NULL.");
+  }
+  SEXP ext = PROTECT(R_MakeExternalPtr(cp, R_NilValue, R_NilValue));
+  R_RegisterCFinalizerEx(ext, clip_path_finalizer,
+                         static_cast<Rboolean>(TRUE));
+  UNPROTECT(1);
+  return ext;
+}
+
+// Idempotent close — matches the doc/page/font close pattern.
+// [[Rcpp::export(name = "cpp_clip_path_close")]]
+void cpp_clip_path_close(SEXP cp_ptr) {
+  if (TYPEOF(cp_ptr) != EXTPTRSXP) return;
+  FPDF_CLIPPATH cp = static_cast<FPDF_CLIPPATH>(R_ExternalPtrAddr(cp_ptr));
+  if (cp == nullptr) return;
+  FPDF_DestroyClipPath(cp);
+  R_ClearExternalPtr(cp_ptr);
+}
+
+// Insert the clip path as a page-level clip. Ownership transfers
+// to the page (FPDFPage_InsertClipPath copies internally and the
+// page takes ownership of the inserted entry). Clear the R-side
+// externalptr so the finalizer is a no-op.
+// [[Rcpp::export(name = "cpp_page_insert_clip_path")]]
+void cpp_page_insert_clip_path(SEXP page_ptr, SEXP cp_ptr) {
+  FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
+  FPDF_CLIPPATH cp = acomp_clip_from_ptr(cp_ptr);
+  FPDFPage_InsertClipPath(page, cp);
+  // PDFium keeps an internal reference to the clip path data; the
+  // wrapper's externalptr is no longer the unique owner. Clear it
+  // to prevent a double-destroy via the finalizer.
+  R_ClearExternalPtr(cp_ptr);
+}
+
+// Transform a page-object's clip path in-place. Returns void per
+// PDFium's signature.
+// [[Rcpp::export(name = "cpp_obj_transform_clip_path")]]
+void cpp_obj_transform_clip_path(SEXP obj_ptr,
+                                   double a, double b, double c,
+                                   double d, double e, double f) {
+  FPDF_PAGEOBJECT obj = acomp_obj_from_ptr(obj_ptr);
+  FPDFPageObj_TransformClipPath(obj, a, b, c, d, e, f);
+}
+
+// Page-level transform-with-clip — applies the matrix to the entire
+// page content stream and (optionally) clips to the given rect.
+// PDFium takes a NULL clipRect when none is wanted.
+// [[Rcpp::export(name = "cpp_page_transform_with_clip")]]
+bool cpp_page_transform_with_clip(SEXP page_ptr,
+                                    Rcpp::NumericVector matrix,
+                                    Rcpp::NumericVector clip_rect) {
+  FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
+  if (matrix.size() != 6) {
+    Rcpp::stop("`matrix` must be a length-6 numeric vector "
+               "(a, b, c, d, e, f).");
+  }
+  FS_MATRIX m;
+  m.a = static_cast<float>(matrix[0]); m.b = static_cast<float>(matrix[1]);
+  m.c = static_cast<float>(matrix[2]); m.d = static_cast<float>(matrix[3]);
+  m.e = static_cast<float>(matrix[4]); m.f = static_cast<float>(matrix[5]);
+  const FS_RECTF* rect_arg = nullptr;
+  FS_RECTF rect;
+  if (clip_rect.size() == 4) {
+    rect.left   = static_cast<float>(clip_rect[0]);
+    rect.bottom = static_cast<float>(clip_rect[1]);
+    rect.right  = static_cast<float>(clip_rect[2]);
+    rect.top    = static_cast<float>(clip_rect[3]);
+    rect_arg = &rect;
+  } else if (clip_rect.size() != 0) {
+    Rcpp::stop("`clip_rect` must be NULL or a length-4 numeric "
+               "vector (left, bottom, right, top).");
+  }
+  return FPDFPage_TransFormWithClip(page, &m, rect_arg) != 0;
 }

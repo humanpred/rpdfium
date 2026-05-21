@@ -798,6 +798,70 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_clip_path_new
+SEXP cpp_clip_path_new(double left, double bottom, double right, double top);
+RcppExport SEXP _pdfium_cpp_clip_path_new(SEXP leftSEXP, SEXP bottomSEXP, SEXP rightSEXP, SEXP topSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< double >::type left(leftSEXP);
+    Rcpp::traits::input_parameter< double >::type bottom(bottomSEXP);
+    Rcpp::traits::input_parameter< double >::type right(rightSEXP);
+    Rcpp::traits::input_parameter< double >::type top(topSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_clip_path_new(left, bottom, right, top));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_clip_path_close
+void cpp_clip_path_close(SEXP cp_ptr);
+RcppExport SEXP _pdfium_cpp_clip_path_close(SEXP cp_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type cp_ptr(cp_ptrSEXP);
+    cpp_clip_path_close(cp_ptr);
+    return R_NilValue;
+END_RCPP
+}
+// cpp_page_insert_clip_path
+void cpp_page_insert_clip_path(SEXP page_ptr, SEXP cp_ptr);
+RcppExport SEXP _pdfium_cpp_page_insert_clip_path(SEXP page_ptrSEXP, SEXP cp_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type cp_ptr(cp_ptrSEXP);
+    cpp_page_insert_clip_path(page_ptr, cp_ptr);
+    return R_NilValue;
+END_RCPP
+}
+// cpp_obj_transform_clip_path
+void cpp_obj_transform_clip_path(SEXP obj_ptr, double a, double b, double c, double d, double e, double f);
+RcppExport SEXP _pdfium_cpp_obj_transform_clip_path(SEXP obj_ptrSEXP, SEXP aSEXP, SEXP bSEXP, SEXP cSEXP, SEXP dSEXP, SEXP eSEXP, SEXP fSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type a(aSEXP);
+    Rcpp::traits::input_parameter< double >::type b(bSEXP);
+    Rcpp::traits::input_parameter< double >::type c(cSEXP);
+    Rcpp::traits::input_parameter< double >::type d(dSEXP);
+    Rcpp::traits::input_parameter< double >::type e(eSEXP);
+    Rcpp::traits::input_parameter< double >::type f(fSEXP);
+    cpp_obj_transform_clip_path(obj_ptr, a, b, c, d, e, f);
+    return R_NilValue;
+END_RCPP
+}
+// cpp_page_transform_with_clip
+bool cpp_page_transform_with_clip(SEXP page_ptr, Rcpp::NumericVector matrix, Rcpp::NumericVector clip_rect);
+RcppExport SEXP _pdfium_cpp_page_transform_with_clip(SEXP page_ptrSEXP, SEXP matrixSEXP, SEXP clip_rectSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type matrix(matrixSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type clip_rect(clip_rectSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_page_transform_with_clip(page_ptr, matrix, clip_rect));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_attachment_new
 SEXP cpp_attachment_new(SEXP doc_ptr, std::string name_utf8);
 RcppExport SEXP _pdfium_cpp_attachment_new(SEXP doc_ptrSEXP, SEXP name_utf8SEXP) {
@@ -2993,6 +3057,11 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_annot_set_focusable_subtypes", (DL_FUNC) &_pdfium_cpp_annot_set_focusable_subtypes, 2},
     {"_pdfium_cpp_annot_set_font_color", (DL_FUNC) &_pdfium_cpp_annot_set_font_color, 5},
     {"_pdfium_cpp_annot_set_form_field_flags", (DL_FUNC) &_pdfium_cpp_annot_set_form_field_flags, 3},
+    {"_pdfium_cpp_clip_path_new", (DL_FUNC) &_pdfium_cpp_clip_path_new, 4},
+    {"_pdfium_cpp_clip_path_close", (DL_FUNC) &_pdfium_cpp_clip_path_close, 1},
+    {"_pdfium_cpp_page_insert_clip_path", (DL_FUNC) &_pdfium_cpp_page_insert_clip_path, 2},
+    {"_pdfium_cpp_obj_transform_clip_path", (DL_FUNC) &_pdfium_cpp_obj_transform_clip_path, 7},
+    {"_pdfium_cpp_page_transform_with_clip", (DL_FUNC) &_pdfium_cpp_page_transform_with_clip, 3},
     {"_pdfium_cpp_attachment_new", (DL_FUNC) &_pdfium_cpp_attachment_new, 2},
     {"_pdfium_cpp_attachment_delete", (DL_FUNC) &_pdfium_cpp_attachment_delete, 2},
     {"_pdfium_cpp_attachment_clear_ptr", (DL_FUNC) &_pdfium_cpp_attachment_clear_ptr, 1},

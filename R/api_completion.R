@@ -824,6 +824,170 @@ pdf_annot_set_border <- function(annot, horizontal_radius = 0,
   finalize_annot_setter(ctx)
 }
 
+# ===========================================================================
+# Phase C — clip-path authoring.
+# ===========================================================================
+
+# Internal S3 constructor for pdfium_clip_box. The handle has its
+# own finalizer registered C-side (FPDF_DestroyClipPath); no parent
+# pinning because PDFium clip paths are standalone (created by
+# coordinates, inserted into a page on demand).
+new_pdfium_clip_box <- function(ptr, bounds) {
+  checkmate::assert_class(ptr, "externalptr", .var.name = "ptr")
+  checkmate::assert_numeric(bounds, len = 4L, .var.name = "bounds")
+  structure(
+    list(ptr = ptr, bounds = bounds),
+    class = c("pdfium_clip_box", "pdfium_handle")
+  )
+}
+
+#' @export
+format.pdfium_clip_box <- function(x, ...) {
+  state <- if (cpp_handle_is_valid(x$ptr)) "open" else "closed"
+  sprintf(
+    "<pdfium_clip_box [%s] left=%g bottom=%g right=%g top=%g>",
+    state, x$bounds[[1L]], x$bounds[[2L]],
+    x$bounds[[3L]], x$bounds[[4L]]
+  )
+}
+
+#' @export
+print.pdfium_clip_box <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  invisible(x)
+}
+
+#' Create a clip path covering a rectangle
+#'
+#' Wraps `FPDF_CreateClipPath`. Returns a `pdfium_clip_box` handle
+#' that can be inserted into a page via [pdf_page_insert_clip_path()]
+#' to restrict the page's rendered output to the given rectangle.
+#'
+#' @param bounds Numeric length-4 vector `c(left, bottom, right, top)`
+#'   in PDF user-space points.
+#' @return A `pdfium_clip_box` handle. The handle carries an
+#'   `FPDF_DestroyClipPath` finalizer; explicit [pdf_clip_path_close()]
+#'   is optional but useful for deterministic release.
+#' @seealso [pdf_page_insert_clip_path()],
+#'   [pdf_obj_transform_clip_path()],
+#'   [pdf_page_transform_with_clip()].
+#' @examples
+#' \dontrun{
+#' doc <- pdf_doc_new()
+#' page <- pdf_page_new(doc, width = 612, height = 792)
+#' cp <- pdf_clip_path_new(c(72, 72, 540, 720))
+#' pdf_page_insert_clip_path(page, cp)
+#' pdf_save(doc, tempfile(fileext = ".pdf"))
+#' }
+#' @export
+pdf_clip_path_new <- function(bounds) {
+  checkmate::assert_numeric(bounds, len = 4L, any.missing = FALSE,
+                             finite = TRUE)
+  ptr <- cpp_clip_path_new(as.numeric(bounds[[1L]]),
+                             as.numeric(bounds[[2L]]),
+                             as.numeric(bounds[[3L]]),
+                             as.numeric(bounds[[4L]]))
+  new_pdfium_clip_box(ptr, as.numeric(bounds))
+}
+
+#' Release a clip-path handle
+#'
+#' Wraps `FPDF_DestroyClipPath`. Idempotent — a second call is a
+#' no-op. The finalizer attached to the externalptr also runs this
+#' when R garbage-collects the handle; explicit close is useful when
+#' you've created many clip paths and want deterministic release.
+#'
+#' @param clip_path A `pdfium_clip_box` from [pdf_clip_path_new()].
+#' @return Invisibly returns `clip_path`.
+#' @export
+pdf_clip_path_close <- function(clip_path) {
+  checkmate::assert_class(clip_path, "pdfium_clip_box")
+  cpp_clip_path_close(clip_path$ptr)
+  invisible(clip_path)
+}
+
+#' Insert a clip path into a page
+#'
+#' Wraps `FPDFPage_InsertClipPath`. After insertion the clip path is
+#' owned by the page; the R-side `pdfium_clip_box` handle's
+#' externalptr is cleared automatically so subsequent operations on
+#' it error cleanly via `is_open()`.
+#'
+#' @param page A `pdfium_page` from [pdf_page_load()] or
+#'   [pdf_page_new()]. Parent doc must be readwrite.
+#' @param clip_path A `pdfium_clip_box` from [pdf_clip_path_new()].
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @seealso [pdf_clip_path_new()], [pdf_page_transform_with_clip()].
+#' @export
+pdf_page_insert_clip_path <- function(page, clip_path) {
+  checkmate::assert_class(clip_path, "pdfium_clip_box")
+  if (!cpp_handle_is_valid(clip_path$ptr)) {
+    stop("Clip-path handle has been closed.", call. = FALSE)
+  }
+  ph <- as_page_and_doc(page)
+  assert_readwrite(ph$doc)
+  cpp_page_insert_clip_path(ph$page$ptr, clip_path$ptr)
+  mark_page_dirty(ph$doc, ph$page$index)
+  invisible(ph$doc)
+}
+
+#' Transform the clip path of a page object
+#'
+#' Wraps `FPDFPageObj_TransformClipPath`. Applies a 6-tuple affine
+#' transform `(a, b, c, d, e, f)` to the existing clip path of a
+#' page object — useful for scaling / rotating / translating a
+#' previously-set clip without rebuilding it.
+#'
+#' @param obj A `pdfium_obj` with an existing clip path.
+#' @param matrix Numeric length-6 vector `c(a, b, c, d, e, f)`.
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @export
+pdf_obj_transform_clip_path <- function(obj, matrix) {
+  checkmate::assert_numeric(matrix, len = 6L, any.missing = FALSE,
+                             finite = TRUE)
+  ctx <- assert_obj_writable(obj, arg = "obj")
+  cpp_obj_transform_clip_path(obj$ptr,
+                                matrix[[1L]], matrix[[2L]],
+                                matrix[[3L]], matrix[[4L]],
+                                matrix[[5L]], matrix[[6L]])
+  finalize_obj_setter(ctx)
+}
+
+#' Apply a transform to a page's content stream with an optional clip
+#'
+#' Wraps `FPDFPage_TransFormWithClip`. The matrix is applied to the
+#' entire page content; when `clip_rect` is supplied (length-4 numeric
+#' `c(left, bottom, right, top)`), the page is clipped to that
+#' rectangle after the transform.
+#'
+#' @param page A `pdfium_page` or `pdfium_doc`.
+#' @param matrix Numeric length-6 vector `c(a, b, c, d, e, f)`.
+#' @param clip_rect Optional numeric length-4 vector
+#'   `c(left, bottom, right, top)`. `NULL` means no clip.
+#' @param page_num Used when `page` is a `pdfium_doc`.
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @export
+pdf_page_transform_with_clip <- function(page, matrix,
+                                           clip_rect = NULL,
+                                           page_num = 1L) {
+  checkmate::assert_numeric(matrix, len = 6L, any.missing = FALSE,
+                             finite = TRUE)
+  if (!is.null(clip_rect)) {
+    checkmate::assert_numeric(clip_rect, len = 4L,
+                               any.missing = FALSE, finite = TRUE)
+  }
+  ph <- as_page_and_doc(page, page_num)
+  assert_readwrite(ph$doc)
+  rect_arg <- if (is.null(clip_rect)) numeric(0) else as.numeric(clip_rect)
+  expect_setter_ok(
+    cpp_page_transform_with_clip(ph$page$ptr,
+                                   as.numeric(matrix), rect_arg),
+    "FPDFPage_TransFormWithClip")
+  mark_page_dirty(ph$doc, ph$page$index)
+  invisible(ph$doc)
+}
+
+# ===========================================================================
 # The three FFL-env-requiring setters PDFium exposes —
 # FPDFAnnot_SetFocusableSubtypes, FPDFAnnot_SetFontColor,
 # FPDFAnnot_SetFormFieldFlags — segfault inside PDFium
