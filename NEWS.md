@@ -40,6 +40,13 @@ PDFs created with `pdf_doc_new()` are also writable).
   dispatch to the matching tibble — `summary(page)` adds the
   page-loaded counts (annotation count, page-object count,
   text-run count, link count) since the page is already loaded.
+* `pdf_dir_summary(dir)` — scans a directory for PDF files and
+  returns one row per file in the `pdf_doc_summary()` shape.
+  Recursive scan via `recursive = TRUE`; pattern-matches `.pdf`
+  case-insensitively by default. The `errors` argument selects
+  one of `"warn"` (default — surface broken files but don't
+  abort), `"skip"` (silently drop), or `"stop"` (abort on the
+  first failure).
 
 ## Page objects, paths, and text
 

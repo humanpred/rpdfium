@@ -32,6 +32,7 @@ reference:
       - pdf_doc_info
       - pdf_doc_meta
       - pdf_doc_summary
+      - pdf_dir_summary
       - summary.pdfium_doc
       - pdf_parse_date
       - pdf_doc_text
