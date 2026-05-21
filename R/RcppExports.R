@@ -277,6 +277,22 @@ cpp_doc_file_version <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_file_version`, doc_ptr)
 }
 
+cpp_font_load_standard <- function(doc_ptr, font_name) {
+    .Call(`_pdfium_cpp_font_load_standard`, doc_ptr, font_name)
+}
+
+cpp_font_load_truetype <- function(doc_ptr, font_data, font_type, cid) {
+    .Call(`_pdfium_cpp_font_load_truetype`, doc_ptr, font_data, font_type, cid)
+}
+
+cpp_font_close <- function(font_ptr) {
+    invisible(.Call(`_pdfium_cpp_font_close`, font_ptr))
+}
+
+cpp_text_new_with_font <- function(doc_ptr, page_ptr, font_ptr, font_size, text_utf8, x, y) {
+    .Call(`_pdfium_cpp_text_new_with_font`, doc_ptr, page_ptr, font_ptr, font_size, text_utf8, x, y)
+}
+
 cpp_form_field_handles <- function(doc_ptr) {
     .Call(`_pdfium_cpp_form_field_handles`, doc_ptr)
 }
@@ -359,6 +375,14 @@ cpp_text_obj_font_metrics <- function(obj_ptr, font_size) {
 
 cpp_text_char_font_info <- function(page_ptr) {
     .Call(`_pdfium_cpp_text_char_font_info`, page_ptr)
+}
+
+cpp_image_new_from_jpeg <- function(doc_ptr, page_ptr, jpeg_bytes) {
+    .Call(`_pdfium_cpp_image_new_from_jpeg`, doc_ptr, page_ptr, jpeg_bytes)
+}
+
+cpp_image_set_matrix <- function(image_ptr, a, b, c, d, e, f) {
+    .Call(`_pdfium_cpp_image_set_matrix`, image_ptr, a, b, c, d, e, f)
 }
 
 cpp_image_metadata <- function(obj_ptr, page_ptr) {

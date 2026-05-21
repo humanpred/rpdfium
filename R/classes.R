@@ -19,6 +19,14 @@ new_pdfium_doc <- function(ptr, path, readwrite = FALSE) {
   state <- new.env(parent = emptyenv())
   state$dirty_pages <- integer(0L)
   state$ffl_env <- NULL
+  # `open_pages` maps "page index" → externalptr of an open
+  # pdfium_page handle. Updated by new_pdfium_page (when a page is
+  # loaded or newly created) and by pdf_page_close (when one is
+  # released). flush_dirty_pages uses the registered externalptr
+  # so FPDFPage_GenerateContent runs on the handle that actually
+  # accumulated the edits — a fresh FPDF_LoadPage returns a
+  # different page handle that hasn't seen the user's inserts.
+  state$open_pages <- list()
   structure(
     list(ptr = ptr, path = path,
          readwrite = readwrite, state = state),
@@ -48,11 +56,13 @@ is_open <- function(x) {
   if (inherits(x, c("pdfium_obj", "pdfium_annot"))) {
     return(cpp_handle_is_valid(x$ptr) && is_open(x$page))
   }
-  # Doc-children: attachment / signature / bookmark all carry no
-  # finalizer and live as long as the parent doc lives. The doc's
-  # is_open() is the authoritative liveness signal.
+  # Doc-children: attachment / signature / bookmark carry no
+  # finalizer and live as long as the parent doc lives. Font has
+  # its own finalizer (FPDFFont_Close), but its lifetime is still
+  # doc-bound; the own-ptr check is necessary alongside the doc
+  # check (same shape as the annot case above).
   doc_owned_classes <- c("pdfium_attachment", "pdfium_signature",
-                          "pdfium_bookmark")
+                          "pdfium_bookmark", "pdfium_font")
   if (inherits(x, doc_owned_classes)) {
     return(cpp_handle_is_valid(x$ptr) && is_open(x$doc))
   }
@@ -90,8 +100,19 @@ new_pdfium_page <- function(ptr, doc, index) {
   checkmate::assert_class(ptr, "externalptr")
   checkmate::assert_class(doc, "pdfium_doc")
   checkmate::assert_number(index)
+  index <- as.integer(index)
+  # Register the externalptr in the doc's open-pages registry so
+  # pdf_save's flush_dirty_pages can call FPDFPage_GenerateContent
+  # on the actual user-modified handle. FPDF_LoadPage returns a
+  # different page handle for the same index than FPDFPage_New
+  # does — generating content on a fresh load wipes out the
+  # original handle's pending edits.
+  state <- doc$state
+  if (!is.null(state)) {
+    state$open_pages[[as.character(index)]] <- ptr
+  }
   structure(
-    list(ptr = ptr, doc = doc, index = as.integer(index)),
+    list(ptr = ptr, doc = doc, index = index),
     class = c("pdfium_page", "pdfium_handle")
   )
 }
@@ -214,6 +235,45 @@ print.pdfium_obj_list <- function(x, ...) {
       cat("  ... and ", length(x) - n_show, " more.\n", sep = "")
     }
   }
+  invisible(x)
+}
+
+#' Construct a `pdfium_font` from an external pointer
+#'
+#' Internal helper. The `FPDF_FONT` handle has its own lifetime —
+#' the externalptr carries a C finalizer that calls `FPDFFont_Close`,
+#' registered C-side in `cpp_font_load_*`. The parent doc is pinned
+#' in the externalptr's `prot` slot so R's GC cannot reclaim the doc
+#' while any font handle is reachable. `name` is informational —
+#' for standard fonts it's the spec name; for loaded TTF/Type1 fonts
+#' it's the file's basename when the font was loaded from a path,
+#' or `"<raw>"` for in-memory loads.
+#'
+#' @param ptr An `externalptr` to an `FPDF_FONT`.
+#' @param doc Parent `pdfium_doc`.
+#' @param name Character — display label.
+#' @return An object of class `c("pdfium_font", "pdfium_handle")`.
+#' @keywords internal
+#' @noRd
+new_pdfium_font <- function(ptr, doc, name) {
+  checkmate::assert_class(ptr, "externalptr")
+  checkmate::assert_class(doc, "pdfium_doc")
+  checkmate::assert_string(name)
+  structure(
+    list(ptr = ptr, doc = doc, name = name),
+    class = c("pdfium_font", "pdfium_handle")
+  )
+}
+
+#' @export
+format.pdfium_font <- function(x, ...) {
+  state <- if (is_open(x)) "open" else "closed"
+  sprintf("<pdfium_font [%s] %s>", state, x$name)
+}
+
+#' @export
+print.pdfium_font <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
   invisible(x)
 }
 

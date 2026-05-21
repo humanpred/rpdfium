@@ -73,40 +73,26 @@ pdf_rect_new <- function(page, x, y, width, height) {
   new_pdfium_obj(ptr, ph$page, idx, "path")
 }
 
-# The 14 standard PDF Type 1 fonts that every PDF reader is
-# required to support. PDFium accepts any of these names without
-# needing font data to be embedded. Custom fonts require loading
-# via FPDFText_LoadFont (not yet exposed in this package).
-.pdfium_standard_fonts <- c(
-  "Helvetica",
-  "Helvetica-Bold",
-  "Helvetica-Oblique",
-  "Helvetica-BoldOblique",
-  "Times-Roman",
-  "Times-Bold",
-  "Times-Italic",
-  "Times-BoldItalic",
-  "Courier",
-  "Courier-Bold",
-  "Courier-Oblique",
-  "Courier-BoldOblique",
-  "Symbol",
-  "ZapfDingbats"
-)
-
 #' Create a new text page-object on a page
 #'
-#' Wraps `FPDFPageObj_NewTextObj` + (optionally) `FPDFText_SetText`
-#' + `FPDFPageObj_Transform` + `FPDFPage_InsertObject`. The text
-#' object uses one of the 14 PDF standard fonts (no font embedding
-#' needed); custom fonts are deferred to a later release.
+#' Wraps `FPDFPageObj_NewTextObj` (when `font` is a standard-font
+#' name) or `FPDFPageObj_CreateTextObj` (when `font` is a custom
+#' `pdfium_font` handle from [pdf_font_load_standard()] /
+#' [pdf_font_load()]). Either path is followed by an optional
+#' `FPDFText_SetText`, `FPDFPageObj_Transform`, and
+#' `FPDFPage_InsertObject`.
 #'
 #' @inheritParams pdf_path_new
 #' @param text Character scalar — the text content. Pass `""` to
 #'   create an empty text object you'll populate later via
 #'   [pdf_text_set_content()].
-#' @param font Character scalar — one of the 14 PDF standard font
-#'   names. Default `"Helvetica"`.
+#' @param font Either a character scalar — one of the 14 PDF
+#'   standard font names (see [pdf_font_load_standard()] for the
+#'   list) — or a `pdfium_font` handle from
+#'   [pdf_font_load_standard()] or [pdf_font_load()]. Default
+#'   `"Helvetica"`. Pass a `pdfium_font` handle when you need a
+#'   custom TrueType / Type1 font; the standard-font shortcut is
+#'   purely for convenience.
 #' @param font_size Numeric scalar — font size in points. Default
 #'   `12`.
 #' @param x,y Numeric scalars — baseline position in PDF user-space
@@ -114,25 +100,38 @@ pdf_rect_new <- function(page, x, y, width, height) {
 #' @return The new `pdfium_obj` (type `"text"`), inserted on the
 #'   page.
 #' @seealso [pdf_text_set_content()], [pdf_text_set_render_mode()],
-#'   [pdf_obj_set_matrix()].
+#'   [pdf_obj_set_matrix()], [pdf_font_load_standard()],
+#'   [pdf_font_load()].
 #' @export
 pdf_text_new <- function(page, text,
                           font = "Helvetica",
                           font_size = 12,
                           x = 0, y = 0) {
   checkmate::assert_string(text, na.ok = FALSE)
-  checkmate::assert_choice(font, .pdfium_standard_fonts)
   checkmate::assert_number(font_size, lower = 0, finite = TRUE)
   checkmate::assert_number(x, finite = TRUE)
   checkmate::assert_number(y, finite = TRUE)
   ph <- as_page_and_doc(page)
   assert_readwrite(ph$doc)
-  ptr <- cpp_text_new(
-    ph$doc$ptr, ph$page$ptr,
-    font, as.numeric(font_size),
-    enc2utf8(text),
-    as.numeric(x), as.numeric(y)
-  )
+  if (inherits(font, "pdfium_font")) {
+    if (!is_open(font)) {
+      stop("Font handle has been closed.", call. = FALSE)
+    }
+    ptr <- cpp_text_new_with_font(
+      ph$doc$ptr, ph$page$ptr, font$ptr,
+      as.numeric(font_size),
+      enc2utf8(text),
+      as.numeric(x), as.numeric(y)
+    )
+  } else {
+    checkmate::assert_choice(font, .pdfium_standard_fonts)
+    ptr <- cpp_text_new(
+      ph$doc$ptr, ph$page$ptr,
+      font, as.numeric(font_size),
+      enc2utf8(text),
+      as.numeric(x), as.numeric(y)
+    )
+  }
   idx <- cpp_page_object_count(ph$page$ptr)
   mark_page_dirty(ph$doc, ph$page$index)
   new_pdfium_obj(ptr, ph$page, idx, "text")

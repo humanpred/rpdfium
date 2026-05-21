@@ -280,16 +280,29 @@ reference:
       - pdf_path_append
   - title: Page-object creation
     desc: >
-      Create fresh page-objects (paths, rectangles, text) on a page
-      that's been opened with `readwrite = TRUE` or built via
-      `pdf_doc_new()`. Image creation is deferred to a later release
-      pending FPDF_BITMAP plumbing. Use `pdf_obj_delete()` for the
-      inverse — remove + destroy a page-object.
+      Create fresh page-objects (paths, rectangles, text, JPEG
+      images) on a page that's been opened with `readwrite = TRUE`
+      or built via `pdf_doc_new()`. Use `pdf_obj_delete()` for the
+      inverse — remove + destroy a page-object. PNG / TIFF / raw-
+      bitmap embedding stays deferred to a later release pending
+      `FPDF_BITMAP` plumbing.
     contents:
       - pdf_path_new
       - pdf_rect_new
       - pdf_text_new
+      - pdf_image_new
       - pdf_obj_delete
+  - title: Font loading
+    desc: >
+      Load a font for use in `pdf_text_new()`. The 14 PDF standard
+      fonts need no embedding; arbitrary TrueType / Type1 fonts get
+      their bytes copied into the document via `FPDFText_LoadFont`.
+      `pdf_font_close()` is idempotent and matches the explicit-
+      release pattern of the other handle classes.
+    contents:
+      - pdf_font_load_standard
+      - pdf_font_load
+      - pdf_font_close
   - title: Annotation authoring
     desc: >
       Create / delete annotations and mutate their properties.

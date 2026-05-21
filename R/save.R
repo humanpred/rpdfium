@@ -223,6 +223,17 @@ pdf_doc_new <- function() {
 # each. Pages mark themselves dirty (via mark_page_dirty(doc, n)
 # from mutator wrappers); pdf_save() invokes this just before
 # serialising.
+#
+# Generates content on the user's actual page handle when one is
+# registered in `doc$state$open_pages` — a fresh FPDF_LoadPage
+# returns a different FPDF_PAGE that hasn't seen the user's
+# inserts, and calling GenerateContent on that would erase the
+# user's in-memory page-object array (and thus their unsaved
+# edits). When no handle is registered (e.g. a setter that
+# transiently loaded + modified + closed before save), fall back
+# to a fresh load: the modification has already been persisted to
+# the page-dict (rotation, etc.) and re-generating empty content
+# is a no-op.
 flush_dirty_pages <- function(doc) {
   state <- doc$state
   # nocov start — every `pdfium_doc` built via `new_pdfium_doc()`
@@ -233,9 +244,14 @@ flush_dirty_pages <- function(doc) {
   dirty <- state$dirty_pages
   if (length(dirty) == 0L) return(invisible(NULL))
   for (i in dirty) {
-    page <- pdf_page_load(doc, i)
-    cpp_page_generate_content(page$ptr)
-    pdf_page_close(page)
+    page_ptr <- state$open_pages[[as.character(i)]]
+    if (!is.null(page_ptr) && cpp_handle_is_valid(page_ptr)) {
+      cpp_page_generate_content(page_ptr)
+    } else {
+      page <- pdf_page_load(doc, i)
+      cpp_page_generate_content(page$ptr)
+      pdf_page_close(page)
+    }
   }
   # Reset the dirty set so a re-save (incremental or no-op) doesn't
   # double-flush. The state environment IS reference-semantics so

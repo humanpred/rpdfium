@@ -51,6 +51,19 @@ pdf_page_load <- function(doc, page_num = 1L) {
 #' @export
 pdf_page_close <- function(page) {
   checkmate::assert_class(page, "pdfium_page")
+  # Deregister from the doc's open-pages map BEFORE closing so a
+  # racing pdf_save() doesn't pick up a stale externalptr. Only
+  # remove if the entry actually points at this page's externalptr
+  # — another open handle for the same page index may have
+  # registered itself more recently.
+  state <- page$doc$state
+  if (!is.null(state)) {
+    key <- as.character(page$index)
+    registered <- state$open_pages[[key]]
+    if (!is.null(registered) && identical(registered, page$ptr)) {
+      state$open_pages[[key]] <- NULL
+    }
+  }
   cpp_close_page(page$ptr)
   invisible(page)
 }
