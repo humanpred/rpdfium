@@ -955,6 +955,124 @@ bool cpp_form_obj_remove_child(SEXP form_obj_ptr, SEXP child_ptr) {
   return FPDFFormObj_RemoveObject(form_obj, child) != 0;
 }
 
+// ===========================================================================
+// Phase E — image-bitmap embedding (FPDF_BITMAP lifecycle).
+// ===========================================================================
+
+namespace {
+
+inline FPDF_BITMAP acomp_bitmap_from_ptr(SEXP bm_ptr) {
+  return static_cast<FPDF_BITMAP>(
+      pdfium_r::validate_handle(bm_ptr, "Bitmap",
+                                  /*require_prot_alive=*/false));
+}
+
+void bitmap_finalizer(SEXP bm_ptr) {
+  if (TYPEOF(bm_ptr) != EXTPTRSXP) return;
+  FPDF_BITMAP bm = static_cast<FPDF_BITMAP>(R_ExternalPtrAddr(bm_ptr));
+  if (bm == nullptr) return;
+  FPDFBitmap_Destroy(bm);
+  R_ClearExternalPtr(bm_ptr);
+}
+
+}  // namespace
+
+// [[Rcpp::export(name = "cpp_bitmap_new")]]
+SEXP cpp_bitmap_new(int width, int height, bool alpha) {
+  FPDF_BITMAP bm = FPDFBitmap_Create(width, height, alpha ? 1 : 0);
+  if (bm == nullptr) {
+    Rcpp::stop("FPDFBitmap_Create returned NULL (likely out of "
+               "memory or invalid dimensions).");
+  }
+  SEXP ext = PROTECT(R_MakeExternalPtr(bm, R_NilValue, R_NilValue));
+  R_RegisterCFinalizerEx(ext, bitmap_finalizer,
+                         static_cast<Rboolean>(TRUE));
+  UNPROTECT(1);
+  return ext;
+}
+
+// [[Rcpp::export(name = "cpp_bitmap_close")]]
+void cpp_bitmap_close(SEXP bm_ptr) {
+  if (TYPEOF(bm_ptr) != EXTPTRSXP) return;
+  FPDF_BITMAP bm = static_cast<FPDF_BITMAP>(R_ExternalPtrAddr(bm_ptr));
+  if (bm == nullptr) return;
+  FPDFBitmap_Destroy(bm);
+  R_ClearExternalPtr(bm_ptr);
+}
+
+// [[Rcpp::export(name = "cpp_bitmap_info")]]
+Rcpp::List cpp_bitmap_info(SEXP bm_ptr) {
+  FPDF_BITMAP bm = acomp_bitmap_from_ptr(bm_ptr);
+  return Rcpp::List::create(
+    Rcpp::_["width"]  = FPDFBitmap_GetWidth(bm),
+    Rcpp::_["height"] = FPDFBitmap_GetHeight(bm),
+    Rcpp::_["stride"] = FPDFBitmap_GetStride(bm),
+    Rcpp::_["format"] = FPDFBitmap_GetFormat(bm));
+}
+
+// Fill a rectangle in the bitmap. Color is encoded as 0xAARRGGBB
+// passed as a double (since R has no native unsigned 32-bit type).
+// [[Rcpp::export(name = "cpp_bitmap_fill_rect")]]
+bool cpp_bitmap_fill_rect(SEXP bm_ptr, int left, int top,
+                            int width, int height, double color) {
+  FPDF_BITMAP bm = acomp_bitmap_from_ptr(bm_ptr);
+  return FPDFBitmap_FillRect(
+      bm, left, top, width, height,
+      static_cast<FPDF_DWORD>(static_cast<std::uint32_t>(color))) != 0;
+}
+
+// Read the bitmap's pixel bytes into a raw vector. Total length is
+// stride * height. The R side is responsible for unpacking per the
+// reported format.
+// [[Rcpp::export(name = "cpp_bitmap_buffer")]]
+Rcpp::RawVector cpp_bitmap_buffer(SEXP bm_ptr) {
+  FPDF_BITMAP bm = acomp_bitmap_from_ptr(bm_ptr);
+  int height = FPDFBitmap_GetHeight(bm);
+  int stride = FPDFBitmap_GetStride(bm);
+  std::size_t n = static_cast<std::size_t>(height) *
+                  static_cast<std::size_t>(stride);
+  const unsigned char* p =
+      static_cast<const unsigned char*>(FPDFBitmap_GetBuffer(bm));
+  Rcpp::RawVector out(n);
+  std::copy_n(p, n, out.begin());
+  return out;
+}
+
+// Set the bitmap's pixel bytes from a raw vector. The vector's
+// length must equal stride * height (else the call errors).
+// [[Rcpp::export(name = "cpp_bitmap_set_buffer")]]
+bool cpp_bitmap_set_buffer(SEXP bm_ptr, Rcpp::RawVector data) {
+  FPDF_BITMAP bm = acomp_bitmap_from_ptr(bm_ptr);
+  int height = FPDFBitmap_GetHeight(bm);
+  int stride = FPDFBitmap_GetStride(bm);
+  std::size_t expected = static_cast<std::size_t>(height) *
+                         static_cast<std::size_t>(stride);
+  if (static_cast<std::size_t>(data.size()) != expected) {
+    Rcpp::stop("Buffer size %d does not match stride * height (%d).",
+               static_cast<int>(data.size()),
+               static_cast<int>(expected));
+  }
+  unsigned char* p =
+      static_cast<unsigned char*>(FPDFBitmap_GetBuffer(bm));
+  std::copy_n(&data[0], expected, p);
+  return true;
+}
+
+// Set the bitmap on an image page-object. The pages array tells
+// PDFium which pages already reference this image so it can
+// invalidate their cached renderings; we pass an empty array
+// because the calling pattern is "set bitmap before inserting on
+// any page".
+// [[Rcpp::export(name = "cpp_image_set_bitmap")]]
+bool cpp_image_set_bitmap(SEXP image_obj_ptr, SEXP bitmap_ptr) {
+  FPDF_PAGEOBJECT image_obj = acomp_obj_from_ptr(image_obj_ptr);
+  FPDF_BITMAP bm = acomp_bitmap_from_ptr(bitmap_ptr);
+  // Empty pages array — caller is responsible for inserting on a
+  // page afterward via FPDFPage_InsertObject. PDFium documents
+  // accept count = 0 + pages = nullptr.
+  return FPDFImageObj_SetBitmap(nullptr, 0, image_obj, bm) != 0;
+}
+
 // String-range import: "1-3,5,7-10" syntax for page ranges.
 // [[Rcpp::export(name = "cpp_doc_import_pages_string")]]
 bool cpp_doc_import_pages_string(SEXP dest_ptr, SEXP src_ptr,

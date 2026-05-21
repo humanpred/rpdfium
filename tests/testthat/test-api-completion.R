@@ -480,6 +480,82 @@ test_that("pdf_page_transform_with_clip validates matrix shape", {
 })
 
 # =========================================================================
+# Phase E — image-bitmap embedding
+# =========================================================================
+
+test_that("pdf_bitmap_new + close round-trip", {
+  bm <- pdf_bitmap_new(32L, 16L, alpha = TRUE)
+  expect_s3_class(bm, "pdfium_image_buffer")
+  expect_match(format(bm), "32x16")
+  expect_match(format(bm), "BGRA")
+  pdf_bitmap_close(bm)
+  expect_silent(pdf_bitmap_close(bm))
+})
+
+test_that("pdf_bitmap_info reports the expected dims + format", {
+  bm <- pdf_bitmap_new(40L, 20L, alpha = TRUE)
+  on.exit(pdf_bitmap_close(bm), add = TRUE)
+  info <- pdf_bitmap_info(bm)
+  expect_identical(info$width, 40L)
+  expect_identical(info$height, 20L)
+  expect_identical(info$stride, 40L * 4L)
+  # Format 4 = BGRA per fpdfview.h.
+  expect_identical(info$format, 4L)
+})
+
+test_that("pdf_bitmap_fill_rect fills the pixel data", {
+  bm <- pdf_bitmap_new(4L, 4L, alpha = TRUE)
+  on.exit(pdf_bitmap_close(bm), add = TRUE)
+  # 0xFFFF0000 = opaque red. FillRect writes BGRA so the buffer
+  # should contain 00 00 FF FF per pixel.
+  pdf_bitmap_fill_rect(bm, 0L, 0L, 4L, 4L, 0xFFFF0000)
+  buf <- pdf_bitmap_buffer(bm)
+  expect_length(buf, 4L * 4L * 4L)
+  # First pixel: B=0x00, G=0x00, R=0xFF, A=0xFF
+  expect_identical(buf[1L:4L], as.raw(c(0x00, 0x00, 0xFF, 0xFF)))
+})
+
+test_that("pdf_bitmap_set_buffer round-trips through buffer reads", {
+  bm <- pdf_bitmap_new(2L, 2L, alpha = TRUE)
+  on.exit(pdf_bitmap_close(bm), add = TRUE)
+  info <- pdf_bitmap_info(bm)
+  n <- info$stride * info$height
+  data <- as.raw(seq_len(n) %% 256L)
+  pdf_bitmap_set_buffer(bm, data)
+  expect_identical(pdf_bitmap_buffer(bm), data)
+})
+
+test_that("pdf_bitmap_set_buffer validates length", {
+  bm <- pdf_bitmap_new(2L, 2L, alpha = TRUE)
+  on.exit(pdf_bitmap_close(bm), add = TRUE)
+  expect_error(pdf_bitmap_set_buffer(bm, raw(3L)),
+               "does not match")
+})
+
+test_that("pdf_image_set_bitmap attaches a bitmap to an image obj", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 612, height = 792)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  bm <- pdf_bitmap_new(16L, 16L, alpha = TRUE)
+  pdf_bitmap_fill_rect(bm, 0L, 0L, 16L, 16L, 0xFF00FF00)  # opaque green
+
+  # pdf_image_new currently requires JPEG bytes; create a minimal
+  # JPEG to seed the image-obj. Then pdf_image_set_bitmap replaces
+  # the JPEG content with the bitmap.
+  jp <- tempfile(fileext = ".jpg")
+  grDevices::jpeg(jp, width = 64, height = 64)
+  graphics::par(mar = c(0, 0, 0, 0))
+  graphics::plot.new()
+  graphics::rect(0, 0, 1, 1, col = "red", border = NA)
+  grDevices::dev.off()
+  img <- pdf_image_new(page, jp, bounds = c(0, 0, 100, 100))
+  ret <- pdf_image_set_bitmap(img, bm)
+  expect_identical(ret, doc)
+  pdf_bitmap_close(bm)  # safe — PDFium has copied
+})
+
+# =========================================================================
 # Phase D — form-XObject / page-merge extras
 # =========================================================================
 

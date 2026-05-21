@@ -289,6 +289,34 @@ cpp_form_obj_remove_child <- function(form_obj_ptr, child_ptr) {
     .Call(`_pdfium_cpp_form_obj_remove_child`, form_obj_ptr, child_ptr)
 }
 
+cpp_bitmap_new <- function(width, height, alpha) {
+    .Call(`_pdfium_cpp_bitmap_new`, width, height, alpha)
+}
+
+cpp_bitmap_close <- function(bm_ptr) {
+    invisible(.Call(`_pdfium_cpp_bitmap_close`, bm_ptr))
+}
+
+cpp_bitmap_info <- function(bm_ptr) {
+    .Call(`_pdfium_cpp_bitmap_info`, bm_ptr)
+}
+
+cpp_bitmap_fill_rect <- function(bm_ptr, left, top, width, height, color) {
+    .Call(`_pdfium_cpp_bitmap_fill_rect`, bm_ptr, left, top, width, height, color)
+}
+
+cpp_bitmap_buffer <- function(bm_ptr) {
+    .Call(`_pdfium_cpp_bitmap_buffer`, bm_ptr)
+}
+
+cpp_bitmap_set_buffer <- function(bm_ptr, data) {
+    .Call(`_pdfium_cpp_bitmap_set_buffer`, bm_ptr, data)
+}
+
+cpp_image_set_bitmap <- function(image_obj_ptr, bitmap_ptr) {
+    .Call(`_pdfium_cpp_image_set_bitmap`, image_obj_ptr, bitmap_ptr)
+}
+
 cpp_doc_import_pages_string <- function(dest_ptr, src_ptr, range, dest_index_zero) {
     .Call(`_pdfium_cpp_doc_import_pages_string`, dest_ptr, src_ptr, range, dest_index_zero)
 }

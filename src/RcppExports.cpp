@@ -906,6 +906,91 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_bitmap_new
+SEXP cpp_bitmap_new(int width, int height, bool alpha);
+RcppExport SEXP _pdfium_cpp_bitmap_new(SEXP widthSEXP, SEXP heightSEXP, SEXP alphaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type width(widthSEXP);
+    Rcpp::traits::input_parameter< int >::type height(heightSEXP);
+    Rcpp::traits::input_parameter< bool >::type alpha(alphaSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_bitmap_new(width, height, alpha));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_bitmap_close
+void cpp_bitmap_close(SEXP bm_ptr);
+RcppExport SEXP _pdfium_cpp_bitmap_close(SEXP bm_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type bm_ptr(bm_ptrSEXP);
+    cpp_bitmap_close(bm_ptr);
+    return R_NilValue;
+END_RCPP
+}
+// cpp_bitmap_info
+Rcpp::List cpp_bitmap_info(SEXP bm_ptr);
+RcppExport SEXP _pdfium_cpp_bitmap_info(SEXP bm_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type bm_ptr(bm_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_bitmap_info(bm_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_bitmap_fill_rect
+bool cpp_bitmap_fill_rect(SEXP bm_ptr, int left, int top, int width, int height, double color);
+RcppExport SEXP _pdfium_cpp_bitmap_fill_rect(SEXP bm_ptrSEXP, SEXP leftSEXP, SEXP topSEXP, SEXP widthSEXP, SEXP heightSEXP, SEXP colorSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type bm_ptr(bm_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type left(leftSEXP);
+    Rcpp::traits::input_parameter< int >::type top(topSEXP);
+    Rcpp::traits::input_parameter< int >::type width(widthSEXP);
+    Rcpp::traits::input_parameter< int >::type height(heightSEXP);
+    Rcpp::traits::input_parameter< double >::type color(colorSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_bitmap_fill_rect(bm_ptr, left, top, width, height, color));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_bitmap_buffer
+Rcpp::RawVector cpp_bitmap_buffer(SEXP bm_ptr);
+RcppExport SEXP _pdfium_cpp_bitmap_buffer(SEXP bm_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type bm_ptr(bm_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_bitmap_buffer(bm_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_bitmap_set_buffer
+bool cpp_bitmap_set_buffer(SEXP bm_ptr, Rcpp::RawVector data);
+RcppExport SEXP _pdfium_cpp_bitmap_set_buffer(SEXP bm_ptrSEXP, SEXP dataSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type bm_ptr(bm_ptrSEXP);
+    Rcpp::traits::input_parameter< Rcpp::RawVector >::type data(dataSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_bitmap_set_buffer(bm_ptr, data));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_image_set_bitmap
+bool cpp_image_set_bitmap(SEXP image_obj_ptr, SEXP bitmap_ptr);
+RcppExport SEXP _pdfium_cpp_image_set_bitmap(SEXP image_obj_ptrSEXP, SEXP bitmap_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type image_obj_ptr(image_obj_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type bitmap_ptr(bitmap_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_image_set_bitmap(image_obj_ptr, bitmap_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_doc_import_pages_string
 bool cpp_doc_import_pages_string(SEXP dest_ptr, SEXP src_ptr, std::string range, int dest_index_zero);
 RcppExport SEXP _pdfium_cpp_doc_import_pages_string(SEXP dest_ptrSEXP, SEXP src_ptrSEXP, SEXP rangeSEXP, SEXP dest_index_zeroSEXP) {
@@ -3137,6 +3222,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_form_obj_from_xobject", (DL_FUNC) &_pdfium_cpp_form_obj_from_xobject, 1},
     {"_pdfium_cpp_page_insert_object", (DL_FUNC) &_pdfium_cpp_page_insert_object, 2},
     {"_pdfium_cpp_form_obj_remove_child", (DL_FUNC) &_pdfium_cpp_form_obj_remove_child, 2},
+    {"_pdfium_cpp_bitmap_new", (DL_FUNC) &_pdfium_cpp_bitmap_new, 3},
+    {"_pdfium_cpp_bitmap_close", (DL_FUNC) &_pdfium_cpp_bitmap_close, 1},
+    {"_pdfium_cpp_bitmap_info", (DL_FUNC) &_pdfium_cpp_bitmap_info, 1},
+    {"_pdfium_cpp_bitmap_fill_rect", (DL_FUNC) &_pdfium_cpp_bitmap_fill_rect, 6},
+    {"_pdfium_cpp_bitmap_buffer", (DL_FUNC) &_pdfium_cpp_bitmap_buffer, 1},
+    {"_pdfium_cpp_bitmap_set_buffer", (DL_FUNC) &_pdfium_cpp_bitmap_set_buffer, 2},
+    {"_pdfium_cpp_image_set_bitmap", (DL_FUNC) &_pdfium_cpp_image_set_bitmap, 2},
     {"_pdfium_cpp_doc_import_pages_string", (DL_FUNC) &_pdfium_cpp_doc_import_pages_string, 4},
     {"_pdfium_cpp_page_transform_with_clip", (DL_FUNC) &_pdfium_cpp_page_transform_with_clip, 3},
     {"_pdfium_cpp_attachment_new", (DL_FUNC) &_pdfium_cpp_attachment_new, 2},

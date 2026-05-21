@@ -1152,6 +1152,207 @@ pdf_docs_import_pages <- function(dest_doc, src_doc, range = "",
 }
 
 # ===========================================================================
+# Phase E — image-bitmap embedding (FPDF_BITMAP lifecycle).
+# ===========================================================================
+
+# Internal pdfium_bitmap constructor. The handle has its own
+# finalizer (FPDFBitmap_Destroy); no parent pinning because bitmaps
+# are standalone — they only become associated with a doc / page
+# when set on an image object via pdf_image_set_bitmap().
+new_pdfium_image_buffer <- function(ptr, width, height, alpha) {
+  checkmate::assert_class(ptr, "externalptr", .var.name = "ptr")
+  structure(
+    list(ptr = ptr, width = width, height = height, alpha = alpha),
+    class = c("pdfium_image_buffer", "pdfium_handle")
+  )
+}
+
+#' @export
+format.pdfium_image_buffer <- function(x, ...) {
+  state <- if (cpp_handle_is_valid(x$ptr)) "open" else "closed"
+  sprintf("<pdfium_image_buffer [%s] %dx%d %s>",
+           state, x$width, x$height,
+           if (x$alpha) "BGRA" else "BGRx")
+}
+
+#' @export
+print.pdfium_image_buffer <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  invisible(x)
+}
+
+#' Create a fresh in-memory bitmap
+#'
+#' Wraps `FPDFBitmap_Create`. Allocates a `width × height` bitmap
+#' that can be populated via [pdf_bitmap_fill_rect()] or
+#' [pdf_bitmap_set_buffer()] and then attached to an image page-
+#' object via [pdf_image_set_bitmap()]. This is the v0.1.0 path for
+#' embedding non-JPEG (PNG / TIFF / raw raster) images into a PDF.
+#'
+#' Pixel layout:
+#'   * `alpha = TRUE`: BGRA, 4 bytes per pixel, top-down rows.
+#'   * `alpha = FALSE`: BGRx, 4 bytes per pixel with the 4th byte
+#'     unused.
+#'
+#' @param width,height Integer — pixel dimensions. Must be positive.
+#' @param alpha Logical. If `TRUE` (default), the bitmap has an
+#'   alpha channel.
+#' @return A `pdfium_image_buffer` handle.
+#' @seealso [pdf_bitmap_close()], [pdf_image_set_bitmap()],
+#'   [pdf_bitmap_fill_rect()], [pdf_bitmap_set_buffer()].
+#' @export
+pdf_bitmap_new <- function(width, height, alpha = TRUE) {
+  checkmate::assert_int(width, lower = 1L)
+  checkmate::assert_int(height, lower = 1L)
+  checkmate::assert_flag(alpha)
+  ptr <- cpp_bitmap_new(as.integer(width), as.integer(height), alpha)
+  new_pdfium_image_buffer(ptr, as.integer(width), as.integer(height),
+                      alpha)
+}
+
+#' Release a bitmap handle
+#'
+#' Wraps `FPDFBitmap_Destroy`. Idempotent. After
+#' [pdf_image_set_bitmap()] has attached the bitmap to a page-object,
+#' explicit close is safe (PDFium has copied the pixel data into the
+#' PDF — closing only releases the standalone in-memory bitmap, not
+#' the embedded image).
+#'
+#' @param bitmap A `pdfium_image_buffer`.
+#' @return Invisibly returns `bitmap`.
+#' @export
+pdf_bitmap_close <- function(bitmap) {
+  checkmate::assert_class(bitmap, "pdfium_image_buffer")
+  cpp_bitmap_close(bitmap$ptr)
+  invisible(bitmap)
+}
+
+#' Bitmap dimensions and format
+#'
+#' Wraps `FPDFBitmap_GetWidth`, `_GetHeight`, `_GetStride`, and
+#' `_GetFormat`. Returns a list with the bitmap's pixel layout
+#' (width × height) plus stride in bytes and the PDFium format code.
+#'
+#' Format codes (from `fpdfview.h`'s `FPDFBitmap_*` macros):
+#'   * `1` = Gray (1 byte/pixel)
+#'   * `2` = BGR (3 bytes/pixel)
+#'   * `3` = BGRx (4 bytes/pixel, 4th byte unused)
+#'   * `4` = BGRA (4 bytes/pixel with alpha)
+#'
+#' @param bitmap A `pdfium_image_buffer`.
+#' @return Named list — `width`, `height`, `stride`, `format`.
+#' @export
+pdf_bitmap_info <- function(bitmap) {
+  checkmate::assert_class(bitmap, "pdfium_image_buffer")
+  if (!cpp_handle_is_valid(bitmap$ptr)) {
+    stop("Bitmap handle has been closed.", call. = FALSE)
+  }
+  cpp_bitmap_info(bitmap$ptr)
+}
+
+#' Fill a rectangle of the bitmap with a solid color
+#'
+#' Wraps `FPDFBitmap_FillRect`. Coordinate origin is the top-left
+#' pixel (0, 0). Color is encoded as the integer `0xAARRGGBB`.
+#'
+#' @param bitmap A `pdfium_image_buffer`.
+#' @param left,top,width,height Integer — rectangle in bitmap pixels.
+#' @param color Integer — color as `0xAARRGGBB`. Use
+#'   `bitmap_color(r, g, b, a)` for a friendly constructor.
+#' @return Invisibly returns `bitmap`.
+#' @export
+pdf_bitmap_fill_rect <- function(bitmap, left, top, width, height,
+                                   color) {
+  checkmate::assert_class(bitmap, "pdfium_image_buffer")
+  if (!cpp_handle_is_valid(bitmap$ptr)) {
+    stop("Bitmap handle has been closed.", call. = FALSE)
+  }
+  checkmate::assert_int(left); checkmate::assert_int(top)
+  checkmate::assert_int(width, lower = 0L)
+  checkmate::assert_int(height, lower = 0L)
+  checkmate::assert_number(color, finite = TRUE)
+  expect_setter_ok(
+    cpp_bitmap_fill_rect(bitmap$ptr,
+                          as.integer(left), as.integer(top),
+                          as.integer(width), as.integer(height),
+                          as.numeric(color)),
+    "FPDFBitmap_FillRect")
+  invisible(bitmap)
+}
+
+#' Read or write the bitmap's raw pixel bytes
+#'
+#' [pdf_bitmap_buffer()] returns a raw vector of length
+#' `stride * height` containing the bitmap's pixel data exactly as
+#' PDFium stores it. [pdf_bitmap_set_buffer()] writes a raw vector
+#' of the same length into the bitmap (length is checked).
+#'
+#' The byte order depends on the format reported by
+#' [pdf_bitmap_info()]. For BGRA the i'th pixel at row `r`, col `c`
+#' is `buf[stride * r + 4 * c + 1:4] == c(B, G, R, A)`.
+#'
+#' @param bitmap A `pdfium_image_buffer`.
+#' @param bytes For [pdf_bitmap_set_buffer()] — a raw vector of
+#'   length `stride * height`.
+#' @return [pdf_bitmap_buffer()] returns a raw vector;
+#'   [pdf_bitmap_set_buffer()] returns `bitmap` invisibly.
+#' @rdname pdf_bitmap_buffer
+#' @export
+pdf_bitmap_buffer <- function(bitmap) {
+  checkmate::assert_class(bitmap, "pdfium_image_buffer")
+  if (!cpp_handle_is_valid(bitmap$ptr)) {
+    stop("Bitmap handle has been closed.", call. = FALSE)
+  }
+  cpp_bitmap_buffer(bitmap$ptr)
+}
+
+#' @rdname pdf_bitmap_buffer
+#' @export
+pdf_bitmap_set_buffer <- function(bitmap, bytes) {
+  checkmate::assert_class(bitmap, "pdfium_image_buffer")
+  if (!cpp_handle_is_valid(bitmap$ptr)) {
+    stop("Bitmap handle has been closed.", call. = FALSE)
+  }
+  checkmate::assert_raw(bytes)
+  expect_setter_ok(cpp_bitmap_set_buffer(bitmap$ptr, bytes),
+                    "cpp_bitmap_set_buffer")
+  invisible(bitmap)
+}
+
+#' Set a bitmap on an image page-object
+#'
+#' Wraps `FPDFImageObj_SetBitmap`. PDFium copies the bitmap's pixel
+#' data into the document immediately; closing the `bitmap` handle
+#' afterward is safe (and recommended for deterministic release).
+#'
+#' Typical workflow:
+#' ```r
+#' bm <- pdf_bitmap_new(width = 100, height = 100)
+#' pdf_bitmap_set_buffer(bm, my_bgra_bytes)
+#' img <- pdf_image_new(page, jpeg = raw(0), bounds = c(0, 0, 200, 200))
+#' pdf_image_set_bitmap(img, bm)
+#' pdf_bitmap_close(bm)
+#' ```
+#'
+#' @param image A `pdfium_obj` of `type = "image"`.
+#' @param bitmap A `pdfium_image_buffer`.
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @seealso [pdf_image_new()] for the JPEG-only path that doesn't
+#'   require a bitmap.
+#' @export
+pdf_image_set_bitmap <- function(image, bitmap) {
+  checkmate::assert_class(bitmap, "pdfium_image_buffer")
+  if (!cpp_handle_is_valid(bitmap$ptr)) {
+    stop("Bitmap handle has been closed.", call. = FALSE)
+  }
+  ctx <- assert_obj_writable(image, allowed_types = "image",
+                              arg = "image")
+  expect_setter_ok(cpp_image_set_bitmap(image$ptr, bitmap$ptr),
+                    "FPDFImageObj_SetBitmap")
+  finalize_obj_setter(ctx)
+}
+
+# ===========================================================================
 # The three FFL-env-requiring setters PDFium exposes —
 # FPDFAnnot_SetFocusableSubtypes, FPDFAnnot_SetFontColor,
 # FPDFAnnot_SetFormFieldFlags — segfault inside PDFium
