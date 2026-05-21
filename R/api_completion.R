@@ -162,10 +162,10 @@ pdf_page_transform_annots <- function(page, matrix, page_num = 1L) {
 #' code paths).
 #'
 #' @param annot A `pdfium_annot` from [pdf_annot_new()] or
-#'   [pdf_page_annotations()].
+#'   [pdf_annotations()].
 #' @return Integer scalar — one-based annotation index on the parent
 #'   page, or `NA_integer_` if the annotation is not found.
-#' @seealso [pdf_page_annotations()].
+#' @seealso [pdf_annotations()].
 #' @export
 pdf_annot_index <- function(annot) {
   checkmate::assert_class(annot, "pdfium_annot")
@@ -206,11 +206,13 @@ pdf_device_to_page <- function(page, start_x, start_y, size_x, size_y,
   if (!is_open(page)) {
     stop("Page has been closed.", call. = FALSE)
   }
-  checkmate::assert_int(start_x); checkmate::assert_int(start_y)
+  checkmate::assert_int(start_x)
+  checkmate::assert_int(start_y)
   checkmate::assert_int(size_x, lower = 1L)
   checkmate::assert_int(size_y, lower = 1L)
   checkmate::assert_choice(rotate, c(0L, 1L, 2L, 3L))
-  checkmate::assert_int(device_x); checkmate::assert_int(device_y)
+  checkmate::assert_int(device_x)
+  checkmate::assert_int(device_y)
   cpp_device_to_page(page$ptr,
                       as.integer(start_x), as.integer(start_y),
                       as.integer(size_x), as.integer(size_y),
@@ -235,7 +237,8 @@ pdf_page_to_device <- function(page, start_x, start_y, size_x, size_y,
   if (!is_open(page)) {
     stop("Page has been closed.", call. = FALSE)
   }
-  checkmate::assert_int(start_x); checkmate::assert_int(start_y)
+  checkmate::assert_int(start_x)
+  checkmate::assert_int(start_y)
   checkmate::assert_int(size_x, lower = 1L)
   checkmate::assert_int(size_y, lower = 1L)
   checkmate::assert_choice(rotate, c(0L, 1L, 2L, 3L))
@@ -1267,7 +1270,8 @@ pdf_bitmap_fill_rect <- function(bitmap, left, top, width, height,
   if (!cpp_handle_is_valid(bitmap$ptr)) {
     stop("Bitmap handle has been closed.", call. = FALSE)
   }
-  checkmate::assert_int(left); checkmate::assert_int(top)
+  checkmate::assert_int(left)
+  checkmate::assert_int(top)
   checkmate::assert_int(width, lower = 0L)
   checkmate::assert_int(height, lower = 0L)
   checkmate::assert_number(color, finite = TRUE)

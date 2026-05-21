@@ -8,7 +8,7 @@ pdf_annot_index(annot)
 }
 \arguments{
 \item{annot}{A \code{pdfium_annot} from \code{\link[=pdf_annot_new]{pdf_annot_new()}} or
-\code{\link[=pdf_page_annotations]{pdf_page_annotations()}}.}
+\code{\link[=pdf_annotations]{pdf_annotations()}}.}
 }
 \value{
 Integer scalar — one-based annotation index on the parent
@@ -21,5 +21,5 @@ inside the page's annot list (e.g. to coordinate with index-driven
 code paths).
 }
 \seealso{
-\code{\link[=pdf_page_annotations]{pdf_page_annotations()}}.
+\code{\link[=pdf_annotations]{pdf_annotations()}}.
 }
