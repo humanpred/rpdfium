@@ -30,7 +30,7 @@ contributor-facing inventory lives in
 | **Inspect path geometry** (segments, Bezier control points, stroke/fill, transform matrices) | **`pdfium`** — no other CRAN package surfaces this |
 | **Fill AcroForm fields without a JRE** | **`pdfium`** (`staplr` requires Java + pdftk) |
 | **Edit annotations** (read + write) | **`pdfium`** |
-| **Programmatically build small PDFs** with paths, text, images, annotations | **`pdfium`** (also `minipdf` for a pure-R writer with no native dependency) |
+| **Programmatically build PDFs** — any page count, vector paths, standard-font text, annotations | **`pdfium`** (also `minipdf` for a pure-R writer that additionally supports image embedding today) |
 | Edit XMP metadata or bookmarks | `xmpdf` (orchestrates `exiftool` / `ghostscript` / `pdftk`) |
 
 ## What `pdfium` adds
@@ -91,6 +91,38 @@ pdf_save(doc, "annotated.pdf")
 
 No other CRAN package surfaces annotations at all. The full list of
 supported subtypes lives in `?pdf_annot_new`.
+
+### 4. Programmatic PDF authoring (with v0.1.0 limits)
+
+[`pdf_doc_new()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_new.html)
+plus the page-object creators ([`pdf_path_new`](https://humanpred.github.io/rpdfium/reference/pdf_path_new.html),
+[`pdf_rect_new`](https://humanpred.github.io/rpdfium/reference/pdf_rect_new.html),
+[`pdf_text_new`](https://humanpred.github.io/rpdfium/reference/pdf_text_new.html),
+plus the path-geometry appenders) let you build PDFs from scratch
+in R. The mutating-pdfs vignette walks through the workflow.
+
+**What scales fine.** Page count is unlimited (PDFium handles
+thousand-page docs efficiently); objects-per-page are unlimited;
+the full vector-graphics surface — paths, Bezier curves, dash
+patterns, transformation matrices, blend modes, opacity, clip
+paths — is exposed; annotations are richly covered. The R↔C
+boundary cost is microseconds per call, so 10⁶ object writes is
+seconds, not minutes.
+
+**v0.1.0 limits worth knowing about.** Four authoring axes have
+real gaps in the current release:
+
+| Gap | Status | Workaround |
+|---|---|---|
+| **Image embedding** | `FPDFImageObj_LoadJpegFile` / `FPDFImageObj_SetBitmap` not wrapped yet (deferred from Phase 5 pending `FPDF_BITMAP` plumbing). | Use `minipdf` for image-heavy programmatic PDFs, or render images separately and embed via a post-process. |
+| **Custom fonts** | Only the 14 standard PDF fonts; `FPDFText_LoadCidType2Font` not wrapped. | For non-Latin scripts or branded type, render text as paths via an external tool and embed the resulting vector paths. |
+| **`/Info` dict writes** | `FPDF_SetMetaText` doesn't exist upstream. We have a [drafted patch](https://github.com/humanpred/rpdfium/blob/main/dev/upstream-patches/pdfium-FPDF_SetMetaText.patch) awaiting upload. | Use `xmpdf` to patch the Info dict after `pdf_save()`. |
+| **Encryption on save** | `FPDF_SetEncryption` doesn't exist upstream (tracker CL 5). | Use `qpdf::pdf_encrypt()` as a post-process step. |
+
+The full upstream-PDFium gap inventory lives in
+[`dev/upstream-api-gaps.md`](https://github.com/humanpred/rpdfium/blob/main/dev/upstream-api-gaps.md).
+The "what scales" claims above hold today; the "limits" all have a
+known path to closure as those upstream patches land.
 
 ## Where `pdfium` deliberately doesn't compete
 
