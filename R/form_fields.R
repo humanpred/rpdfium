@@ -220,6 +220,20 @@ as_tibble.pdfium_form_field_list <- function(x, ...) {
   )
 }
 
+#' Tibble-shaped summary of a form-field list
+#'
+#' `summary()` method for `pdfium_form_field_list`. Defers to
+#' [as_tibble.pdfium_form_field_list()] for the standard tibble view.
+#'
+#' @param object A `pdfium_form_field_list` from [pdf_form_fields()].
+#' @param ... Forwarded to [as_tibble.pdfium_form_field_list()].
+#' @return The tibble returned by [as_tibble.pdfium_form_field_list()].
+#' @method summary pdfium_form_field_list
+#' @export
+summary.pdfium_form_field_list <- function(object, ...) {
+  tibble::as_tibble(object, ...)
+}
+
 # Internal: zero-row tibble matching as_tibble.pdfium_form_field_list.
 empty_form_field_tibble <- function(src_doc) {
   tibble::tibble(

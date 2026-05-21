@@ -39,8 +39,14 @@ powers Chrome’s PDF viewer. It has two halves:
   text.
 - **Filling** AcroForm fields programmatically and flattening the result
   for downstream tooling.
-- **Authoring** small programmatic PDFs (think: figure callouts, table
-  reports, annotated source documents).
+- **Authoring** programmatic PDFs from vector graphics, text, and
+  annotations (think: figure callouts, table reports, annotated source
+  documents). v0.1.0 ships paths / text in the 14 standard PDF fonts /
+  annotations. Image embedding and custom-font loading are both wrapping
+  gaps (PDFium already exposes the symbols; we just haven’t wrapped them
+  yet) and come in a later release; `/Info`-dict writes and on-save
+  encryption need upstream PDFium changes that we’ve proposed but Google
+  hasn’t shipped yet.
 - Anything you’d otherwise drop into Python with `pypdfium2`.
 
 See

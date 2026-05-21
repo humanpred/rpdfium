@@ -1,22 +1,34 @@
 #' Open a PDF document
 #'
-#' Loads a PDF from disk or from an in-memory byte buffer. The
-#' returned `pdfium_doc` carries an external pointer to a PDFium
-#' `FPDF_DOCUMENT` handle along with a finalizer that calls
-#' `FPDF_CloseDocument()` when the R object is garbage-collected.
-#' Call [pdf_doc_close()] explicitly when you need deterministic
-#' release.
+#' Loads a PDF from disk, from a URL, or from an in-memory byte
+#' buffer. The returned `pdfium_doc` carries an external pointer to
+#' a PDFium `FPDF_DOCUMENT` handle along with a finalizer that
+#' calls `FPDF_CloseDocument()` when the R object is
+#' garbage-collected. Call [pdf_doc_close()] explicitly when you
+#' need deterministic release.
 #'
-#' Two input forms are supported. Pass `path` to load from disk
-#' (via PDFium's `FPDF_LoadDocument`), or pass `source` for an
-#' in-memory raw vector (via `FPDF_LoadMemDocument64`). The
-#' in-memory path is useful for documents downloaded via
-#' `httr2::resp_body_raw()`, `curl::curl_fetch_memory()`, or read
-#' with `readBin()` straight into RAM. Exactly one of `path` or
-#' `source` must be provided.
+#' Two input forms are supported:
 #'
-#' @param path Character scalar. Path to a PDF file. The file must
-#'   exist and be readable. Mutually exclusive with `source`.
+#' * **`path`** — either a local filesystem path (loaded via
+#'   PDFium's `FPDF_LoadDocument`) or a URL string (any scheme
+#'   base R's [base::url()] knows how to open — typically
+#'   `http://`, `https://`, `ftp://`, `file://`; the actual list
+#'   depends on the R build's `libcurl` / internal handlers).
+#'   Detection is purely syntactic: a string matching
+#'   `scheme://` per RFC 3986 is routed to `url() + readBin()`
+#'   and loaded via PDFium's in-memory path; anything else is
+#'   treated as a local path. No allowlist — we trust `url()` to
+#'   know what it supports and error cleanly when it doesn't.
+#' * **`source`** — a raw vector containing the PDF byte stream
+#'   (loaded via `FPDF_LoadMemDocument64`). Useful for documents
+#'   downloaded via `httr2::resp_body_raw()`,
+#'   `curl::curl_fetch_memory()`, or read with `readBin()` straight
+#'   into RAM.
+#'
+#' Exactly one of `path` or `source` must be provided.
+#'
+#' @param path Character scalar. Either a local path or a URL (see
+#'   Details). Mutually exclusive with `source`.
 #' @param source Raw vector containing the PDF byte stream. PDFium
 #'   keeps an internal reference to the bytes for the document's
 #'   lifetime, so the wrapper makes its own copy on the C++ side
@@ -52,6 +64,13 @@
 #'   pdf_page_count(doc)
 #'   pdf_doc_close(doc)
 #' }
+#'
+#' # `path` can be a URL - any scheme R's url() recognises.
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_doc_open(paste0("file://", fixture))
+#'   pdf_page_count(doc)
+#'   pdf_doc_close(doc)
+#' }
 #' @export
 pdf_doc_open <- function(path = NULL, source = NULL, password = NULL,
                      readwrite = FALSE) {
@@ -62,6 +81,15 @@ pdf_doc_open <- function(path = NULL, source = NULL, password = NULL,
     ptr <- cpp_open_document_from_memory(source, pwd)
     return(new_pdfium_doc(ptr, "<raw bytes>", readwrite = readwrite))
   }
+  if (looks_like_url(path)) {
+    con <- base::url(path, open = "rb")
+    on.exit(close(con), add = TRUE)
+    # readBin needs an upper bound; .Machine$integer.max is the
+    # documented "unbounded" sentinel.
+    bytes <- readBin(con, what = "raw", n = .Machine$integer.max)
+    ptr <- cpp_open_document_from_memory(bytes, pwd)
+    return(new_pdfium_doc(ptr, path, readwrite = readwrite))
+  }
   ptr <- cpp_open_document(path.expand(path), pwd)
   new_pdfium_doc(
     ptr,
@@ -70,58 +98,18 @@ pdf_doc_open <- function(path = NULL, source = NULL, password = NULL,
   )
 }
 
-#' Open a PDF document from a URL
-#'
-#' Convenience wrapper around [pdf_doc_open()] that fetches the
-#' bytes of a remote (or `file://`) URL via base R's [`url()`] +
-#' [`readBin()`] and loads the result through PDFium's in-memory
-#' path (`FPDF_LoadMemDocument64`). No temporary file is left on
-#' disk; the bytes live in R memory for the document's lifetime.
-#'
-#' Network errors propagate from [`url()`] / [`readBin()`] (typical
-#' shape: `cannot open URL '...'` from `connection failed`). The
-#' returned `pdfium_doc`'s `$path` field is the URL string itself,
-#' so `print()` and [pdf_doc_summary()] surface
-#' the source even though no local path exists.
-#'
-#' @param url Character scalar. Must start with one of `http://`,
-#'   `https://`, `ftp://`, or `file://`.
-#' @param password Optional password for encrypted PDFs. `NULL`
-#'   (the default) passes no password to PDFium.
-#' @param readwrite Logical. As for [pdf_doc_open()].
-#' @return A `pdfium_doc`.
-#' @seealso [pdf_doc_open()] for the doc-open primitive.
-#' @examples
-#' fixture <- system.file("extdata", "fixtures", "minimal.pdf",
-#'   package = "pdfium"
-#' )
-#' if (nzchar(fixture)) {
-#'   doc <- pdf_doc_open_url(paste0("file://", fixture))
-#'   pdf_page_count(doc)
-#'   pdf_doc_close(doc)
-#' }
-#' @export
-pdf_doc_open_url <- function(url, password = NULL, readwrite = FALSE) {
-  checkmate::assert_string(url, min.chars = 1L)
-  if (!grepl("^(https?|ftp|file)://", url)) {
-    stop(
-      "`url` must start with http://, https://, ftp://, or file://. ",
-      "Got: ", url,
-      call. = FALSE
-    )
-  }
-  con <- base::url(url, open = "rb")
-  on.exit(close(con), add = TRUE)
-  # readBin needs a max-size hint; .Machine$integer.max is the
-  # documented "unbounded" sentinel.
-  bytes <- readBin(con, what = "raw", n = .Machine$integer.max)
-  doc <- pdf_doc_open(source = bytes, password = password,
-                       readwrite = readwrite)
-  # Override the "<raw bytes>" path with the source URL so
-  # downstream printing / pdf_doc_summary() shows where it came
-  # from.
-  doc$path <- url
-  doc
+# Internal: does `path` look like a URL? Permissive scheme-detection
+# matching RFC 3986's `URI = scheme ":" hier-part` form
+# (`scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )`). Includes
+# the `://` discriminator so plain `foo:bar` paths don't accidentally
+# trigger URL handling.
+#
+# We don't enforce an allowlist of schemes — that's `url()`'s job.
+# If R's `url()` doesn't recognise the scheme, it errors at open;
+# that error propagates up to the caller unchanged.
+looks_like_url <- function(path) {
+  is.character(path) && length(path) == 1L && !is.na(path) &&
+    grepl("^[A-Za-z][A-Za-z0-9+.\\-]*://", path)
 }
 
 # Internal: validate the three pdf_doc_open() arguments. Split into
@@ -158,6 +146,12 @@ validate_pdf_open_source <- function(source) {
 
 validate_pdf_open_path <- function(path) {
   checkmate::assert_string(path, min.chars = 1L)
+  # URL strings are handled by the url() + readBin() branch in
+  # pdf_doc_open(); they're not expected to exist on the local
+  # filesystem.
+  if (looks_like_url(path)) {
+    return(invisible())
+  }
   if (!file.exists(path)) {
     stop("PDF file not found: ", path, call. = FALSE)
   }

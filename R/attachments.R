@@ -75,6 +75,22 @@ as_tibble.pdfium_attachment_list <- function(x, ...) {
   )
 }
 
+#' Tibble-shaped summary of an attachment list
+#'
+#' `summary()` method for `pdfium_attachment_list`. Defers to
+#' [as_tibble.pdfium_attachment_list()] for the standard tibble
+#' view — matches the R idiom of `print()` for the one-line summary
+#' and `summary()` for the deep dive.
+#'
+#' @param object A `pdfium_attachment_list` from [pdf_attachments()].
+#' @param ... Forwarded to [as_tibble.pdfium_attachment_list()].
+#' @return The tibble returned by [as_tibble.pdfium_attachment_list()].
+#' @method summary pdfium_attachment_list
+#' @export
+summary.pdfium_attachment_list <- function(object, ...) {
+  tibble::as_tibble(object, ...)
+}
+
 # Internal: zero-row tibble matching as_tibble.pdfium_attachment_list.
 empty_attachment_tibble <- function() {
   tibble::tibble(

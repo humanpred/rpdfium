@@ -110,6 +110,23 @@ as_tibble.pdfium_obj_list <- function(x, ...) {
   )
 }
 
+#' Tibble-shaped summary of a page-object list
+#'
+#' `summary()` method for `pdfium_obj_list`. Defers to
+#' [as_tibble.pdfium_obj_list()] so users can call
+#' `summary(pdf_page_objects(page))` for the standard tibble view —
+#' matches the R idiom of `print()` for the one-line summary and
+#' `summary()` for the deep dive.
+#'
+#' @param object A `pdfium_obj_list` from [pdf_page_objects()].
+#' @param ... Forwarded to [as_tibble.pdfium_obj_list()].
+#' @return The tibble returned by [as_tibble.pdfium_obj_list()].
+#' @method summary pdfium_obj_list
+#' @export
+summary.pdfium_obj_list <- function(object, ...) {
+  tibble::as_tibble(object, ...)
+}
+
 empty_obj_tibble <- function() {
   tibble::tibble(
     object_index      = integer(),

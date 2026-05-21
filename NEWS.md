@@ -11,10 +11,12 @@ PDFs created with `pdf_doc_new()` are also writable).
 * `pdf_doc_open()` / `pdf_doc_close()`, `pdf_doc_new()`,
   `pdf_save()` / `pdf_save_to_raw()` — open existing PDFs (optionally
   with `readwrite = TRUE`), build new ones in memory, and persist
-  the result. `pdf_doc_open_url(url)` is a convenience wrapper that
-  fetches a `http://` / `https://` / `ftp://` / `file://` URL via
-  `url()` + `readBin()` and loads the bytes through PDFium's
-  in-memory path — no temporary file on disk.
+  the result. The `path =` argument of `pdf_doc_open()` accepts
+  either a local filesystem path or a URL (any scheme `base::url()`
+  recognises — typically `http://` / `https://` / `ftp://` /
+  `file://`); URL input is fetched into raw bytes via `url()` +
+  `readBin()` and loaded through PDFium's `FPDF_LoadMemDocument64`,
+  with no temporary file on disk.
 * `pdf_doc_info()`, `pdf_doc_meta()`, `pdf_doc_text()`,
   `pdf_doc_fonts()`, `pdf_doc_file_id()`, `pdf_doc_page_mode()`,
   `pdf_doc_viewer_preferences()`, `pdf_doc_viewer_preference_by_name()`,
@@ -40,13 +42,29 @@ PDFs created with `pdf_doc_new()` are also writable).
   dispatch to the matching tibble — `summary(page)` adds the
   page-loaded counts (annotation count, page-object count,
   text-run count, link count) since the page is already loaded.
-* `pdf_dir_summary(dir)` — scans a directory for PDF files and
-  returns one row per file in the `pdf_doc_summary()` shape.
-  Recursive scan via `recursive = TRUE`; pattern-matches `.pdf`
-  case-insensitively by default. The `errors` argument selects
-  one of `"warn"` (default — surface broken files but don't
-  abort), `"skip"` (silently drop), or `"stop"` (abort on the
-  first failure).
+* `summary()` S3 methods for every `pdfium_*_list` class:
+  `pdfium_obj_list`, `pdfium_annot_list`, `pdfium_attachment_list`,
+  `pdfium_signature_list`, `pdfium_bookmark_list`, and
+  `pdfium_form_field_list`. Each dispatches to the matching
+  `as_tibble.*` method so `summary(x)` returns the same tibble
+  view `tibble::as_tibble(x)` would — matching the R idiom of
+  `print()` for the one-line summary and `summary()` for the deep
+  dive.
+
+## Scope retraction
+
+Two functions added during 0.1.0 development were retracted before
+release on scope grounds (see `CLAUDE.md` §"Scope"):
+
+* **`pdf_doc_open_url()`** — folded into `pdf_doc_open(path = ...)`.
+  The URL-fetching layer is just `base::url()` + `readBin()` ahead
+  of PDFium's existing in-memory path, so a separate exported
+  symbol added surface for no PDFium-specific behaviour.
+* **`pdf_dir_summary()`** — removed. Its body was `list.files()`
+  + `lapply(pdf_doc_summary)`; users with bulk-triage needs can
+  write the loop themselves in three lines. Keeping it set a
+  precedent for "convenience over a base R loop" creep that the
+  package's PDFium-wrapper mandate doesn't want.
 
 ## Page objects, paths, and text
 

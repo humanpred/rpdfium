@@ -246,6 +246,20 @@ as_tibble.pdfium_annot_list <- function(x, ...) {
   )
 }
 
+#' Tibble-shaped summary of an annotation list
+#'
+#' `summary()` method for `pdfium_annot_list`. Defers to
+#' [as_tibble.pdfium_annot_list()] for the standard tibble view.
+#'
+#' @param object A `pdfium_annot_list` from [pdf_annotations()].
+#' @param ... Forwarded to [as_tibble.pdfium_annot_list()].
+#' @return The tibble returned by [as_tibble.pdfium_annot_list()].
+#' @method summary pdfium_annot_list
+#' @export
+summary.pdfium_annot_list <- function(object, ...) {
+  tibble::as_tibble(object, ...)
+}
+
 # Internal: zero-row tibble matching as_tibble.pdfium_annot_list's
 # schema. Used when the page has no annotations.
 empty_annot_tibble <- function(src_page) {
