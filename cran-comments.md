@@ -4,11 +4,28 @@
 
 `pdfium` is a new R package providing idiomatic bindings to Google's
 PDFium PDF engine via Rcpp. It complements `pdftools` (Poppler) and
-`qpdf` (QPDF) by exposing vector-path geometry — segment kinds,
-control points, stroke / fill style, transformation matrices — that
-no other R package surfaces. The Tier 2 surface (rendering, embedded
-images, Form XObjects, clip paths, document metadata) is shipped
-alongside the path API in this first release.
+`qpdf` (QPDF), filling two gaps no other CRAN package fills:
+
+* **Vector-path geometry on read** — segment kinds, control points,
+  stroke / fill style, transformation matrices, clip paths, blend
+  modes — alongside text, fonts, images, annotations, form fields,
+  attachments, signatures, structure tree, bookmarks, named
+  destinations, and rendering. `pdf_extract_paths()` returns a
+  tibble matching the schema kmextract's pypdfium2 backend ships
+  today.
+* **A focused mutation surface** opt-in via `readwrite = TRUE` on
+  `pdf_doc_open()` (or `pdf_doc_new()` for fresh documents):
+  structural mutation (page rotate / delete / reorder / merge /
+  box / language), page-object styling setters, path-geometry
+  rebuild, page-object creation (paths, rectangles, text, JPEG
+  images), annotation authoring (14 supported subtypes), form
+  filling + flattening, attachment authoring, plus standard-font
+  and custom-font (TrueType / Type1) embedding. `pdf_save()`
+  writes atomically.
+
+Both halves are documented in pkgdown
+(<https://humanpred.github.io/rpdfium/>) and exercised at 100% R
+coverage in CI.
 
 ## Test environments
 
@@ -20,25 +37,34 @@ covers:
 * Windows-latest, R-release
 
 `R CMD check --as-cran` locally on Ubuntu 24.04 with R 4.6.0:
-0 ERRORs, 0 WARNINGs (1 environment-only WARNING about
-`checkbashisms` is silenced when that tool is installed),
-2 NOTEs detailed below.
+0 ERRORs, 0 WARNINGs when `checkbashisms` is installed, 1 NOTE
+(detailed below). The cross-platform CI matrix
+(<https://github.com/humanpred/rpdfium/actions/workflows/R-CMD-check.yaml>)
+is green on every cell on the head of `main`.
 
 ## Expected NOTEs
 
-* **"GNU make is a SystemRequirements"** — *not present yet, but
-  may appear* on platforms where `inst/lib/libpdfium` is fetched at
-  install time. The package declares `SystemRequirements: C++17,
+* **"Compilation used the following non-portable flag(s):
+  '-mno-omit-leaf-frame-pointer'"** — inherited from the Debian /
+  Ubuntu `r-base` package's default `CXX17FLAGS`. The pdfium
+  package itself does not pass this flag in its `Makevars`; it
+  appears only when R itself was built on Debian-family systems
+  with that flag set in `etc/Makeconf`. No NOTE seen on
+  macOS-latest or Windows-latest CI cells.
+
+* **"Installed package size … Mb"** — *may appear* on systems
+  where `inst/lib/libpdfium` ends up at 10–15 MB (the bundled
+  libpdfium shared library). We download it at install time
+  rather than shipping it in the source tarball, so the tarball
+  itself is well under CRAN's 5 MB limit (~1 MB).
+
+* **"GNU make is a SystemRequirements"** — *may appear* on
+  platforms where the `configure` script triggers a GNU-make
+  feature. The package declares `SystemRequirements: C++17,
   libpdfium (downloaded automatically at install time)` to make
   this explicit; the `configure` script downloads the matching
   bblanchon binary on demand and `cleanup` removes intermediate
   artefacts.
-
-* **"Installed package size … Mb"** — the bundled `libpdfium`
-  shared library is roughly 10–15 MB depending on platform. We
-  download it at install time rather than shipping it in the
-  source tarball, so the tarball itself is well under CRAN's
-  5 MB limit (~1 MB).
 
 ## Network access at install time
 
@@ -95,9 +121,13 @@ fixture is missing.
 * [x] No `<<-` writes to `.GlobalEnv` or anywhere outside the
       package namespace.
 * [x] No interactive prompts at install or load time.
-* [x] All Suggests packages (`png`, `withr`, `lintr`, `styler`,
-      `covr`, `knitr`, `rmarkdown`, `spelling`, `testthat`) are on
-      CRAN and used via `requireNamespace()` where appropriate.
+* [x] All Suggests packages are on CRAN and used via
+      `requireNamespace()` / `skip_if_not_installed()` where
+      appropriate.
+* [x] Mutators require an explicit `readwrite = TRUE` opt-in on
+      `pdf_doc_open()` so accidental edits inside a read-only
+      pipeline raise a clear error rather than silently mutating
+      the document.
 
 ## Licence
 
