@@ -11,7 +11,10 @@ PDFs created with `pdf_doc_new()` are also writable).
 * `pdf_doc_open()` / `pdf_doc_close()`, `pdf_doc_new()`,
   `pdf_save()` / `pdf_save_to_raw()` — open existing PDFs (optionally
   with `readwrite = TRUE`), build new ones in memory, and persist
-  the result.
+  the result. `pdf_doc_open_url(url)` is a convenience wrapper that
+  fetches a `http://` / `https://` / `ftp://` / `file://` URL via
+  `url()` + `readBin()` and loads the bytes through PDFium's
+  in-memory path — no temporary file on disk.
 * `pdf_doc_info()`, `pdf_doc_meta()`, `pdf_doc_text()`,
   `pdf_doc_fonts()`, `pdf_doc_file_id()`, `pdf_doc_page_mode()`,
   `pdf_doc_viewer_preferences()`, `pdf_doc_viewer_preference_by_name()`,
@@ -27,6 +30,23 @@ PDFs created with `pdf_doc_new()` are also writable).
 * `pdf_page_load()` / `pdf_page_close()`, `pdf_page_size()`,
   `pdf_page_rotation()`, `pdf_page_box()`, `pdf_page_thumbnail()` —
   per-page handles and metadata.
+* `pdf_doc_summary()` and `pdf_pages_summary()` — one-call triage
+  helpers. `pdf_doc_summary()` returns a single-row tibble
+  aggregating the most-asked-for facts about a PDF (path, page
+  count, Info-dictionary metadata, feature flags, per-feature
+  counts, file-ID tuple); `pdf_pages_summary()` is the per-page
+  sibling (width / height / rotation / label, all via the fast
+  by-index PDFium readers). `summary(doc)` and `summary(page)`
+  dispatch to the matching tibble — `summary(page)` adds the
+  page-loaded counts (annotation count, page-object count,
+  text-run count, link count) since the page is already loaded.
+* `pdf_dir_summary(dir)` — scans a directory for PDF files and
+  returns one row per file in the `pdf_doc_summary()` shape.
+  Recursive scan via `recursive = TRUE`; pattern-matches `.pdf`
+  case-insensitively by default. The `errors` argument selects
+  one of `"warn"` (default — surface broken files but don't
+  abort), `"skip"` (silently drop), or `"stop"` (abort on the
+  first failure).
 
 ## Page objects, paths, and text
 

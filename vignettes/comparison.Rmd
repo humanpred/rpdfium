@@ -158,8 +158,8 @@ are close enough that switching is mostly a find-and-replace:
 | `pdftools`                  | `pdfium`                       |
 |---|---|
 | `pdf_text(path)`            | `pdf_doc_text(path)`           |
-| `pdf_info(path)`            | `pdf_doc_info(path)`           |
-| `pdf_pagesize(path)`        | `pdf_page_size(doc, page_num)` |
+| `pdf_info(path)`            | `pdf_doc_info(path)` — or `pdf_doc_summary(path)` for a richer one-row tibble |
+| `pdf_pagesize(path)`        | `pdf_pages_summary(path)` (one row per page; also includes rotation + label) |
 | `pdf_render_page(path, ...)`| `pdf_render_page(doc_or_path, ...)` |
 | `pdf_data(path)`            | `pdf_text_runs(page)`          |
 | `pdf_doc_fonts(path)`       | `pdf_doc_fonts(doc)`           |

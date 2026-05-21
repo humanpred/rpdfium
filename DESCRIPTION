@@ -1,6 +1,6 @@
 Package: pdfium
 Title: Idiomatic R Bindings to the PDFium PDF Engine
-Version: 0.1.0
+Version: 0.0.9000
 Authors@R: c(
     person("Bill", "Denney", , "wdenney@humanpredictions.com",
            role = c("aut", "cre"),

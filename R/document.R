@@ -70,6 +70,60 @@ pdf_doc_open <- function(path = NULL, source = NULL, password = NULL,
   )
 }
 
+#' Open a PDF document from a URL
+#'
+#' Convenience wrapper around [pdf_doc_open()] that fetches the
+#' bytes of a remote (or `file://`) URL via base R's [`url()`] +
+#' [`readBin()`] and loads the result through PDFium's in-memory
+#' path (`FPDF_LoadMemDocument64`). No temporary file is left on
+#' disk; the bytes live in R memory for the document's lifetime.
+#'
+#' Network errors propagate from [`url()`] / [`readBin()`] (typical
+#' shape: `cannot open URL '...'` from `connection failed`). The
+#' returned `pdfium_doc`'s `$path` field is the URL string itself,
+#' so `print()` and [pdf_doc_summary()] surface
+#' the source even though no local path exists.
+#'
+#' @param url Character scalar. Must start with one of `http://`,
+#'   `https://`, `ftp://`, or `file://`.
+#' @param password Optional password for encrypted PDFs. `NULL`
+#'   (the default) passes no password to PDFium.
+#' @param readwrite Logical. As for [pdf_doc_open()].
+#' @return A `pdfium_doc`.
+#' @seealso [pdf_doc_open()] for the doc-open primitive.
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "minimal.pdf",
+#'   package = "pdfium"
+#' )
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_doc_open_url(paste0("file://", fixture))
+#'   pdf_page_count(doc)
+#'   pdf_doc_close(doc)
+#' }
+#' @export
+pdf_doc_open_url <- function(url, password = NULL, readwrite = FALSE) {
+  checkmate::assert_string(url, min.chars = 1L)
+  if (!grepl("^(https?|ftp|file)://", url)) {
+    stop(
+      "`url` must start with http://, https://, ftp://, or file://. ",
+      "Got: ", url,
+      call. = FALSE
+    )
+  }
+  con <- base::url(url, open = "rb")
+  on.exit(close(con), add = TRUE)
+  # readBin needs a max-size hint; .Machine$integer.max is the
+  # documented "unbounded" sentinel.
+  bytes <- readBin(con, what = "raw", n = .Machine$integer.max)
+  doc <- pdf_doc_open(source = bytes, password = password,
+                       readwrite = readwrite)
+  # Override the "<raw bytes>" path with the source URL so
+  # downstream printing / pdf_doc_summary() shows where it came
+  # from.
+  doc$path <- url
+  doc
+}
+
 # Internal: validate the three pdf_doc_open() arguments. Split into
 # per-concern helpers so each stays under lintr's cyclocomp limit.
 validate_pdf_open_args <- function(path, source, password) {

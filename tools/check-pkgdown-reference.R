@@ -40,35 +40,48 @@ local({
                                use.names = FALSE))
   yaml_topics <- yaml_topics[!is.na(yaml_topics) & nzchar(yaml_topics)]
 
-  ns_lines <- readLines("NAMESPACE")
-  # `exportPattern` and `exportClasses` not handled - this hook is
-  # for the typical case where pdfium's exports are all `export(name)`.
-  exports <- sub("^export\\(([^)]+)\\)$", "\\1",
-                 grep("^export\\(", ns_lines, value = TRUE))
-  # S3 methods registered via `@exportS3Method` appear in NAMESPACE
-  # as `S3method(generic, class)` or `S3method(pkg::generic, class)`
-  # when the generic lives in another package (e.g.
-  # `S3method(graphics::plot, pdfium_bitmap)`). pkgdown writes the
-  # method's Rd topic as the bare `generic.class` in either case,
-  # so strip any `pkg::` prefix on the generic before forming the
-  # topic name.
-  s3 <- sub("^S3method\\(([^,]+),\\s*([^)]+)\\)$", "\\1.\\2",
-            grep("^S3method\\(", ns_lines, value = TRUE))
-  s3 <- sub("^[^.]+::", "", s3)
-  topics <- unique(c(exports, s3))
+  # The canonical "what topics should pkgdown index" set is every
+  # man/*.Rd file that isn't marked `\keyword{internal}`. Walking
+  # the Rd files directly handles every topic-creation path
+  # (`@export`, S3 methods registered via `@exportS3Method`, manual
+  # `@aliases`/`@rdname`-collapsed methods) without having to
+  # re-parse NAMESPACE's S3method dispatch records.
+  rd_files <- list.files("man", pattern = "\\.Rd$", full.names = FALSE)
+  rd_files <- rd_files[nzchar(rd_files)]
+  if (length(rd_files) == 0L) {
+    return(invisible())
+  }
 
-  missing_in_yaml  <- setdiff(exports, yaml_topics)
+  # A topic in pkgdown's reference can be either the Rd file's
+  # basename OR any \alias{} entry inside it (the @rdname-collapsed
+  # case: when several R functions share one Rd file, every
+  # function's name becomes an alias for the shared topic). Both
+  # forms resolve, so both count as valid YAML entries.
+  rd_topics_and_aliases <- function(rd_file) {
+    lines <- readLines(file.path("man", rd_file), warn = FALSE)
+    if (any(grepl("\\\\keyword\\{internal\\}", lines))) {
+      return(character(0))
+    }
+    base <- sub("\\.Rd$", "", rd_file)
+    aliases <- sub(".*\\\\alias\\{([^}]+)\\}.*", "\\1",
+                   grep("\\\\alias\\{", lines, value = TRUE))
+    unique(c(base, aliases))
+  }
+  topics <- unique(unlist(lapply(rd_files, rd_topics_and_aliases),
+                          use.names = FALSE))
+
+  missing_in_yaml  <- setdiff(topics, yaml_topics)
   unknown_in_yaml  <- setdiff(yaml_topics, topics)
 
   problems <- character()
   if (length(missing_in_yaml) > 0L) {
     problems <- c(problems, sprintf(
-      "Exported but not in _pkgdown.yml reference index: %s",
+      "Documented but not in _pkgdown.yml reference index: %s",
       paste(missing_in_yaml, collapse = ", ")))
   }
   if (length(unknown_in_yaml) > 0L) {
     problems <- c(problems, sprintf(
-      "In _pkgdown.yml reference index but not an export: %s",
+      "In _pkgdown.yml reference index but no matching man/*.Rd: %s",
       paste(unknown_in_yaml, collapse = ", ")))
   }
   if (length(problems) > 0L) {

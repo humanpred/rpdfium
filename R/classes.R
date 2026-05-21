@@ -72,6 +72,7 @@ print.pdfium_doc <- function(x, ...) {
   invisible(x)
 }
 
+
 #' Construct a `pdfium_page` from an external pointer
 #'
 #' Internal helper. The page's externalptr carries its parent document's

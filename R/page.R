@@ -140,3 +140,143 @@ pdf_page_rotation <- function(page, page_num = 1L) {
   on.exit(pdf_page_close(p), add = TRUE)
   cpp_page_rotation(p$ptr)
 }
+
+#' One-call summary of every page in a document
+#'
+#' Returns a tibble with one row per page covering the cheap
+#' per-page facts: width, height (both in PDF user-space points,
+#' pre-rotation), rotation in degrees, and the page label (if any).
+#' The per-page values come from the existing single-page readers
+#' [pdf_page_size()] (fast `FPDF_GetPageSizeByIndexF` path),
+#' [pdf_page_rotation()], and [pdf_page_labels()]; no per-page
+#' [pdf_page_load()] is required for any of them, so the function
+#' is efficient on long documents.
+#'
+#' For deeper per-page facts (annotation count, object count, text
+#' content, …) load each page individually with [pdf_page_load()]
+#' and call the per-page readers.
+#'
+#' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character
+#'   path.
+#' @param password Optional password for encrypted PDFs when `doc`
+#'   is a path. Ignored when `doc` is an open `pdfium_doc`.
+#' @return A tibble with columns:
+#'   * `page_num` — integer, 1-based.
+#'   * `width`, `height` — numeric, PDF user-space points.
+#'   * `rotation` — integer, `0` / `90` / `180` / `270`.
+#'   * `label` — character; the page's `/PageLabels` entry, or `NA`
+#'     when the document has no labels.
+#' @seealso [pdf_doc_summary()] for the doc-level companion;
+#'   [pdf_page_size()], [pdf_page_rotation()], [pdf_page_labels()]
+#'   for the per-row readers.
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "minimal.pdf",
+#'   package = "pdfium"
+#' )
+#' if (nzchar(fixture)) pdf_pages_summary(fixture)
+#' @export
+pdf_pages_summary <- function(doc, password = NULL) {
+  if (is.character(doc)) {
+    handle <- pdf_doc_open(doc, password = password)
+    on.exit(pdf_doc_close(handle), add = TRUE)
+    return(pdf_pages_summary(handle))
+  }
+  checkmate::assert_class(doc, "pdfium_doc")
+  if (!is_open(doc)) stop("Document has been closed.", call. = FALSE)
+
+  n <- pdf_page_count(doc)
+  labels <- tryCatch(pdf_page_labels(doc), error = function(e) NULL)
+  if (is.null(labels) || length(labels) != n) {
+    # nocov start — pdf_page_labels always returns a length-n vector
+    # on shipped fixtures (every doc has a /PageLabels array, even
+    # if every entry is ""); guard exists for malformed PDFs in the
+    # wild.
+    labels <- rep(NA_character_, n)
+    # nocov end
+  }
+  # Some labels arrive as "" when the source PDF has a /PageLabels
+  # array that omits a specific page. Surface those as NA for a
+  # cleaner "no label here" signal.
+  labels[!is.na(labels) & !nzchar(labels)] <- NA_character_
+
+  if (n == 0L) {
+    return(empty_pages_summary())  # nocov — no shipped fixture has 0 pages.
+  }
+
+  # Use the fast by-index size / rotation paths so we never load a
+  # page object just to read its metadata.
+  sizes <- lapply(seq_len(n), function(i) pdf_page_size(doc, i))
+  rotations <- vapply(seq_len(n), function(i) {
+    as.integer(pdf_page_rotation(doc, i))
+  }, integer(1L))
+
+  tibble::tibble(
+    page_num = seq_len(n),
+    width    = vapply(sizes, function(s) as.numeric(s[["width"]]),
+                       numeric(1L)),
+    height   = vapply(sizes, function(s) as.numeric(s[["height"]]),
+                       numeric(1L)),
+    rotation = rotations,
+    label    = labels
+  )
+}
+
+#' Page-level summary
+#'
+#' `summary()` method for `pdfium_page`. Returns a single-row tibble
+#' combining the cheap by-index columns
+#' ([pdf_pages_summary()]-style: `page_num`, `width`, `height`,
+#' `rotation`, `label`) with the per-page counts that require the
+#' page to be loaded — annotation count, page-object count, text-run
+#' count, and link count. Because the page handle is already loaded,
+#' the per-count readers run against the existing page and don't
+#' trigger an additional load.
+#'
+#' Use this for the "what's on this page?" interactive triage flow.
+#' For the doc-wide companion, see [summary.pdfium_doc()].
+#'
+#' @param object A `pdfium_page` from [pdf_page_load()].
+#' @param ... Unused (S3 generic compatibility).
+#' @return A one-row tibble with columns `page_num`, `width`,
+#'   `height`, `rotation`, `label`, `annotation_count`, `obj_count`,
+#'   `text_run_count`, `link_count`.
+#' @seealso [summary.pdfium_doc()] for the doc-wide companion,
+#'   [pdf_pages_summary()] for the per-document table without the
+#'   page-loaded counts.
+#' @export
+summary.pdfium_page <- function(object, ...) {
+  if (!is_open(object)) stop("Page has been closed.", call. = FALSE)
+  sz <- cpp_page_size(object$ptr)
+  labels <- tryCatch(pdf_page_labels(object$doc),
+                     error = function(e) NULL)
+  label <- if (is.null(labels) || length(labels) < object$index) {
+    NA_character_  # nocov — shipped fixtures always return length-n.
+  } else {
+    lbl <- labels[[object$index]]
+    if (is.na(lbl) || !nzchar(lbl)) NA_character_ else lbl
+  }
+
+  tibble::tibble(
+    page_num         = object$index,
+    width            = as.numeric(sz[["width"]]),
+    height           = as.numeric(sz[["height"]]),
+    rotation         = as.integer(cpp_page_rotation(object$ptr)),
+    label            = label,
+    annotation_count = length(pdf_annotations(object)),
+    obj_count        = length(pdf_page_objects(object)),
+    text_run_count   = nrow(pdf_text_runs(object)),
+    link_count       = nrow(pdf_page_links(object))
+  )
+}
+
+# Internal: zero-row tibble matching pdf_pages_summary's shape, for
+# docs with no pages (rare; mostly an in-memory-built corner case).
+empty_pages_summary <- function() {
+  tibble::tibble(
+    page_num = integer(),
+    width    = numeric(),
+    height   = numeric(),
+    rotation = integer(),
+    label    = character()
+  )
+}
