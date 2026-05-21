@@ -36,6 +36,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="articles/architecture.html">How pdfium is built</a></li>
+    <li><a class="dropdown-item" href="articles/comparison.html">Choosing pdfium vs other PDF packages</a></li>
     <li><a class="dropdown-item" href="articles/extracting-paths.html">Extracting path geometry</a></li>
     <li><a class="dropdown-item" href="articles/getting-started.html">Getting started with pdfium</a></li>
     <li><a class="dropdown-item" href="articles/mutating-pdfs.html">Mutating PDFs</a></li>
@@ -62,16 +63,28 @@
 </h1></div>
 <!-- badges: start -->
 
-<p><code>pdfium</code> provides idiomatic R bindings to <a href="https://pdfium.googlesource.com/pdfium/" class="external-link">Google’s PDFium engine</a> — the same library that powers Chrome’s PDF viewer. It complements <a href="https://docs.ropensci.org/pdftools/" class="external-link"><code>pdftools</code></a> and <a href="https://CRAN.R-project.org/package=qpdf" class="external-link"><code>qpdf</code></a> by exposing <strong>vector path geometry</strong> — stroke / fill / Bezier control points / transformation matrices — which no other CRAN package surfaces today.</p>
+<p><code>pdfium</code> provides idiomatic R bindings to <a href="https://pdfium.googlesource.com/pdfium/" class="external-link">Google’s PDFium engine</a> — the same library that powers Chrome’s PDF viewer. It has two halves:</p>
+<ul>
+<li>a <strong>read surface</strong> that exposes vector-path geometry — stroke / fill / Bezier control points / transformation matrices — alongside text, fonts, images, annotations, form fields, attachments, signatures, structure tree, and rendering. The path geometry, in particular, no other CRAN package surfaces today.</li>
+<li>a <strong>mutation surface</strong> (opt-in via <code>readwrite = TRUE</code>) that lets you rotate / reorder / merge pages, draw fresh page objects, create and edit annotations, fill form fields, and add file attachments — then save the result.</li>
+</ul>
 <div class="section level2">
 <h2 id="what-it-is-for">What it is for<a class="anchor" aria-label="anchor" href="#what-it-is-for"></a>
 </h2>
 <ul>
-<li>Auditing PDF figures (which lines, which colors, which fonts).</li>
-<li>Extracting curves from regulatory filings and scientific publications.</li>
-<li>Building PDF normalization pipelines that need geometry, not just text.</li>
+<li>
+<strong>Auditing</strong> PDF figures (which lines, which colors, which fonts).</li>
+<li>
+<strong>Extracting</strong> curves from regulatory filings and scientific publications.</li>
+<li>
+<strong>Building</strong> PDF normalization pipelines that need geometry, not just text.</li>
+<li>
+<strong>Filling</strong> AcroForm fields programmatically and flattening the result for downstream tooling.</li>
+<li>
+<strong>Authoring</strong> small programmatic PDFs (think: figure callouts, table reports, annotated source documents).</li>
 <li>Anything you’d otherwise drop into Python with <code>pypdfium2</code>.</li>
 </ul>
+<p>See <a href="https://humanpred.github.io/rpdfium/articles/mutating-pdfs.html"><code>vignette("mutating-pdfs")</code></a> for a walkthrough of the writer surface, and <a href="https://humanpred.github.io/rpdfium/articles/comparison.html"><code>vignette("comparison")</code></a> for how <code>pdfium</code> lines up against <code>pdftools</code>, <code>qpdf</code>, <code>magick</code>, <code>tabulizer</code>, and <code>staplr</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
@@ -96,7 +109,8 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/humanpred/rpdfium" class="external-link">pdfium</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pdf_doc_open.html">pdf_doc_open</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"fixtures"</span>, <span class="st">"minimal.pdf"</span>,</span>
-<span>                            package <span class="op">=</span> <span class="st">"pdfium"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  package <span class="op">=</span> <span class="st">"pdfium"</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/pdf_page_count.html">pdf_page_count</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/pdf_doc_close.html">pdf_doc_close</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span></span></code></pre></div>
 <p>More examples ship in the vignettes (<code><a href="articles/getting-started.html">vignette("getting-started", package = "pdfium")</a></code>, etc.) and on the <a href="https://humanpred.github.io/rpdfium/">pkgdown site</a>.</p>

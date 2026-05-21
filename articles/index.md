@@ -4,6 +4,8 @@
 
 - [How pdfium is
   built](https://humanpred.github.io/rpdfium/articles/architecture.md):
+- [Choosing pdfium vs other PDF
+  packages](https://humanpred.github.io/rpdfium/articles/comparison.md):
 - [Extracting path
   geometry](https://humanpred.github.io/rpdfium/articles/extracting-paths.md):
 - [Getting started with
