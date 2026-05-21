@@ -110,19 +110,32 @@ boundary cost is microseconds per call, so 10⁶ object writes is
 seconds, not minutes.
 
 **v0.1.0 limits worth knowing about.** Four authoring axes have
-real gaps in the current release:
+real gaps in the current release. They split cleanly into two
+groups by what's blocking closure:
 
-| Gap | Status | Workaround |
+*Blocked on this package's roadmap* (PDFium exposes the symbols;
+we just haven't wrapped them yet — closure timing is in our
+hands):
+
+| Gap | Unwrapped PDFium symbols | Workaround today |
 |---|---|---|
-| **Image embedding** | `FPDFImageObj_LoadJpegFile` / `FPDFImageObj_SetBitmap` not wrapped yet (deferred from Phase 5 pending `FPDF_BITMAP` plumbing). | Use `minipdf` for image-heavy programmatic PDFs, or render images separately and embed via a post-process. |
-| **Custom fonts** | Only the 14 standard PDF fonts; `FPDFText_LoadCidType2Font` not wrapped. | For non-Latin scripts or branded type, render text as paths via an external tool and embed the resulting vector paths. |
-| **`/Info` dict writes** | `FPDF_SetMetaText` doesn't exist upstream. We have a [drafted patch](https://github.com/humanpred/rpdfium/blob/main/dev/upstream-patches/pdfium-FPDF_SetMetaText.patch) awaiting upload. | Use `xmpdf` to patch the Info dict after `pdf_save()`. |
-| **Encryption on save** | `FPDF_SetEncryption` doesn't exist upstream (tracker CL 5). | Use `qpdf::pdf_encrypt()` as a post-process step. |
+| **Image embedding** | `FPDFImageObj_LoadJpegFile`, `FPDFImageObj_LoadJpegFileInline`, `FPDFImageObj_SetBitmap` — all in `inst/include/fpdf_edit.h`; deferred from Phase 5 pending an `FPDF_BITMAP` lifecycle design | Use `minipdf` for image-heavy programmatic PDFs, or render images separately and embed via a post-process |
+| **Custom fonts** | `FPDFText_LoadFont`, `FPDFText_LoadStandardFont`, `FPDFText_LoadCidType2Font` — all in `inst/include/fpdf_edit.h`; not yet wrapped, needs a `pdfium_font` S3 class with `FPDFFont_Close` finalizer | For non-Latin scripts or branded type, render text as paths via an external tool and embed the resulting vector paths |
+
+*Blocked on upstream PDFium* (the symbols don't exist yet — we've
+proposed them but they need to ship through Google's Gerrit review
+cycle, land in a PDFium release, and propagate to a `bblanchon`
+binary before we can wrap them):
+
+| Gap | Missing PDFium symbol(s) | Workaround today |
+|---|---|---|
+| **`/Info` dict writes** | `FPDF_SetMetaText` — [drafted patch](https://github.com/humanpred/rpdfium/blob/main/dev/upstream-patches/pdfium-FPDF_SetMetaText.patch) awaiting Gerrit upload | Use `xmpdf` to patch the Info dict after `pdf_save()` |
+| **Encryption on save** | `FPDF_SetEncryption` — listed as CL 5 in [`dev/upstream-api-gaps.md`](https://github.com/humanpred/rpdfium/blob/main/dev/upstream-api-gaps.md); not yet drafted | Use `qpdf::pdf_encrypt()` as a post-process step |
 
 The full upstream-PDFium gap inventory lives in
 [`dev/upstream-api-gaps.md`](https://github.com/humanpred/rpdfium/blob/main/dev/upstream-api-gaps.md).
-The "what scales" claims above hold today; the "limits" all have a
-known path to closure as those upstream patches land.
+The "what scales" claims above hold today; the limits all have a
+known path to closure, with the per-table timing differences noted.
 
 ## Where `pdfium` deliberately doesn't compete
 
