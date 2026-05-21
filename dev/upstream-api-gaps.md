@@ -55,6 +55,9 @@ prior art rather than repeating their motivation.
   drafted 2026-05-20, ready to upload.
 - `FPDF_SetMetaText` — patch drafted 2026-05-21 (CL 1 below); see
   `dev/upstream-patches/pdfium-FPDF_SetMetaText.patch`.
+- `FPDFAttachment_SetSubtype` — patch drafted 2026-05-21 (CL 6
+  below); see
+  `dev/upstream-patches/pdfium-FPDFAttachment_SetSubtype.patch`.
 
 ## Proposed CLs
 
@@ -371,7 +374,7 @@ compliance encryption.
 public surface and internal touch. If we want to lead with a
 "big ticket" item to seed the conversation, this is the one.
 
-### CL 6: Attachment Subtype writer
+### CL 6: Attachment Subtype writer — **drafted**
 
 **Symbols proposed:**
 

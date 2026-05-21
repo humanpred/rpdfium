@@ -18,6 +18,68 @@ their own machine.
 
 ## Active patches
 
+### `pdfium-FPDFAttachment_SetSubtype.patch`
+
+**Status:** Drafted on 2026-05-21 against upstream HEAD `e30fc3988`.
+Not yet uploaded to Gerrit.
+
+Adds the public symbol:
+
+```c
+FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
+FPDFAttachment_SetSubtype(FPDF_ATTACHMENT attachment,
+                          FPDF_BYTESTRING subtype);
+```
+
+so embedders can write the embedded-file MIME type that
+`FPDFAttachment_GetSubtype` reads. Closes one of the two upstream
+gaps documented on the R-side `pdf_attachment_set_dict_value()`
+wrapper (the other — `FPDFAttachment_SetStringValue`'s Unicode
+round-trip loss — needs a separate CL because it's a behaviour
+change to an existing symbol, not a new one). This was CL 6 in
+`dev/upstream-api-gaps.md`.
+
+The implementation mirrors `FPDFAttachment_GetSubtype` exactly:
+build a `CPDF_FileSpec` from the attachment object, get the file
+stream, and write `/Subtype` as a `CPDF_Name` on the stream's
+dictionary. The Name type matches what GetSubtype reads (via
+`GetNameFor("Subtype")`) and matches PDF spec, which defines
+`/Subtype` on embedded file streams as a Name.
+
+Adds a `CPDF_FileSpec::GetMutableFileStream()` core helper modeled
+directly after the existing `GetMutableParamsDict()` counterpart
+(`const_cast` of the const-accessor result through
+`pdfium::WrapRetain`).
+
+The writer requires the attachment to already have a file stream —
+i.e. `FPDFAttachment_SetFile()` must have been called first, or
+the attachment must have been loaded from disk. Same prerequisite
+`FPDFAttachment_SetStringValue` already has (its `/Params` subdict
+only exists after `SetFile` creates it). The docstring makes this
+explicit and the embedder test exercises both pre- and post-SetFile
+behaviour.
+
+Files touched (against upstream HEAD `e30fc3988`):
+* `public/fpdf_attachment.h` — declaration with full doc comment.
+* `fpdfsdk/fpdf_attachment.cpp` — 24-line implementation immediately
+  after `FPDFAttachment_GetSubtype`.
+* `core/fpdfdoc/cpdf_filespec.{h,cpp}` — new
+  `CPDF_FileSpec::GetMutableFileStream()` helper.
+* `fpdfsdk/fpdf_view_c_api_test.c` — `CHK` entry next to the
+  existing `FPDFAttachment_Set*` block.
+* `fpdfsdk/fpdf_attachment_embeddertest.cpp` — three new
+  `FPDFAttachmentEmbedderTest` cases:
+  * `SetSubtype` — invalid-arg rejection, overwrite, read-back via
+    `FPDFAttachment_GetSubtype`.
+  * `SetSubtypeOnFreshAttachment` — confirms the pre-`SetFile`
+    rejection contract and the post-`SetFile` success path.
+  * `SetSubtypePersistsAcrossSave` — full `FPDF_SaveAsCopy` +
+    `OpenSavedDocument` round-trip.
+
+The commit message carries the deterministic
+`Change-Id: I9c9d45efc4986252faa577e70d993103e777cdb3` so re-uploads
+all land on the same Gerrit CL.
+
 ### `pdfium-FPDF_SetMetaText.patch`
 
 **Status:** Drafted on 2026-05-21 against upstream HEAD `e30fc3988`.
