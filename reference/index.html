@@ -1591,6 +1591,92 @@
 
         </dt>
         <dd>Remove a page object and destroy it</dd>
+      </dl></div><div class="section level2">
+      <h2 id="annotation-authoring">Annotation authoring<a class="anchor" aria-label="anchor" href="#annotation-authoring"></a></h2>
+
+      <div class="section-desc"><p>Create / delete annotations and mutate their properties. Mirrors the <code>pdf_annot_*</code> readers; each setter takes a <code>pdfium_annot</code> whose parent doc is readwrite. PDFium supports creating these subtypes: circle, fileattachment, freetext, highlight, ink, link, popup, square, squiggly, stamp, strikeout, text, underline.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pdf_annot_new.html">pdf_annot_new()</a></code>
+
+        </dt>
+        <dd>Create a new annotation on a page</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_delete.html">pdf_annot_delete()</a></code>
+
+        </dt>
+        <dd>Remove an annotation and invalidate the handle</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_set_bounds.html">pdf_annot_set_bounds()</a></code>
+
+        </dt>
+        <dd>Set the bounding rectangle of an annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_set_color.html">pdf_annot_set_color()</a></code>
+
+        </dt>
+        <dd>Set the stroke / line color of an annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_set_interior_color.html">pdf_annot_set_interior_color()</a></code>
+
+        </dt>
+        <dd>Set the interior / fill color of an annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_set_flags.html">pdf_annot_set_flags()</a></code>
+
+        </dt>
+        <dd>Set the flags bitmask of an annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_set_contents.html">pdf_annot_set_contents()</a></code>
+
+        </dt>
+        <dd>Set the <code>/Contents</code> text of an annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_set_title.html">pdf_annot_set_title()</a></code>
+
+        </dt>
+        <dd>Set the <code>/T</code> (title / author) of an annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_set_subject.html">pdf_annot_set_subject()</a></code>
+
+        </dt>
+        <dd>Set the <code>/Subj</code> (subject) of an annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_set_dict_value.html">pdf_annot_set_dict_value()</a></code>
+
+        </dt>
+        <dd>Set an arbitrary string-valued entry on an annotation dict</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_append_quad.html">pdf_annot_append_quad()</a></code>
+
+        </dt>
+        <dd>Append a quad to an annotation's <code>/QuadPoints</code> array</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

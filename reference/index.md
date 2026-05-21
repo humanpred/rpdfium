@@ -642,3 +642,52 @@ for the inverse — remove + destroy a page-object.
   : Create a new text page-object on a page
 - [`pdf_obj_delete()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_delete.md)
   : Remove a page object and destroy it
+
+## Annotation authoring
+
+Create / delete annotations and mutate their properties. Mirrors the
+`pdf_annot_*` readers; each setter takes a `pdfium_annot` whose parent
+doc is readwrite. PDFium supports creating these subtypes: circle,
+fileattachment, freetext, highlight, ink, link, popup, square, squiggly,
+stamp, strikeout, text, underline.
+
+- [`pdf_annot_new()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_new.md)
+  : Create a new annotation on a page
+
+- [`pdf_annot_delete()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_delete.md)
+  : Remove an annotation and invalidate the handle
+
+- [`pdf_annot_set_bounds()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_set_bounds.md)
+  : Set the bounding rectangle of an annotation
+
+- [`pdf_annot_set_color()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_set_color.md)
+  : Set the stroke / line color of an annotation
+
+- [`pdf_annot_set_interior_color()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_set_interior_color.md)
+  : Set the interior / fill color of an annotation
+
+- [`pdf_annot_set_flags()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_set_flags.md)
+  : Set the flags bitmask of an annotation
+
+- [`pdf_annot_set_contents()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_set_contents.md)
+  :
+
+  Set the `/Contents` text of an annotation
+
+- [`pdf_annot_set_title()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_set_title.md)
+  :
+
+  Set the `/T` (title / author) of an annotation
+
+- [`pdf_annot_set_subject()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_set_subject.md)
+  :
+
+  Set the `/Subj` (subject) of an annotation
+
+- [`pdf_annot_set_dict_value()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_set_dict_value.md)
+  : Set an arbitrary string-valued entry on an annotation dict
+
+- [`pdf_annot_append_quad()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_append_quad.md)
+  :
+
+  Append a quad to an annotation's `/QuadPoints` array
