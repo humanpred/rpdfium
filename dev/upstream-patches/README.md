@@ -18,6 +18,86 @@ their own machine.
 
 ## Active patches
 
+### `pdfium-FPDFAnnot_AppendOption.patch`
+
+**Status:** Drafted on 2026-05-20 against upstream HEAD
+`e30fc3988`. Not yet uploaded to Gerrit; awaiting a human contributor
+to run `git cl upload --bypass-hooks` per the walk-through below.
+
+Adds two public symbols:
+
+```c
+FPDF_EXPORT int FPDF_CALLCONV
+FPDFAnnot_AppendOption(FPDF_FORMHANDLE hHandle,
+                       FPDF_ANNOTATION annot,
+                       FPDF_WIDESTRING label);
+
+FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
+FPDFAnnot_RemoveOptions(FPDF_FORMHANDLE hHandle,
+                        FPDF_ANNOTATION annot);
+```
+
+so embedders can write the `/Opt` array on listbox / combobox /
+checkbox / radio widget annotations. The reader half
+(`FPDFAnnot_GetOptionCount`, `FPDFAnnot_GetOptionLabel`,
+`FPDFAnnot_IsOptionSelected`) already exists; this patch is the
+symmetric writer.
+
+The append-one + clear-all shape mirrors the existing
+`FPDFAnnot_AddInkStroke` + `FPDFAnnot_RemoveInkList` pair — the same
+established pattern PDFium uses for array-valued widget data —
+rather than introducing a single-shot `FPDFAnnot_SetOptions` that
+would require a double-pointer-of-`FPDF_WIDESTRING` ABI.
+
+The implementation copies an inherited `/Opt` array down onto the
+terminal field's own dictionary on first append, so writes to a
+non-root child of an `/Opt`-bearing parent field don't silently
+mutate every sibling that shares the parent.
+
+Why this matters for `pdfium` (R): without it, `pdf_form_field_set_value()`
+on combobox / listbox fields is constrained to values that already
+appear in the field's `/Opt` array — there's no public API to *grow*
+that array at fill time. Many real-world workflows want to populate
+options from a database when the form is filled, not when it's
+designed.
+
+Files touched (against upstream HEAD `e30fc3988`):
+
+* `public/fpdf_annot.h` — declarations with full doc comments,
+  inserted between the existing `FPDFAnnot_IsOptionSelected`
+  declaration and the start of the font/color block.
+* `fpdfsdk/fpdf_annot.cpp` — implementations next to
+  `FPDFAnnot_IsOptionSelected`. Both validate `HasOptField()` to
+  produce the same error contract as the readers (return -1 / false
+  for text fields, signatures, ink annots, etc.).
+* `core/fpdfdoc/cpdf_formfield.{h,cpp}` — new core methods
+  `CPDF_FormField::AppendOption()` and
+  `CPDF_FormField::RemoveOptions()`, `CHECK()`-ed on `HasOptField()`
+  like the existing readers.
+* `fpdfsdk/fpdf_view_c_api_test.c` — alphabetized `CHK()` entries
+  for both new symbols so api_check.py passes presubmit.
+* `fpdfsdk/fpdf_annot_embeddertest.cpp` — six new
+  `FPDFAnnotEmbedderTest` cases:
+  - `AppendOptionCombobox` — appends + round-trips a UTF-16 label;
+    second append goes to index 4.
+  - `AppendOptionInvalidArgs` — NULL form / annot / label.
+  - `AppendOptionWrongAnnotationType` — textfield rejected.
+  - `RemoveOptionsCombobox` — removes /Opt, verifies count → -1,
+    re-appends to a fresh /Opt.
+  - `RemoveOptionsInvalidArgs` — NULL form / annot.
+  - `RemoveOptionsWrongAnnotationType` — textfield rejected.
+
+Deferred for a follow-up CL: the two-element `[export_value, label]`
+entry form that some `/Opt` arrays use. The current API writes
+single-label `CPDF_String` entries only; a future overload taking an
+optional `export_value FPDF_WIDESTRING` can ship without breaking
+this one.
+
+The commit message carries the deterministic
+`Change-Id: I502beb8b78a18256eb147919fe7b73dbf012b106` so re-uploads
+(after rebases or reviewer-requested amends) all land on the same
+Gerrit CL.
+
 ### `pdfium-FPDFTextObj_SetFontSize.patch`
 
 **Status:** Ready to upload (2026-05-20). CLA on file; the

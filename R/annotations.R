@@ -291,16 +291,9 @@ empty_annot_tibble <- function(src_page) {
   )
 }
 
-# Internal: code <-> name helpers for the annotation subtype enum.
-# `annotation_subtype_name(codes)` already maps codes -> strings; this
-# is its inverse for use by v0.2.0 writers. Unknown / NA strings map
-# to FPDF_ANNOT_UNKNOWN (0).
-pdfium_annot_subtype_code <- function(names) {
-  hit <- match(tolower(as.character(names)), .pdfium_annot_subtypes)
-  ifelse(is.na(hit), 0L, hit - 1L)
-}
-
-# Internal: PDFium subtype code -> string, vectorized.
+# Internal mirror of pdfium_annot_subtype_name() (in R/enum_codes.R).
+# Inlined here rather than calling the exported wrapper cross-file
+# so lintr's per-file static analysis sees a self-contained helper.
 annotation_subtype_name <- function(codes) {
   .pdfium_enum_name(codes, .pdfium_annot_subtypes)
 }

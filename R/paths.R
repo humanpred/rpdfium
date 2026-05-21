@@ -8,10 +8,9 @@
   "moveto"
 )
 
-# Internal: convert a FPDF_SEGMENT_* integer code to its short name.
-pdfium_segment_type_name <- function(codes) {
-  .pdfium_enum_name(codes, .pdfium_segment_type_names)
-}
+# pdfium_segment_type_name() lives in R/enum_codes.R (Phase 9
+# promoted it to a documented export paired with the inverse
+# pdfium_segment_type_code()).
 
 #' Path segments of a path page-object
 #'

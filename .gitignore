@@ -45,3 +45,5 @@ coverage.xml
 docs
 *.dll
 .claude
+/doc/
+/Meta/

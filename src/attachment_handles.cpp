@@ -131,11 +131,19 @@ Rcpp::List cpp_attachment_dict_value_handle(SEXP att_ptr,
       }
     }
   }
+  Rcpp::CharacterVector value_out;
+  if (value_str.empty()) {
+    value_out = Rcpp::CharacterVector(NA_STRING);
+  } else {
+    value_out = Rcpp::CharacterVector(1);
+    SET_STRING_ELT(value_out, 0,
+                   Rf_mkCharLenCE(value_str.data(),
+                                   static_cast<int>(value_str.size()),
+                                   CE_UTF8));
+  }
   return Rcpp::List::create(
       Rcpp::_["has_key"]    = has_key,
       Rcpp::_["value_type"] = has_key ? static_cast<int>(vtype)
                                        : NA_INTEGER,
-      Rcpp::_["value"]      = value_str.empty()
-                                ? Rcpp::CharacterVector(NA_STRING)
-                                : Rcpp::CharacterVector::create(value_str));
+      Rcpp::_["value"]      = value_out);
 }

@@ -300,3 +300,53 @@ reference:
       - pdf_annot_set_subject
       - pdf_annot_set_dict_value
       - pdf_annot_append_quad
+  - title: Form filling
+    desc: >
+      Write `/V` (the field value) on AcroForm widget annotations
+      and flatten the page when the form-fill workflow finishes.
+      `pdf_form_field_set_value()` dispatches by the field's type:
+      character for text / choice fields, logical-or-character for
+      checkable fields. `pdf_page_flatten()` bakes both form widgets
+      and annotations into the page's content stream — irreversible
+      and intended as the final step before saving a non-editable
+      copy.
+    contents:
+      - pdf_form_field_set_value
+      - pdf_form_field_clear
+      - pdf_form_reset
+      - pdf_page_flatten
+  - title: Attachment authoring
+    desc: >
+      Add, delete, and mutate the document's embedded-file
+      attachments. The natural sequence for a fresh attachment is
+      `pdf_attachment_new()` → `pdf_attachment_set_data()` (to
+      populate the file bytes and materialise the `/Params` subdict)
+      → `pdf_attachment_set_dict_value()` (for any extra dictionary
+      metadata).
+    contents:
+      - pdf_attachment_new
+      - pdf_attachment_delete
+      - pdf_attachment_set_dict_value
+      - pdf_attachment_set_data
+  - title: Enum code <-> name helpers
+    desc: >
+      Bidirectional converters between PDFium's integer enum codes
+      and their short string names. Paired `_name()` and `_code()`
+      functions for each enum: annotation subtype, page-object type,
+      path-segment type, form-field type, page / link action type,
+      and named-destination view mode. Useful when filtering a
+      tibble by code, passing programmatic input into a setter, or
+      round-tripping codes through a CSV that's lost the names.
+    contents:
+      - pdfium_annot_subtype_name
+      - pdfium_annot_subtype_code
+      - pdfium_obj_type_name
+      - pdfium_obj_type_code
+      - pdfium_segment_type_name
+      - pdfium_segment_type_code
+      - pdfium_form_field_type_name
+      - pdfium_form_field_type_code
+      - pdfium_action_type_name
+      - pdfium_action_type_code
+      - pdfium_dest_view_name
+      - pdfium_dest_view_code
