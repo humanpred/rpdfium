@@ -18,6 +18,180 @@ their own machine.
 
 ## Active patches
 
+### `pdfium-FPDFAnnot_SetNumberValue.patch`
+
+**Status:** Drafted on 2026-05-21 against upstream HEAD `e30fc3988`.
+Not yet uploaded to Gerrit.
+
+Adds the public symbol:
+
+```c
+FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
+FPDFAnnot_SetNumberValue(FPDF_ANNOTATION annot,
+                         FPDF_BYTESTRING key,
+                         float value);
+```
+
+so embedders can write common numeric annotation fields like `/CA`
+(constant opacity 0..1), `/IT` (free-text rotation), `/BS/W` (border
+width), or arbitrary custom-namespace floats. This was CL 7 in
+`dev/upstream-api-gaps.md`.
+
+Mirrors `FPDFAnnot_SetStringValue` line-for-line: get the mutable
+annot dict, write a `CPDF_Number` via `SetNewFor`. The smallest
+contained CL in the tracker (3 LOC of implementation), exact mirror
+of an existing precedent.
+
+Files touched (against upstream HEAD `e30fc3988`):
+* `public/fpdf_annot.h` — declaration immediately after
+  `FPDFAnnot_SetStringValue`.
+* `fpdfsdk/fpdf_annot.cpp` — 14-line implementation immediately
+  after `FPDFAnnot_SetStringValue`.
+* `fpdfsdk/fpdf_view_c_api_test.c` — `CHK` entry next to the
+  existing `FPDFAnnot_Set*` block.
+* `fpdfsdk/fpdf_annot_embeddertest.cpp` — new
+  `FPDFAnnotEmbedderTest::SetNumberValue` test exercising
+  invalid-arg rejection, overwrite of existing numeric key,
+  setting a previously-absent key, negative/zero/fractional
+  round-trip, and type-replacement of a non-number key (the
+  "value type becomes NUMBER regardless of what was there before"
+  contract).
+
+The commit message carries the deterministic
+`Change-Id: I7bf21fa3f70763f69fdcabd54baa2f0771af80cf` so re-uploads
+all land on the same Gerrit CL.
+
+### `pdfium-FPDFAttachment_SetSubtype.patch`
+
+**Status:** Drafted on 2026-05-21 against upstream HEAD `e30fc3988`.
+Not yet uploaded to Gerrit.
+
+Adds the public symbol:
+
+```c
+FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
+FPDFAttachment_SetSubtype(FPDF_ATTACHMENT attachment,
+                          FPDF_BYTESTRING subtype);
+```
+
+so embedders can write the embedded-file MIME type that
+`FPDFAttachment_GetSubtype` reads. Closes one of the two upstream
+gaps documented on the R-side `pdf_attachment_set_dict_value()`
+wrapper (the other — `FPDFAttachment_SetStringValue`'s Unicode
+round-trip loss — needs a separate CL because it's a behaviour
+change to an existing symbol, not a new one). This was CL 6 in
+`dev/upstream-api-gaps.md`.
+
+The implementation mirrors `FPDFAttachment_GetSubtype` exactly:
+build a `CPDF_FileSpec` from the attachment object, get the file
+stream, and write `/Subtype` as a `CPDF_Name` on the stream's
+dictionary. The Name type matches what GetSubtype reads (via
+`GetNameFor("Subtype")`) and matches PDF spec, which defines
+`/Subtype` on embedded file streams as a Name.
+
+Adds a `CPDF_FileSpec::GetMutableFileStream()` core helper modeled
+directly after the existing `GetMutableParamsDict()` counterpart
+(`const_cast` of the const-accessor result through
+`pdfium::WrapRetain`).
+
+The writer requires the attachment to already have a file stream —
+i.e. `FPDFAttachment_SetFile()` must have been called first, or
+the attachment must have been loaded from disk. Same prerequisite
+`FPDFAttachment_SetStringValue` already has (its `/Params` subdict
+only exists after `SetFile` creates it). The docstring makes this
+explicit and the embedder test exercises both pre- and post-SetFile
+behaviour.
+
+Files touched (against upstream HEAD `e30fc3988`):
+* `public/fpdf_attachment.h` — declaration with full doc comment.
+* `fpdfsdk/fpdf_attachment.cpp` — 24-line implementation immediately
+  after `FPDFAttachment_GetSubtype`.
+* `core/fpdfdoc/cpdf_filespec.{h,cpp}` — new
+  `CPDF_FileSpec::GetMutableFileStream()` helper.
+* `fpdfsdk/fpdf_view_c_api_test.c` — `CHK` entry next to the
+  existing `FPDFAttachment_Set*` block.
+* `fpdfsdk/fpdf_attachment_embeddertest.cpp` — three new
+  `FPDFAttachmentEmbedderTest` cases:
+  * `SetSubtype` — invalid-arg rejection, overwrite, read-back via
+    `FPDFAttachment_GetSubtype`.
+  * `SetSubtypeOnFreshAttachment` — confirms the pre-`SetFile`
+    rejection contract and the post-`SetFile` success path.
+  * `SetSubtypePersistsAcrossSave` — full `FPDF_SaveAsCopy` +
+    `OpenSavedDocument` round-trip.
+
+The commit message carries the deterministic
+`Change-Id: I9c9d45efc4986252faa577e70d993103e777cdb3` so re-uploads
+all land on the same Gerrit CL.
+
+### `pdfium-FPDF_SetMetaText.patch`
+
+**Status:** Drafted on 2026-05-21 against upstream HEAD `e30fc3988`.
+Not yet uploaded to Gerrit; awaiting a human contributor to run
+`git cl upload --bypass-hooks` per the walk-through below.
+
+Adds the public symbol:
+
+```c
+FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
+FPDF_SetMetaText(FPDF_DOCUMENT document,
+                 FPDF_BYTESTRING tag,
+                 FPDF_WIDESTRING value);
+```
+
+so embedders can write `/Info/Title`, `/Info/Author`,
+`/Info/Subject`, `/Info/Keywords`, `/Info/Creator`, `/Info/Producer`,
+`/Info/CreationDate`, and `/Info/ModDate` — the eight document Info
+keys that `FPDF_GetMetaText` reads. This was CL 1 in
+`dev/upstream-api-gaps.md` and the most-requested writer in our
+v0.1.0 user survey.
+
+The implementation mirrors `FPDFCatalog_SetLanguage` line-for-line:
+get the mutable Info dictionary via `CPDF_Document::GetInfo()`, write
+a `CPDF_String` via `SetNewFor` with the `WideStringFromFPDFWideString`
+path. Using the `WideStringView` overload (rather than the
+`ByteString` path `FPDFAttachment_SetStringValue` takes) means
+multi-byte Unicode round-trips losslessly — verified by the
+embedder test with a multi-byte Japanese subject.
+
+The writer works on:
+* Existing PDFs parsed from disk that have an `/Info` reference in
+  their trailer. `CPDF_Document::GetInfo()` resolves the indirect
+  reference and returns the mutable dictionary.
+* Documents created via `FPDF_CreateNewDocument()`, where
+  `CreateNewDoc()` initialises `info_dict_` eagerly.
+
+Returns false when `GetInfo()` returns null — i.e. when an opened
+PDF genuinely lacks an `/Info` trailer entry. A follow-up CL can
+add a way to plumb a new Info dictionary into the trailer on those
+documents; for now, the writer matches the reader's "no Info to
+work with" semantics.
+
+Files touched (against upstream HEAD `e30fc3988`):
+* `public/fpdf_doc.h` — declaration with full doc comment placed
+  immediately after the existing `FPDF_GetMetaText` declaration.
+* `fpdfsdk/fpdf_doc.cpp` — implementation placed immediately after
+  `FPDF_GetMetaText`. 27 lines.
+* `fpdfsdk/fpdf_view_c_api_test.c` — `CHK(FPDF_SetMetaText)` entry
+  next to the existing `FPDF_GetMetaText` CHK so `api_check.py`
+  passes presubmit.
+* `fpdfsdk/fpdf_doc_embeddertest.cpp` — three new
+  `FPDFDocEmbedderTest` cases:
+  * `SetMetaText` — invalid-arg rejection, basic set + read-back,
+    multi-byte Unicode round-trip, overwrite, empty-string
+    legitimate value, previously-absent tag becomes present.
+  * `SetMetaTextOnNewDocument` — confirms the
+    `FPDF_CreateNewDocument()` path's eagerly-initialised Info dict
+    accepts writes without any prior `FPDF_GetMetaText()` call.
+  * `SetMetaTextPersistsAcrossSave` — round-trip through
+    `FPDF_SaveAsCopy` + `OpenSavedDocument`, asserting the mutation
+    actually reaches the saved PDF dictionary (not just the
+    in-memory Info dict).
+
+The commit message carries the deterministic
+`Change-Id: Ia3e57b3dcdd0466c166728cd82fed8d9bfc9c06f` so re-uploads
+(after rebases or reviewer-requested amends) all land on the same
+Gerrit CL.
+
 ### `pdfium-FPDFAnnot_AppendOption.patch`
 
 **Status:** Drafted on 2026-05-20 against upstream HEAD

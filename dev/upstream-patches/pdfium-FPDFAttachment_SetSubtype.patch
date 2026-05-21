@@ -1,0 +1,260 @@
+From fac5931732007794888e2369564670399260897b Mon Sep 17 00:00:00 2001
+From: Bill Denney <wdenney@humanpredictions.com>
+Date: Thu, 21 May 2026 13:22:54 +0000
+Subject: [PATCH] Expose FPDFAttachment_SetSubtype for the embedded-file MIME
+ type
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add the symmetric writer for FPDFAttachment_GetSubtype:
+
+  FPDF_BOOL FPDFAttachment_SetSubtype(FPDF_ATTACHMENT attachment,
+                                       FPDF_BYTESTRING subtype);
+
+FPDFAttachment_GetSubtype reads /Subtype from the embedded file
+stream's dictionary (per ISO 32000-2 §7.11.4), but there is no
+public way to write it. FPDFAttachment_SetStringValue, the
+closest existing writer, only touches the attachment's /Params
+subdictionary — not the file-stream /Subtype that conforming
+readers use to identify the embedded file's type. Embedders that
+build attachments programmatically (e.g. attaching a generated
+CSV or XML to a report PDF) currently have no way to declare the
+MIME type without re-parsing and patching the saved PDF
+out-of-band.
+
+The implementation mirrors FPDFAttachment_GetSubtype: build a
+CPDF_FileSpec from the attachment object, retrieve its file
+stream, and write the /Subtype entry as a CPDF_Name on the
+stream's dictionary. The Name type matches what GetSubtype reads
+(via GetNameFor("Subtype")) and matches the PDF spec, which
+defines /Subtype on file streams as a Name.
+
+Reuses a new CPDF_FileSpec::GetMutableFileStream() core helper,
+modeled directly after the existing GetMutableParamsDict()
+counterpart (const_cast of the const-accessor result through
+pdfium::WrapRetain).
+
+The writer requires an existing file stream — i.e. the attachment
+must have been populated with FPDFAttachment_SetFile() first, or
+loaded from disk. Returns false otherwise; the docstring makes
+this explicit. This is the same prerequisite that
+FPDFAttachment_SetStringValue has (its /Params subdict only
+exists after SetFile creates it).
+
+Tested via three new FPDFAttachmentEmbedderTest cases against
+embedded_attachments.pdf and the in-memory
+FPDFDoc_AddAttachment + FPDFAttachment_SetFile path:
+  * SetSubtype — invalid-arg rejection, overwrite of existing
+    "text/plain" with "application/xml", read-back via the
+    existing FPDFAttachment_GetSubtype.
+  * SetSubtypeOnFreshAttachment — confirms the pre-SetFile
+    rejection contract (returns false; GetSubtype still reports
+    empty) and the post-SetFile success path.
+  * SetSubtypePersistsAcrossSave — full FPDF_SaveAsCopy +
+    OpenSavedDocument round-trip, asserting the mutation actually
+    reaches the saved PDF dictionary.
+
+Change-Id: I9c9d45efc4986252faa577e70d993103e777cdb3
+---
+ core/fpdfdoc/cpdf_filespec.cpp           |  4 ++
+ core/fpdfdoc/cpdf_filespec.h             |  1 +
+ fpdfsdk/fpdf_attachment.cpp              | 24 ++++++++
+ fpdfsdk/fpdf_attachment_embeddertest.cpp | 73 ++++++++++++++++++++++++
+ fpdfsdk/fpdf_view_c_api_test.c           |  1 +
+ public/fpdf_attachment.h                 | 27 +++++++++
+ 6 files changed, 130 insertions(+)
+
+diff --git a/core/fpdfdoc/cpdf_filespec.cpp b/core/fpdfdoc/cpdf_filespec.cpp
+index fc77bb743..7d424b243 100644
+--- a/core/fpdfdoc/cpdf_filespec.cpp
++++ b/core/fpdfdoc/cpdf_filespec.cpp
+@@ -161,6 +161,10 @@ RetainPtr<const CPDF_Stream> CPDF_FileSpec::GetFileStream() const {
+   return nullptr;
+ }
+ 
++RetainPtr<CPDF_Stream> CPDF_FileSpec::GetMutableFileStream() {
++  return pdfium::WrapRetain(const_cast<CPDF_Stream*>(GetFileStream().Get()));
++}
++
+ RetainPtr<const CPDF_Dictionary> CPDF_FileSpec::GetParamsDict() const {
+   RetainPtr<const CPDF_Stream> pStream = GetFileStream();
+   return pStream ? pStream->GetDict()->GetDictFor("Params") : nullptr;
+diff --git a/core/fpdfdoc/cpdf_filespec.h b/core/fpdfdoc/cpdf_filespec.h
+index 8692d8fee..f30edd894 100644
+--- a/core/fpdfdoc/cpdf_filespec.h
++++ b/core/fpdfdoc/cpdf_filespec.h
+@@ -29,6 +29,7 @@ class CPDF_FileSpec {
+ 
+   WideString GetFileName() const;
+   RetainPtr<const CPDF_Stream> GetFileStream() const;
++  RetainPtr<CPDF_Stream> GetMutableFileStream();
+   RetainPtr<const CPDF_Dictionary> GetParamsDict() const;
+   RetainPtr<CPDF_Dictionary> GetMutableParamsDict();
+ 
+diff --git a/fpdfsdk/fpdf_attachment.cpp b/fpdfsdk/fpdf_attachment.cpp
+index 98a803bc6..75580d101 100644
+--- a/fpdfsdk/fpdf_attachment.cpp
++++ b/fpdfsdk/fpdf_attachment.cpp
+@@ -330,3 +330,27 @@ FPDFAttachment_GetSubtype(FPDF_ATTACHMENT attachment,
+   return Utf16EncodeMaybeCopyAndReturnLength(
+       PDF_DecodeText(subtype.unsigned_span()), buffer_span);
+ }
++
++FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
++FPDFAttachment_SetSubtype(FPDF_ATTACHMENT attachment,
++                          FPDF_BYTESTRING subtype) {
++  if (!subtype) {
++    return false;
++  }
++  CPDF_Object* file = CPDFObjectFromFPDFAttachment(attachment);
++  if (!file) {
++    return false;
++  }
++
++  CPDF_FileSpec spec(pdfium::WrapRetain(file));
++  RetainPtr<CPDF_Stream> file_stream = spec.GetMutableFileStream();
++  if (!file_stream) {
++    return false;
++  }
++
++  // SAFETY: required from caller. PDF Name objects encode MIME types
++  // as ASCII per RFC 2045; the byte-string view is the natural input
++  // type.
++  file_stream->GetMutableDict()->SetNewFor<CPDF_Name>("Subtype", subtype);
++  return true;
++}
+diff --git a/fpdfsdk/fpdf_attachment_embeddertest.cpp b/fpdfsdk/fpdf_attachment_embeddertest.cpp
+index ca51f3f9a..9ec709d95 100644
+--- a/fpdfsdk/fpdf_attachment_embeddertest.cpp
++++ b/fpdfsdk/fpdf_attachment_embeddertest.cpp
+@@ -439,3 +439,76 @@ TEST_F(FPDFAttachmentEmbedderTest, GetSubtypeInvalid) {
+   EXPECT_EQ(2u * (strlen(kExpectedSubtype) + 1),
+             FPDFAttachment_GetSubtype(attachment, nullptr, 10));
+ }
++
++TEST_F(FPDFAttachmentEmbedderTest, SetSubtype) {
++  ASSERT_TRUE(OpenDocument("embedded_attachments.pdf"));
++  FPDF_ATTACHMENT attachment = FPDFDoc_GetAttachment(document(), 0);
++  ASSERT_TRUE(attachment);
++
++  // Invalid arguments return false without mutating the attachment.
++  EXPECT_FALSE(FPDFAttachment_SetSubtype(nullptr, "application/xml"));
++  EXPECT_FALSE(FPDFAttachment_SetSubtype(attachment, nullptr));
++
++  // Overwrite the existing "text/plain" subtype.
++  constexpr char kNewSubtype[] = "application/xml";
++  EXPECT_TRUE(FPDFAttachment_SetSubtype(attachment, kNewSubtype));
++
++  // Read back via FPDFAttachment_GetSubtype.
++  unsigned long length = FPDFAttachment_GetSubtype(attachment, nullptr, 0);
++  ASSERT_EQ(2u * (strlen(kNewSubtype) + 1), length);
++  std::vector<FPDF_WCHAR> buf = GetFPDFWideStringBuffer(length);
++  EXPECT_EQ(length, FPDFAttachment_GetSubtype(attachment, buf.data(), length));
++  EXPECT_EQ(kNewSubtype, GetPlatformString(buf.data()));
++}
++
++TEST_F(FPDFAttachmentEmbedderTest, SetSubtypeOnFreshAttachment) {
++  // A freshly-added attachment that has had FPDFAttachment_SetFile()
++  // called against it has a file stream and accepts the subtype write.
++  ASSERT_TRUE(OpenDocument("embedded_attachments.pdf"));
++  ScopedFPDFWideString name = GetFPDFWideString(L"fresh.bin");
++  FPDF_ATTACHMENT attachment = FPDFDoc_AddAttachment(document(), name.get());
++  ASSERT_TRUE(attachment);
++
++  // Before SetFile, the attachment has no file stream — SetSubtype
++  // returns false.
++  EXPECT_FALSE(FPDFAttachment_SetSubtype(attachment, "application/json"));
++  EXPECT_EQ(2u, FPDFAttachment_GetSubtype(attachment, nullptr, 0));
++
++  // After SetFile creates the /EF stream, SetSubtype works.
++  constexpr char kContents[] = "{\"hello\":\"world\"}";
++  ASSERT_TRUE(FPDFAttachment_SetFile(attachment, document(), kContents,
++                                      sizeof(kContents) - 1));
++
++  constexpr char kSubtype[] = "application/json";
++  EXPECT_TRUE(FPDFAttachment_SetSubtype(attachment, kSubtype));
++  unsigned long length = FPDFAttachment_GetSubtype(attachment, nullptr, 0);
++  ASSERT_EQ(2u * (strlen(kSubtype) + 1), length);
++  std::vector<FPDF_WCHAR> buf = GetFPDFWideStringBuffer(length);
++  EXPECT_EQ(length, FPDFAttachment_GetSubtype(attachment, buf.data(), length));
++  EXPECT_EQ(kSubtype, GetPlatformString(buf.data()));
++}
++
++TEST_F(FPDFAttachmentEmbedderTest, SetSubtypePersistsAcrossSave) {
++  ASSERT_TRUE(OpenDocument("embedded_attachments.pdf"));
++  FPDF_ATTACHMENT attachment = FPDFDoc_GetAttachment(document(), 0);
++  ASSERT_TRUE(attachment);
++
++  constexpr char kNewSubtype[] = "application/octet-stream";
++  EXPECT_TRUE(FPDFAttachment_SetSubtype(attachment, kNewSubtype));
++
++  EXPECT_TRUE(FPDF_SaveAsCopy(document(), this, 0));
++
++  // Reopen the saved bytes and confirm the new subtype survived.
++  ASSERT_TRUE(OpenSavedDocument());
++  FPDF_ATTACHMENT saved_attachment =
++      FPDFDoc_GetAttachment(saved_document(), 0);
++  ASSERT_TRUE(saved_attachment);
++  unsigned long length =
++      FPDFAttachment_GetSubtype(saved_attachment, nullptr, 0);
++  ASSERT_EQ(2u * (strlen(kNewSubtype) + 1), length);
++  std::vector<FPDF_WCHAR> buf = GetFPDFWideStringBuffer(length);
++  EXPECT_EQ(length, FPDFAttachment_GetSubtype(saved_attachment, buf.data(),
++                                               length));
++  EXPECT_EQ(kNewSubtype, GetPlatformString(buf.data()));
++  CloseSavedDocument();
++}
+diff --git a/fpdfsdk/fpdf_view_c_api_test.c b/fpdfsdk/fpdf_view_c_api_test.c
+index 282512d13..abddf794b 100644
+--- a/fpdfsdk/fpdf_view_c_api_test.c
++++ b/fpdfsdk/fpdf_view_c_api_test.c
+@@ -116,6 +116,7 @@ int CheckPDFiumCApi() {
+     CHK(FPDFAttachment_HasKey);
+     CHK(FPDFAttachment_SetFile);
+     CHK(FPDFAttachment_SetStringValue);
++    CHK(FPDFAttachment_SetSubtype);
+     CHK(FPDFDoc_AddAttachment);
+     CHK(FPDFDoc_DeleteAttachment);
+     CHK(FPDFDoc_GetAttachment);
+diff --git a/public/fpdf_attachment.h b/public/fpdf_attachment.h
+index a8a40b34b..ce1c8e9d0 100644
+--- a/public/fpdf_attachment.h
++++ b/public/fpdf_attachment.h
+@@ -189,6 +189,33 @@ FPDFAttachment_GetSubtype(FPDF_ATTACHMENT attachment,
+                           FPDF_WCHAR* buffer,
+                           unsigned long buflen);
+ 
++// Experimental API.
++// Set the MIME type (Subtype) of the embedded file |attachment|. Mirrors
++// FPDFAttachment_GetSubtype() on the write side. The MIME type is written
++// as a PDF Name object on the attachment's file stream dictionary, where
++// FPDFAttachment_GetSubtype() reads it from. Note that this is distinct
++// from the dictionary entries written by FPDFAttachment_SetStringValue(),
++// which live in the attachment's /Params subdictionary; the file-stream
++// /Subtype is the location that conforming readers and ISO 32000-2
++// §7.11.4 use to identify the embedded file's type.
++//
++//   attachment - handle to an attachment.
++//   subtype    - the MIME type to set, as a UTF-8 / ASCII byte string.
++//                MIME types are restricted to ASCII per RFC 2045.
++//                Pass NULL to error out; pass an empty string to set
++//                an empty Name (which conforming readers treat as
++//                "no subtype declared", matching the
++//                FPDFAttachment_GetSubtype empty-string return path).
++//
++// Returns true on success. Returns false when |attachment| is NULL,
++// |subtype| is NULL, or the attachment has no file stream (i.e. its
++// /EF entry is missing or its /F target is not a stream — typically
++// because FPDFAttachment_SetFile() has not been called yet to populate
++// the attachment's bytes).
++FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
++FPDFAttachment_SetSubtype(FPDF_ATTACHMENT attachment,
++                          FPDF_BYTESTRING subtype);
++
+ #ifdef __cplusplus
+ }  // extern "C"
+ #endif  // __cplusplus
+-- 
+2.43.0
+

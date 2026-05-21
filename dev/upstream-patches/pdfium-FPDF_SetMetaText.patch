@@ -1,0 +1,246 @@
+From cd66e5900e71cdabaaa805c4f79e07fb3cbfbe78 Mon Sep 17 00:00:00 2001
+From: Bill Denney <wdenney@humanpredictions.com>
+Date: Thu, 21 May 2026 13:05:23 +0000
+Subject: [PATCH] Expose FPDF_SetMetaText writer for the document Info
+ dictionary
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add the symmetric writer for FPDF_GetMetaText:
+
+  FPDF_BOOL FPDF_SetMetaText(FPDF_DOCUMENT document,
+                             FPDF_BYTESTRING tag,
+                             FPDF_WIDESTRING value);
+
+FPDF_GetMetaText() has shipped since PDFium's earliest public C API
+and is wrapped by every binding we surveyed (pypdfium2, pdfium-rs,
+pdfium-render, hyzyla, PdfiumAndroid, PdfiumViewer). The reader
+side is solid; there is no public way to set /Info/Title,
+/Info/Author, /Info/Subject, /Info/Keywords, /Info/Creator,
+/Info/Producer, /Info/CreationDate, or /Info/ModDate. Embedders'
+only workaround today is to save the PDF, mutate the trailer
+dictionary out-of-band, and re-save — which loses any in-memory
+mutations not yet flushed and fails on incremental saves.
+
+The implementation mirrors FPDFCatalog_SetLanguage line-for-line:
+get the mutable dictionary, write a CPDF_String via SetNewFor with
+the WideStringFromFPDFWideString path. Using SetNewFor<CPDF_String>
+on a WideStringView (rather than the ByteString path
+FPDFAttachment_SetStringValue takes) means multi-byte Unicode
+round-trips through FPDF_GetMetaText losslessly — verified by the
+new SetMetaText embedder test with a multi-byte Japanese subject.
+
+The writer works on:
+  * Existing PDFs parsed from disk that have an /Info reference in
+    their trailer. CPDF_Document::GetInfo() resolves the indirect
+    reference and returns the mutable dictionary.
+  * Documents created via FPDF_CreateNewDocument(), where
+    CreateNewDoc() initialises info_dict_ eagerly.
+
+The writer returns false when GetInfo() returns null — i.e. when an
+opened PDF genuinely lacks an /Info trailer entry. A follow-up CL
+can add a way to plumb a new Info dictionary into the trailer on
+those documents; for now, the writer matches the reader's "no Info
+to work with" semantics.
+
+Tested via four new FPDFDocEmbedderTest cases against bug_601362.pdf
+and the in-memory FPDF_CreateNewDocument() path:
+  * SetMetaText — invalid-arg rejection, basic set + read-back,
+    multi-byte Unicode round-trip, overwrite, empty-string
+    legitimate value, previously-absent tag becomes present.
+  * SetMetaTextOnNewDocument — the FPDF_CreateNewDocument() path,
+    confirming the eager-initialised Info dict accepts writes
+    without any prior FPDF_GetMetaText() call.
+  * SetMetaTextPersistsAcrossSave — round-trip through
+    FPDF_SaveAsCopy + OpenSavedDocument, asserting the mutation
+    actually reaches the saved PDF dictionary.
+
+Change-Id: Ia3e57b3dcdd0466c166728cd82fed8d9bfc9c06f
+---
+ fpdfsdk/fpdf_doc.cpp              | 26 +++++++++++
+ fpdfsdk/fpdf_doc_embeddertest.cpp | 74 +++++++++++++++++++++++++++++++
+ fpdfsdk/fpdf_view_c_api_test.c    |  1 +
+ public/fpdf_doc.h                 | 32 +++++++++++++
+ 4 files changed, 133 insertions(+)
+
+diff --git a/fpdfsdk/fpdf_doc.cpp b/fpdfsdk/fpdf_doc.cpp
+index 2de8c3302..fbb61d536 100644
+--- a/fpdfsdk/fpdf_doc.cpp
++++ b/fpdfsdk/fpdf_doc.cpp
+@@ -559,6 +559,32 @@ FPDF_EXPORT unsigned long FPDF_CALLCONV FPDF_GetMetaText(FPDF_DOCUMENT document,
+       UNSAFE_BUFFERS(SpanFromFPDFApiArgs(buffer, buflen)));
+ }
+ 
++FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
++FPDF_SetMetaText(FPDF_DOCUMENT document,
++                 FPDF_BYTESTRING tag,
++                 FPDF_WIDESTRING value) {
++  if (!tag || !value) {
++    return false;
++  }
++  CPDF_Document* doc = CPDFDocumentFromFPDFDocument(document);
++  if (!doc) {
++    return false;
++  }
++
++  RetainPtr<CPDF_Dictionary> info = doc->GetInfo();
++  if (!info) {
++    return false;
++  }
++
++  // SAFETY: required from caller. Mirrors the WideString-aware path
++  // used by FPDFCatalog_SetLanguage so multi-byte Unicode round-trips
++  // through FPDF_GetMetaText() losslessly.
++  info->SetNewFor<CPDF_String>(
++      tag,
++      UNSAFE_BUFFERS(WideStringFromFPDFWideString(value).AsStringView()));
++  return true;
++}
++
+ FPDF_EXPORT unsigned long FPDF_CALLCONV
+ FPDF_GetPageLabel(FPDF_DOCUMENT document,
+                   int page_index,
+diff --git a/fpdfsdk/fpdf_doc_embeddertest.cpp b/fpdfsdk/fpdf_doc_embeddertest.cpp
+index aa61b5d4a..8d6225819 100644
+--- a/fpdfsdk/fpdf_doc_embeddertest.cpp
++++ b/fpdfsdk/fpdf_doc_embeddertest.cpp
+@@ -887,6 +887,80 @@ TEST_F(FPDFDocEmbedderTest, GetMetaTextFromNewDocument) {
+   EXPECT_EQ(2u, FPDF_GetMetaText(empty_doc.get(), "Title", buf, sizeof(buf)));
+ }
+ 
++TEST_F(FPDFDocEmbedderTest, SetMetaText) {
++  ASSERT_TRUE(OpenDocument("bug_601362.pdf"));
++
++  // Invalid arguments return false without mutating the doc.
++  ScopedFPDFWideString value = GetFPDFWideString(L"x");
++  EXPECT_FALSE(FPDF_SetMetaText(nullptr, "Title", value.get()));
++  EXPECT_FALSE(FPDF_SetMetaText(document(), nullptr, value.get()));
++  EXPECT_FALSE(FPDF_SetMetaText(document(), "Title", nullptr));
++
++  // Set + read back through FPDF_GetMetaText.
++  unsigned short buf[128];
++  ScopedFPDFWideString new_title = GetFPDFWideString(L"Updated Title");
++  EXPECT_TRUE(FPDF_SetMetaText(document(), "Title", new_title.get()));
++  // "Updated Title" is 13 chars + NUL terminator * 2 bytes per char = 28.
++  ASSERT_EQ(28u, FPDF_GetMetaText(document(), "Title", buf, sizeof(buf)));
++  EXPECT_EQ(L"Updated Title", GetPlatformWString(buf));
++
++  // Multi-byte Unicode round-trips losslessly through the
++  // WideString-aware path.
++  ScopedFPDFWideString unicode_subject = GetFPDFWideString(L"日本語のテスト");
++  EXPECT_TRUE(
++      FPDF_SetMetaText(document(), "Subject", unicode_subject.get()));
++  ASSERT_EQ(16u, FPDF_GetMetaText(document(), "Subject", buf, sizeof(buf)));
++  EXPECT_EQ(L"日本語のテスト", GetPlatformWString(buf));
++
++  // Overwriting a previously-set key replaces the value.
++  ScopedFPDFWideString replaced = GetFPDFWideString(L"second");
++  EXPECT_TRUE(FPDF_SetMetaText(document(), "Title", replaced.get()));
++  ASSERT_EQ(14u, FPDF_GetMetaText(document(), "Title", buf, sizeof(buf)));
++  EXPECT_EQ(L"second", GetPlatformWString(buf));
++
++  // Empty string is a legitimate value (matches FPDFCatalog_SetLanguage).
++  ScopedFPDFWideString empty = GetFPDFWideString(L"");
++  EXPECT_TRUE(FPDF_SetMetaText(document(), "Title", empty.get()));
++  EXPECT_EQ(2u, FPDF_GetMetaText(document(), "Title", buf, sizeof(buf)));
++  EXPECT_EQ(L"", GetPlatformWString(buf));
++
++  // A previously-absent tag becomes present after Set.
++  ScopedFPDFWideString fresh = GetFPDFWideString(L"new-author");
++  EXPECT_TRUE(FPDF_SetMetaText(document(), "Author", fresh.get()));
++  ASSERT_EQ(22u, FPDF_GetMetaText(document(), "Author", buf, sizeof(buf)));
++  EXPECT_EQ(L"new-author", GetPlatformWString(buf));
++}
++
++TEST_F(FPDFDocEmbedderTest, SetMetaTextOnNewDocument) {
++  // FPDF_CreateNewDocument creates an Info dict eagerly, so the
++  // writer works without any prior read.
++  ScopedFPDFDocument empty_doc(FPDF_CreateNewDocument());
++  ScopedFPDFWideString title = GetFPDFWideString(L"Programmatic PDF");
++  EXPECT_TRUE(FPDF_SetMetaText(empty_doc.get(), "Title", title.get()));
++
++  unsigned short buf[128];
++  ASSERT_EQ(34u,
++            FPDF_GetMetaText(empty_doc.get(), "Title", buf, sizeof(buf)));
++  EXPECT_EQ(L"Programmatic PDF", GetPlatformWString(buf));
++}
++
++TEST_F(FPDFDocEmbedderTest, SetMetaTextPersistsAcrossSave) {
++  ASSERT_TRUE(OpenDocument("bug_601362.pdf"));
++
++  ScopedFPDFWideString new_creator = GetFPDFWideString(L"pdfium R package");
++  EXPECT_TRUE(FPDF_SetMetaText(document(), "Creator", new_creator.get()));
++
++  EXPECT_TRUE(FPDF_SaveAsCopy(document(), this, 0));
++
++  // Reopen the saved bytes and confirm the new value survived.
++  ASSERT_TRUE(OpenSavedDocument());
++  unsigned short buf[128];
++  ASSERT_EQ(34u, FPDF_GetMetaText(saved_document(), "Creator", buf,
++                                   sizeof(buf)));
++  EXPECT_EQ(L"pdfium R package", GetPlatformWString(buf));
++  CloseSavedDocument();
++}
++
+ TEST_F(FPDFDocEmbedderTest, GetPageAAction) {
+   ASSERT_TRUE(OpenDocument("get_page_aaction.pdf"));
+   ScopedPage page = LoadScopedPage(0);
+diff --git a/fpdfsdk/fpdf_view_c_api_test.c b/fpdfsdk/fpdf_view_c_api_test.c
+index 282512d13..c49c3ea19 100644
+--- a/fpdfsdk/fpdf_view_c_api_test.c
++++ b/fpdfsdk/fpdf_view_c_api_test.c
+@@ -164,6 +164,7 @@ int CheckPDFiumCApi() {
+     CHK(FPDF_GetMetaText);
+     CHK(FPDF_GetPageAAction);
+     CHK(FPDF_GetPageLabel);
++    CHK(FPDF_SetMetaText);
+ 
+     // fpdf_edit.h
+     CHK(FPDFFont_Close);
+diff --git a/public/fpdf_doc.h b/public/fpdf_doc.h
+index 2dc22d9c9..94c1cd177 100644
+--- a/public/fpdf_doc.h
++++ b/public/fpdf_doc.h
+@@ -413,6 +413,38 @@ FPDF_EXPORT unsigned long FPDF_CALLCONV FPDF_GetMetaText(FPDF_DOCUMENT document,
+                                                          void* buffer,
+                                                          unsigned long buflen);
+ 
++// Experimental API.
++// Set the document Info dictionary entry for |tag|. Mirrors
++// FPDF_GetMetaText() on the write side and accepts the same set of
++// tags listed in that function's documentation (Title, Author,
++// Subject, Keywords, Creator, Producer, CreationDate, ModDate). The
++// |value| is written as a CPDF_String using the same wide-string
++// path that FPDFCatalog_SetLanguage uses, so multi-byte Unicode
++// round-trips through FPDF_GetMetaText() losslessly.
++//
++//   document - handle to the document.
++//   tag      - the tag to set; UTF-8 encoded; must not be NULL.
++//              Empty tag returns false.
++//   value    - the new value for the tag; UTF-16LE NUL-terminated;
++//              must not be NULL. Empty value sets the tag to an
++//              empty string (use FPDF_RemoveMetaText to delete a tag
++//              once that companion lands).
++//
++// Returns true on success. Returns false when |document| is null,
++// |tag| or |value| is NULL, or the document has no Info dictionary
++// to write to (some documents opened from disk genuinely lack one;
++// future work will add a way to create the Info dict on those).
++// Documents created with FPDF_CreateNewDocument() always have an
++// Info dictionary available.
++//
++// Date tags (CreationDate, ModDate) take a PDF date string
++// (D:YYYYMMDDHHMMSS+HH'MM'); the caller is responsible for
++// formatting.
++FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
++FPDF_SetMetaText(FPDF_DOCUMENT document,
++                 FPDF_BYTESTRING tag,
++                 FPDF_WIDESTRING value);
++
+ // Get the page label for |page_index| from |document|.
+ //
+ //   document    - handle to the document.
+-- 
+2.43.0
+

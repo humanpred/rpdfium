@@ -1,0 +1,195 @@
+From aa0184217b57f86e8ed7437ff0881efce9588961 Mon Sep 17 00:00:00 2001
+From: Bill Denney <wdenney@humanpredictions.com>
+Date: Thu, 21 May 2026 13:26:57 +0000
+Subject: [PATCH] Expose FPDFAnnot_SetNumberValue for numeric annotation dict
+ entries
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add the symmetric writer for FPDFAnnot_GetNumberValue:
+
+  FPDF_BOOL FPDFAnnot_SetNumberValue(FPDF_ANNOTATION annot,
+                                      FPDF_BYTESTRING key,
+                                      float value);
+
+FPDFAnnot_GetNumberValue() reads a float from an annotation's
+dictionary by key. There's been no public way to write a number
+into the annotation dict — FPDFAnnot_SetStringValue() handles
+string entries and FPDFAnnot_SetColor() covers the specific RGBA
+case, but the general "set a numeric dict entry" path was missing.
+This blocks writing common annotation fields like /CA (constant
+opacity, 0..1), /F (some legacy viewers expect a number here),
+/IT (free-text intent rotation), /BS/W (border width), or
+arbitrary custom-namespace floats.
+
+The implementation mirrors FPDFAnnot_SetStringValue line-for-line:
+get the mutable annotation dictionary, write a CPDF_Number via
+SetNewFor. Returns false on null annot or null key (matching the
+SetStringValue null-key contract; the existing impl quietly
+no-ops on null key, but adding the guard explicitly keeps the
+behaviour consistent with the getter, which also rejects null
+keys).
+
+Tested via a new FPDFAnnotEmbedderTest.SetNumberValue case against
+text_form_multiple.pdf which already exercises GetNumberValue:
+  * Invalid-arg rejection (null annot, null key).
+  * Overwriting an existing number key (MaxLen 10 -> 42) with
+    type-stays-NUMBER assertion via GetValueType.
+  * Setting a previously-absent key on a different annotation.
+  * Negative, zero, and fractional values all round-trip.
+  * Overwriting a non-number key ("V" which is a string) replaces
+    the type to NUMBER — confirming the doc-comment's stated
+    contract.
+
+Change-Id: I7bf21fa3f70763f69fdcabd54baa2f0771af80cf
+---
+ fpdfsdk/fpdf_annot.cpp              | 17 ++++++++++
+ fpdfsdk/fpdf_annot_embeddertest.cpp | 52 +++++++++++++++++++++++++++++
+ fpdfsdk/fpdf_view_c_api_test.c      |  1 +
+ public/fpdf_annot.h                 | 26 +++++++++++++++
+ 4 files changed, 96 insertions(+)
+
+diff --git a/fpdfsdk/fpdf_annot.cpp b/fpdfsdk/fpdf_annot.cpp
+index 956c24c42..4b213f510 100644
+--- a/fpdfsdk/fpdf_annot.cpp
++++ b/fpdfsdk/fpdf_annot.cpp
+@@ -1130,6 +1130,23 @@ FPDFAnnot_SetStringValue(FPDF_ANNOTATION annot,
+   return true;
+ }
+ 
++FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
++FPDFAnnot_SetNumberValue(FPDF_ANNOTATION annot,
++                         FPDF_BYTESTRING key,
++                         float value) {
++  if (!key) {
++    return false;
++  }
++  RetainPtr<CPDF_Dictionary> pAnnotDict =
++      GetMutableAnnotDictFromFPDFAnnotation(annot);
++  if (!pAnnotDict) {
++    return false;
++  }
++
++  pAnnotDict->SetNewFor<CPDF_Number>(key, value);
++  return true;
++}
++
+ FPDF_EXPORT unsigned long FPDF_CALLCONV
+ FPDFAnnot_GetStringValue(FPDF_ANNOTATION annot,
+                          FPDF_BYTESTRING key,
+diff --git a/fpdfsdk/fpdf_annot_embeddertest.cpp b/fpdfsdk/fpdf_annot_embeddertest.cpp
+index d23c3e35f..29a640453 100644
+--- a/fpdfsdk/fpdf_annot_embeddertest.cpp
++++ b/fpdfsdk/fpdf_annot_embeddertest.cpp
+@@ -1516,6 +1516,58 @@ TEST_F(FPDFAnnotEmbedderTest, GetNumberValue) {
+   }
+ }
+ 
++TEST_F(FPDFAnnotEmbedderTest, SetNumberValue) {
++  // Reuses text_form_multiple.pdf: annotation index 2 has the
++  // "MaxLen" numeric key already; annotations 0 and 1 do not.
++  ASSERT_TRUE(OpenDocument("text_form_multiple.pdf"));
++  ScopedPage page = LoadScopedPage(0);
++  ASSERT_TRUE(page);
++
++  ScopedFPDFAnnotation annot(FPDFPage_GetAnnot(page.get(), 2));
++  ASSERT_TRUE(annot);
++
++  // Invalid args reject without mutating.
++  EXPECT_FALSE(FPDFAnnot_SetNumberValue(nullptr, "MaxLen", 1.0f));
++  EXPECT_FALSE(FPDFAnnot_SetNumberValue(annot.get(), nullptr, 1.0f));
++
++  // Overwriting an existing numeric key.
++  EXPECT_TRUE(FPDFAnnot_SetNumberValue(annot.get(), "MaxLen", 42.0f));
++  float value = 0.0f;
++  EXPECT_TRUE(FPDFAnnot_GetNumberValue(annot.get(), "MaxLen", &value));
++  EXPECT_FLOAT_EQ(42.0f, value);
++  // Type stays NUMBER.
++  EXPECT_EQ(FPDF_OBJECT_NUMBER,
++            FPDFAnnot_GetValueType(annot.get(), "MaxLen"));
++
++  // Setting a previously-absent key creates it.
++  ScopedFPDFAnnotation other(FPDFPage_GetAnnot(page.get(), 0));
++  ASSERT_TRUE(other);
++  EXPECT_FALSE(FPDFAnnot_HasKey(other.get(), "MaxLen"));
++  EXPECT_TRUE(FPDFAnnot_SetNumberValue(other.get(), "MaxLen", 7.5f));
++  EXPECT_TRUE(FPDFAnnot_HasKey(other.get(), "MaxLen"));
++  EXPECT_TRUE(FPDFAnnot_GetNumberValue(other.get(), "MaxLen", &value));
++  EXPECT_FLOAT_EQ(7.5f, value);
++
++  // Negative + zero + fractional values all round-trip.
++  EXPECT_TRUE(FPDFAnnot_SetNumberValue(annot.get(), "CA", 0.5f));
++  EXPECT_TRUE(FPDFAnnot_GetNumberValue(annot.get(), "CA", &value));
++  EXPECT_FLOAT_EQ(0.5f, value);
++  EXPECT_TRUE(FPDFAnnot_SetNumberValue(annot.get(), "CA", 0.0f));
++  EXPECT_TRUE(FPDFAnnot_GetNumberValue(annot.get(), "CA", &value));
++  EXPECT_FLOAT_EQ(0.0f, value);
++  EXPECT_TRUE(FPDFAnnot_SetNumberValue(annot.get(), "CA", -1.5f));
++  EXPECT_TRUE(FPDFAnnot_GetNumberValue(annot.get(), "CA", &value));
++  EXPECT_FLOAT_EQ(-1.5f, value);
++
++  // Overwriting a non-number key (e.g. "V" which is a string) replaces
++  // the type to NUMBER.
++  EXPECT_NE(FPDF_OBJECT_NUMBER, FPDFAnnot_GetValueType(annot.get(), "V"));
++  EXPECT_TRUE(FPDFAnnot_SetNumberValue(annot.get(), "V", 99.0f));
++  EXPECT_EQ(FPDF_OBJECT_NUMBER, FPDFAnnot_GetValueType(annot.get(), "V"));
++  EXPECT_TRUE(FPDFAnnot_GetNumberValue(annot.get(), "V", &value));
++  EXPECT_FLOAT_EQ(99.0f, value);
++}
++
+ TEST_F(FPDFAnnotEmbedderTest, GetSetAP) {
+   // Open a file with four annotations and load its first page.
+   ASSERT_TRUE(OpenDocument("annotation_stamp_with_ap.pdf"));
+diff --git a/fpdfsdk/fpdf_view_c_api_test.c b/fpdfsdk/fpdf_view_c_api_test.c
+index 282512d13..1ec44e565 100644
+--- a/fpdfsdk/fpdf_view_c_api_test.c
++++ b/fpdfsdk/fpdf_view_c_api_test.c
+@@ -96,6 +96,7 @@ int CheckPDFiumCApi() {
+     CHK(FPDFAnnot_SetFocusableSubtypes);
+     CHK(FPDFAnnot_SetFontColor);
+     CHK(FPDFAnnot_SetFormFieldFlags);
++    CHK(FPDFAnnot_SetNumberValue);
+     CHK(FPDFAnnot_SetRect);
+     CHK(FPDFAnnot_SetStringValue);
+     CHK(FPDFAnnot_SetURI);
+diff --git a/public/fpdf_annot.h b/public/fpdf_annot.h
+index 0aa9f6886..78b456c5f 100644
+--- a/public/fpdf_annot.h
++++ b/public/fpdf_annot.h
+@@ -565,6 +565,32 @@ FPDFAnnot_SetStringValue(FPDF_ANNOTATION annot,
+                          FPDF_BYTESTRING key,
+                          FPDF_WIDESTRING value);
+ 
++// Experimental API.
++// Set the number value corresponding to |key| in |annot|'s dictionary,
++// overwriting the existing value if any. The value type after this call
++// is FPDF_OBJECT_NUMBER regardless of what was at |key| before. Mirrors
++// FPDFAnnot_GetNumberValue() on the write side and is the numeric
++// counterpart to FPDFAnnot_SetStringValue.
++//
++// Common annotation keys whose values are numbers and which were
++// previously unwritable through the public API: /CA (constant opacity,
++// 0..1), /F (treated as a number by some legacy viewers), /IT
++// (free-text intent rotation), /BS/W (border width), arbitrary
++// custom-namespace floats.
++//
++//   annot - handle to an annotation.
++//   key   - the key to the dictionary entry to be set, encoded in
++//           UTF-8 / ASCII. Must not be NULL.
++//   value - the float value to be set.
++//
++// Returns true on success. Returns false when |annot| is NULL, |key|
++// is NULL, or |annot| has no mutable dictionary (e.g. attached to a
++// document opened in read-only mode).
++FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
++FPDFAnnot_SetNumberValue(FPDF_ANNOTATION annot,
++                         FPDF_BYTESTRING key,
++                         float value);
++
+ // Experimental API.
+ // Get the string value corresponding to |key| in |annot|'s dictionary. |buffer|
+ // is only modified if |buflen| is longer than the length of contents. Note that
+-- 
+2.43.0
+
