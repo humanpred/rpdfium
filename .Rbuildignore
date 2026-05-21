@@ -24,3 +24,5 @@
 ^.*\.gcda$
 ^.*\.gcov$
 ^pkgdown$
+^doc$
+^Meta$
