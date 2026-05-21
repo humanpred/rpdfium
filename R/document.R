@@ -81,7 +81,7 @@ pdf_doc_open <- function(path = NULL, source = NULL, password = NULL,
 #' Network errors propagate from [`url()`] / [`readBin()`] (typical
 #' shape: `cannot open URL '...'` from `connection failed`). The
 #' returned `pdfium_doc`'s `$path` field is the URL string itself,
-#' so [print()][print.pdfium_doc] and [pdf_doc_summary()] surface
+#' so `print()` and [pdf_doc_summary()] surface
 #' the source even though no local path exists.
 #'
 #' @param url Character scalar. Must start with one of `http://`,

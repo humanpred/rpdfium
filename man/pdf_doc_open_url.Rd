@@ -29,7 +29,7 @@ disk; the bytes live in R memory for the document's lifetime.
 Network errors propagate from \code{\link[=url]{url()}} / \code{\link[=readBin]{readBin()}} (typical
 shape: \verb{cannot open URL '...'} from \verb{connection failed}). The
 returned \code{pdfium_doc}'s \verb{$path} field is the URL string itself,
-so \link[=print.pdfium_doc]{print()} and \code{\link[=pdf_doc_summary]{pdf_doc_summary()}} surface
+so \code{print()} and \code{\link[=pdf_doc_summary]{pdf_doc_summary()}} surface
 the source even though no local path exists.
 }
 \examples{
