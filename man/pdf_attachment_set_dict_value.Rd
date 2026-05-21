@@ -20,21 +20,49 @@ Invisibly returns the parent \code{pdfium_doc}.
 }
 \description{
 Writes a string-valued entry in the attachment's parameter
-dictionary. The common keys are:
+dictionary. Common keys:
 }
 \details{
 \itemize{
-\item \code{"Subtype"} — the MIME type, e.g. \code{"application/xml"}. Required
-for tools that route attachments by MIME.
 \item \code{"Desc"} — a human-readable description.
 \item \code{"AFRelationship"} — the AF/EF relationship type
 (\code{"Source"}, \code{"Data"}, \code{"Alternative"}, etc.).
-\item \code{"CreationDate"}, \code{"ModDate"} — PDF date strings (see
+\item \code{"ModDate"} — modification date as a PDF date string (see
 \code{\link[=pdf_parse_date]{pdf_parse_date()}} for the format).
 }
 
-Wraps \code{FPDFAttachment_SetStringValue}. Mirrors
+Wraps \code{FPDFAttachment_SetStringValue}, which writes into the
+attachment's \verb{/Params} subdictionary. Mirrors
 \code{\link[=pdf_attachment_dict_value]{pdf_attachment_dict_value()}} on the read side.
+
+\strong{Ordering}: PDFium's \code{FPDFAttachment_SetStringValue} requires the
+attachment's \verb{/Params} dictionary to already exist. Call
+\code{\link[=pdf_attachment_set_data]{pdf_attachment_set_data()}} first on any attachment that doesn't
+have one yet (the file data write auto-creates \verb{/Params},
+populating \code{Size}, \code{CreationDate}, and \code{CheckSum}); only then can
+you append further keys with this function. On a fresh attachment
+from \code{\link[=pdf_attachment_new]{pdf_attachment_new()}} this means the natural sequence is
+\code{pdf_attachment_new()} → \code{pdf_attachment_set_data()} →
+\code{pdf_attachment_set_dict_value()}.
+
+\strong{Not exposed}: the file stream's own \verb{/Subtype} entry (the MIME
+type returned by \code{\link[=pdf_attachment_mime_type]{pdf_attachment_mime_type()}}) lives on the
+attachment's embedded file stream, not on \verb{/Params}, and PDFium
+has no public setter for it. Passing \code{key = "Subtype"} here writes
+\verb{/Params/Subtype}, which won't be picked up by
+\code{\link[=pdf_attachment_mime_type]{pdf_attachment_mime_type()}}. See \verb{dev/upstream-patches/} for the
+upstream gap.
+
+\strong{Encoding}: PDFium's \code{FPDFAttachment_SetStringValue} stores the
+value as a PDF byte-string interpreted in PDFDocEncoding on read.
+ASCII round-trips cleanly; non-ASCII Unicode characters are
+lossy through the read path (the bytes are written but
+\code{FPDFAttachment_GetStringValue}'s \code{GetUnicodeText} step
+misinterprets multi-byte UTF-8 sequences as PDFDocEncoding bytes).
+This is a PDFium-side inconsistency — \code{FPDFAnnot_SetStringValue}
+uses the wide-string-aware CPDF_String path and round-trips
+Unicode correctly. Until upstream is fixed, restrict
+attachment-dict values to ASCII when round-trip fidelity matters.
 }
 \seealso{
 \code{\link[=pdf_attachment_dict_value]{pdf_attachment_dict_value()}}.

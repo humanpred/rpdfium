@@ -321,7 +321,10 @@ pdf_form_field_page_num <- function(field) {
   field$page_num
 }
 
-# Internal: PDFium field-type code -> name, vectorized.
+# Internal mirror of pdfium_form_field_type_name() (in
+# R/enum_codes.R). Inlined here rather than calling the exported
+# wrapper cross-file so lintr's per-file static analysis sees a
+# self-contained helper.
 form_field_type_name <- function(codes) {
   .pdfium_enum_name(codes, .pdfium_form_field_types)
 }

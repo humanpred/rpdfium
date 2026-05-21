@@ -272,9 +272,7 @@ pdf_obj_matrix <- function(obj) {
   )
 }
 
-# Internal: convert a PDFium FPDF_PAGEOBJ_* code (int) to its short
-# character name. See R/utils.R::.pdfium_enum_name for the fallback
-# semantics.
-pdfium_obj_type_name <- function(code) {
-  .pdfium_enum_name(code, .pdfium_obj_type_names)
-}
+# pdfium_obj_type_name() lives in R/enum_codes.R (Phase 9 promoted
+# it to a documented export, paired with the inverse
+# pdfium_obj_type_code()). Internal call sites that named it
+# directly still resolve via the package namespace.

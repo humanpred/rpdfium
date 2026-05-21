@@ -13,12 +13,6 @@
 )
 # 0 (PDFACTION_UNSUPPORTED) maps to "unsupported".
 
-pdfium_action_type_name <- function(codes) {
-  .pdfium_enum_name(codes, .pdfium_action_types,
-    base = 1L, fallback = "unsupported"
-  )
-}
-
 # FPDF dest-view codes (fpdf_doc.h):
 #   0 = UNKNOWN_MODE, 1 = XYZ, 2 = FIT, 3 = FITH, 4 = FITV,
 #   5 = FITR, 6 = FITB, 7 = FITBH, 8 = FITBV
@@ -33,9 +27,9 @@ pdfium_action_type_name <- function(codes) {
   "fitbv" # 8 PDFDEST_VIEW_FITBV (fit bbox height at x)
 )
 
-pdfium_dest_view_name <- function(codes) {
-  .pdfium_enum_name(codes, .pdfium_dest_views, base = 1L)
-}
+# pdfium_action_type_name() / pdfium_dest_view_name() live in
+# R/enum_codes.R (Phase 9 promoted them to documented exports paired
+# with their `_code()` inverses).
 
 #' Hit-test for the link annotation under a point
 #'
