@@ -162,8 +162,19 @@ release on scope grounds (see `CLAUDE.md` §"Scope"):
   `pdf_path_close()`, `pdf_path_append()` — append path geometry to
   an existing path object.
 * `pdf_path_new()`, `pdf_rect_new()`, `pdf_text_new()`,
-  `pdf_obj_delete()` — create fresh paths, rectangles, and text
-  objects, or remove an existing one.
+  `pdf_image_new()`, `pdf_obj_delete()` — create fresh paths,
+  rectangles, text objects, or JPEG images, or remove an existing
+  object. `pdf_text_new()` accepts either a standard-font name or
+  a `pdfium_font` handle from `pdf_font_load_standard()` /
+  `pdf_font_load()`; `pdf_image_new()` embeds JPEG bytes inline
+  via `FPDFImageObj_LoadJpegFileInline` and lets you place the
+  image into an explicit `bounds = c(left, bottom, right, top)`
+  rectangle.
+* `pdf_font_load_standard()`, `pdf_font_load()`, `pdf_font_close()`
+  — load one of the 14 PDF standard fonts (no embedding) or
+  embed an arbitrary TrueType / Type1 font's bytes into the
+  document. Returned `pdfium_font` handles plug straight into
+  `pdf_text_new()` for custom-typeface text.
 
 ## Annotation authoring
 

@@ -77,16 +77,15 @@ PDFs.
 doc <- pdf_doc_new()
 page <- pdf_page_new(doc, width = 612, height = 792)
 
-# A red filled rectangle.
-rect <- pdf_rect_new(page, bounds = c(50, 600, 250, 700))
+# A red filled rectangle (x, y, width, height) in PDF points.
+rect <- pdf_rect_new(page, x = 50, y = 600, width = 200, height = 100)
 pdf_path_set_fill(rect, color = c(220, 50, 47))
-pdf_path_set_draw_mode(rect, draw_mode = "fill")
+pdf_path_set_draw_mode(rect, fill_mode = "winding", stroke = FALSE)
 
 # A text object on top.
-txt <- pdf_text_new(page, font = "Helvetica-Bold", size = 18)
-pdf_text_set_content(txt, "Hello pdfium!")
-pdf_obj_set_matrix(txt, matrix(c(1, 0, 0, 0, 1, 0, 80, 640, 1),
-                               nrow = 3, byrow = TRUE))
+pdf_text_new(page, "Hello pdfium!",
+             font = "Helvetica-Bold", font_size = 18,
+             x = 80, y = 640)
 
 pdf_save(doc, "hello.pdf")
 ```
@@ -97,6 +96,44 @@ pdf_save(doc, "hello.pdf")
 data-frame of segments (matching the schema of `pdf_path_segments()`)
 into a path in one call — useful for echoing geometry from one
 document into another.
+
+### Embedding a JPEG image
+
+`pdf_image_new()` wraps `FPDFImageObj_LoadJpegFileInline` — the JPEG
+bytes are copied into the PDF up front, so the source raw vector or
+file is free immediately after the call. Pass `bounds = c(left,
+bottom, right, top)` to place the image at a specific rectangle in
+PDF user-space points; without `bounds`, the image sits at the
+origin at its natural pixel size (rarely what you want).
+
+```{r, eval = FALSE}
+jpeg_path <- system.file("img", "Rlogo.jpg", package = "jpeg")
+pdf_image_new(page, jpeg_path,
+              bounds = c(72, 400, 272, 500))
+```
+
+PNG / TIFF / raw-bitmap embedding is deferred to a later release —
+convert to JPEG with `magick::image_write(..., format = "jpeg")` if
+needed.
+
+### Custom fonts
+
+The 14 PDF standard fonts work without embedding — pass the name
+straight through (`pdf_text_new(page, "...", font = "Times-Italic",
+...)`). For arbitrary TrueType or Type1 typefaces, load the font
+first via `pdf_font_load()` (or `pdf_font_load_standard()` if you
+just want a handle for a named standard font) and pass the
+resulting `pdfium_font` handle into `pdf_text_new()`:
+
+```{r, eval = FALSE}
+font <- pdf_font_load(doc, "/path/to/MyTypeface-Regular.ttf")
+pdf_text_new(page, "ünïcödé ✓", font = font, font_size = 24,
+             x = 72, y = 300)
+```
+
+The font handle carries an `FPDFFont_Close` finalizer; the doc is
+pinned in the externalptr's `prot` slot. `pdf_font_close(font)` is
+idempotent and useful when you want deterministic release.
 
 ## Styling an existing object
 

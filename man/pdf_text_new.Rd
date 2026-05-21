@@ -14,8 +14,13 @@ must be readwrite.}
 create an empty text object you'll populate later via
 \code{\link[=pdf_text_set_content]{pdf_text_set_content()}}.}
 
-\item{font}{Character scalar — one of the 14 PDF standard font
-names. Default \code{"Helvetica"}.}
+\item{font}{Either a character scalar — one of the 14 PDF
+standard font names (see \code{\link[=pdf_font_load_standard]{pdf_font_load_standard()}} for the
+list) — or a \code{pdfium_font} handle from
+\code{\link[=pdf_font_load_standard]{pdf_font_load_standard()}} or \code{\link[=pdf_font_load]{pdf_font_load()}}. Default
+\code{"Helvetica"}. Pass a \code{pdfium_font} handle when you need a
+custom TrueType / Type1 font; the standard-font shortcut is
+purely for convenience.}
 
 \item{font_size}{Numeric scalar — font size in points. Default
 \code{12}.}
@@ -28,14 +33,15 @@ The new \code{pdfium_obj} (type \code{"text"}), inserted on the
 page.
 }
 \description{
-Wraps \code{FPDFPageObj_NewTextObj} + (optionally) \code{FPDFText_SetText}
-\itemize{
-\item \code{FPDFPageObj_Transform} + \code{FPDFPage_InsertObject}. The text
-object uses one of the 14 PDF standard fonts (no font embedding
-needed); custom fonts are deferred to a later release.
-}
+Wraps \code{FPDFPageObj_NewTextObj} (when \code{font} is a standard-font
+name) or \code{FPDFPageObj_CreateTextObj} (when \code{font} is a custom
+\code{pdfium_font} handle from \code{\link[=pdf_font_load_standard]{pdf_font_load_standard()}} /
+\code{\link[=pdf_font_load]{pdf_font_load()}}). Either path is followed by an optional
+\code{FPDFText_SetText}, \code{FPDFPageObj_Transform}, and
+\code{FPDFPage_InsertObject}.
 }
 \seealso{
 \code{\link[=pdf_text_set_content]{pdf_text_set_content()}}, \code{\link[=pdf_text_set_render_mode]{pdf_text_set_render_mode()}},
-\code{\link[=pdf_obj_set_matrix]{pdf_obj_set_matrix()}}.
+\code{\link[=pdf_obj_set_matrix]{pdf_obj_set_matrix()}}, \code{\link[=pdf_font_load_standard]{pdf_font_load_standard()}},
+\code{\link[=pdf_font_load]{pdf_font_load()}}.
 }
