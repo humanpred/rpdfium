@@ -1,25 +1,3 @@
-# pdfium (development version)
-
-## New features
-
-* `pdf_doc_summary()` — one-call helper that returns a single-row
-  tibble aggregating the most-asked-for facts about a PDF: path,
-  page count, Info-dictionary metadata, structural feature flags
-  (tagged, encrypted, has-forms, has-attachments, …), counts for
-  each feature group, and the file-ID tuple. Replaces the
-  eight-or-so individual calls users typically chain together when
-  triaging a PDF.
-* `pdf_pages_summary()` — per-page sibling of `pdf_doc_summary()`:
-  one row per page with `width`, `height` (PDF user-space points),
-  `rotation`, and `label`. All four columns use the fast by-index
-  PDFium calls, so the function does not load any page objects and
-  scales to long documents. Roughly the `pdftools::pdf_pagesize()`
-  equivalent, but with rotation + label columns added.
-* `summary()` S3 method for `pdfium_doc` — calling `summary(doc)`
-  now dispatches to [pdf_doc_summary()]. Matches the standard R
-  idiom of `print()` for a quick "what is this" string and
-  `summary()` for the deep-dive tibble.
-
 # pdfium 0.1.0
 
 Initial CRAN release. This is the first public version of `pdfium`,
@@ -49,6 +27,14 @@ PDFs created with `pdf_doc_new()` are also writable).
 * `pdf_page_load()` / `pdf_page_close()`, `pdf_page_size()`,
   `pdf_page_rotation()`, `pdf_page_box()`, `pdf_page_thumbnail()` —
   per-page handles and metadata.
+* `pdf_doc_summary()` and `pdf_pages_summary()` — one-call triage
+  helpers. `pdf_doc_summary()` returns a single-row tibble
+  aggregating the most-asked-for facts about a PDF (path, page
+  count, Info-dictionary metadata, feature flags, per-feature
+  counts, file-ID tuple); `pdf_pages_summary()` is the per-page
+  sibling (width / height / rotation / label, all via the fast
+  by-index PDFium readers). `summary(doc)` dispatches to
+  `pdf_doc_summary()` so the standard R idiom works.
 
 ## Page objects, paths, and text
 
