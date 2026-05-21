@@ -2,6 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
+Rplots.pdf
+tests/testthat/Rplots.pdf
 .Rproj.user/
 *.Rproj
 *.Rcheck/
