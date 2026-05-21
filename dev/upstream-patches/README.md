@@ -18,6 +18,75 @@ their own machine.
 
 ## Active patches
 
+### `pdfium-FPDF_SetMetaText.patch`
+
+**Status:** Drafted on 2026-05-21 against upstream HEAD `e30fc3988`.
+Not yet uploaded to Gerrit; awaiting a human contributor to run
+`git cl upload --bypass-hooks` per the walk-through below.
+
+Adds the public symbol:
+
+```c
+FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
+FPDF_SetMetaText(FPDF_DOCUMENT document,
+                 FPDF_BYTESTRING tag,
+                 FPDF_WIDESTRING value);
+```
+
+so embedders can write `/Info/Title`, `/Info/Author`,
+`/Info/Subject`, `/Info/Keywords`, `/Info/Creator`, `/Info/Producer`,
+`/Info/CreationDate`, and `/Info/ModDate` — the eight document Info
+keys that `FPDF_GetMetaText` reads. This was CL 1 in
+`dev/upstream-api-gaps.md` and the most-requested writer in our
+v0.1.0 user survey.
+
+The implementation mirrors `FPDFCatalog_SetLanguage` line-for-line:
+get the mutable Info dictionary via `CPDF_Document::GetInfo()`, write
+a `CPDF_String` via `SetNewFor` with the `WideStringFromFPDFWideString`
+path. Using the `WideStringView` overload (rather than the
+`ByteString` path `FPDFAttachment_SetStringValue` takes) means
+multi-byte Unicode round-trips losslessly — verified by the
+embedder test with a multi-byte Japanese subject.
+
+The writer works on:
+* Existing PDFs parsed from disk that have an `/Info` reference in
+  their trailer. `CPDF_Document::GetInfo()` resolves the indirect
+  reference and returns the mutable dictionary.
+* Documents created via `FPDF_CreateNewDocument()`, where
+  `CreateNewDoc()` initialises `info_dict_` eagerly.
+
+Returns false when `GetInfo()` returns null — i.e. when an opened
+PDF genuinely lacks an `/Info` trailer entry. A follow-up CL can
+add a way to plumb a new Info dictionary into the trailer on those
+documents; for now, the writer matches the reader's "no Info to
+work with" semantics.
+
+Files touched (against upstream HEAD `e30fc3988`):
+* `public/fpdf_doc.h` — declaration with full doc comment placed
+  immediately after the existing `FPDF_GetMetaText` declaration.
+* `fpdfsdk/fpdf_doc.cpp` — implementation placed immediately after
+  `FPDF_GetMetaText`. 27 lines.
+* `fpdfsdk/fpdf_view_c_api_test.c` — `CHK(FPDF_SetMetaText)` entry
+  next to the existing `FPDF_GetMetaText` CHK so `api_check.py`
+  passes presubmit.
+* `fpdfsdk/fpdf_doc_embeddertest.cpp` — three new
+  `FPDFDocEmbedderTest` cases:
+  * `SetMetaText` — invalid-arg rejection, basic set + read-back,
+    multi-byte Unicode round-trip, overwrite, empty-string
+    legitimate value, previously-absent tag becomes present.
+  * `SetMetaTextOnNewDocument` — confirms the
+    `FPDF_CreateNewDocument()` path's eagerly-initialised Info dict
+    accepts writes without any prior `FPDF_GetMetaText()` call.
+  * `SetMetaTextPersistsAcrossSave` — round-trip through
+    `FPDF_SaveAsCopy` + `OpenSavedDocument`, asserting the mutation
+    actually reaches the saved PDF dictionary (not just the
+    in-memory Info dict).
+
+The commit message carries the deterministic
+`Change-Id: Ia3e57b3dcdd0466c166728cd82fed8d9bfc9c06f` so re-uploads
+(after rebases or reviewer-requested amends) all land on the same
+Gerrit CL.
+
 ### `pdfium-FPDFAnnot_AppendOption.patch`
 
 **Status:** Drafted on 2026-05-20 against upstream HEAD

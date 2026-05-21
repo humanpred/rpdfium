@@ -53,6 +53,8 @@ prior art rather than repeating their motivation.
   upload from a CLA-signed account.
 - `FPDFAnnot_AppendOption` + `FPDFAnnot_RemoveOptions` — patch
   drafted 2026-05-20, ready to upload.
+- `FPDF_SetMetaText` — patch drafted 2026-05-21 (CL 1 below); see
+  `dev/upstream-patches/pdfium-FPDF_SetMetaText.patch`.
 
 ## Proposed CLs
 
@@ -63,7 +65,7 @@ the consolidated request: gaps that unblock the most user-visible R
 functionality first, geometry / authoring writers next,
 deeper-structural items last.
 
-### CL 1: Document Info dictionary writers
+### CL 1: Document Info dictionary writers — **drafted**
 
 **Symbols proposed:**
 
