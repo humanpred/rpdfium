@@ -625,6 +625,23 @@ pdf_doc_summary <- function(doc, password = NULL) {
   if (is.null(a) || (length(a) == 1L && is.na(a))) b else a
 }
 
+#' Document-level summary
+#'
+#' `summary()` method for `pdfium_doc`. Defers to
+#' [pdf_doc_summary()] so users can call `summary(doc)` for the
+#' single-row tibble of every key fact about the PDF — page count,
+#' Info-dictionary metadata, structural feature flags, per-feature
+#' counts, the file-ID tuple — in one call.
+#'
+#' @param object A `pdfium_doc` from [pdf_doc_open()].
+#' @param ... Unused (S3 generic compatibility).
+#' @return The tibble returned by [pdf_doc_summary()].
+#' @seealso [pdf_doc_summary()].
+#' @export
+summary.pdfium_doc <- function(object, ...) {
+  pdf_doc_summary(object)
+}
+
 # Internal: convert pdf_doc_file_id()'s raw return to a hex string,
 # or NA_character_ when empty. Hoisted from pdf_doc_summary so its
 # two branches can be unit-tested without a fixture that carries an

@@ -129,3 +129,17 @@ test_that("file_id_hex_or_na hex-encodes non-empty raw bytes", {
   bytes <- as.raw(c(0x00, 0xff, 0xab, 0x10))
   expect_identical(pdfium:::file_id_hex_or_na(bytes), "00ffab10")
 })
+
+# summary.pdfium_doc S3 method ------------------------------------
+
+test_that("summary(doc) dispatches to pdf_doc_summary", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  expect_identical(summary(doc), pdf_doc_summary(doc))
+})
+
+test_that("summary(doc) returns a tibble", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  expect_s3_class(summary(doc), "tbl_df")
+})

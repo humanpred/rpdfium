@@ -15,6 +15,10 @@
   PDFium calls, so the function does not load any page objects and
   scales to long documents. Roughly the `pdftools::pdf_pagesize()`
   equivalent, but with rotation + label columns added.
+* `summary()` S3 method for `pdfium_doc` — calling `summary(doc)`
+  now dispatches to [pdf_doc_summary()]. Matches the standard R
+  idiom of `print()` for a quick "what is this" string and
+  `summary()` for the deep-dive tibble.
 
 # pdfium 0.1.0
 
