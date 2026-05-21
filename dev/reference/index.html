@@ -1629,7 +1629,7 @@
       </dl></div><div class="section level2">
       <h2 id="page-object-creation">Page-object creation<a class="anchor" aria-label="anchor" href="#page-object-creation"></a></h2>
 
-      <div class="section-desc"><p>Create fresh page-objects (paths, rectangles, text) on a page that’s been opened with <code>readwrite = TRUE</code> or built via <code><a href="../reference/pdf_doc_new.html">pdf_doc_new()</a></code>. Image creation is deferred to a later release pending FPDF_BITMAP plumbing. Use <code><a href="../reference/pdf_obj_delete.html">pdf_obj_delete()</a></code> for the inverse — remove + destroy a page-object.</p></div>
+      <div class="section-desc"><p>Create fresh page-objects (paths, rectangles, text, JPEG images) on a page that’s been opened with <code>readwrite = TRUE</code> or built via <code><a href="../reference/pdf_doc_new.html">pdf_doc_new()</a></code>. Use <code><a href="../reference/pdf_obj_delete.html">pdf_obj_delete()</a></code> for the inverse — remove + destroy a page-object. PNG / TIFF / raw- bitmap embedding stays deferred to a later release pending <code>FPDF_BITMAP</code> plumbing.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -1659,10 +1659,47 @@
 
         <dt>
 
+          <code><a href="pdf_image_new.html">pdf_image_new()</a></code>
+
+        </dt>
+        <dd>Create a new image page-object from JPEG bytes</dd>
+
+        <dt>
+
           <code><a href="pdf_obj_delete.html">pdf_obj_delete()</a></code>
 
         </dt>
         <dd>Remove a page object and destroy it</dd>
+      </dl></div><div class="section level2">
+      <h2 id="font-loading">Font loading<a class="anchor" aria-label="anchor" href="#font-loading"></a></h2>
+
+      <div class="section-desc"><p>Load a font for use in <code><a href="../reference/pdf_text_new.html">pdf_text_new()</a></code>. The 14 PDF standard fonts need no embedding; arbitrary TrueType / Type1 fonts get their bytes copied into the document via <code>FPDFText_LoadFont</code>. <code><a href="../reference/pdf_font_close.html">pdf_font_close()</a></code> is idempotent and matches the explicit- release pattern of the other handle classes.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pdf_font_load_standard.html">pdf_font_load_standard()</a></code>
+
+        </dt>
+        <dd>Load one of the 14 PDF standard fonts</dd>
+
+        <dt>
+
+          <code><a href="pdf_font_load.html">pdf_font_load()</a></code>
+
+        </dt>
+        <dd>Load a TrueType or Type1 font from bytes</dd>
+
+        <dt>
+
+          <code><a href="pdf_font_close.html">pdf_font_close()</a></code>
+
+        </dt>
+        <dd>Close a font handle</dd>
       </dl></div><div class="section level2">
       <h2 id="annotation-authoring">Annotation authoring<a class="anchor" aria-label="anchor" href="#annotation-authoring"></a></h2>
 

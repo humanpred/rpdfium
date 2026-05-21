@@ -1,10 +1,13 @@
 # Create a new text page-object on a page
 
-Wraps `FPDFPageObj_NewTextObj` + (optionally) `FPDFText_SetText`
-
-- `FPDFPageObj_Transform` + `FPDFPage_InsertObject`. The text object
-  uses one of the 14 PDF standard fonts (no font embedding needed);
-  custom fonts are deferred to a later release.
+Wraps `FPDFPageObj_NewTextObj` (when `font` is a standard-font name) or
+`FPDFPageObj_CreateTextObj` (when `font` is a custom `pdfium_font`
+handle from
+[`pdf_font_load_standard()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load_standard.md)
+/
+[`pdf_font_load()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load.md)).
+Either path is followed by an optional `FPDFText_SetText`,
+`FPDFPageObj_Transform`, and `FPDFPage_InsertObject`.
 
 ## Usage
 
@@ -28,8 +31,15 @@ pdf_text_new(page, text, font = "Helvetica", font_size = 12, x = 0, y = 0)
 
 - font:
 
-  Character scalar — one of the 14 PDF standard font names. Default
-  `"Helvetica"`.
+  Either a character scalar — one of the 14 PDF standard font names (see
+  [`pdf_font_load_standard()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load_standard.md)
+  for the list) — or a `pdfium_font` handle from
+  [`pdf_font_load_standard()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load_standard.md)
+  or
+  [`pdf_font_load()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load.md).
+  Default `"Helvetica"`. Pass a `pdfium_font` handle when you need a
+  custom TrueType / Type1 font; the standard-font shortcut is purely for
+  convenience.
 
 - font_size:
 
@@ -48,4 +58,6 @@ The new `pdfium_obj` (type `"text"`), inserted on the page.
 
 [`pdf_text_set_content()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_set_content.md),
 [`pdf_text_set_render_mode()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_set_render_mode.md),
-[`pdf_obj_set_matrix()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_set_matrix.md).
+[`pdf_obj_set_matrix()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_set_matrix.md),
+[`pdf_font_load_standard()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load_standard.md),
+[`pdf_font_load()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load.md).

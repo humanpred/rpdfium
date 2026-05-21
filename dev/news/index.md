@@ -279,9 +279,27 @@ release on scope grounds (see `CLAUDE.md` §“Scope”):
 - [`pdf_path_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_path_new.md),
   [`pdf_rect_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_rect_new.md),
   [`pdf_text_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_new.md),
+  [`pdf_image_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_image_new.md),
   [`pdf_obj_delete()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_delete.md)
-  — create fresh paths, rectangles, and text objects, or remove an
-  existing one.
+  — create fresh paths, rectangles, text objects, or JPEG images, or
+  remove an existing object.
+  [`pdf_text_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_new.md)
+  accepts either a standard-font name or a `pdfium_font` handle from
+  [`pdf_font_load_standard()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load_standard.md)
+  /
+  [`pdf_font_load()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load.md);
+  [`pdf_image_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_image_new.md)
+  embeds JPEG bytes inline via `FPDFImageObj_LoadJpegFileInline` and
+  lets you place the image into an explicit
+  `bounds = c(left, bottom, right, top)` rectangle.
+- [`pdf_font_load_standard()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load_standard.md),
+  [`pdf_font_load()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load.md),
+  [`pdf_font_close()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_close.md)
+  — load one of the 14 PDF standard fonts (no embedding) or embed an
+  arbitrary TrueType / Type1 font’s bytes into the document. Returned
+  `pdfium_font` handles plug straight into
+  [`pdf_text_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_new.md)
+  for custom-typeface text.
 
 ### Annotation authoring
 

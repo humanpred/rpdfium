@@ -135,16 +135,15 @@ to draw programmatic PDFs.</p>
 <code class="sourceCode R"><span><span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_doc_new.html">pdf_doc_new</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">page</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_page_new.html">pdf_page_new</a></span><span class="op">(</span><span class="va">doc</span>, width <span class="op">=</span> <span class="fl">612</span>, height <span class="op">=</span> <span class="fl">792</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># A red filled rectangle.</span></span>
-<span><span class="va">rect</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_rect_new.html">pdf_rect_new</a></span><span class="op">(</span><span class="va">page</span>, bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">600</span>, <span class="fl">250</span>, <span class="fl">700</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co"># A red filled rectangle (x, y, width, height) in PDF points.</span></span>
+<span><span class="va">rect</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_rect_new.html">pdf_rect_new</a></span><span class="op">(</span><span class="va">page</span>, x <span class="op">=</span> <span class="fl">50</span>, y <span class="op">=</span> <span class="fl">600</span>, width <span class="op">=</span> <span class="fl">200</span>, height <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/pdf_path_set_fill.html">pdf_path_set_fill</a></span><span class="op">(</span><span class="va">rect</span>, color <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">220</span>, <span class="fl">50</span>, <span class="fl">47</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/pdf_path_set_draw_mode.html">pdf_path_set_draw_mode</a></span><span class="op">(</span><span class="va">rect</span>, draw_mode <span class="op">=</span> <span class="st">"fill"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/pdf_path_set_draw_mode.html">pdf_path_set_draw_mode</a></span><span class="op">(</span><span class="va">rect</span>, fill_mode <span class="op">=</span> <span class="st">"winding"</span>, stroke <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># A text object on top.</span></span>
-<span><span class="va">txt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_text_new.html">pdf_text_new</a></span><span class="op">(</span><span class="va">page</span>, font <span class="op">=</span> <span class="st">"Helvetica-Bold"</span>, size <span class="op">=</span> <span class="fl">18</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/pdf_text_set_content.html">pdf_text_set_content</a></span><span class="op">(</span><span class="va">txt</span>, <span class="st">"Hello pdfium!"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/pdf_obj_set_matrix.html">pdf_obj_set_matrix</a></span><span class="op">(</span><span class="va">txt</span>, <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">80</span>, <span class="fl">640</span>, <span class="fl">1</span><span class="op">)</span>,</span>
-<span>                               nrow <span class="op">=</span> <span class="fl">3</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/pdf_text_new.html">pdf_text_new</a></span><span class="op">(</span><span class="va">page</span>, <span class="st">"Hello pdfium!"</span>,</span>
+<span>             font <span class="op">=</span> <span class="st">"Helvetica-Bold"</span>, font_size <span class="op">=</span> <span class="fl">18</span>,</span>
+<span>             x <span class="op">=</span> <span class="fl">80</span>, y <span class="op">=</span> <span class="fl">640</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/pdf_save.html">pdf_save</a></span><span class="op">(</span><span class="va">doc</span>, <span class="st">"hello.pdf"</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/pdf_path_new.html">pdf_path_new()</a></code> makes an empty path you grow with
@@ -154,12 +153,51 @@ to draw programmatic PDFs.</p>
 segments (matching the schema of <code><a href="../reference/pdf_path_segments.html">pdf_path_segments()</a></code>) into
 a path in one call — useful for echoing geometry from one document into
 another.</p>
+<div class="section level3">
+<h3 id="embedding-a-jpeg-image">Embedding a JPEG image<a class="anchor" aria-label="anchor" href="#embedding-a-jpeg-image"></a>
+</h3>
+<p><code><a href="../reference/pdf_image_new.html">pdf_image_new()</a></code> wraps
+<code>FPDFImageObj_LoadJpegFileInline</code> — the JPEG bytes are copied
+into the PDF up front, so the source raw vector or file is free
+immediately after the call. Pass
+<code>bounds = c(left, bottom, right, top)</code> to place the image at
+a specific rectangle in PDF user-space points; without
+<code>bounds</code>, the image sits at the origin at its natural pixel
+size (rarely what you want).</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">jpeg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"img"</span>, <span class="st">"Rlogo.jpg"</span>, package <span class="op">=</span> <span class="st">"jpeg"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/pdf_image_new.html">pdf_image_new</a></span><span class="op">(</span><span class="va">page</span>, <span class="va">jpeg_path</span>,</span>
+<span>              bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">72</span>, <span class="fl">400</span>, <span class="fl">272</span>, <span class="fl">500</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>PNG / TIFF / raw-bitmap embedding is deferred to a later release —
+convert to JPEG with
+<code>magick::image_write(..., format = "jpeg")</code> if needed.</p>
+</div>
+<div class="section level3">
+<h3 id="custom-fonts">Custom fonts<a class="anchor" aria-label="anchor" href="#custom-fonts"></a>
+</h3>
+<p>The 14 PDF standard fonts work without embedding — pass the name
+straight through
+(<code>pdf_text_new(page, "...", font = "Times-Italic", ...)</code>).
+For arbitrary TrueType or Type1 typefaces, load the font first via
+<code><a href="../reference/pdf_font_load.html">pdf_font_load()</a></code> (or <code><a href="../reference/pdf_font_load_standard.html">pdf_font_load_standard()</a></code>
+if you just want a handle for a named standard font) and pass the
+resulting <code>pdfium_font</code> handle into
+<code><a href="../reference/pdf_text_new.html">pdf_text_new()</a></code>:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">font</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_font_load.html">pdf_font_load</a></span><span class="op">(</span><span class="va">doc</span>, <span class="st">"/path/to/MyTypeface-Regular.ttf"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/pdf_text_new.html">pdf_text_new</a></span><span class="op">(</span><span class="va">page</span>, <span class="st">"ünïcödé ✓"</span>, font <span class="op">=</span> <span class="va">font</span>, font_size <span class="op">=</span> <span class="fl">24</span>,</span>
+<span>             x <span class="op">=</span> <span class="fl">72</span>, y <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
+<p>The font handle carries an <code>FPDFFont_Close</code> finalizer; the
+doc is pinned in the externalptr’s <code>prot</code> slot.
+<code>pdf_font_close(font)</code> is idempotent and useful when you want
+deterministic release.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="styling-an-existing-object">Styling an existing object<a class="anchor" aria-label="anchor" href="#styling-an-existing-object"></a>
 </h2>
 <p>The setters mirror the readers one-for-one:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">page</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_page_load.html">pdf_page_load</a></span><span class="op">(</span><span class="va">doc</span>, <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">objs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_page_objects.html">pdf_page_objects</a></span><span class="op">(</span><span class="va">page</span><span class="op">)</span></span>
 <span></span>
@@ -181,7 +219,7 @@ list of styling setters.</p>
 <div class="section level2">
 <h2 id="annotation-authoring">Annotation authoring<a class="anchor" aria-label="anchor" href="#annotation-authoring"></a>
 </h2>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Add a yellow highlight to page 1 covering a quad.</span></span>
 <span><span class="va">hl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_annot_new.html">pdf_annot_new</a></span><span class="op">(</span><span class="va">page</span>, subtype <span class="op">=</span> <span class="st">"highlight"</span>,</span>
 <span>                    bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">700</span>, <span class="fl">400</span>, <span class="fl">720</span><span class="op">)</span><span class="op">)</span></span>
@@ -199,7 +237,7 @@ a clean error.</p>
 </h2>
 <p><code><a href="../reference/pdf_form_field_set_value.html">pdf_form_field_set_value()</a></code> is polymorphic — it
 dispatches by the field’s type.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fields</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_form_fields.html">pdf_form_fields</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span></span>
 <span><span class="va">by_name</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span><span class="va">fields</span>,</span>
 <span>                    <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">vapply</a></span><span class="op">(</span><span class="va">fields</span>, <span class="va">pdf_form_field_name</span>, <span class="st">""</span><span class="op">)</span><span class="op">)</span></span>
@@ -225,7 +263,7 @@ Run it as the last step before saving the final-state PDF.</p>
 <div class="section level2">
 <h2 id="embedded-file-attachments">Embedded file attachments<a class="anchor" aria-label="anchor" href="#embedded-file-attachments"></a>
 </h2>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Add a CSV attachment to the document.</span></span>
 <span><span class="va">att</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_attachment_new.html">pdf_attachment_new</a></span><span class="op">(</span><span class="va">doc</span>, name <span class="op">=</span> <span class="st">"data.csv"</span><span class="op">)</span></span>
 <span><span class="va">csv_bytes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rawConversion.html" class="external-link">charToRaw</a></span><span class="op">(</span><span class="st">"a,b,c\n1,2,3\n"</span><span class="op">)</span></span>

@@ -221,61 +221,25 @@ supported subtypes lives in <code><a href="../reference/pdf_annot_new.html">?pdf
 plus the page-object creators (<a href="https://humanpred.github.io/rpdfium/reference/pdf_path_new.html"><code>pdf_path_new</code></a>,
 <a href="https://humanpred.github.io/rpdfium/reference/pdf_rect_new.html"><code>pdf_rect_new</code></a>,
 <a href="https://humanpred.github.io/rpdfium/reference/pdf_text_new.html"><code>pdf_text_new</code></a>,
-plus the path-geometry appenders) let you build PDFs from scratch in R.
-The mutating-pdfs vignette walks through the workflow.</p>
+<a href="https://humanpred.github.io/rpdfium/reference/pdf_image_new.html"><code>pdf_image_new</code></a>,
+<a href="https://humanpred.github.io/rpdfium/reference/pdf_font_load.html"><code>pdf_font_load</code></a>
+/ <a href="https://humanpred.github.io/rpdfium/reference/pdf_font_load_standard.html"><code>pdf_font_load_standard</code></a>,
+plus the path-geometry appenders) let you build PDFs from scratch in R —
+vector graphics, JPEG images, text in the 14 PDF standard fonts, and
+arbitrary TrueType / Type1 typefaces. The mutating-pdfs vignette walks
+through the workflow.</p>
 <p><strong>What scales fine.</strong> Page count is unlimited (PDFium
 handles thousand-page docs efficiently); objects-per-page are unlimited;
 the full vector-graphics surface — paths, Bezier curves, dash patterns,
 transformation matrices, blend modes, opacity, clip paths — is exposed;
 annotations are richly covered. The R↔︎C boundary cost is microseconds
 per call, so 10⁶ object writes is seconds, not minutes.</p>
-<p><strong>v0.1.0 limits worth knowing about.</strong> Four authoring
-axes have real gaps in the current release. They split cleanly into two
-groups by what’s blocking closure:</p>
-<p><em>Blocked on this package’s roadmap</em> (PDFium exposes the
-symbols; we just haven’t wrapped them yet — closure timing is in our
-hands):</p>
-<table class="table">
-<colgroup>
-<col width="33%">
-<col width="33%">
-<col width="33%">
-</colgroup>
-<thead><tr class="header">
-<th>Gap</th>
-<th>Unwrapped PDFium symbols</th>
-<th>Workaround today</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><strong>Image embedding</strong></td>
-<td>
-<code>FPDFImageObj_LoadJpegFile</code>,
-<code>FPDFImageObj_LoadJpegFileInline</code>,
-<code>FPDFImageObj_SetBitmap</code> — all in
-<code>inst/include/fpdf_edit.h</code>; deferred from Phase 5 pending an
-<code>FPDF_BITMAP</code> lifecycle design</td>
-<td>Use <code>minipdf</code> for image-heavy programmatic PDFs, or
-render images separately and embed via a post-process</td>
-</tr>
-<tr class="even">
-<td><strong>Custom fonts</strong></td>
-<td>
-<code>FPDFText_LoadFont</code>,
-<code>FPDFText_LoadStandardFont</code>,
-<code>FPDFText_LoadCidType2Font</code> — all in
-<code>inst/include/fpdf_edit.h</code>; not yet wrapped, needs a
-<code>pdfium_font</code> S3 class with <code>FPDFFont_Close</code>
-finalizer</td>
-<td>For non-Latin scripts or branded type, render text as paths via an
-external tool and embed the resulting vector paths</td>
-</tr>
-</tbody>
-</table>
-<p><em>Blocked on upstream PDFium</em> (the symbols don’t exist yet —
-we’ve proposed them but they need to ship through Google’s Gerrit review
-cycle, land in a PDFium release, and propagate to a
-<code>bblanchon</code> binary before we can wrap them):</p>
+<p><strong>v0.1.0 limits worth knowing about.</strong> Two authoring
+axes have real gaps in the current release — both blocked on upstream
+PDFium (the symbols don’t exist yet — we’ve proposed them but they need
+to ship through Google’s Gerrit review cycle, land in a PDFium release,
+and propagate to a <code>bblanchon</code> binary before we can wrap
+them):</p>
 <table class="table">
 <colgroup>
 <col width="33%">

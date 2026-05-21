@@ -114,6 +114,9 @@
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_xref_valid.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_docs_merge.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_extract_paths.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_font_close.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load_standard.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_form_field_additional_actions_js.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_form_field_alternate_name.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_form_field_at_point.html</loc></url>
@@ -142,6 +145,7 @@
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_image_filters.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_image_icc_profile.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_image_info.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_image_new.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_image_rendered.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_image_size.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_link_annot_at_point.html</loc></url>

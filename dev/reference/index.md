@@ -654,13 +654,14 @@ below for the full read → edit → write workflow.
 
 ## Page-object creation
 
-Create fresh page-objects (paths, rectangles, text) on a page that’s
-been opened with `readwrite = TRUE` or built via
+Create fresh page-objects (paths, rectangles, text, JPEG images) on a
+page that’s been opened with `readwrite = TRUE` or built via
 [`pdf_doc_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_new.md).
-Image creation is deferred to a later release pending FPDF_BITMAP
-plumbing. Use
+Use
 [`pdf_obj_delete()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_delete.md)
-for the inverse — remove + destroy a page-object.
+for the inverse — remove + destroy a page-object. PNG / TIFF / raw-
+bitmap embedding stays deferred to a later release pending `FPDF_BITMAP`
+plumbing.
 
 - [`pdf_path_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_path_new.md)
   : Create a new path page-object on a page
@@ -668,8 +669,27 @@ for the inverse — remove + destroy a page-object.
   : Create a closed rectangle path on a page
 - [`pdf_text_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_new.md)
   : Create a new text page-object on a page
+- [`pdf_image_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_image_new.md)
+  : Create a new image page-object from JPEG bytes
 - [`pdf_obj_delete()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_delete.md)
   : Remove a page object and destroy it
+
+## Font loading
+
+Load a font for use in
+[`pdf_text_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_new.md).
+The 14 PDF standard fonts need no embedding; arbitrary TrueType / Type1
+fonts get their bytes copied into the document via `FPDFText_LoadFont`.
+[`pdf_font_close()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_close.md)
+is idempotent and matches the explicit- release pattern of the other
+handle classes.
+
+- [`pdf_font_load_standard()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load_standard.md)
+  : Load one of the 14 PDF standard fonts
+- [`pdf_font_load()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load.md)
+  : Load a TrueType or Type1 font from bytes
+- [`pdf_font_close()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_close.md)
+  : Close a font handle
 
 ## Annotation authoring
 
