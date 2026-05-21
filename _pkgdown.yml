@@ -339,8 +339,14 @@ reference:
       round-tripping codes through a CSV that's lost the names.
     contents:
       - pdfium_annot_subtype_name
+      - pdfium_annot_subtype_code
       - pdfium_obj_type_name
+      - pdfium_obj_type_code
       - pdfium_segment_type_name
+      - pdfium_segment_type_code
       - pdfium_form_field_type_name
+      - pdfium_form_field_type_code
       - pdfium_action_type_name
+      - pdfium_action_type_code
       - pdfium_dest_view_name
+      - pdfium_dest_view_code

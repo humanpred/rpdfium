@@ -46,7 +46,7 @@ Config/Needs/website: pkgdown
 Config/Needs/coverage: covr
 VignetteBuilder: knitr
 Config/roxygen2/version: 8.0.0
-Collate: 
+Collate:
     'RcppExports.R'
     'annot_authoring.R'
     'annot_class.R'
