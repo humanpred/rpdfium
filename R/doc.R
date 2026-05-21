@@ -110,6 +110,20 @@ as_tibble.pdfium_bookmark_list <- function(x, ...) {
   )
 }
 
+#' Tibble-shaped summary of a bookmark list
+#'
+#' `summary()` method for `pdfium_bookmark_list`. Defers to
+#' [as_tibble.pdfium_bookmark_list()] for the standard tibble view.
+#'
+#' @param object A `pdfium_bookmark_list` from [pdf_doc_bookmarks()].
+#' @param ... Forwarded to [as_tibble.pdfium_bookmark_list()].
+#' @return The tibble returned by [as_tibble.pdfium_bookmark_list()].
+#' @method summary pdfium_bookmark_list
+#' @export
+summary.pdfium_bookmark_list <- function(object, ...) {
+  tibble::as_tibble(object, ...)
+}
+
 empty_bookmark_tibble <- function() {
   tibble::tibble(
     bookmark_index = integer(),
@@ -640,116 +654,6 @@ pdf_doc_summary <- function(doc, password = NULL) {
 #' @export
 summary.pdfium_doc <- function(object, ...) {
   pdf_doc_summary(object)
-}
-
-#' Summarise every PDF in a directory in one call
-#'
-#' Scans a directory for PDF files and returns a tibble whose rows
-#' are the [pdf_doc_summary()] output for each file. The natural
-#' replacement for the standard "loop over a folder of PDFs and
-#' triage" workflow — encrypted-which / has-forms-which /
-#' has-attachments-which.
-#'
-#' Files that fail to open (corrupt, wrong format, password
-#' protected) are handled per the `errors` argument:
-#'
-#' * `"warn"` (default) — a `warning()` per failed file; the file
-#'   is dropped from the result tibble.
-#' * `"skip"` — silently dropped.
-#' * `"stop"` — the first failed file raises an error and the
-#'   function aborts.
-#'
-#' @param dir Character scalar. Path to the directory to scan.
-#' @param pattern Regular expression filtering filenames. Defaults
-#'   to `"\\.pdf$"` (case-insensitive).
-#' @param recursive Logical. When `TRUE`, descend into
-#'   subdirectories. Defaults `FALSE`.
-#' @param password Optional password applied to every file. `NULL`
-#'   (default) tries each file without a password. Useful when all
-#'   files share the same password.
-#' @param errors One of `"warn"`, `"skip"`, `"stop"` — see Details.
-#' @return A tibble with the same columns as [pdf_doc_summary()].
-#'   Zero rows when the directory has no PDFs (or every PDF failed
-#'   to open under `errors = "skip"` / `"warn"`).
-#' @seealso [pdf_doc_summary()] for the single-file companion.
-#' @examples
-#' fixture_dir <- system.file("extdata", "fixtures",
-#'                            package = "pdfium")
-#' if (nzchar(fixture_dir)) {
-#'   pdf_dir_summary(fixture_dir)
-#' }
-#' @export
-pdf_dir_summary <- function(dir = ".", pattern = "\\.pdf$",
-                             recursive = FALSE, password = NULL,
-                             errors = c("warn", "skip", "stop")) {
-  checkmate::assert_directory_exists(dir)
-  checkmate::assert_string(pattern)
-  checkmate::assert_flag(recursive)
-  errors <- match.arg(errors)
-
-  files <- list.files(dir, pattern = pattern, recursive = recursive,
-                       full.names = TRUE, ignore.case = TRUE)
-  if (length(files) == 0L) {
-    return(pdf_doc_summary_empty())
-  }
-
-  rows <- lapply(files, function(f) {
-    tryCatch(
-      pdf_doc_summary(f, password = password),
-      error = function(e) {
-        if (errors == "stop") {
-          stop(sprintf("pdf_dir_summary: failed to read '%s': %s",
-                       f, conditionMessage(e)), call. = FALSE)
-        }
-        if (errors == "warn") {
-          warning(sprintf("pdf_dir_summary: failed to read '%s': %s",
-                          f, conditionMessage(e)), call. = FALSE)
-        }
-        NULL
-      }
-    )
-  })
-  ok <- !vapply(rows, is.null, logical(1L))
-  if (!any(ok)) {
-    return(pdf_doc_summary_empty())
-  }
-  out <- do.call(rbind, rows[ok])
-  tibble::as_tibble(out)
-}
-
-# Internal: zero-row tibble matching pdf_doc_summary's column shape.
-# Used by pdf_dir_summary() when the directory is empty (or every
-# file failed under `errors = "skip"` / `"warn"`).
-pdf_doc_summary_empty <- function() {
-  tibble::tibble(
-    path                 = character(),
-    page_count           = integer(),
-    file_version         = integer(),
-    title                = character(),
-    author               = character(),
-    subject              = character(),
-    keywords             = character(),
-    creator              = character(),
-    producer             = character(),
-    creation_date        = character(),
-    mod_date             = character(),
-    trapped              = character(),
-    creation_date_parsed = as.POSIXct(character(), tz = "UTC"),
-    mod_date_parsed      = as.POSIXct(character(), tz = "UTC"),
-    is_tagged            = logical(),
-    is_encrypted         = logical(),
-    security_revision    = integer(),
-    xref_valid           = logical(),
-    bookmark_count       = integer(),
-    attachment_count     = integer(),
-    signature_count      = integer(),
-    form_field_count     = integer(),
-    javascript_count     = integer(),
-    named_dest_count     = integer(),
-    has_page_labels      = logical(),
-    file_id_permanent    = character(),
-    file_id_changing     = character()
-  )
 }
 
 # Internal: convert pdf_doc_file_id()'s raw return to a hex string,

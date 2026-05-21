@@ -26,13 +26,11 @@ reference:
   - title: Documents
     contents:
       - pdf_doc_open
-      - pdf_doc_open_url
       - pdf_doc_close
       - pdf_page_count
       - pdf_doc_info
       - pdf_doc_meta
       - pdf_doc_summary
-      - pdf_dir_summary
       - summary.pdfium_doc
       - pdf_parse_date
       - pdf_doc_text
@@ -60,6 +58,7 @@ reference:
       - pdf_attachments
       - as_pdfium_attachment_list
       - as_tibble.pdfium_attachment_list
+      - summary.pdfium_attachment_list
       - pdf_attachment_name
       - pdf_attachment_mime_type
       - pdf_attachment_size_bytes
@@ -70,6 +69,7 @@ reference:
       - pdf_signatures
       - as_pdfium_signature_list
       - as_tibble.pdfium_signature_list
+      - summary.pdfium_signature_list
       - pdf_signature_sub_filter
       - pdf_signature_reason
       - pdf_signature_time
@@ -80,6 +80,7 @@ reference:
     contents:
       - as_pdfium_bookmark_list
       - as_tibble.pdfium_bookmark_list
+      - summary.pdfium_bookmark_list
       - pdf_bookmark_title
       - pdf_bookmark_page_num
       - pdf_bookmark_action_type
@@ -111,6 +112,7 @@ reference:
       - pdf_annot_at
       - as_pdfium_annot_list
       - as_tibble.pdfium_annot_list
+      - summary.pdfium_annot_list
       - pdf_annot_subtype
       - pdf_annot_subtype_code
       - pdf_annot_flags
@@ -135,6 +137,7 @@ reference:
       - pdf_form_fields
       - as_pdfium_form_field_list
       - as_tibble.pdfium_form_field_list
+      - summary.pdfium_form_field_list
       - pdf_form_field_type
       - pdf_form_field_type_code
       - pdf_form_field_page_num
@@ -155,6 +158,7 @@ reference:
       - pdf_page_objects
       - as_pdfium_obj_list
       - as_tibble.pdfium_obj_list
+      - summary.pdfium_obj_list
       - pdf_obj_type
       - pdf_obj_bounds
       - pdf_obj_rotated_bounds

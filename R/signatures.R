@@ -76,6 +76,20 @@ as_tibble.pdfium_signature_list <- function(x, ...) {
   )
 }
 
+#' Tibble-shaped summary of a signature list
+#'
+#' `summary()` method for `pdfium_signature_list`. Defers to
+#' [as_tibble.pdfium_signature_list()] for the standard tibble view.
+#'
+#' @param object A `pdfium_signature_list` from [pdf_signatures()].
+#' @param ... Forwarded to [as_tibble.pdfium_signature_list()].
+#' @return The tibble returned by [as_tibble.pdfium_signature_list()].
+#' @method summary pdfium_signature_list
+#' @export
+summary.pdfium_signature_list <- function(object, ...) {
+  tibble::as_tibble(object, ...)
+}
+
 empty_signature_tibble <- function() {
   tibble::tibble(
     signature_index    = integer(),

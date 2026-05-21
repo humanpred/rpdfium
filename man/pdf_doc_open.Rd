@@ -7,8 +7,8 @@
 pdf_doc_open(path = NULL, source = NULL, password = NULL, readwrite = FALSE)
 }
 \arguments{
-\item{path}{Character scalar. Path to a PDF file. The file must
-exist and be readable. Mutually exclusive with \code{source}.}
+\item{path}{Character scalar. Either a local path or a URL (see
+Details). Mutually exclusive with \code{source}.}
 
 \item{source}{Raw vector containing the PDF byte stream. PDFium
 keeps an internal reference to the bytes for the document's
@@ -33,21 +33,34 @@ edits inside long pipelines.}
 A \code{pdfium_doc} object.
 }
 \description{
-Loads a PDF from disk or from an in-memory byte buffer. The
-returned \code{pdfium_doc} carries an external pointer to a PDFium
-\code{FPDF_DOCUMENT} handle along with a finalizer that calls
-\code{FPDF_CloseDocument()} when the R object is garbage-collected.
-Call \code{\link[=pdf_doc_close]{pdf_doc_close()}} explicitly when you need deterministic
-release.
+Loads a PDF from disk, from a URL, or from an in-memory byte
+buffer. The returned \code{pdfium_doc} carries an external pointer to
+a PDFium \code{FPDF_DOCUMENT} handle along with a finalizer that
+calls \code{FPDF_CloseDocument()} when the R object is
+garbage-collected. Call \code{\link[=pdf_doc_close]{pdf_doc_close()}} explicitly when you
+need deterministic release.
 }
 \details{
-Two input forms are supported. Pass \code{path} to load from disk
-(via PDFium's \code{FPDF_LoadDocument}), or pass \code{source} for an
-in-memory raw vector (via \code{FPDF_LoadMemDocument64}). The
-in-memory path is useful for documents downloaded via
-\code{httr2::resp_body_raw()}, \code{curl::curl_fetch_memory()}, or read
-with \code{readBin()} straight into RAM. Exactly one of \code{path} or
-\code{source} must be provided.
+Two input forms are supported:
+\itemize{
+\item \strong{\code{path}} — either a local filesystem path (loaded via
+PDFium's \code{FPDF_LoadDocument}) or a URL string (any scheme
+base R's \code{\link[base:url]{base::url()}} knows how to open — typically
+\verb{http://}, \verb{https://}, \verb{ftp://}, \verb{file://}; the actual list
+depends on the R build's \code{libcurl} / internal handlers).
+Detection is purely syntactic: a string matching
+\verb{scheme://} per RFC 3986 is routed to \code{url() + readBin()}
+and loaded via PDFium's in-memory path; anything else is
+treated as a local path. No allowlist — we trust \code{url()} to
+know what it supports and error cleanly when it doesn't.
+\item \strong{\code{source}} — a raw vector containing the PDF byte stream
+(loaded via \code{FPDF_LoadMemDocument64}). Useful for documents
+downloaded via \code{httr2::resp_body_raw()},
+\code{curl::curl_fetch_memory()}, or read with \code{readBin()} straight
+into RAM.
+}
+
+Exactly one of \code{path} or \code{source} must be provided.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "minimal.pdf",
@@ -63,6 +76,13 @@ if (nzchar(fixture)) {
 if (nzchar(fixture)) {
   bytes <- readBin(fixture, "raw", file.info(fixture)$size)
   doc <- pdf_doc_open(source = bytes)
+  pdf_page_count(doc)
+  pdf_doc_close(doc)
+}
+
+# `path` can be a URL - any scheme R's url() recognises.
+if (nzchar(fixture)) {
+  doc <- pdf_doc_open(paste0("file://", fixture))
   pdf_page_count(doc)
   pdf_doc_close(doc)
 }
