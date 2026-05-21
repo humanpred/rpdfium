@@ -407,6 +407,9 @@ reference:
       - pdf_image_set_bitmap
       - pdf_system_fonts_default_ttf_map
       - pdf_system_fonts_install_default
+      - pdf_annot_set_font_color
+      - pdf_form_field_set_flags
+      - pdf_doc_set_focusable_subtypes
   - title: Enum code <-> name helpers
     desc: >
       Bidirectional converters between PDFium's integer enum codes

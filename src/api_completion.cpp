@@ -459,9 +459,16 @@ namespace {
 // field must be set; the function-pointer callbacks may be NULL for
 // the non-interactive batch path we exercise.
 struct ScopedFormHandle {
+  // ffi MUST be a member, not a local in the constructor: PDFium
+  // stores the pointer internally and dereferences it on every
+  // subsequent call (Init*, Set*, Exit). A constructor-local would
+  // go out of scope before any of those callers ran, leaving a
+  // dangling pointer that segfaults on Exit (free of a stale
+  // FORMFILLINFO field). Keep it as a member so it lives at least
+  // as long as `handle`.
+  FPDF_FORMFILLINFO ffi{};
   FPDF_FORMHANDLE handle = nullptr;
   ScopedFormHandle(FPDF_DOCUMENT doc) {
-    FPDF_FORMFILLINFO ffi{};
     ffi.version = 2;
     handle = FPDFDOC_InitFormFillEnvironment(doc, &ffi);
   }
@@ -715,50 +722,22 @@ bool cpp_annot_set_border(SEXP annot_ptr, double h_radius, double v_radius,
 
 // Doc-wide focusable-annotation-subtype setter. Takes an integer
 // vector of subtype codes per the existing pdfium_annot_subtype_code()
-// mapping. Returns bool.
-//
-// NOTE: PDFium's FPDFAnnot_SetFocusableSubtypes segfaults on AcroForm
-// docs (the env's internal `m_FocusableAnnotSubtypes` vector member
-// isn't initialised unless the doc carries an XFA form). The
-// ExitFormFillEnvironment call in the destructor then double-frees.
-// Caching the env on doc$state would avoid the Exit but still
-// segfaults inside SetFocusableSubtypes itself for ordinary
-// AcroForm-only docs. This is a PDFium-side issue; the wrapper
-// returns FALSE for now and the function is documented as
-// "use only on docs that already had a non-empty subtype list set
-// by another tool (e.g. an XFA-aware viewer)".
+// mapping.
 // [[Rcpp::export(name = "cpp_annot_set_focusable_subtypes")]]
 bool cpp_annot_set_focusable_subtypes(SEXP doc_ptr,
                                         Rcpp::IntegerVector codes) {
   FPDF_DOCUMENT doc = acomp_doc_from_ptr(doc_ptr);
-  // Pre-check: PDFium's SetFocusableSubtypes implementation assumes
-  // a non-empty existing subtype list; querying first triggers
-  // initialisation. On ordinary AcroForm docs this list is empty
-  // and the setter still segfaults (PDFium bug). Refuse the call
-  // rather than crash the R session.
-  FPDF_FORMFILLINFO ffi{};
-  ffi.version = 2;
-  FPDF_FORMHANDLE env = FPDFDOC_InitFormFillEnvironment(doc, &ffi);
-  if (env == nullptr) {
+  ScopedFormHandle env(doc);
+  if (env.handle == nullptr) {
     Rcpp::stop("FPDFDOC_InitFormFillEnvironment returned NULL.");
-  }
-  int existing = FPDFAnnot_GetFocusableSubtypesCount(env);
-  if (existing <= 0) {
-    FPDFDOC_ExitFormFillEnvironment(env);
-    Rcpp::stop("FPDFAnnot_SetFocusableSubtypes requires a non-empty "
-               "existing focusable-subtype list. This document has "
-               "none (likely AcroForm-only). Calling the setter on "
-               "such a doc segfaults inside PDFium — refusing.");
   }
   std::vector<FPDF_ANNOTATION_SUBTYPE> subs(codes.size());
   for (R_xlen_t i = 0; i < codes.size(); ++i) {
     subs[i] = static_cast<FPDF_ANNOTATION_SUBTYPE>(codes[i]);
   }
-  bool ok = FPDFAnnot_SetFocusableSubtypes(
-      env, subs.data(),
+  return FPDFAnnot_SetFocusableSubtypes(
+      env.handle, subs.data(),
       static_cast<std::size_t>(codes.size())) != 0;
-  FPDFDOC_ExitFormFillEnvironment(env);
-  return ok;
 }
 
 // [[Rcpp::export(name = "cpp_annot_set_font_color")]]

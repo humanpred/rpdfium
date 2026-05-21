@@ -165,13 +165,11 @@ support, and the embedder workflow that motivates it.
 
 11. **`FPDFAnnot_SetFont` / `SetFontColor`** taking an `FPDF_FONT`
     handle — the existing `FPDFAnnot_SetFontColor(form, annot, R,
-    G, B)` requires a form-fill environment and only sets the color.
-    The proposed handle-taking variants would let embedders pair
-    `pdf_font_load()` with annotation authoring directly. (Note:
-    we observed a likely-our-side crash with the existing
-    `FPDFAnnot_SetFontColor` from R that we couldn't reproduce
-    in pure C++ — separate issue, not asking for upstream help on
-    that yet.)
+    G, B)` requires a form-fill environment and only sets the
+    color (the font itself isn't directly settable). The proposed
+    handle-taking variants would let embedders pair
+    `pdf_font_load()` with annotation authoring directly without
+    going through the form-fill env.
 
 12. **`FPDF_CreateClipPathFromPath` / `FPDFClipPath_AppendPath`** —
     pair with the existing `FPDF_CreateClipPath(left, bottom,
@@ -226,11 +224,20 @@ Thanks for PDFium — the public C API has been a pleasure to wrap.
   maintainers are responsive to well-scoped requests but the list
   gets churn-y if every embedder shows up with a unilateral list.
 
-* We deliberately do NOT ask the list to chase the segfault we
-  observed in `FPDFAnnot_SetFontColor` / `_SetFormFieldFlags` /
-  `_SetFocusableSubtypes` from R — we can't reproduce it from
-  pure C++ (see `dev/reprex/`), so until we can, the right framing
-  is "probably ours, not yours".
+* We had a segfault in our own Rcpp shim when calling
+  `FPDFAnnot_SetFontColor` / `_SetFormFieldFlags` /
+  `_SetFocusableSubtypes` — root-caused (with gdb) to a borrow vs.
+  copy ownership confusion on our side: PDFium retains the
+  `FPDF_FORMFILLINFO*` for the lifetime of the
+  `FPDF_FORMHANDLE`, but our RAII wrapper had stored the struct as
+  a constructor-local that went out of scope before Exit. **Not a
+  PDFium bug**, so we don't ask the list to chase it. We *do*
+  think a one-line clarification in the
+  `FPDFDOC_InitFormFillEnvironment` header doc — "the
+  `FPDF_FORMFILLINFO` pointed at by `formInfo` must remain valid
+  until `FPDFDOC_ExitFormFillEnvironment` returns" — would help
+  the next embedder. Happy to send a docs-only patch for that
+  alongside the others.
 
 * The "cross-cutting questions" block is the actual call to
   action: it asks for sign-off on scope + conventions before we

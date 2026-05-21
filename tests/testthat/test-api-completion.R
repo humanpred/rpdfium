@@ -627,6 +627,21 @@ test_that("pdf_docs_import_pages with empty range imports everything", {
   expect_equal(pdf_page_count(dest), src_n)
 })
 
+test_that("pdf_annot_set_font_color works on a freetext annot", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "freetext", bounds = c(0, 0, 100, 100))
+  expect_error(pdf_annot_set_font_color(a, c(256, 0, 0)),
+               "Assertion on")
+  ret <- pdf_annot_set_font_color(a, c(255, 100, 50))
+  expect_identical(ret, s$doc)
+})
+
+test_that("pdf_doc_set_focusable_subtypes round-trips", {
+  s <- annot_blank_page()
+  ret <- pdf_doc_set_focusable_subtypes(s$doc, c("widget", "link"))
+  expect_identical(ret, s$doc)
+})
+
 test_that("pdf_annot_add_file_attachment returns a pdfium_attachment", {
   s <- annot_blank_page()
   a <- pdf_annot_new(s$page, "fileattachment",

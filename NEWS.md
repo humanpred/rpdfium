@@ -220,13 +220,17 @@ a wrapper. New exports broken out by topic:
 * `pdf_annot_set_border()` — `FPDFAnnot_SetBorder` (corner radii +
   width).
 
-  The three FFL-env-requiring setters PDFium also exposes —
-  `FPDFAnnot_SetFontColor`, `FPDFAnnot_SetFormFieldFlags`,
-  `FPDFAnnot_SetFocusableSubtypes` — are deliberately not yet
-  wrapped: PDFium chromium/7202 segfaults inside their
-  `CPDFSDK_FormFillEnvironment` helpers when called on AcroForm-
-  only documents. They will ship in v0.1.x after upstream patches
-  land.
+* `pdf_annot_set_font_color()`, `pdf_form_field_set_flags()`,
+  `pdf_doc_set_focusable_subtypes()` — `FPDFAnnot_SetFontColor` /
+  `_SetFormFieldFlags` / `_SetFocusableSubtypes`. These three
+  setters route through a transient form-fill environment; our
+  RAII wrapper around `FPDFDOC_InitFormFillEnvironment` /
+  `_ExitFormFillEnvironment` originally stored the
+  `FPDF_FORMFILLINFO` struct as a constructor-local, which went
+  out of scope before Exit ran and segfaulted PDFium when it
+  dereferenced its retained pointer. Root-caused via gdb and
+  documented in `dev/reprex/README.md`; fixed by moving the
+  `FORMFILLINFO` to a struct member.
 
 ### Clip-path authoring
 

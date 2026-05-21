@@ -1424,15 +1424,87 @@ pdf_system_fonts_install_default <- function() {
 }
 
 # ===========================================================================
-# The three FFL-env-requiring setters PDFium exposes —
-# FPDFAnnot_SetFocusableSubtypes, FPDFAnnot_SetFontColor,
-# FPDFAnnot_SetFormFieldFlags — segfault inside PDFium
-# chromium/7202 when called on AcroForm-only documents. The
-# underlying issue is that PDFium's
-# CPDFSDK_FormFillEnvironment::SetAnnotFontColor (and siblings) reads
-# an internal vector that is only initialised when an XFA runtime
-# loads the doc; AcroForm-only docs leave that vector at sentinel
-# garbage. Wrapping these safely requires an upstream PDFium patch
-# (drafted in dev/upstream-patches/) — they ship in v0.1.x after
-# that lands. The C++ shims still exist in src/api_completion.cpp
-# so the wrapping pattern is in place for the patch follow-up.
+# The three FFL-env-requiring setters PDFium exposes — these need an
+# FPDFDOC_InitFormFillEnvironment call before, and Exit after, the
+# Set call itself. The Rcpp ScopedFormHandle helper in
+# src/api_completion.cpp owns the lifetime (init / exit) so the
+# FPDF_FORMFILLINFO struct outlives the env handle (PDFium stores a
+# pointer to FORMFILLINFO internally and dereferences it on Exit; a
+# constructor-local would dangle and segfault — found via gdb,
+# see dev/reprex/ for the diagnostic story).
+
+#' Set the doc-wide list of annotation subtypes that participate in
+#' tab focus
+#'
+#' Wraps `FPDFAnnot_SetFocusableSubtypes`. Pair with the existing
+#' [pdf_doc_focusable_subtypes()] reader.
+#'
+#' @param doc A `pdfium_doc` opened with `readwrite = TRUE`.
+#' @param subtypes Character vector of subtype names (e.g.
+#'   `c("widget", "link")`). Must match the subtype-code table used
+#'   by [pdfium_annot_subtype_code()].
+#' @return Invisibly returns `doc`.
+#' @seealso [pdf_doc_focusable_subtypes()].
+#' @export
+pdf_doc_set_focusable_subtypes <- function(doc, subtypes) {
+  assert_readwrite(doc)
+  checkmate::assert_character(subtypes, any.missing = FALSE,
+                               min.len = 0L)
+  codes <- pdfium_annot_subtype_code(subtypes)
+  expect_setter_ok(
+    cpp_annot_set_focusable_subtypes(doc$ptr, as.integer(codes)),
+    "FPDFAnnot_SetFocusableSubtypes")
+  invisible(doc)
+}
+
+#' Set the font color of an annotation
+#'
+#' Wraps `FPDFAnnot_SetFontColor`. Routes through a transient form-
+#' fill environment per PDFium's API.
+#'
+#' @param annot A `pdfium_annot` (typically of subtype `"freetext"`
+#'   or a widget — PDFium silently ignores the call on subtypes
+#'   that don't carry a font).
+#' @param color Numeric length-3 vector `c(R, G, B)` with values in
+#'   `0:255`.
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @seealso [pdf_annot_font_color()] for the reader counterpart.
+#' @export
+pdf_annot_set_font_color <- function(annot, color) {
+  checkmate::assert_integerish(color, lower = 0, upper = 255,
+                                 len = 3L, any.missing = FALSE)
+  ctx <- assert_annot_writable(annot)
+  expect_setter_ok(
+    cpp_annot_set_font_color(ctx$doc$ptr, annot$ptr,
+                               as.integer(color[[1L]]),
+                               as.integer(color[[2L]]),
+                               as.integer(color[[3L]])),
+    "FPDFAnnot_SetFontColor")
+  finalize_annot_setter(ctx)
+}
+
+#' Set the form-field flag bitmask on a form-field widget
+#'
+#' Wraps `FPDFAnnot_SetFormFieldFlags`. Pair with the existing
+#' [pdf_form_field_flags()] reader.
+#'
+#' @param field A `pdfium_form_field` from [pdf_form_fields()].
+#' @param flags Integer bitmask of `FPDF_FORMFLAG_*` values.
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @seealso [pdf_form_field_flags()].
+#' @export
+pdf_form_field_set_flags <- function(field, flags) {
+  checkmate::assert_class(field, "pdfium_form_field")
+  checkmate::assert_int(flags, lower = 0)
+  doc <- field$page$doc
+  assert_readwrite(doc)
+  if (!is_open(field)) {
+    stop("Form-field handle has been closed.", call. = FALSE)
+  }
+  expect_setter_ok(
+    cpp_annot_set_form_field_flags(doc$ptr, field$ptr,
+                                     as.integer(flags)),
+    "FPDFAnnot_SetFormFieldFlags")
+  mark_page_dirty(doc, field$page$index)
+  invisible(doc)
+}
