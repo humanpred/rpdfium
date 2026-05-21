@@ -102,6 +102,57 @@ your machine has no internet access at install time, set
 `PDFIUM_OFFLINE=1` and place the matching tarball under
 `inst/pdfium-binaries/` before installing.
 
+## Read mode vs. mutation mode
+
+`pdf_doc_open(path)` opens a document for inspection only. Every reader
+([`pdf_text_runs()`](https://humanpred.github.io/rpdfium/reference/pdf_text_runs.md),
+[`pdf_annotations()`](https://humanpred.github.io/rpdfium/reference/pdf_annotations.md),
+[`pdf_page_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_page_objects.md),
+…) works in this mode.
+
+To use the mutation API — anything that changes the document, listed
+under “Structural mutation”, “Page-object styling”, “Annotation
+authoring”, “Form filling”, or “Attachment authoring” in the reference
+index — open with `readwrite = TRUE`:
+
+``` r
+
+doc <- pdf_doc_open("report.pdf", readwrite = TRUE)
+on.exit(pdf_doc_close(doc), add = TRUE)
+
+# Read freely.
+pdf_text_runs(pdf_page_load(doc, 1))
+
+# Mutate, then save.
+pdf_page_set_rotation(doc, page_num = 1, rotation = 90)
+pdf_save(doc, "report-rotated.pdf")
+```
+
+Documents built from scratch with
+[`pdf_doc_new()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_new.md)
+are always writable. Setters check the readwrite flag and raise a clean
+error if called on a read-only document, so accidental mutations on an
+inspection-only doc fail loudly rather than silently no-op’ing.
+
+A few writer-surface conventions worth knowing:
+
+- **Setters return the document invisibly.** Chain them with `|>` or
+  `magrittr` `%>%` — the value is suppressed on print but available for
+  assignment.
+- **Page-touching setters mark the page dirty.**
+  [`pdf_save()`](https://humanpred.github.io/rpdfium/reference/pdf_save.md)
+  and
+  [`pdf_render_page()`](https://humanpred.github.io/rpdfium/reference/pdf_render_page.md)
+  call `FPDFPage_GenerateContent()` on every dirty page before they
+  consume the content stream, so you never need to call it yourself.
+- **`pdf_*_new()` returns a handle; `pdf_*_delete()` consumes one.**
+  After `pdf_obj_delete(obj)` or `pdf_annot_delete(annot)`, the handle
+  is closed; further reads through it raise a clean error rather than
+  dereferencing freed memory.
+
+See `dev/decisions/ADR-018-setter-naming-and-polymorphism.md` for the
+full conventions.
+
 ## Common gotchas
 
 - **Holding many documents at once.** GC is non-deterministic; close
@@ -112,6 +163,9 @@ your machine has no internet access at install time, set
 - **Using a closed handle.** Functions that take a `pdfium_doc` raise an
   error if the handle has already been closed. Re-open the file if you
   need it again.
+- **Forgetting `readwrite = TRUE`.** Setters error with
+  `"doc must be readwrite"` when called on a doc opened for inspection
+  only.
 - **Calling `FPDF_*` directly.** Don’t. The R API exists for a reason —
   bypassing it bypasses the lifetime tracking and you’ll crash R.
 

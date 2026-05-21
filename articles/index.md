@@ -8,6 +8,8 @@
   geometry](https://humanpred.github.io/rpdfium/articles/extracting-paths.md):
 - [Getting started with
   pdfium](https://humanpred.github.io/rpdfium/articles/getting-started.md):
+- [Mutating
+  PDFs](https://humanpred.github.io/rpdfium/articles/mutating-pdfs.md):
 - [Rendering pages to
   bitmaps](https://humanpred.github.io/rpdfium/articles/rendering.md):
 - [Extracting text and

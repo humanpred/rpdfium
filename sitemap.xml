@@ -10,6 +10,7 @@
 <url><loc>https://humanpred.github.io/rpdfium/articles/extracting-paths.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/articles/getting-started.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/articles/index.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/articles/mutating-pdfs.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/articles/rendering.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/articles/text-extraction.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/authors.html</loc></url>
@@ -66,9 +67,13 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_annot_vertices.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_annotations.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_attachment_data.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_attachment_delete.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_attachment_dict_value.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_attachment_mime_type.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_attachment_name.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_attachment_new.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_data.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_dict_value.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_attachment_size_bytes.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_attachments.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_bookmark_action_type.html</loc></url>
@@ -111,6 +116,7 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_field_additional_actions_js.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_field_alternate_name.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_field_at_point.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_field_clear.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_field_control_count.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_field_control_index.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_field_export_value.html</loc></url>
@@ -121,11 +127,13 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_field_name.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_field_options.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_field_page_num.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_field_set_value.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_field_type.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_field_type_code.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_field_value.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_fields.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_objects.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_form_reset.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_glyph_path.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_glyph_width.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_image_bitmap.html</loc></url>
@@ -158,6 +166,7 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_close.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_count.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_delete.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_flatten.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_flush.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_label.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_page_labels.html</loc></url>
@@ -223,6 +232,12 @@
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_set_render_mode.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdf_text_weblinks.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/pdfium-package.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdfium_action_type_name.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdfium_annot_subtype_name.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdfium_dest_view_name.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdfium_form_field_type_name.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdfium_obj_type_name.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/reference/pdfium_segment_type_name.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/reference/plot.pdfium_bitmap.html</loc></url>
 </urlset>
 

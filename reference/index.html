@@ -21,6 +21,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/architecture.html">How pdfium is built</a></li>
     <li><a class="dropdown-item" href="../articles/extracting-paths.html">Extracting path geometry</a></li>
     <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with pdfium</a></li>
+    <li><a class="dropdown-item" href="../articles/mutating-pdfs.html">Mutating PDFs</a></li>
     <li><a class="dropdown-item" href="../articles/rendering.html">Rendering pages to bitmaps</a></li>
     <li><a class="dropdown-item" href="../articles/text-extraction.html">Extracting text and fonts</a></li>
   </ul></li>
@@ -1677,6 +1678,131 @@
 
         </dt>
         <dd>Append a quad to an annotation's <code>/QuadPoints</code> array</dd>
+      </dl></div><div class="section level2">
+      <h2 id="form-filling">Form filling<a class="anchor" aria-label="anchor" href="#form-filling"></a></h2>
+
+      <div class="section-desc"><p>Write <code>/V</code> (the field value) on AcroForm widget annotations and flatten the page when the form-fill workflow finishes. <code><a href="../reference/pdf_form_field_set_value.html">pdf_form_field_set_value()</a></code> dispatches by the field’s type: character for text / choice fields, logical-or-character for checkable fields. <code><a href="../reference/pdf_page_flatten.html">pdf_page_flatten()</a></code> bakes both form widgets and annotations into the page’s content stream — irreversible and intended as the final step before saving a non-editable copy.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pdf_form_field_set_value.html">pdf_form_field_set_value()</a></code>
+
+        </dt>
+        <dd>Set the value of a form field</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_field_clear.html">pdf_form_field_clear()</a></code>
+
+        </dt>
+        <dd>Clear a form field to its default value</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_reset.html">pdf_form_reset()</a></code>
+
+        </dt>
+        <dd>Reset every form field in the document to its default value</dd>
+
+        <dt>
+
+          <code><a href="pdf_page_flatten.html">pdf_page_flatten()</a></code>
+
+        </dt>
+        <dd>Flatten form fields and annotations into the page content stream</dd>
+      </dl></div><div class="section level2">
+      <h2 id="attachment-authoring">Attachment authoring<a class="anchor" aria-label="anchor" href="#attachment-authoring"></a></h2>
+
+      <div class="section-desc"><p>Add, delete, and mutate the document’s embedded-file attachments. The natural sequence for a fresh attachment is <code><a href="../reference/pdf_attachment_new.html">pdf_attachment_new()</a></code> → <code><a href="../reference/pdf_attachment_set_data.html">pdf_attachment_set_data()</a></code> (to populate the file bytes and materialise the <code>/Params</code> subdict) → <code><a href="../reference/pdf_attachment_set_dict_value.html">pdf_attachment_set_dict_value()</a></code> (for any extra dictionary metadata).</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pdf_attachment_new.html">pdf_attachment_new()</a></code>
+
+        </dt>
+        <dd>Add a new embedded file attachment to a document</dd>
+
+        <dt>
+
+          <code><a href="pdf_attachment_delete.html">pdf_attachment_delete()</a></code>
+
+        </dt>
+        <dd>Delete an embedded file attachment from a document</dd>
+
+        <dt>
+
+          <code><a href="pdf_attachment_set_dict_value.html">pdf_attachment_set_dict_value()</a></code>
+
+        </dt>
+        <dd>Set an entry in an attachment's <code>/Params</code> dictionary</dd>
+
+        <dt>
+
+          <code><a href="pdf_attachment_set_data.html">pdf_attachment_set_data()</a></code>
+
+        </dt>
+        <dd>Set the raw bytes of an embedded file attachment</dd>
+      </dl></div><div class="section level2">
+      <h2 id="enum-code-name-helpers">Enum code &lt;-&gt; name helpers<a class="anchor" aria-label="anchor" href="#enum-code-name-helpers"></a></h2>
+
+      <div class="section-desc"><p>Bidirectional converters between PDFium’s integer enum codes and their short string names. Paired <code>_name()</code> and <code>_code()</code> functions for each enum: annotation subtype, page-object type, path-segment type, form-field type, page / link action type, and named-destination view mode. Useful when filtering a tibble by code, passing programmatic input into a setter, or round-tripping codes through a CSV that’s lost the names.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pdfium_annot_subtype_name.html">pdfium_annot_subtype_name()</a></code> <code><a href="pdfium_annot_subtype_name.html">pdfium_annot_subtype_code()</a></code>
+
+        </dt>
+        <dd>PDF annotation subtype codes &lt;-&gt; names</dd>
+
+        <dt>
+
+          <code><a href="pdfium_obj_type_name.html">pdfium_obj_type_name()</a></code> <code><a href="pdfium_obj_type_name.html">pdfium_obj_type_code()</a></code>
+
+        </dt>
+        <dd>PDF page-object type codes &lt;-&gt; names</dd>
+
+        <dt>
+
+          <code><a href="pdfium_segment_type_name.html">pdfium_segment_type_name()</a></code> <code><a href="pdfium_segment_type_name.html">pdfium_segment_type_code()</a></code>
+
+        </dt>
+        <dd>Path-segment type codes &lt;-&gt; names</dd>
+
+        <dt>
+
+          <code><a href="pdfium_form_field_type_name.html">pdfium_form_field_type_name()</a></code> <code><a href="pdfium_form_field_type_name.html">pdfium_form_field_type_code()</a></code>
+
+        </dt>
+        <dd>Form-field type codes &lt;-&gt; names</dd>
+
+        <dt>
+
+          <code><a href="pdfium_action_type_name.html">pdfium_action_type_name()</a></code> <code><a href="pdfium_action_type_name.html">pdfium_action_type_code()</a></code>
+
+        </dt>
+        <dd>Link / page action type codes &lt;-&gt; names</dd>
+
+        <dt>
+
+          <code><a href="pdfium_dest_view_name.html">pdfium_dest_view_name()</a></code> <code><a href="pdfium_dest_view_name.html">pdfium_dest_view_code()</a></code>
+
+        </dt>
+        <dd>Named-destination view-mode codes &lt;-&gt; names</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

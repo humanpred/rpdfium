@@ -758,6 +758,81 @@ stamp, strikeout, text, underline.
 
   Append a quad to an annotation's `/QuadPoints` array
 
+## Form filling
+
+Write `/V` (the field value) on AcroForm widget annotations and flatten
+the page when the form-fill workflow finishes.
+[`pdf_form_field_set_value()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_set_value.md)
+dispatches by the field’s type: character for text / choice fields,
+logical-or-character for checkable fields.
+[`pdf_page_flatten()`](https://humanpred.github.io/rpdfium/reference/pdf_page_flatten.md)
+bakes both form widgets and annotations into the page’s content stream —
+irreversible and intended as the final step before saving a non-editable
+copy.
+
+- [`pdf_form_field_set_value()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_set_value.md)
+  : Set the value of a form field
+- [`pdf_form_field_clear()`](https://humanpred.github.io/rpdfium/reference/pdf_form_field_clear.md)
+  : Clear a form field to its default value
+- [`pdf_form_reset()`](https://humanpred.github.io/rpdfium/reference/pdf_form_reset.md)
+  : Reset every form field in the document to its default value
+- [`pdf_page_flatten()`](https://humanpred.github.io/rpdfium/reference/pdf_page_flatten.md)
+  : Flatten form fields and annotations into the page content stream
+
+## Attachment authoring
+
+Add, delete, and mutate the document’s embedded-file attachments. The
+natural sequence for a fresh attachment is
+[`pdf_attachment_new()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_new.md)
+→
+[`pdf_attachment_set_data()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_data.md)
+(to populate the file bytes and materialise the `/Params` subdict) →
+[`pdf_attachment_set_dict_value()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_dict_value.md)
+(for any extra dictionary metadata).
+
+- [`pdf_attachment_new()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_new.md)
+  : Add a new embedded file attachment to a document
+
+- [`pdf_attachment_delete()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_delete.md)
+  : Delete an embedded file attachment from a document
+
+- [`pdf_attachment_set_dict_value()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_dict_value.md)
+  :
+
+  Set an entry in an attachment's `/Params` dictionary
+
+- [`pdf_attachment_set_data()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_data.md)
+  : Set the raw bytes of an embedded file attachment
+
+## Enum code \<-\> name helpers
+
+Bidirectional converters between PDFium’s integer enum codes and their
+short string names. Paired `_name()` and `_code()` functions for each
+enum: annotation subtype, page-object type, path-segment type,
+form-field type, page / link action type, and named-destination view
+mode. Useful when filtering a tibble by code, passing programmatic input
+into a setter, or round-tripping codes through a CSV that’s lost the
+names.
+
+- [`pdfium_annot_subtype_name()`](https://humanpred.github.io/rpdfium/reference/pdfium_annot_subtype_name.md)
+  [`pdfium_annot_subtype_code()`](https://humanpred.github.io/rpdfium/reference/pdfium_annot_subtype_name.md)
+  : PDF annotation subtype codes \<-\> names
+- [`pdfium_obj_type_name()`](https://humanpred.github.io/rpdfium/reference/pdfium_obj_type_name.md)
+  [`pdfium_obj_type_code()`](https://humanpred.github.io/rpdfium/reference/pdfium_obj_type_name.md)
+  : PDF page-object type codes \<-\> names
+- [`pdfium_segment_type_name()`](https://humanpred.github.io/rpdfium/reference/pdfium_segment_type_name.md)
+  [`pdfium_segment_type_code()`](https://humanpred.github.io/rpdfium/reference/pdfium_segment_type_name.md)
+  : Path-segment type codes \<-\> names
+- [`pdfium_form_field_type_name()`](https://humanpred.github.io/rpdfium/reference/pdfium_form_field_type_name.md)
+  [`pdfium_form_field_type_code()`](https://humanpred.github.io/rpdfium/reference/pdfium_form_field_type_name.md)
+  : Form-field type codes \<-\> names
+- [`pdfium_action_type_name()`](https://humanpred.github.io/rpdfium/reference/pdfium_action_type_name.md)
+  [`pdfium_action_type_code()`](https://humanpred.github.io/rpdfium/reference/pdfium_action_type_name.md)
+  : Link / page action type codes \<-\> names
+- [`pdfium_dest_view_name()`](https://humanpred.github.io/rpdfium/reference/pdfium_dest_view_name.md)
+  [`pdfium_dest_view_code()`](https://humanpred.github.io/rpdfium/reference/pdfium_dest_view_name.md)
+  : Named-destination view-mode codes \<-\> names
+
 # Articles
 
 ### All vignettes
@@ -768,6 +843,8 @@ stamp, strikeout, text, underline.
   geometry](https://humanpred.github.io/rpdfium/articles/extracting-paths.md):
 - [Getting started with
   pdfium](https://humanpred.github.io/rpdfium/articles/getting-started.md):
+- [Mutating
+  PDFs](https://humanpred.github.io/rpdfium/articles/mutating-pdfs.md):
 - [Rendering pages to
   bitmaps](https://humanpred.github.io/rpdfium/articles/rendering.md):
 - [Extracting text and

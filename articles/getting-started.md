@@ -308,6 +308,39 @@ For object-type-specific extraction, see:
   [`pdf_clip_path_segments()`](https://humanpred.github.io/rpdfium/reference/pdf_clip_path_segments.md)
   to read the clip geometry attached to a page object.
 
+## Mutating a PDF
+
+Everything above is read-only. To change a document — rotate pages,
+restyle objects, fill form fields, add annotations, attach files — open
+with `readwrite = TRUE` and save with
+[`pdf_save()`](https://humanpred.github.io/rpdfium/reference/pdf_save.md):
+
+``` r
+
+src <- system.file("extdata", "fixtures", "annotated.pdf",
+                   package = "pdfium")
+doc <- pdf_doc_open(src, readwrite = TRUE)
+
+# Fill the textfield "name" with "Ada".
+fields <- pdf_form_fields(doc)
+name <- fields[vapply(fields, pdf_form_field_name, "") == "name"][[1]]
+pdf_form_field_set_value(name, "Ada")
+
+# Flatten the page so the value is baked into the content stream.
+page <- pdf_page_load(doc, 1)
+pdf_page_flatten(page)
+
+# Persist.
+pdf_save(doc, "filled.pdf")
+pdf_doc_close(doc)
+```
+
+The full mutation surface is documented in the pkgdown reference under
+“Structural mutation”, “Page-object styling”, “Path geometry”,
+“Annotation authoring”, “Form filling”, and “Attachment authoring”.
+[`pdf_doc_new()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_new.md)
+builds writable documents from scratch.
+
 ## Cleanup
 
 ``` r
