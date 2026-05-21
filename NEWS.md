@@ -11,7 +11,10 @@ PDFs created with `pdf_doc_new()` are also writable).
 * `pdf_doc_open()` / `pdf_doc_close()`, `pdf_doc_new()`,
   `pdf_save()` / `pdf_save_to_raw()` — open existing PDFs (optionally
   with `readwrite = TRUE`), build new ones in memory, and persist
-  the result.
+  the result. `pdf_doc_open_url(url)` is a convenience wrapper that
+  fetches a `http://` / `https://` / `ftp://` / `file://` URL via
+  `url()` + `readBin()` and loads the bytes through PDFium's
+  in-memory path — no temporary file on disk.
 * `pdf_doc_info()`, `pdf_doc_meta()`, `pdf_doc_text()`,
   `pdf_doc_fonts()`, `pdf_doc_file_id()`, `pdf_doc_page_mode()`,
   `pdf_doc_viewer_preferences()`, `pdf_doc_viewer_preference_by_name()`,

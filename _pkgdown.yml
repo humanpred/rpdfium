@@ -26,6 +26,7 @@ reference:
   - title: Documents
     contents:
       - pdf_doc_open
+      - pdf_doc_open_url
       - pdf_doc_close
       - pdf_page_count
       - pdf_doc_info
