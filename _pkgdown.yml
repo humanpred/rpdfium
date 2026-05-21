@@ -32,6 +32,7 @@ reference:
       - pdf_doc_info
       - pdf_doc_meta
       - pdf_doc_summary
+      - summary.pdfium_doc
       - pdf_parse_date
       - pdf_doc_text
       - pdf_doc_fonts
@@ -95,6 +96,7 @@ reference:
       - pdf_page_rotation
       - pdf_page_box
       - pdf_pages_summary
+      - summary.pdfium_page
       - pdf_page_links
       - pdf_link_at_point
       - pdf_link_annot_at_point
