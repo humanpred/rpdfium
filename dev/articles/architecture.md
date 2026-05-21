@@ -1,0 +1,179 @@
+# How pdfium is built
+
+This vignette explains the four-layer model `pdfium` uses, the memory
+contract you rely on as a user, and the most common pitfalls. For
+contributor-facing detail (CI topology, fixture rebuild pipeline, PDFium
+bump procedure), see `dev/architecture.md` in the source tree.
+
+## Four-layer model
+
+    R user
+      │
+      ▼
+    R API           pdf_doc_open(), pdf_doc_close(), pdf_page_count(), ...
+      │             S3 classes: pdfium_doc, pdfium_page, pdfium_obj
+      ▼
+    Rcpp glue       internal cpp_* helpers; you should never see them
+      │
+      ▼
+    PDFium C ABI    Google's PDFium engine (BSD-3-Clause)
+      │
+      ▼
+    libpdfium       shared library downloaded at install time
+
+The R API takes user inputs, validates them, calls the Rcpp glue, and
+shapes the result back into idiomatic R (tibbles for tabular outputs, S3
+objects for handles). You only ever interact with the R API.
+
+## Memory: what happens when you forget to close
+
+``` r
+
+inspect <- function(path) {
+  doc <- pdf_doc_open(path)
+  pdf_page_count(doc)
+  # `doc` goes out of scope here.
+  # R's GC will eventually finalize it and call FPDF_CloseDocument.
+}
+inspect("report.pdf")
+```
+
+This is safe. `pdfium` registers a C finalizer on every PDF handle. When
+the R object becomes unreachable, R’s garbage collector reclaims it; the
+finalizer then calls PDFium’s `FPDF_CloseDocument` to release the
+underlying memory.
+
+The caveat is that GC is **eventual**, not deterministic. If you open
+many large documents in a tight loop, you may exhaust process memory
+before the GC catches up. In that case, close explicitly:
+
+``` r
+
+inspect <- function(path) {
+  doc <- pdf_doc_open(path)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  pdf_page_count(doc)
+}
+```
+
+[`pdf_doc_close()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_close.md)
+is **idempotent**: calling it twice is a no-op. The finalizer notices
+the handle has already been closed and skips its own close call. You can
+safely combine explicit close with the automatic fallback.
+
+## Children outlive their parent
+
+``` r
+
+load_page <- function(path) {
+  doc <- pdf_doc_open(path)
+  page <- pdf_page_load(doc, 1) # available in Phase 1+
+  pdf_doc_close(doc) # this is fine
+  page # still usable here
+}
+```
+
+When you call `pdf_page_load(doc, ...)`, the returned `pdfium_page`
+holds an internal reference to its parent `pdfium_doc`. Even if you drop
+your reference to `doc` (or explicitly close it), the page stays valid
+until the page object itself is collected. The underlying PDFium
+document is kept alive in the background until the last page (or object)
+that depends on it goes away.
+
+The order is: **child references the parent**, never the other way
+around.
+
+## How the binary gets loaded
+
+When you [`library(pdfium)`](https://github.com/humanpred/rpdfium), this
+happens:
+
+1.  R loads the package’s compiled `pdfium.so` (or `pdfium.dll` on
+    Windows).
+2.  The dynamic linker follows the RPATH baked in at install time and
+    loads `libpdfium.{so|dylib|dll}` from the package’s `inst/lib/`.
+3.  `.onLoad` calls `FPDF_InitLibraryWithConfig()` exactly once.
+4.  When you call `library.unload("pdfium")` or quit R, `.onUnload` runs
+    `FPDF_DestroyLibrary()`.
+
+The `libpdfium` binary was downloaded the first time you installed
+`pdfium`. The pinned release tag lives in `tools/pdfium-version.txt`. If
+your machine has no internet access at install time, set
+`PDFIUM_OFFLINE=1` and place the matching tarball under
+`inst/pdfium-binaries/` before installing.
+
+## Read mode vs. mutation mode
+
+`pdf_doc_open(path)` opens a document for inspection only. Every reader
+([`pdf_text_runs()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_runs.md),
+[`pdf_annotations()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annotations.md),
+[`pdf_page_objects()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_objects.md),
+…) works in this mode.
+
+To use the mutation API — anything that changes the document, listed
+under “Structural mutation”, “Page-object styling”, “Annotation
+authoring”, “Form filling”, or “Attachment authoring” in the reference
+index — open with `readwrite = TRUE`:
+
+``` r
+
+doc <- pdf_doc_open("report.pdf", readwrite = TRUE)
+on.exit(pdf_doc_close(doc), add = TRUE)
+
+# Read freely.
+pdf_text_runs(pdf_page_load(doc, 1))
+
+# Mutate, then save.
+pdf_page_set_rotation(doc, page_num = 1, rotation = 90)
+pdf_save(doc, "report-rotated.pdf")
+```
+
+Documents built from scratch with
+[`pdf_doc_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_new.md)
+are always writable. Setters check the readwrite flag and raise a clean
+error if called on a read-only document, so accidental mutations on an
+inspection-only doc fail loudly rather than silently no-op’ing.
+
+A few writer-surface conventions worth knowing:
+
+- **Setters return the document invisibly.** Chain them with `|>` or
+  `magrittr` `%>%` — the value is suppressed on print but available for
+  assignment.
+- **Page-touching setters mark the page dirty.**
+  [`pdf_save()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_save.md)
+  and
+  [`pdf_render_page()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_render_page.md)
+  call `FPDFPage_GenerateContent()` on every dirty page before they
+  consume the content stream, so you never need to call it yourself.
+- **`pdf_*_new()` returns a handle; `pdf_*_delete()` consumes one.**
+  After `pdf_obj_delete(obj)` or `pdf_annot_delete(annot)`, the handle
+  is closed; further reads through it raise a clean error rather than
+  dereferencing freed memory.
+
+See `dev/decisions/ADR-018-setter-naming-and-polymorphism.md` for the
+full conventions.
+
+## Common gotchas
+
+- **Holding many documents at once.** GC is non-deterministic; close
+  explicitly with
+  [`pdf_doc_close()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_close.md).
+- **Deleting an open PDF on Windows.** Windows blocks deletion of files
+  held by open handles. Close the document first, then delete.
+- **Using a closed handle.** Functions that take a `pdfium_doc` raise an
+  error if the handle has already been closed. Re-open the file if you
+  need it again.
+- **Forgetting `readwrite = TRUE`.** Setters error with
+  `"doc must be readwrite"` when called on a doc opened for inspection
+  only.
+- **Calling `FPDF_*` directly.** Don’t. The R API exists for a reason —
+  bypassing it bypasses the lifetime tracking and you’ll crash R.
+
+## Further reading
+
+- The decision records under `dev/decisions/` capture every
+  architectural choice and the alternatives that were considered.
+- `dev/architecture.md` covers contributor-facing topics: CI topology,
+  the PDFium bump procedure, and the fixture-rebuild pipeline.
+- [`vignette("getting-started")`](https://humanpred.github.io/rpdfium/dev/articles/getting-started.md)
+  walks through a complete inspection workflow.

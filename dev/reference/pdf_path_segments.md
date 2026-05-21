@@ -1,0 +1,66 @@
+# Path segments of a path page-object
+
+Returns one row per segment of the path. Segments are emitted in the
+same order they appear in the page's content stream, which is the same
+order PDFium's rendering pipeline consumes. The result is suitable for
+plotting the geometry or for downstream coordinate analysis.
+
+## Usage
+
+``` r
+pdf_path_segments(obj)
+```
+
+## Arguments
+
+- obj:
+
+  A `pdfium_obj` of type `"path"` (from
+  [`pdf_page_objects()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_objects.md)).
+
+## Value
+
+A tibble with the columns described above. An empty path returns a 0-row
+tibble of the same shape.
+
+## Details
+
+Each row carries:
+
+- `segment_index` - 1-based segment index within this path
+
+- `segment_type` - `"moveto"`, `"lineto"`, `"bezierto"`, or `"unknown"`
+
+- `x`, `y` - the segment's anchor point in PDF points
+
+- `close_figure` - `TRUE` if this segment closes the current subpath
+  (PDFium's `h` operator equivalent)
+
+**Known limitation:** PDFium's segment readout API exposes only the
+endpoint of a `bezierto` segment, not its two control points. The public
+C API offers no way to recover them; the limitation is shared by
+pypdfium2, pdfium-rs, and pdfium-render. For now, `bezierto` rows show
+the curve's endpoint; control-point information is lost. See
+`dev/decisions/ADR-009-defer-bezier-controls.md` for the decision
+record.
+
+## See also
+
+[`pdf_page_objects()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_objects.md),
+[`pdf_obj_bounds()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_bounds.md)
+
+## Examples
+
+``` r
+fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+  package = "pdfium"
+)
+if (nzchar(fixture)) {
+  doc <- pdf_doc_open(fixture)
+  p <- pdf_page_load(doc, 1)
+  path_obj <- Filter(\(o) o$type == "path", pdf_page_objects(p))[[1]]
+  pdf_path_segments(path_obj)
+  pdf_page_close(p)
+  pdf_doc_close(doc)
+}
+```
