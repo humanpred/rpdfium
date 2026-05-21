@@ -33,8 +33,10 @@ PDFs created with `pdf_doc_new()` are also writable).
   count, Info-dictionary metadata, feature flags, per-feature
   counts, file-ID tuple); `pdf_pages_summary()` is the per-page
   sibling (width / height / rotation / label, all via the fast
-  by-index PDFium readers). `summary(doc)` dispatches to
-  `pdf_doc_summary()` so the standard R idiom works.
+  by-index PDFium readers). `summary(doc)` and `summary(page)`
+  dispatch to the matching tibble — `summary(page)` adds the
+  page-loaded counts (annotation count, page-object count,
+  text-run count, link count) since the page is already loaded.
 
 ## Page objects, paths, and text
 

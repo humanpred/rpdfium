@@ -221,6 +221,54 @@ pdf_pages_summary <- function(doc, password = NULL) {
   )
 }
 
+#' Page-level summary
+#'
+#' `summary()` method for `pdfium_page`. Returns a single-row tibble
+#' combining the cheap by-index columns
+#' ([pdf_pages_summary()]-style: `page_num`, `width`, `height`,
+#' `rotation`, `label`) with the per-page counts that require the
+#' page to be loaded — annotation count, page-object count, text-run
+#' count, and link count. Because the page handle is already loaded,
+#' the per-count readers run against the existing page and don't
+#' trigger an additional load.
+#'
+#' Use this for the "what's on this page?" interactive triage flow.
+#' For the doc-wide companion, see [summary.pdfium_doc()].
+#'
+#' @param object A `pdfium_page` from [pdf_page_load()].
+#' @param ... Unused (S3 generic compatibility).
+#' @return A one-row tibble with columns `page_num`, `width`,
+#'   `height`, `rotation`, `label`, `annotation_count`, `obj_count`,
+#'   `text_run_count`, `link_count`.
+#' @seealso [summary.pdfium_doc()] for the doc-wide companion,
+#'   [pdf_pages_summary()] for the per-document table without the
+#'   page-loaded counts.
+#' @export
+summary.pdfium_page <- function(object, ...) {
+  if (!is_open(object)) stop("Page has been closed.", call. = FALSE)
+  sz <- cpp_page_size(object$ptr)
+  labels <- tryCatch(pdf_page_labels(object$doc),
+                     error = function(e) NULL)
+  label <- if (is.null(labels) || length(labels) < object$index) {
+    NA_character_  # nocov — shipped fixtures always return length-n.
+  } else {
+    lbl <- labels[[object$index]]
+    if (is.na(lbl) || !nzchar(lbl)) NA_character_ else lbl
+  }
+
+  tibble::tibble(
+    page_num         = object$index,
+    width            = as.numeric(sz[["width"]]),
+    height           = as.numeric(sz[["height"]]),
+    rotation         = as.integer(cpp_page_rotation(object$ptr)),
+    label            = label,
+    annotation_count = length(pdf_annotations(object)),
+    obj_count        = length(pdf_page_objects(object)),
+    text_run_count   = nrow(pdf_text_runs(object)),
+    link_count       = nrow(pdf_page_links(object))
+  )
+}
+
 # Internal: zero-row tibble matching pdf_pages_summary's shape, for
 # docs with no pages (rare; mostly an in-memory-built corner case).
 empty_pages_summary <- function() {

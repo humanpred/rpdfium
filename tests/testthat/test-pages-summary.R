@@ -90,3 +90,68 @@ test_that("empty_pages_summary returns a zero-row tibble with the right shape", 
   expect_type(empty$rotation, "integer")
   expect_type(empty$label, "character")
 })
+
+# summary.pdfium_page S3 method ------------------------------------
+
+test_that("summary(page) returns a one-row tibble", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  s <- summary(page)
+  expect_s3_class(s, "tbl_df")
+  expect_equal(nrow(s), 1L)
+})
+
+test_that("summary(page) columns cover both cheap + page-loaded data", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  s <- summary(page)
+  expect_named(s, c(
+    "page_num", "width", "height", "rotation", "label",
+    "annotation_count", "obj_count", "text_run_count", "link_count"
+  ))
+})
+
+test_that("summary(page) reports a positive annotation count on annotated.pdf", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  s <- summary(page)
+  expect_gt(s$annotation_count, 0L)
+  expect_identical(s$page_num, 1L)
+})
+
+test_that("summary(page) matches direct per-page reader calls", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  s <- summary(page)
+  expect_identical(s$annotation_count, length(pdf_annotations(page)))
+  expect_identical(s$obj_count, length(pdf_page_objects(page)))
+  expect_identical(s$text_run_count, nrow(pdf_text_runs(page)))
+  expect_identical(s$link_count, nrow(pdf_page_links(page)))
+})
+
+test_that("summary(page) rejects a closed page", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  pdf_page_close(page)
+  expect_error(summary(page), "Page has been closed")
+})
+
+test_that("summary(page) surfaces real page labels", {
+  # outline.pdf is the only shipped fixture with a /PageLabels array
+  # whose entries aren't all empty strings — its first page is
+  # labelled "i" (roman numeral preface convention).
+  doc <- pdf_doc_open(fixture_path("outline"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  expect_identical(summary(page)$label, "i")
+})
