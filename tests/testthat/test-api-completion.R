@@ -309,3 +309,105 @@ test_that("pdf_text_set_charcodes rejects non-text page-objects", {
   expect_error(pdf_text_set_charcodes(rect, 72L),
                "Must be element of set")
 })
+
+# =========================================================================
+# Phase B — annotation authoring completers
+# =========================================================================
+
+annot_blank_page <- function(envir = parent.frame()) {
+  doc <- pdf_doc_new()
+  withr::defer(pdf_doc_close(doc), envir = envir)
+  page <- pdf_page_new(doc, page_num = 1L, width = 612, height = 792)
+  withr::defer(pdf_page_close(page), envir = envir,
+                priority = "first")
+  list(doc = doc, page = page)
+}
+
+test_that("pdf_annot_add_ink_stroke appends a stroke", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "ink", bounds = c(0, 0, 100, 100))
+  pts <- matrix(c(10, 10, 50, 50, 90, 10), ncol = 2, byrow = TRUE)
+  idx <- pdf_annot_add_ink_stroke(a, pts)
+  expect_identical(idx, 1L)
+})
+
+test_that("pdf_annot_remove_ink_list clears strokes", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "ink", bounds = c(0, 0, 100, 100))
+  pts <- matrix(c(10, 10, 50, 50), ncol = 2, byrow = TRUE)
+  pdf_annot_add_ink_stroke(a, pts)
+  ret <- pdf_annot_remove_ink_list(a)
+  expect_identical(ret, s$doc)
+})
+
+test_that("pdf_annot_object_count is 0 for a fresh annotation", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  expect_identical(pdf_annot_object_count(a), 0L)
+  expect_length(pdf_annot_objects(a), 0L)
+})
+
+test_that("pdf_annot_set_uri sets the URI on a link annotation", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "link", bounds = c(0, 0, 100, 100))
+  ret <- pdf_annot_set_uri(a, "https://example.com/")
+  expect_identical(ret, s$doc)
+})
+
+test_that("pdf_annot_set_appearance accepts each mode", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  for (m in c("normal", "rollover", "down")) {
+    expect_identical(
+      pdf_annot_set_appearance(a, mode = m, value = ""),
+      s$doc
+    )
+  }
+})
+
+test_that("pdf_annot_set_appearance rejects unknown modes", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  expect_error(pdf_annot_set_appearance(a, mode = "highlight"),
+               "Must be element of set")
+})
+
+test_that("pdf_annot_line returns NA-filled vector for non-line annots", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "square", bounds = c(0, 0, 100, 100))
+  v <- pdf_annot_line(a)
+  expect_named(v, c("start_x", "start_y", "end_x", "end_y"))
+  expect_true(all(is.na(v)))
+})
+
+test_that("pdf_annot_link returns NULL for non-link annots", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "square", bounds = c(0, 0, 100, 100))
+  expect_null(pdf_annot_link(a))
+})
+
+test_that("pdf_annot_link reports the URI of a link annotation", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "link", bounds = c(0, 0, 100, 100))
+  pdf_annot_set_uri(a, "https://example.com/")
+  info <- pdf_annot_link(a)
+  expect_s3_class(info, "tbl_df")
+  expect_identical(info$action_type, "uri")
+  expect_identical(info$uri, "https://example.com/")
+})
+
+test_that("pdf_annot_set_border accepts radii + width", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "square", bounds = c(0, 0, 100, 100))
+  ret <- pdf_annot_set_border(a, horizontal_radius = 3,
+                                 vertical_radius = 3, border_width = 2)
+  expect_identical(ret, s$doc)
+})
+
+test_that("pdf_annot_add_file_attachment returns a pdfium_attachment", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "fileattachment",
+                       bounds = c(0, 0, 50, 50))
+  att <- pdf_annot_add_file_attachment(a, "data.bin")
+  expect_s3_class(att, "pdfium_attachment")
+})

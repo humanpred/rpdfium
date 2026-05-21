@@ -514,3 +514,325 @@ pdf_text_set_charcodes <- function(obj, charcodes) {
     "FPDFText_SetCharcodes")
   finalize_obj_setter(ctx)
 }
+
+# ===========================================================================
+# Phase B — annotation authoring completers.
+# ===========================================================================
+
+#' Append an ink stroke to an ink annotation
+#'
+#' Wraps `FPDFAnnot_AddInkStroke`. The `points` matrix carries the
+#' stroke as Nx2 (`x`, `y`) in PDF user-space points; PDFium creates a
+#' fresh ink-list entry if the annotation doesn't already have one.
+#'
+#' @param annot A `pdfium_annot` of subtype `"ink"`.
+#' @param points Numeric matrix with two columns (`x`, `y`).
+#' @return Invisibly returns the integer stroke index (one-based) of
+#'   the newly-added stroke. `-1L` on failure.
+#' @seealso [pdf_annot_remove_ink_list()] to clear all strokes.
+#' @export
+pdf_annot_add_ink_stroke <- function(annot, points) {
+  checkmate::assert_matrix(points, mode = "numeric",
+                            any.missing = FALSE, min.rows = 1L,
+                            ncols = 2L)
+  ctx <- assert_annot_writable(annot)
+  idx <- cpp_annot_add_ink_stroke(annot$ptr, points)
+  if (idx < 0L) {
+    stop("FPDFAnnot_AddInkStroke failed; ensure the annotation is ",
+         "of subtype 'ink'.", call. = FALSE)
+  }
+  finalize_annot_setter(ctx)
+  invisible(idx + 1L)
+}
+
+#' Remove all ink strokes from an ink annotation
+#'
+#' Wraps `FPDFAnnot_RemoveInkList`. Clears the annotation's entire
+#' ink-list array in one call.
+#'
+#' @param annot A `pdfium_annot` of subtype `"ink"`.
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @seealso [pdf_annot_add_ink_stroke()].
+#' @export
+pdf_annot_remove_ink_list <- function(annot) {
+  ctx <- assert_annot_writable(annot)
+  expect_setter_ok(cpp_annot_remove_ink_list(annot$ptr),
+                    "FPDFAnnot_RemoveInkList")
+  finalize_annot_setter(ctx)
+}
+
+#' Number of embedded page-objects inside an annotation
+#'
+#' Wraps `FPDFAnnot_GetObjectCount`. Stamp and FreeText annotations
+#' carry their visual content as a small page-object tree;
+#' `pdf_annot_object_count()` reports how many top-level objects are
+#' inside.
+#'
+#' @param annot A `pdfium_annot`.
+#' @return Integer scalar (zero or positive).
+#' @seealso [pdf_annot_objects()], [pdf_annot_append_object()].
+#' @export
+pdf_annot_object_count <- function(annot) {
+  checkmate::assert_class(annot, "pdfium_annot")
+  if (!is_open(annot)) {
+    stop("Annotation handle has been closed.", call. = FALSE)
+  }
+  cpp_annot_object_count(annot$ptr)
+}
+
+#' Page-objects embedded inside an annotation
+#'
+#' Wraps `FPDFAnnot_GetObject` over the full count. Returns a list of
+#' `pdfium_obj` handles; each handle's externalptr pins the parent
+#' annotation, so the embedded objects can't dangle past the annot's
+#' lifetime.
+#'
+#' @param annot A `pdfium_annot`.
+#' @return A list of `pdfium_obj` handles (zero-length when the
+#'   annotation has no embedded objects).
+#' @seealso [pdf_annot_object_count()], [pdf_annot_append_object()].
+#' @export
+pdf_annot_objects <- function(annot) {
+  checkmate::assert_class(annot, "pdfium_annot")
+  if (!is_open(annot)) {
+    stop("Annotation handle has been closed.", call. = FALSE)
+  }
+  n <- cpp_annot_object_count(annot$ptr)
+  if (n <= 0L) {
+    return(list())
+  }
+  out <- vector("list", n)
+  page <- annot$page
+  for (i in seq_len(n)) {
+    ptr <- cpp_annot_get_object(annot$ptr, i - 1L)
+    out[[i]] <- new_pdfium_obj(ptr, page, i, "unknown")
+  }
+  out
+}
+
+#' Append a page-object to an annotation
+#'
+#' Wraps `FPDFAnnot_AppendObject`. The page-object must be detached
+#' (typically created by [pdf_path_new()] / [pdf_rect_new()] /
+#' [pdf_text_new()] / [pdf_image_new()] **before** it is inserted into
+#' a page). After the call, the annotation owns the page-object —
+#' the R-side handle is cleared, so subsequent calls on it error
+#' cleanly.
+#'
+#' @param annot A `pdfium_annot` of subtype `"stamp"` or
+#'   `"freetext"`.
+#' @param obj A `pdfium_obj`.
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @export
+pdf_annot_append_object <- function(annot, obj) {
+  checkmate::assert_class(obj, "pdfium_obj")
+  ctx <- assert_annot_writable(annot)
+  expect_setter_ok(cpp_annot_append_object(annot$ptr, obj$ptr),
+                    "FPDFAnnot_AppendObject")
+  finalize_annot_setter(ctx)
+}
+
+#' Remove a page-object from an annotation
+#'
+#' Wraps `FPDFAnnot_RemoveObject`. The object is identified by its
+#' position within the annotation's embedded content (one-based,
+#' matching [pdf_annot_objects()]).
+#'
+#' @param annot A `pdfium_annot`.
+#' @param index One-based index of the embedded object to remove.
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @export
+pdf_annot_remove_object <- function(annot, index) {
+  checkmate::assert_int(index, lower = 1L)
+  ctx <- assert_annot_writable(annot)
+  expect_setter_ok(
+    cpp_annot_remove_object(annot$ptr, as.integer(index) - 1L),
+    "FPDFAnnot_RemoveObject")
+  finalize_annot_setter(ctx)
+}
+
+#' Update an embedded page-object after mutating it
+#'
+#' Wraps `FPDFAnnot_UpdateObject`. Tells PDFium to re-serialise the
+#' annotation's content stream after you've mutated one of the
+#' embedded page-objects via the usual `pdf_*_set_*` setters.
+#'
+#' @param annot A `pdfium_annot`.
+#' @param obj A `pdfium_obj` returned by [pdf_annot_objects()].
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @export
+pdf_annot_update_object <- function(annot, obj) {
+  checkmate::assert_class(obj, "pdfium_obj")
+  ctx <- assert_annot_writable(annot)
+  expect_setter_ok(cpp_annot_update_object(annot$ptr, obj$ptr),
+                    "FPDFAnnot_UpdateObject")
+  finalize_annot_setter(ctx)
+}
+
+#' Set the URI of a link annotation
+#'
+#' Wraps `FPDFAnnot_SetURI`. The annotation must be of subtype
+#' `"link"`; the URI becomes the link's destination.
+#'
+#' @param annot A `pdfium_annot` of subtype `"link"`.
+#' @param uri Character scalar — the destination URI.
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @export
+pdf_annot_set_uri <- function(annot, uri) {
+  checkmate::assert_string(uri, min.chars = 1L)
+  ctx <- assert_annot_writable(annot)
+  expect_setter_ok(cpp_annot_set_uri(annot$ptr, uri),
+                    "FPDFAnnot_SetURI")
+  finalize_annot_setter(ctx)
+}
+
+# Static table — FPDF_ANNOT_APPEARANCEMODE_* codes from fpdf_annot.h.
+.pdfium_appearance_mode_codes <- c(
+  "normal"   = 0L,
+  "rollover" = 1L,
+  "down"     = 2L
+)
+
+#' Set the appearance stream content for an annotation
+#'
+#' Wraps `FPDFAnnot_SetAP`. Replaces the annotation's `/AP`
+#' appearance-stream entry for the named mode with the given content
+#' string. Pass `""` to clear the entry.
+#'
+#' @param annot A `pdfium_annot`.
+#' @param mode Character scalar — one of `"normal"`, `"rollover"`, or
+#'   `"down"`.
+#' @param value Character scalar — the appearance-stream content. The
+#'   empty string clears the entry.
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @seealso [pdf_annot_appearance()] for the reader counterpart.
+#' @export
+pdf_annot_set_appearance <- function(annot, mode = "normal",
+                                       value = "") {
+  checkmate::assert_choice(mode, names(.pdfium_appearance_mode_codes))
+  checkmate::assert_string(value, na.ok = FALSE)
+  ctx <- assert_annot_writable(annot)
+  expect_setter_ok(
+    cpp_annot_set_appearance(
+      annot$ptr, .pdfium_appearance_mode_codes[[mode]],
+      enc2utf8(value)),
+    "FPDFAnnot_SetAP")
+  finalize_annot_setter(ctx)
+}
+
+#' Attach a file to a file-attachment annotation
+#'
+#' Wraps `FPDFAnnot_AddFileAttachment`. Adds a new file attachment to
+#' the document (returning the `pdfium_attachment` handle) and links
+#' it to `annot`. Use [pdf_attachment_set_data()] (or the related
+#' attachment-authoring setters) to populate the file bytes.
+#'
+#' @param annot A `pdfium_annot` of subtype `"fileattachment"`.
+#' @param name Character scalar — the file name to register in the
+#'   document's `/Names` tree.
+#' @return The new `pdfium_attachment` handle.
+#' @seealso [pdf_attachment_new()] for the doc-level version.
+#' @export
+pdf_annot_add_file_attachment <- function(annot, name) {
+  checkmate::assert_string(name, min.chars = 1L)
+  ctx <- assert_annot_writable(annot)
+  doc <- ctx$doc
+  ptr <- cpp_annot_add_file_attachment(doc$ptr, annot$ptr,
+                                         enc2utf8(name))
+  finalize_annot_setter(ctx)
+  n_att <- cpp_attachment_count(doc$ptr)
+  new_pdfium_attachment(ptr, doc, n_att)
+}
+
+#' Line endpoints of a line annotation
+#'
+#' Wraps `FPDFAnnot_GetLine`. PDF line annotations carry their start
+#' and end points in `/L` rather than `/Rect`; this helper exposes
+#' those endpoints as a named numeric vector.
+#'
+#' @param annot A `pdfium_annot` of subtype `"line"` (PDFium also
+#'   returns endpoints for annotations with a `/L` entry).
+#' @return Named numeric vector `c(start_x, start_y, end_x, end_y)`.
+#'   All-`NA` when the annotation has no line entry.
+#' @export
+pdf_annot_line <- function(annot) {
+  checkmate::assert_class(annot, "pdfium_annot")
+  if (!is_open(annot)) {
+    stop("Annotation handle has been closed.", call. = FALSE)
+  }
+  cpp_annot_line(annot$ptr)
+}
+
+#' Link metadata for a link annotation
+#'
+#' Wraps `FPDFAnnot_GetLink` plus the action/dest classification
+#' helpers. Returns a single-row tibble with the same column shape as
+#' [pdf_page_links()] (without the rect / quad_points geometry).
+#' `NULL` if `annot` has no link entry.
+#'
+#' @param annot A `pdfium_annot` of subtype `"link"`.
+#' @return A 1-row tibble with `action_type`, `uri`, `filepath`,
+#'   `dest_page`, `dest_view`, `dest_x`, `dest_y`, `dest_zoom`. `NULL`
+#'   if the annotation has no link entry.
+#' @seealso [pdf_page_links()] for the page-wide enumeration.
+#' @export
+pdf_annot_link <- function(annot) {
+  checkmate::assert_class(annot, "pdfium_annot")
+  if (!is_open(annot)) {
+    stop("Annotation handle has been closed.", call. = FALSE)
+  }
+  raw <- cpp_annot_link_info(annot$page$doc$ptr, annot$ptr)
+  if (!isTRUE(raw$found)) return(NULL)
+  tibble::tibble(
+    action_type = pdfium_action_type_name(raw$action_code),
+    uri         = na_if_empty(raw$uri),
+    filepath    = na_if_empty(raw$filepath),
+    dest_page   = raw$dest_page,
+    dest_view   = pdfium_dest_view_name(raw$dest_view),
+    dest_x      = raw$dest_x,
+    dest_y      = raw$dest_y,
+    dest_zoom   = raw$dest_zoom
+  )
+}
+
+#' Set the border of an annotation
+#'
+#' Wraps `FPDFAnnot_SetBorder`. The two corner radii produce rounded
+#' rectangles when nonzero; `border_width` is the stroke width in
+#' PDF user-space units.
+#'
+#' @param annot A `pdfium_annot`.
+#' @param horizontal_radius,vertical_radius Numeric — corner radii in
+#'   PDF user-space units. `0` for a square corner.
+#' @param border_width Numeric — stroke width in PDF user-space units.
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @export
+pdf_annot_set_border <- function(annot, horizontal_radius = 0,
+                                   vertical_radius = 0,
+                                   border_width = 1) {
+  checkmate::assert_number(horizontal_radius, lower = 0,
+                            finite = TRUE)
+  checkmate::assert_number(vertical_radius, lower = 0, finite = TRUE)
+  checkmate::assert_number(border_width, lower = 0, finite = TRUE)
+  ctx <- assert_annot_writable(annot)
+  expect_setter_ok(
+    cpp_annot_set_border(annot$ptr,
+                          as.numeric(horizontal_radius),
+                          as.numeric(vertical_radius),
+                          as.numeric(border_width)),
+    "FPDFAnnot_SetBorder")
+  finalize_annot_setter(ctx)
+}
+
+# The three FFL-env-requiring setters PDFium exposes —
+# FPDFAnnot_SetFocusableSubtypes, FPDFAnnot_SetFontColor,
+# FPDFAnnot_SetFormFieldFlags — segfault inside PDFium
+# chromium/7202 when called on AcroForm-only documents. The
+# underlying issue is that PDFium's
+# CPDFSDK_FormFillEnvironment::SetAnnotFontColor (and siblings) reads
+# an internal vector that is only initialised when an XFA runtime
+# loads the doc; AcroForm-only docs leave that vector at sentinel
+# garbage. Wrapping these safely requires an upstream PDFium patch
+# (drafted in dev/upstream-patches/) — they ship in v0.1.x after
+# that lands. The C++ shims still exist in src/api_completion.cpp
+# so the wrapping pattern is in place for the patch follow-up.

@@ -189,6 +189,70 @@ cpp_text_set_charcodes <- function(obj_ptr, charcodes) {
     .Call(`_pdfium_cpp_text_set_charcodes`, obj_ptr, charcodes)
 }
 
+cpp_annot_add_ink_stroke <- function(annot_ptr, points) {
+    .Call(`_pdfium_cpp_annot_add_ink_stroke`, annot_ptr, points)
+}
+
+cpp_annot_remove_ink_list <- function(annot_ptr) {
+    .Call(`_pdfium_cpp_annot_remove_ink_list`, annot_ptr)
+}
+
+cpp_annot_append_object <- function(annot_ptr, obj_ptr) {
+    .Call(`_pdfium_cpp_annot_append_object`, annot_ptr, obj_ptr)
+}
+
+cpp_annot_remove_object <- function(annot_ptr, index_zero) {
+    .Call(`_pdfium_cpp_annot_remove_object`, annot_ptr, index_zero)
+}
+
+cpp_annot_update_object <- function(annot_ptr, obj_ptr) {
+    .Call(`_pdfium_cpp_annot_update_object`, annot_ptr, obj_ptr)
+}
+
+cpp_annot_object_count <- function(annot_ptr) {
+    .Call(`_pdfium_cpp_annot_object_count`, annot_ptr)
+}
+
+cpp_annot_get_object <- function(annot_ptr, index_zero) {
+    .Call(`_pdfium_cpp_annot_get_object`, annot_ptr, index_zero)
+}
+
+cpp_annot_set_uri <- function(annot_ptr, uri) {
+    .Call(`_pdfium_cpp_annot_set_uri`, annot_ptr, uri)
+}
+
+cpp_annot_set_appearance <- function(annot_ptr, mode, value_utf8) {
+    .Call(`_pdfium_cpp_annot_set_appearance`, annot_ptr, mode, value_utf8)
+}
+
+cpp_annot_add_file_attachment <- function(doc_ptr, annot_ptr, name_utf8) {
+    .Call(`_pdfium_cpp_annot_add_file_attachment`, doc_ptr, annot_ptr, name_utf8)
+}
+
+cpp_annot_line <- function(annot_ptr) {
+    .Call(`_pdfium_cpp_annot_line`, annot_ptr)
+}
+
+cpp_annot_link_info <- function(doc_ptr, annot_ptr) {
+    .Call(`_pdfium_cpp_annot_link_info`, doc_ptr, annot_ptr)
+}
+
+cpp_annot_set_border <- function(annot_ptr, h_radius, v_radius, width) {
+    .Call(`_pdfium_cpp_annot_set_border`, annot_ptr, h_radius, v_radius, width)
+}
+
+cpp_annot_set_focusable_subtypes <- function(doc_ptr, codes) {
+    .Call(`_pdfium_cpp_annot_set_focusable_subtypes`, doc_ptr, codes)
+}
+
+cpp_annot_set_font_color <- function(doc_ptr, annot_ptr, r, g, b) {
+    .Call(`_pdfium_cpp_annot_set_font_color`, doc_ptr, annot_ptr, r, g, b)
+}
+
+cpp_annot_set_form_field_flags <- function(doc_ptr, annot_ptr, flags) {
+    .Call(`_pdfium_cpp_annot_set_form_field_flags`, doc_ptr, annot_ptr, flags)
+}
+
 cpp_attachment_new <- function(doc_ptr, name_utf8) {
     .Call(`_pdfium_cpp_attachment_new`, doc_ptr, name_utf8)
 }

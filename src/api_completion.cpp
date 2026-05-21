@@ -21,6 +21,7 @@
 #include "fpdf_edit.h"
 #include "fpdf_formfill.h"
 #include "fpdf_text.h"
+#include "action_helpers.h"
 #include "handle_validation.h"
 
 namespace {
@@ -441,4 +442,346 @@ bool cpp_text_set_charcodes(SEXP obj_ptr,
   return FPDFText_SetCharcodes(
       obj, codes.data(),
       static_cast<std::size_t>(charcodes.size())) != 0;
+}
+
+// ===========================================================================
+// Phase B — annotation authoring completers.
+// ===========================================================================
+
+namespace {
+
+// Init a transient FPDF_FORMHANDLE for FFL-requiring calls. PDFium's
+// form-fill setters need an FPDF_FORMHANDLE even when the call only
+// touches the annotation's own dictionary. The struct's `version`
+// field must be set; the function-pointer callbacks may be NULL for
+// the non-interactive batch path we exercise.
+struct ScopedFormHandle {
+  FPDF_FORMHANDLE handle = nullptr;
+  ScopedFormHandle(FPDF_DOCUMENT doc) {
+    FPDF_FORMFILLINFO ffi{};
+    ffi.version = 2;
+    handle = FPDFDOC_InitFormFillEnvironment(doc, &ffi);
+  }
+  ~ScopedFormHandle() {
+    if (handle != nullptr) {
+      FPDFDOC_ExitFormFillEnvironment(handle);
+    }
+  }
+  ScopedFormHandle(const ScopedFormHandle&) = delete;
+  ScopedFormHandle& operator=(const ScopedFormHandle&) = delete;
+};
+
+}  // namespace
+
+// Append an ink stroke (Nx2 matrix of points) to an ink annotation.
+// Returns the new stroke index, or -1 on failure.
+// [[Rcpp::export(name = "cpp_annot_add_ink_stroke")]]
+int cpp_annot_add_ink_stroke(SEXP annot_ptr, Rcpp::NumericMatrix points) {
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  if (points.ncol() != 2) {
+    Rcpp::stop("`points` must have exactly 2 columns (x, y).");
+  }
+  int n = points.nrow();
+  std::vector<FS_POINTF> pts(n);
+  for (int i = 0; i < n; ++i) {
+    pts[i].x = static_cast<float>(points(i, 0));
+    pts[i].y = static_cast<float>(points(i, 1));
+  }
+  return FPDFAnnot_AddInkStroke(annot, pts.data(),
+                                  static_cast<std::size_t>(n));
+}
+
+// [[Rcpp::export(name = "cpp_annot_remove_ink_list")]]
+bool cpp_annot_remove_ink_list(SEXP annot_ptr) {
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  return FPDFAnnot_RemoveInkList(annot) != 0;
+}
+
+// Append a page-object (already-detached, returned by
+// FPDFPageObj_CreateNew*) into a stamp / freetext annotation.
+// [[Rcpp::export(name = "cpp_annot_append_object")]]
+bool cpp_annot_append_object(SEXP annot_ptr, SEXP obj_ptr) {
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  FPDF_PAGEOBJECT obj = acomp_obj_from_ptr(obj_ptr);
+  // After AppendObject, the annotation owns the page-object; clear
+  // the R-side externalptr so subsequent calls error cleanly.
+  bool ok = FPDFAnnot_AppendObject(annot, obj) != 0;
+  if (ok) R_ClearExternalPtr(obj_ptr);
+  return ok;
+}
+
+// [[Rcpp::export(name = "cpp_annot_remove_object")]]
+bool cpp_annot_remove_object(SEXP annot_ptr, int index_zero) {
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  return FPDFAnnot_RemoveObject(annot, index_zero) != 0;
+}
+
+// [[Rcpp::export(name = "cpp_annot_update_object")]]
+bool cpp_annot_update_object(SEXP annot_ptr, SEXP obj_ptr) {
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  FPDF_PAGEOBJECT obj = acomp_obj_from_ptr(obj_ptr);
+  return FPDFAnnot_UpdateObject(annot, obj) != 0;
+}
+
+// [[Rcpp::export(name = "cpp_annot_object_count")]]
+int cpp_annot_object_count(SEXP annot_ptr) {
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  return FPDFAnnot_GetObjectCount(annot);
+}
+
+// Returns the page-object at the given index. The annotation owns it
+// (no finalizer); the externalptr's prot slot pins the annot so the
+// page-obj reference can't dangle.
+// [[Rcpp::export(name = "cpp_annot_get_object")]]
+SEXP cpp_annot_get_object(SEXP annot_ptr, int index_zero) {
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  FPDF_PAGEOBJECT obj = FPDFAnnot_GetObject(annot, index_zero);
+  if (obj == nullptr) {
+    Rcpp::stop("FPDFAnnot_GetObject returned NULL for index %d",
+               index_zero);
+  }
+  return R_MakeExternalPtr(obj, R_NilValue, annot_ptr);
+}
+
+// [[Rcpp::export(name = "cpp_annot_set_uri")]]
+bool cpp_annot_set_uri(SEXP annot_ptr, std::string uri) {
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  return FPDFAnnot_SetURI(annot, uri.c_str()) != 0;
+}
+
+// Appearance-mode encoding matches FPDF_ANNOT_APPEARANCEMODE_*:
+// 0=NORMAL, 1=ROLLOVER, 2=DOWN.
+// [[Rcpp::export(name = "cpp_annot_set_appearance")]]
+bool cpp_annot_set_appearance(SEXP annot_ptr, int mode,
+                                std::string value_utf8) {
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  if (value_utf8.empty()) {
+    return FPDFAnnot_SetAP(
+        annot, static_cast<FPDF_ANNOT_APPEARANCEMODE>(mode),
+        nullptr) != 0;
+  }
+  std::vector<unsigned short> utf16(value_utf8.size() + 1);
+  std::size_t j = 0;
+  for (std::size_t i = 0; i < value_utf8.size();) {
+    unsigned int cp = 0;
+    unsigned char c0 = static_cast<unsigned char>(value_utf8[i]);
+    if (c0 < 0x80) { cp = c0; i += 1; }
+    else if ((c0 & 0xE0) == 0xC0 && i + 1 < value_utf8.size()) {
+      cp = ((c0 & 0x1F) << 6) |
+           (static_cast<unsigned char>(value_utf8[i + 1]) & 0x3F);
+      i += 2;
+    } else if ((c0 & 0xF0) == 0xE0 && i + 2 < value_utf8.size()) {
+      cp = ((c0 & 0x0F) << 12) |
+           ((static_cast<unsigned char>(value_utf8[i + 1]) & 0x3F) << 6) |
+           (static_cast<unsigned char>(value_utf8[i + 2]) & 0x3F);
+      i += 3;
+    } else if ((c0 & 0xF8) == 0xF0 && i + 3 < value_utf8.size()) {
+      cp = ((c0 & 0x07) << 18) |
+           ((static_cast<unsigned char>(value_utf8[i + 1]) & 0x3F) << 12) |
+           ((static_cast<unsigned char>(value_utf8[i + 2]) & 0x3F) << 6) |
+           (static_cast<unsigned char>(value_utf8[i + 3]) & 0x3F);
+      i += 4;
+    } else {
+      cp = '?';
+      i += 1;
+    }
+    if (cp < 0x10000) {
+      utf16[j++] = static_cast<unsigned short>(cp);
+    } else {
+      cp -= 0x10000;
+      utf16[j++] = static_cast<unsigned short>(0xD800 + (cp >> 10));
+      utf16[j++] = static_cast<unsigned short>(0xDC00 + (cp & 0x3FF));
+    }
+  }
+  utf16[j] = 0;
+  return FPDFAnnot_SetAP(
+      annot, static_cast<FPDF_ANNOT_APPEARANCEMODE>(mode),
+      reinterpret_cast<FPDF_WIDESTRING>(utf16.data())) != 0;
+}
+
+// Add a file-attachment to a fileattachment annotation. Returns an
+// externalptr to FPDF_ATTACHMENT (no finalizer; the doc owns it).
+// [[Rcpp::export(name = "cpp_annot_add_file_attachment")]]
+SEXP cpp_annot_add_file_attachment(SEXP doc_ptr, SEXP annot_ptr,
+                                      std::string name_utf8) {
+  FPDF_DOCUMENT doc = acomp_doc_from_ptr(doc_ptr);
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  std::vector<unsigned short> utf16(name_utf8.size() + 1);
+  // Reuse the same UTF-8 → UTF-16 inlining as cpp_annot_set_appearance.
+  // (Duplicate to avoid pulling utf16.h into this file's TU.)
+  std::size_t j = 0;
+  for (std::size_t i = 0; i < name_utf8.size();) {
+    unsigned int cp = 0;
+    unsigned char c0 = static_cast<unsigned char>(name_utf8[i]);
+    if (c0 < 0x80) { cp = c0; i += 1; }
+    else if ((c0 & 0xE0) == 0xC0 && i + 1 < name_utf8.size()) {
+      cp = ((c0 & 0x1F) << 6) |
+           (static_cast<unsigned char>(name_utf8[i + 1]) & 0x3F);
+      i += 2;
+    } else if ((c0 & 0xF0) == 0xE0 && i + 2 < name_utf8.size()) {
+      cp = ((c0 & 0x0F) << 12) |
+           ((static_cast<unsigned char>(name_utf8[i + 1]) & 0x3F) << 6) |
+           (static_cast<unsigned char>(name_utf8[i + 2]) & 0x3F);
+      i += 3;
+    } else {
+      cp = '?';
+      i += 1;
+    }
+    if (cp < 0x10000) {
+      utf16[j++] = static_cast<unsigned short>(cp);
+    } else {
+      cp -= 0x10000;
+      utf16[j++] = static_cast<unsigned short>(0xD800 + (cp >> 10));
+      utf16[j++] = static_cast<unsigned short>(0xDC00 + (cp & 0x3FF));
+    }
+  }
+  utf16[j] = 0;
+  FPDF_ATTACHMENT att = FPDFAnnot_AddFileAttachment(
+      annot, reinterpret_cast<FPDF_WIDESTRING>(utf16.data()));
+  if (att == nullptr) {
+    Rcpp::stop("FPDFAnnot_AddFileAttachment returned NULL — the "
+               "annotation may not be of subtype fileattachment.");
+  }
+  (void)doc;  // pinned via prot
+  return R_MakeExternalPtr(att, R_NilValue, doc_ptr);
+}
+
+// Get the line endpoints of a line annotation.
+// [[Rcpp::export(name = "cpp_annot_line")]]
+Rcpp::NumericVector cpp_annot_line(SEXP annot_ptr) {
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  FS_POINTF s{}, e{};
+  if (!FPDFAnnot_GetLine(annot, &s, &e)) {
+    return Rcpp::NumericVector::create(
+      Rcpp::_["start_x"] = NA_REAL, Rcpp::_["start_y"] = NA_REAL,
+      Rcpp::_["end_x"]   = NA_REAL, Rcpp::_["end_y"]   = NA_REAL);
+  }
+  return Rcpp::NumericVector::create(
+    Rcpp::_["start_x"] = s.x, Rcpp::_["start_y"] = s.y,
+    Rcpp::_["end_x"]   = e.x, Rcpp::_["end_y"]   = e.y);
+}
+
+// Link info for a link annotation. Returns a list mirroring the row
+// shape of pdf_page_links() — action_type code + uri + filepath +
+// dest_page_idx + dest_view + dest_x/y/zoom.
+// [[Rcpp::export(name = "cpp_annot_link_info")]]
+Rcpp::List cpp_annot_link_info(SEXP doc_ptr, SEXP annot_ptr) {
+  FPDF_DOCUMENT doc = acomp_doc_from_ptr(doc_ptr);
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  FPDF_LINK link = FPDFAnnot_GetLink(annot);
+  if (link == nullptr) {
+    return Rcpp::List::create(
+      Rcpp::_["found"]       = false,
+      Rcpp::_["action_code"] = 0,
+      Rcpp::_["uri"]         = std::string(),
+      Rcpp::_["filepath"]    = std::string(),
+      Rcpp::_["dest_page"]   = NA_INTEGER,
+      Rcpp::_["dest_view"]   = 0,
+      Rcpp::_["dest_x"]      = NA_REAL,
+      Rcpp::_["dest_y"]      = NA_REAL,
+      Rcpp::_["dest_zoom"]   = NA_REAL);
+  }
+  FPDF_ACTION action = FPDFLink_GetAction(link);
+  int code = 0, dest_idx = -1, dview = 0;
+  double dx = NA_REAL, dy = NA_REAL, dzoom = NA_REAL;
+  std::string uri_text, fp_text;
+  pdfium_r::classify_action_with_dest(
+      doc, action, FPDFLink_GetDest(doc, link),
+      code, uri_text, fp_text, dest_idx, dview, dx, dy, dzoom);
+  return Rcpp::List::create(
+    Rcpp::_["found"]       = true,
+    Rcpp::_["action_code"] = code,
+    Rcpp::_["uri"]         = uri_text,
+    Rcpp::_["filepath"]    = fp_text,
+    Rcpp::_["dest_page"]   = dest_idx < 0 ? NA_INTEGER : dest_idx + 1,
+    Rcpp::_["dest_view"]   = dview,
+    Rcpp::_["dest_x"]      = dx,
+    Rcpp::_["dest_y"]      = dy,
+    Rcpp::_["dest_zoom"]   = dzoom);
+}
+
+// [[Rcpp::export(name = "cpp_annot_set_border")]]
+bool cpp_annot_set_border(SEXP annot_ptr, double h_radius, double v_radius,
+                            double width) {
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  return FPDFAnnot_SetBorder(annot,
+                               static_cast<float>(h_radius),
+                               static_cast<float>(v_radius),
+                               static_cast<float>(width)) != 0;
+}
+
+// Doc-wide focusable-annotation-subtype setter. Takes an integer
+// vector of subtype codes per the existing pdfium_annot_subtype_code()
+// mapping. Returns bool.
+//
+// NOTE: PDFium's FPDFAnnot_SetFocusableSubtypes segfaults on AcroForm
+// docs (the env's internal `m_FocusableAnnotSubtypes` vector member
+// isn't initialised unless the doc carries an XFA form). The
+// ExitFormFillEnvironment call in the destructor then double-frees.
+// Caching the env on doc$state would avoid the Exit but still
+// segfaults inside SetFocusableSubtypes itself for ordinary
+// AcroForm-only docs. This is a PDFium-side issue; the wrapper
+// returns FALSE for now and the function is documented as
+// "use only on docs that already had a non-empty subtype list set
+// by another tool (e.g. an XFA-aware viewer)".
+// [[Rcpp::export(name = "cpp_annot_set_focusable_subtypes")]]
+bool cpp_annot_set_focusable_subtypes(SEXP doc_ptr,
+                                        Rcpp::IntegerVector codes) {
+  FPDF_DOCUMENT doc = acomp_doc_from_ptr(doc_ptr);
+  // Pre-check: PDFium's SetFocusableSubtypes implementation assumes
+  // a non-empty existing subtype list; querying first triggers
+  // initialisation. On ordinary AcroForm docs this list is empty
+  // and the setter still segfaults (PDFium bug). Refuse the call
+  // rather than crash the R session.
+  FPDF_FORMFILLINFO ffi{};
+  ffi.version = 2;
+  FPDF_FORMHANDLE env = FPDFDOC_InitFormFillEnvironment(doc, &ffi);
+  if (env == nullptr) {
+    Rcpp::stop("FPDFDOC_InitFormFillEnvironment returned NULL.");
+  }
+  int existing = FPDFAnnot_GetFocusableSubtypesCount(env);
+  if (existing <= 0) {
+    FPDFDOC_ExitFormFillEnvironment(env);
+    Rcpp::stop("FPDFAnnot_SetFocusableSubtypes requires a non-empty "
+               "existing focusable-subtype list. This document has "
+               "none (likely AcroForm-only). Calling the setter on "
+               "such a doc segfaults inside PDFium — refusing.");
+  }
+  std::vector<FPDF_ANNOTATION_SUBTYPE> subs(codes.size());
+  for (R_xlen_t i = 0; i < codes.size(); ++i) {
+    subs[i] = static_cast<FPDF_ANNOTATION_SUBTYPE>(codes[i]);
+  }
+  bool ok = FPDFAnnot_SetFocusableSubtypes(
+      env, subs.data(),
+      static_cast<std::size_t>(codes.size())) != 0;
+  FPDFDOC_ExitFormFillEnvironment(env);
+  return ok;
+}
+
+// [[Rcpp::export(name = "cpp_annot_set_font_color")]]
+bool cpp_annot_set_font_color(SEXP doc_ptr, SEXP annot_ptr,
+                                int r, int g, int b) {
+  FPDF_DOCUMENT doc = acomp_doc_from_ptr(doc_ptr);
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  ScopedFormHandle env(doc);
+  if (env.handle == nullptr) {
+    Rcpp::stop("FPDFDOC_InitFormFillEnvironment returned NULL.");
+  }
+  return FPDFAnnot_SetFontColor(
+      env.handle, annot,
+      static_cast<unsigned int>(r),
+      static_cast<unsigned int>(g),
+      static_cast<unsigned int>(b)) != 0;
+}
+
+// [[Rcpp::export(name = "cpp_annot_set_form_field_flags")]]
+bool cpp_annot_set_form_field_flags(SEXP doc_ptr, SEXP annot_ptr,
+                                      int flags) {
+  FPDF_DOCUMENT doc = acomp_doc_from_ptr(doc_ptr);
+  FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  ScopedFormHandle env(doc);
+  if (env.handle == nullptr) {
+    Rcpp::stop("FPDFDOC_InitFormFillEnvironment returned NULL.");
+  }
+  return FPDFAnnot_SetFormFieldFlags(env.handle, annot, flags) != 0;
 }
