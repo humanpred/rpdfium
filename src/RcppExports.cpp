@@ -823,6 +823,59 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_font_load_standard
+SEXP cpp_font_load_standard(SEXP doc_ptr, std::string font_name);
+RcppExport SEXP _pdfium_cpp_font_load_standard(SEXP doc_ptrSEXP, SEXP font_nameSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type font_name(font_nameSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_font_load_standard(doc_ptr, font_name));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_font_load_truetype
+SEXP cpp_font_load_truetype(SEXP doc_ptr, Rcpp::RawVector font_data, int font_type, bool cid);
+RcppExport SEXP _pdfium_cpp_font_load_truetype(SEXP doc_ptrSEXP, SEXP font_dataSEXP, SEXP font_typeSEXP, SEXP cidSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< Rcpp::RawVector >::type font_data(font_dataSEXP);
+    Rcpp::traits::input_parameter< int >::type font_type(font_typeSEXP);
+    Rcpp::traits::input_parameter< bool >::type cid(cidSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_font_load_truetype(doc_ptr, font_data, font_type, cid));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_font_close
+void cpp_font_close(SEXP font_ptr);
+RcppExport SEXP _pdfium_cpp_font_close(SEXP font_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type font_ptr(font_ptrSEXP);
+    cpp_font_close(font_ptr);
+    return R_NilValue;
+END_RCPP
+}
+// cpp_text_new_with_font
+SEXP cpp_text_new_with_font(SEXP doc_ptr, SEXP page_ptr, SEXP font_ptr, double font_size, std::string text_utf8, double x, double y);
+RcppExport SEXP _pdfium_cpp_text_new_with_font(SEXP doc_ptrSEXP, SEXP page_ptrSEXP, SEXP font_ptrSEXP, SEXP font_sizeSEXP, SEXP text_utf8SEXP, SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type font_ptr(font_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type font_size(font_sizeSEXP);
+    Rcpp::traits::input_parameter< std::string >::type text_utf8(text_utf8SEXP);
+    Rcpp::traits::input_parameter< double >::type x(xSEXP);
+    Rcpp::traits::input_parameter< double >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_new_with_font(doc_ptr, page_ptr, font_ptr, font_size, text_utf8, x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_form_field_handles
 Rcpp::List cpp_form_field_handles(SEXP doc_ptr);
 RcppExport SEXP _pdfium_cpp_form_field_handles(SEXP doc_ptrSEXP) {
@@ -1070,6 +1123,36 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_text_char_font_info(page_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_image_new_from_jpeg
+SEXP cpp_image_new_from_jpeg(SEXP doc_ptr, SEXP page_ptr, Rcpp::RawVector jpeg_bytes);
+RcppExport SEXP _pdfium_cpp_image_new_from_jpeg(SEXP doc_ptrSEXP, SEXP page_ptrSEXP, SEXP jpeg_bytesSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< Rcpp::RawVector >::type jpeg_bytes(jpeg_bytesSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_image_new_from_jpeg(doc_ptr, page_ptr, jpeg_bytes));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_image_set_matrix
+bool cpp_image_set_matrix(SEXP image_ptr, double a, double b, double c, double d, double e, double f);
+RcppExport SEXP _pdfium_cpp_image_set_matrix(SEXP image_ptrSEXP, SEXP aSEXP, SEXP bSEXP, SEXP cSEXP, SEXP dSEXP, SEXP eSEXP, SEXP fSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type image_ptr(image_ptrSEXP);
+    Rcpp::traits::input_parameter< double >::type a(aSEXP);
+    Rcpp::traits::input_parameter< double >::type b(bSEXP);
+    Rcpp::traits::input_parameter< double >::type c(cSEXP);
+    Rcpp::traits::input_parameter< double >::type d(dSEXP);
+    Rcpp::traits::input_parameter< double >::type e(eSEXP);
+    Rcpp::traits::input_parameter< double >::type f(fSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_image_set_matrix(image_ptr, a, b, c, d, e, f));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -2495,6 +2578,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_doc_meta_text", (DL_FUNC) &_pdfium_cpp_doc_meta_text, 2},
     {"_pdfium_cpp_doc_info", (DL_FUNC) &_pdfium_cpp_doc_info, 1},
     {"_pdfium_cpp_doc_file_version", (DL_FUNC) &_pdfium_cpp_doc_file_version, 1},
+    {"_pdfium_cpp_font_load_standard", (DL_FUNC) &_pdfium_cpp_font_load_standard, 2},
+    {"_pdfium_cpp_font_load_truetype", (DL_FUNC) &_pdfium_cpp_font_load_truetype, 4},
+    {"_pdfium_cpp_font_close", (DL_FUNC) &_pdfium_cpp_font_close, 1},
+    {"_pdfium_cpp_text_new_with_font", (DL_FUNC) &_pdfium_cpp_text_new_with_font, 7},
     {"_pdfium_cpp_form_field_handles", (DL_FUNC) &_pdfium_cpp_form_field_handles, 1},
     {"_pdfium_cpp_form_field_name_handle", (DL_FUNC) &_pdfium_cpp_form_field_name_handle, 2},
     {"_pdfium_cpp_form_field_alternate_name_handle", (DL_FUNC) &_pdfium_cpp_form_field_alternate_name_handle, 2},
@@ -2516,6 +2603,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_text_obj_glyph_width", (DL_FUNC) &_pdfium_cpp_text_obj_glyph_width, 3},
     {"_pdfium_cpp_text_obj_font_metrics", (DL_FUNC) &_pdfium_cpp_text_obj_font_metrics, 2},
     {"_pdfium_cpp_text_char_font_info", (DL_FUNC) &_pdfium_cpp_text_char_font_info, 1},
+    {"_pdfium_cpp_image_new_from_jpeg", (DL_FUNC) &_pdfium_cpp_image_new_from_jpeg, 3},
+    {"_pdfium_cpp_image_set_matrix", (DL_FUNC) &_pdfium_cpp_image_set_matrix, 7},
     {"_pdfium_cpp_image_metadata", (DL_FUNC) &_pdfium_cpp_image_metadata, 2},
     {"_pdfium_cpp_image_pixel_size", (DL_FUNC) &_pdfium_cpp_image_pixel_size, 1},
     {"_pdfium_cpp_image_get_bitmap", (DL_FUNC) &_pdfium_cpp_image_get_bitmap, 1},

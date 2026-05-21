@@ -98,8 +98,13 @@ supported subtypes lives in `?pdf_annot_new`.
 plus the page-object creators ([`pdf_path_new`](https://humanpred.github.io/rpdfium/reference/pdf_path_new.html),
 [`pdf_rect_new`](https://humanpred.github.io/rpdfium/reference/pdf_rect_new.html),
 [`pdf_text_new`](https://humanpred.github.io/rpdfium/reference/pdf_text_new.html),
+[`pdf_image_new`](https://humanpred.github.io/rpdfium/reference/pdf_image_new.html),
+[`pdf_font_load`](https://humanpred.github.io/rpdfium/reference/pdf_font_load.html)
+/ [`pdf_font_load_standard`](https://humanpred.github.io/rpdfium/reference/pdf_font_load_standard.html),
 plus the path-geometry appenders) let you build PDFs from scratch
-in R. The mutating-pdfs vignette walks through the workflow.
+in R — vector graphics, JPEG images, text in the 14 PDF standard
+fonts, and arbitrary TrueType / Type1 typefaces. The mutating-pdfs
+vignette walks through the workflow.
 
 **What scales fine.** Page count is unlimited (PDFium handles
 thousand-page docs efficiently); objects-per-page are unlimited;
@@ -109,23 +114,12 @@ paths — is exposed; annotations are richly covered. The R↔C
 boundary cost is microseconds per call, so 10⁶ object writes is
 seconds, not minutes.
 
-**v0.1.0 limits worth knowing about.** Four authoring axes have
-real gaps in the current release. They split cleanly into two
-groups by what's blocking closure:
-
-*Blocked on this package's roadmap* (PDFium exposes the symbols;
-we just haven't wrapped them yet — closure timing is in our
-hands):
-
-| Gap | Unwrapped PDFium symbols | Workaround today |
-|---|---|---|
-| **Image embedding** | `FPDFImageObj_LoadJpegFile`, `FPDFImageObj_LoadJpegFileInline`, `FPDFImageObj_SetBitmap` — all in `inst/include/fpdf_edit.h`; deferred from Phase 5 pending an `FPDF_BITMAP` lifecycle design | Use `minipdf` for image-heavy programmatic PDFs, or render images separately and embed via a post-process |
-| **Custom fonts** | `FPDFText_LoadFont`, `FPDFText_LoadStandardFont`, `FPDFText_LoadCidType2Font` — all in `inst/include/fpdf_edit.h`; not yet wrapped, needs a `pdfium_font` S3 class with `FPDFFont_Close` finalizer | For non-Latin scripts or branded type, render text as paths via an external tool and embed the resulting vector paths |
-
-*Blocked on upstream PDFium* (the symbols don't exist yet — we've
-proposed them but they need to ship through Google's Gerrit review
-cycle, land in a PDFium release, and propagate to a `bblanchon`
-binary before we can wrap them):
+**v0.1.0 limits worth knowing about.** Two authoring axes have
+real gaps in the current release — both blocked on upstream
+PDFium (the symbols don't exist yet — we've proposed them but they
+need to ship through Google's Gerrit review cycle, land in a
+PDFium release, and propagate to a `bblanchon` binary before we
+can wrap them):
 
 | Gap | Missing PDFium symbol(s) | Workaround today |
 |---|---|---|
