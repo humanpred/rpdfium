@@ -1,0 +1,207 @@
+From 284cd174af6ce18093d3d4e3465030fe9ede00ae Mon Sep 17 00:00:00 2001
+From: Bill Denney <wdenney@humanpredictions.com>
+Date: Wed, 20 May 2026 18:43:14 +0000
+Subject: [PATCH] Add FPDFTextObj_SetFontSize public API
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Counterpart to the existing FPDFTextObj_GetFontSize getter — set
+the /Tf font size on a text page object.
+
+Without this symbol, embedders that want to change a text
+object's font size have only two workarounds:
+
+  1. Scale the object's transformation matrix via
+     FPDFPageObj_SetMatrix(). This changes the rendered size but
+     leaves FPDFTextObj_GetFontSize() returning the original /Tf
+     value, so callers that round-trip through the getter see
+     stale data.
+
+  2. Replace the object via FPDFPageObj_CreateTextObj(doc, font,
+     new_size), copy every other attribute (matrix, stroke/fill
+     color, render mode, blend mode, marks, is_active, ...),
+     remove the original with FPDFPage_RemoveObject(), and re-
+     insert. Costly and fragile — every new page-object attribute
+     that lands in a future release risks being missed by the
+     copy step.
+
+The internal hook already exists. Both
+FPDFPageObj_CreateTextObj() and FPDFPageObj_NewTextObj() call
+CPDF_TextObject::mutable_text_state().SetFontSize() in
+fpdfsdk/fpdf_edittext.cpp, so the new public wrapper is a thin
+export mirroring FPDFTextObj_SetTextRenderMode in shape:
+
+  FPDF_BOOL FPDFTextObj_SetFontSize(FPDF_PAGEOBJECT text,
+                                    float size);
+
+Input validation matches FPDFPageObj_SetStrokeWidth — null
+handles and negative sizes are rejected; zero is permitted to
+mirror FPDFPageObj_NewTextObj() with size 0 (which the existing
+AddStandardFontTextOfSizeZero test exercises). SetDirty(true) is
+called after the mutation so the content stream regenerates on
+the next render or save.
+
+Tested via FPDFEditEmbedderTest::SetFontSize, which exercises
+both round-trip and rejection paths.
+
+Motivation: I maintain an R-language binding for PDFium (CRAN
+package "pdfium"). Its 0.1.0 release adds a writer surface that
+mirrors every page-object getter with a setter, so users can
+read attributes into a tibble, edit cells, and write the result
+back. Every other styling setter
+(SetStrokeColor / SetFillColor / SetMatrix / SetDashArray /
+SetTextRenderMode / ...) is public; SetFontSize is the only
+asymmetry in that surface. Closing this gap lets the binding
+ship pdf_text_set_font_size() without the inline CreateTextObj
+workaround.
+
+Bug: 515079553
+Change-Id: Iabcdef1234567890abcdef1234567890abcdef12
+---
+ fpdfsdk/fpdf_edit_embeddertest.cpp | 67 ++++++++++++++++++++++++++++++
+ fpdfsdk/fpdf_edittext.cpp          | 12 ++++++
+ fpdfsdk/fpdf_view_c_api_test.c     |  1 +
+ public/fpdf_edit.h                 | 13 ++++++
+ 4 files changed, 93 insertions(+)
+
+diff --git a/fpdfsdk/fpdf_edit_embeddertest.cpp b/fpdfsdk/fpdf_edit_embeddertest.cpp
+index e3d063b..67a7e84 100644
+--- a/fpdfsdk/fpdf_edit_embeddertest.cpp
++++ b/fpdfsdk/fpdf_edit_embeddertest.cpp
+@@ -3026,6 +3026,73 @@ TEST_F(FPDFEditEmbedderTest, AddStandardFontText) {
+   // TODO(npm): FPDF_SaveAsCopy not giving the desired result after this.
+ }
+ 
++TEST_F(FPDFEditEmbedderTest, SetFontSize) {
++  // Multi-block layout follows the FPDFAnnot_SetFormFieldFlags CL
++  // (131231): each { } block isolates one scenario. Page + text
++  // object setup is shared; per-block setup stays inside the block
++  // that needs it.
++  ScopedFPDFPage page(FPDFPage_New(CreateNewDocument(), 0, 612, 792));
++  FPDF_PAGEOBJECT text_object =
++      FPDFPageObj_NewTextObj(document(), "Arial", 12.0f);
++  ASSERT_TRUE(text_object);
++
++  // Round-trip: Get -> Set -> Get returns the new value.
++  {
++    float size = -1;
++    ASSERT_TRUE(FPDFTextObj_GetFontSize(text_object, &size));
++    EXPECT_EQ(12.0f, size);
++
++    EXPECT_TRUE(FPDFTextObj_SetFontSize(text_object, 24.0f));
++    ASSERT_TRUE(FPDFTextObj_GetFontSize(text_object, &size));
++    EXPECT_EQ(24.0f, size);
++
++    // Zero is permitted (mirrors FPDFPageObj_NewTextObj at size 0).
++    EXPECT_TRUE(FPDFTextObj_SetFontSize(text_object, 0.0f));
++    ASSERT_TRUE(FPDFTextObj_GetFontSize(text_object, &size));
++    EXPECT_EQ(0.0f, size);
++  }
++
++  // Rejection: negative and null leave the prior value alone.
++  {
++    EXPECT_TRUE(FPDFTextObj_SetFontSize(text_object, 18.0f));
++    float size = -1;
++    ASSERT_TRUE(FPDFTextObj_GetFontSize(text_object, &size));
++    EXPECT_EQ(18.0f, size);
++
++    EXPECT_FALSE(FPDFTextObj_SetFontSize(text_object, -1.0f));
++    ASSERT_TRUE(FPDFTextObj_GetFontSize(text_object, &size));
++    EXPECT_EQ(18.0f, size);
++
++    EXPECT_FALSE(FPDFTextObj_SetFontSize(nullptr, 32.0f));
++  }
++
++  // Persistence: the new size survives FPDF_SaveAsCopy + reload.
++  // FPDFText_SetText + FPDFPageObj_Transform are scoped to this
++  // block — earlier blocks don't render or save and don't need
++  // them.
++  {
++    ScopedFPDFWideString text = GetFPDFWideString(L"hello");
++    EXPECT_TRUE(FPDFText_SetText(text_object, text.get()));
++    FPDFPageObj_Transform(text_object, 1, 0, 0, 1, 100, 100);
++    EXPECT_TRUE(FPDFTextObj_SetFontSize(text_object, 36.0f));
++    EXPECT_TRUE(FPDFPage_InsertObject(page.get(), text_object));
++    EXPECT_TRUE(FPDFPage_GenerateContent(page.get()));
++    EXPECT_TRUE(FPDF_SaveAsCopy(document(), this, 0));
++
++    OpenSavedDocument();
++    FPDF_PAGE saved_page = LoadSavedPage(0);
++    ASSERT_TRUE(saved_page);
++    ASSERT_EQ(1, FPDFPage_CountObjects(saved_page));
++    FPDF_PAGEOBJECT saved_object = FPDFPage_GetObject(saved_page, 0);
++    ASSERT_TRUE(saved_object);
++    float saved_size = -1;
++    ASSERT_TRUE(FPDFTextObj_GetFontSize(saved_object, &saved_size));
++    EXPECT_EQ(36.0f, saved_size);
++    CloseSavedPage(saved_page);
++    CloseSavedDocument();
++  }
++}
++
+ TEST_F(FPDFEditEmbedderTest, AddStandardFontTextOfSizeZero) {
+   // Start with a blank page
+   ScopedFPDFPage page(FPDFPage_New(CreateNewDocument(), 0, 612, 792));
+diff --git a/fpdfsdk/fpdf_edittext.cpp b/fpdfsdk/fpdf_edittext.cpp
+index eb06dd7..758ef4a 100644
+--- a/fpdfsdk/fpdf_edittext.cpp
++++ b/fpdfsdk/fpdf_edittext.cpp
+@@ -530,6 +530,18 @@ FPDFTextObj_GetFontSize(FPDF_PAGEOBJECT text, float* size) {
+   return true;
+ }
+ 
++FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
++FPDFTextObj_SetFontSize(FPDF_PAGEOBJECT text, float size) {
++  CPDF_TextObject* text_obj = CPDFTextObjectFromFPDFPageObject(text);
++  if (!text_obj || size < 0.0f) {
++    return false;
++  }
++
++  text_obj->mutable_text_state().SetFontSize(size);
++  text_obj->SetDirty(true);
++  return true;
++}
++
+ FPDF_EXPORT unsigned long FPDF_CALLCONV
+ FPDFTextObj_GetText(FPDF_PAGEOBJECT text_object,
+                     FPDF_TEXTPAGE text_page,
+diff --git a/fpdfsdk/fpdf_view_c_api_test.c b/fpdfsdk/fpdf_view_c_api_test.c
+index 3cc4c08..f3a8eb5 100644
+--- a/fpdfsdk/fpdf_view_c_api_test.c
++++ b/fpdfsdk/fpdf_view_c_api_test.c
+@@ -275,6 +275,7 @@ int CheckPDFiumCApi() {
+     CHK(FPDFTextObj_GetRenderedBitmap);
+     CHK(FPDFTextObj_GetText);
+     CHK(FPDFTextObj_GetTextRenderMode);
++    CHK(FPDFTextObj_SetFontSize);
+     CHK(FPDFTextObj_SetTextRenderMode);
+     CHK(FPDFText_LoadCidType2Font);
+     CHK(FPDFText_LoadFont);
+diff --git a/public/fpdf_edit.h b/public/fpdf_edit.h
+index 9d232db..85ada85 100644
+--- a/public/fpdf_edit.h
++++ b/public/fpdf_edit.h
+@@ -1463,6 +1463,19 @@ FPDFText_LoadCidType2Font(FPDF_DOCUMENT document,
+ FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
+ FPDFTextObj_GetFontSize(FPDF_PAGEOBJECT text, float* size);
+ 
++// Experimental API.
++// Set the font size of a text object.
++//
++//   text - handle to a text page object.
++//   size - the new font size, measured in points (1/72 inch). Must be
++//          non-negative; zero is permitted to mirror
++//          FPDFPageObj_NewTextObj() with size 0.
++//
++// Returns TRUE on success. Returns FALSE when |text| is not a text
++// page object, or when |size| is negative.
++FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
++FPDFTextObj_SetFontSize(FPDF_PAGEOBJECT text, float size);
++
+ // Close a loaded PDF font.
+ //
+ // font   - Handle to the loaded font.
+-- 
+2.43.0
+
