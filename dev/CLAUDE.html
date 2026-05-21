@@ -57,6 +57,17 @@
 <strong>CRAN target:</strong> v0.1.0 ships to CRAN. Every change preserves CRAN-cleanliness.</li>
 </ul></div>
 <div class="section level2">
+<h2 id="scope--wrap-pdfium-dont-invent-helpers">Scope — wrap PDFium, don’t invent helpers<a class="anchor" aria-label="anchor" href="#scope--wrap-pdfium-dont-invent-helpers"></a></h2>
+<p>The package’s job is to expose Google’s PDFium C API to R idiomatically. Every public function should ultimately call into PDFium (perhaps via a chain of internal helpers) or be unambiguously tied to PDF-format concepts (<code><a href="reference/pdf_parse_date.html">pdf_parse_date()</a></code> parses the PDF date-string format).</p>
+<p>What does <strong>not</strong> belong:</p>
+<ul><li>Filesystem walking (<code><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files()</a></code> loops over <code>pdf_doc_*</code>).</li>
+<li>Network plumbing beyond what PDFium itself does. <code>pdf_doc_open(path)</code> accepting a URL is fine — the URL becomes raw bytes which go straight into PDFium’s <code>FPDF_LoadMemDocument64</code>. A function whose body is mostly <code>httr2::request(...)</code> is not.</li>
+<li>Bulk / batch wrappers (“apply this PDFium function to every file in a folder”). Users have <code>lapply</code> and <code>purrr</code> for that.</li>
+<li>Cross-PDF analysis (“compare these two PDFs”). Out of scope.</li>
+</ul><p>When in doubt, ask: <em>what PDFium symbol does this wrap?</em> If the answer is “none — it’s a convenience over base R”, the function belongs in user code or a separate utility package, not here.</p>
+<p>This is recorded as a deletion-justification in <code>NEWS.md</code> for the <code>pdf_dir_summary</code> / <code>pdf_doc_open_url</code> retraction. Future contributors shouldn’t re-add functions whose job is to glue base R primitives together around pdfium calls.</p>
+</div>
+<div class="section level2">
 <h2 id="layering--never-bypass">Layering — never bypass<a class="anchor" aria-label="anchor" href="#layering--never-bypass"></a></h2>
 <pre><code>R user → R API (R/) → Rcpp glue (src/*.cpp) → PDFium C ABI → libpdfium.{so|dylib|dll}</code></pre>
 <ul><li>Public functions are snake_case and prefixed <code>pdf_*</code>.</li>

@@ -14,6 +14,37 @@ recording.
 - **CRAN target:** v0.1.0 ships to CRAN. Every change preserves
   CRAN-cleanliness.
 
+## Scope — wrap PDFium, don’t invent helpers
+
+The package’s job is to expose Google’s PDFium C API to R idiomatically.
+Every public function should ultimately call into PDFium (perhaps via a
+chain of internal helpers) or be unambiguously tied to PDF-format
+concepts
+([`pdf_parse_date()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_parse_date.md)
+parses the PDF date-string format).
+
+What does **not** belong:
+
+- Filesystem walking
+  ([`list.files()`](https://rdrr.io/r/base/list.files.html) loops over
+  `pdf_doc_*`).
+- Network plumbing beyond what PDFium itself does. `pdf_doc_open(path)`
+  accepting a URL is fine — the URL becomes raw bytes which go straight
+  into PDFium’s `FPDF_LoadMemDocument64`. A function whose body is
+  mostly `httr2::request(...)` is not.
+- Bulk / batch wrappers (“apply this PDFium function to every file in a
+  folder”). Users have `lapply` and `purrr` for that.
+- Cross-PDF analysis (“compare these two PDFs”). Out of scope.
+
+When in doubt, ask: *what PDFium symbol does this wrap?* If the answer
+is “none — it’s a convenience over base R”, the function belongs in user
+code or a separate utility package, not here.
+
+This is recorded as a deletion-justification in `NEWS.md` for the
+`pdf_dir_summary` / `pdf_doc_open_url` retraction. Future contributors
+shouldn’t re-add functions whose job is to glue base R primitives
+together around pdfium calls.
+
 ## Layering — never bypass
 
     R user → R API (R/) → Rcpp glue (src/*.cpp) → PDFium C ABI → libpdfium.{so|dylib|dll}

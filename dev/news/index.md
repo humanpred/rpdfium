@@ -20,11 +20,15 @@ are also writable).
   /
   [`pdf_save_to_raw()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_save_to_raw.md)
   — open existing PDFs (optionally with `readwrite = TRUE`), build new
-  ones in memory, and persist the result. `pdf_doc_open_url(url)` is a
-  convenience wrapper that fetches a `http://` / `https://` / `ftp://` /
-  `file://` URL via [`url()`](https://rdrr.io/r/base/connections.html) +
-  [`readBin()`](https://rdrr.io/r/base/readBin.html) and loads the bytes
-  through PDFium’s in-memory path — no temporary file on disk.
+  ones in memory, and persist the result. The `path =` argument of
+  [`pdf_doc_open()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_open.md)
+  accepts either a local filesystem path or a URL (any scheme
+  [`base::url()`](https://rdrr.io/r/base/connections.html) recognises —
+  typically `http://` / `https://` / `ftp://` / `file://`); URL input is
+  fetched into raw bytes via
+  [`url()`](https://rdrr.io/r/base/connections.html) +
+  [`readBin()`](https://rdrr.io/r/base/readBin.html) and loaded through
+  PDFium’s `FPDF_LoadMemDocument64`, with no temporary file on disk.
 - [`pdf_doc_info()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_info.md),
   [`pdf_doc_meta()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_meta.md),
   [`pdf_doc_text()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_text.md),
@@ -71,13 +75,33 @@ are also writable).
   dispatch to the matching tibble — `summary(page)` adds the page-loaded
   counts (annotation count, page-object count, text-run count, link
   count) since the page is already loaded.
-- `pdf_dir_summary(dir)` — scans a directory for PDF files and returns
-  one row per file in the
-  [`pdf_doc_summary()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_summary.md)
-  shape. Recursive scan via `recursive = TRUE`; pattern-matches `.pdf`
-  case-insensitively by default. The `errors` argument selects one of
-  `"warn"` (default — surface broken files but don’t abort), `"skip"`
-  (silently drop), or `"stop"` (abort on the first failure).
+- [`summary()`](https://rdrr.io/r/base/summary.html) S3 methods for
+  every `pdfium_*_list` class: `pdfium_obj_list`, `pdfium_annot_list`,
+  `pdfium_attachment_list`, `pdfium_signature_list`,
+  `pdfium_bookmark_list`, and `pdfium_form_field_list`. Each dispatches
+  to the matching `as_tibble.*` method so `summary(x)` returns the same
+  tibble view `tibble::as_tibble(x)` would — matching the R idiom of
+  [`print()`](https://rdrr.io/r/base/print.html) for the one-line
+  summary and [`summary()`](https://rdrr.io/r/base/summary.html) for the
+  deep dive.
+
+### Scope retraction
+
+Two functions added during 0.1.0 development were retracted before
+release on scope grounds (see `CLAUDE.md` §“Scope”):
+
+- **`pdf_doc_open_url()`** — folded into `pdf_doc_open(path = ...)`. The
+  URL-fetching layer is just
+  [`base::url()`](https://rdrr.io/r/base/connections.html) +
+  [`readBin()`](https://rdrr.io/r/base/readBin.html) ahead of PDFium’s
+  existing in-memory path, so a separate exported symbol added surface
+  for no PDFium-specific behaviour.
+- **`pdf_dir_summary()`** — removed. Its body was
+  [`list.files()`](https://rdrr.io/r/base/list.files.html)
+  - `lapply(pdf_doc_summary)`; users with bulk-triage needs can write
+    the loop themselves in three lines. Keeping it set a precedent for
+    “convenience over a base R loop” creep that the package’s
+    PDFium-wrapper mandate doesn’t want.
 
 ### Page objects, paths, and text
 

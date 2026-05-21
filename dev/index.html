@@ -82,7 +82,7 @@
 <li>
 <strong>Filling</strong> AcroForm fields programmatically and flattening the result for downstream tooling.</li>
 <li>
-<strong>Authoring</strong> small programmatic PDFs (think: figure callouts, table reports, annotated source documents).</li>
+<strong>Authoring</strong> programmatic PDFs from vector graphics, text, and annotations (think: figure callouts, table reports, annotated source documents). v0.1.0 ships paths / text in the 14 standard PDF fonts / annotations. Image embedding and custom-font loading are both wrapping gaps (PDFium already exposes the symbols; we just haven’t wrapped them yet) and come in a later release; <code>/Info</code>-dict writes and on-save encryption need upstream PDFium changes that we’ve proposed but Google hasn’t shipped yet.</li>
 <li>Anything you’d otherwise drop into Python with <code>pypdfium2</code>.</li>
 </ul>
 <p>See <a href="https://humanpred.github.io/rpdfium/articles/mutating-pdfs.html"><code>vignette("mutating-pdfs")</code></a> for a walkthrough of the writer surface, and <a href="https://humanpred.github.io/rpdfium/articles/comparison.html"><code>vignette("comparison")</code></a> for how <code>pdfium</code> lines up against <code>pdftools</code>, <code>qpdf</code>, <code>magick</code>, <code>tabulizer</code>, and <code>staplr</code>.</p>

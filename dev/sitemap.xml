@@ -87,7 +87,6 @@
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_bookmark_uri.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_clip_path_count.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_clip_path_segments.html</loc></url>
-<url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_dir_summary.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_bookmark_find.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_bookmarks.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_close.html</loc></url>
@@ -102,7 +101,6 @@
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_named_dests.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_new.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_open.html</loc></url>
-<url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_open_url.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_page_mode.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_permissions.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_security.html</loc></url>
@@ -243,7 +241,13 @@
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdfium_obj_type_name.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/pdfium_segment_type_name.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/plot.pdfium_bitmap.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_annot_list.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_attachment_list.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_bookmark_list.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_doc.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_form_field_list.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_obj_list.html</loc></url>
 <url><loc>https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_page.html</loc></url>
+<url><loc>https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_signature_list.html</loc></url>
 </urlset>
 

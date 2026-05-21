@@ -5,9 +5,6 @@
 - [`pdf_doc_open()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_open.md)
   : Open a PDF document
 
-- [`pdf_doc_open_url()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_open_url.md)
-  : Open a PDF document from a URL
-
 - [`pdf_doc_close()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_close.md)
   : Close a PDF document
 
@@ -22,9 +19,6 @@
 
 - [`pdf_doc_summary()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_summary.md)
   : One-call summary of a PDF document
-
-- [`pdf_dir_summary()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_dir_summary.md)
-  : Summarise every PDF in a directory in one call
 
 - [`summary(`*`<pdfium_doc>`*`)`](https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_doc.md)
   : Document-level summary
@@ -111,6 +105,9 @@
 
   Tibble view of a `pdfium_attachment_list`
 
+- [`summary(`*`<pdfium_attachment_list>`*`)`](https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_attachment_list.md)
+  : Tibble-shaped summary of an attachment list
+
 - [`pdf_attachment_name()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_attachment_name.md)
   : Attachment file name
 
@@ -140,6 +137,9 @@
   :
 
   Tibble view of a `pdfium_signature_list`
+
+- [`summary(`*`<pdfium_signature_list>`*`)`](https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_signature_list.md)
+  : Tibble-shaped summary of a signature list
 
 - [`pdf_signature_sub_filter()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_signature_sub_filter.md)
   :
@@ -172,6 +172,9 @@
   :
 
   Tibble view of a `pdfium_bookmark_list`
+
+- [`summary(`*`<pdfium_bookmark_list>`*`)`](https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_bookmark_list.md)
+  : Tibble-shaped summary of a bookmark list
 
 - [`pdf_bookmark_title()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bookmark_title.md)
   : Bookmark display title
@@ -250,6 +253,9 @@
   :
 
   Tibble view of a `pdfium_annot_list`
+
+- [`summary(`*`<pdfium_annot_list>`*`)`](https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_annot_list.md)
+  : Tibble-shaped summary of an annotation list
 
 - [`pdf_annot_subtype()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_subtype.md)
   : Annotation subtype (string)
@@ -341,6 +347,9 @@
 
   Tibble view of a `pdfium_form_field_list`
 
+- [`summary(`*`<pdfium_form_field_list>`*`)`](https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_form_field_list.md)
+  : Tibble-shaped summary of a form-field list
+
 - [`pdf_form_field_type()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_form_field_type.md)
   : Form-field type (string)
 
@@ -408,6 +417,9 @@
   :
 
   Tibble view of a `pdfium_obj_list`
+
+- [`summary(`*`<pdfium_obj_list>`*`)`](https://humanpred.github.io/rpdfium/dev/reference/summary.pdfium_obj_list.md)
+  : Tibble-shaped summary of a page-object list
 
 - [`pdf_obj_type()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_type.md)
   : Report the type of a page object
