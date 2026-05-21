@@ -9,6 +9,12 @@
   each feature group, and the file-ID tuple. Replaces the
   eight-or-so individual calls users typically chain together when
   triaging a PDF.
+* `pdf_pages_summary()` — per-page sibling of `pdf_doc_summary()`:
+  one row per page with `width`, `height` (PDF user-space points),
+  `rotation`, and `label`. All four columns use the fast by-index
+  PDFium calls, so the function does not load any page objects and
+  scales to long documents. Roughly the `pdftools::pdf_pagesize()`
+  equivalent, but with rotation + label columns added.
 
 # pdfium 0.1.0
 

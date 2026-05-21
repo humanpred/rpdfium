@@ -93,6 +93,7 @@ reference:
       - pdf_page_size
       - pdf_page_rotation
       - pdf_page_box
+      - pdf_pages_summary
       - pdf_page_links
       - pdf_link_at_point
       - pdf_link_annot_at_point
