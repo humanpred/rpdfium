@@ -83,6 +83,45 @@ SEXP cpp_annot_get(SEXP page_ptr, int index_zero_based) {
   return ptr;
 }
 
+// [[Rcpp::export(name = "cpp_annot_new")]]
+SEXP cpp_annot_new(SEXP page_ptr, int subtype_code) {
+  FPDF_PAGE page = page_from_ptr_local(page_ptr);
+  FPDF_ANNOTATION a = FPDFPage_CreateAnnot(
+      page,
+      static_cast<FPDF_ANNOTATION_SUBTYPE>(subtype_code));
+  if (a == nullptr) {
+    Rcpp::stop(
+        "FPDFPage_CreateAnnot failed for subtype code %d "
+        "(subtype is illegal or unsupported).", subtype_code);
+  }
+  // Same lifetime as cpp_annot_get(): the handle releases via
+  // FPDFPage_CloseAnnot on R-side GC; prot pins the parent page.
+  SEXP ptr = PROTECT(R_MakeExternalPtr(a, R_NilValue, page_ptr));
+  R_RegisterCFinalizerEx(ptr, finalize_annot,
+                         static_cast<Rboolean>(TRUE));
+  UNPROTECT(1);
+  return ptr;
+}
+
+// Remove the annotation at `index_zero_based` from its parent page
+// and invalidate the R-side externalptr so subsequent calls fail
+// via the existing is_open() chain (handle_validation.h, ADR-020
+// §4). After FPDFPage_RemoveAnnot the underlying FPDF_ANNOTATION
+// is destroyed; without R_ClearExternalPtr the finalizer would
+// later run FPDFPage_CloseAnnot on a dangling pointer (the
+// finalizer is nullptr-tolerant, but clearing here is the
+// belt-and-braces correctness guarantee).
+// [[Rcpp::export(name = "cpp_annot_delete")]]
+bool cpp_annot_delete(SEXP page_ptr, SEXP annot_ptr,
+                        int index_zero_based) {
+  FPDF_PAGE page = page_from_ptr_local(page_ptr);
+  if (!FPDFPage_RemoveAnnot(page, index_zero_based)) {
+    return false;
+  }
+  R_ClearExternalPtr(annot_ptr);
+  return true;
+}
+
 // [[Rcpp::export(name = "cpp_annot_subtype_code")]]
 int cpp_annot_subtype_code(SEXP annot_ptr) {
   return static_cast<int>(FPDFAnnot_GetSubtype(annot_from_ptr(annot_ptr)));
