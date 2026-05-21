@@ -269,6 +269,30 @@ cpp_obj_transform_clip_path <- function(obj_ptr, a, b, c, d, e, f) {
     invisible(.Call(`_pdfium_cpp_obj_transform_clip_path`, obj_ptr, a, b, c, d, e, f))
 }
 
+cpp_xobject_from_page <- function(dest_doc_ptr, src_doc_ptr, src_page_index_zero) {
+    .Call(`_pdfium_cpp_xobject_from_page`, dest_doc_ptr, src_doc_ptr, src_page_index_zero)
+}
+
+cpp_xobject_close <- function(xo_ptr) {
+    invisible(.Call(`_pdfium_cpp_xobject_close`, xo_ptr))
+}
+
+cpp_form_obj_from_xobject <- function(xo_ptr) {
+    .Call(`_pdfium_cpp_form_obj_from_xobject`, xo_ptr)
+}
+
+cpp_page_insert_object <- function(page_ptr, obj_ptr) {
+    invisible(.Call(`_pdfium_cpp_page_insert_object`, page_ptr, obj_ptr))
+}
+
+cpp_form_obj_remove_child <- function(form_obj_ptr, child_ptr) {
+    .Call(`_pdfium_cpp_form_obj_remove_child`, form_obj_ptr, child_ptr)
+}
+
+cpp_doc_import_pages_string <- function(dest_ptr, src_ptr, range, dest_index_zero) {
+    .Call(`_pdfium_cpp_doc_import_pages_string`, dest_ptr, src_ptr, range, dest_index_zero)
+}
+
 cpp_page_transform_with_clip <- function(page_ptr, matrix, clip_rect) {
     .Call(`_pdfium_cpp_page_transform_with_clip`, page_ptr, matrix, clip_rect)
 }

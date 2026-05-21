@@ -988,6 +988,170 @@ pdf_page_transform_with_clip <- function(page, matrix,
 }
 
 # ===========================================================================
+# Phase D — form-XObject / page-merge extras.
+# ===========================================================================
+
+# Internal pdfium_xobject constructor. The FPDF_XOBJECT handle has
+# its own lifetime (FPDF_CloseXObject); the externalptr's prot
+# slot pins the destination doc.
+new_pdfium_xobject <- function(ptr, doc, source_label) {
+  checkmate::assert_class(ptr, "externalptr", .var.name = "ptr")
+  checkmate::assert_class(doc, "pdfium_doc", .var.name = "doc")
+  checkmate::assert_string(source_label, .var.name = "source_label")
+  structure(
+    list(ptr = ptr, doc = doc, source = source_label),
+    class = c("pdfium_xobject", "pdfium_handle")
+  )
+}
+
+#' @export
+format.pdfium_xobject <- function(x, ...) {
+  state <- if (cpp_handle_is_valid(x$ptr)) "open" else "closed"
+  sprintf("<pdfium_xobject [%s] from %s>", state, x$source)
+}
+
+#' @export
+print.pdfium_xobject <- function(x, ...) {
+  cat(format(x, ...), "\n", sep = "")
+  invisible(x)
+}
+
+#' Create an XObject (reusable form) from a source-doc page
+#'
+#' Wraps `FPDF_NewXObjectFromPage`. Copies the visual content of
+#' `src_doc`'s page `src_page_num` into `dest_doc` as an
+#' `FPDF_XOBJECT`. The XObject can then be instantiated multiple
+#' times in `dest_doc` via [pdf_obj_form_from_xobject()] — useful
+#' for "n-up" layouts where the same page content needs to be tiled.
+#'
+#' @param dest_doc A `pdfium_doc` opened with `readwrite = TRUE`.
+#' @param src_doc Source `pdfium_doc`. Read-only is fine.
+#' @param src_page_num One-based page index in `src_doc`.
+#' @return A `pdfium_xobject` handle.
+#' @seealso [pdf_obj_form_from_xobject()] to instantiate as a page
+#'   object; [pdf_xobject_close()] for deterministic release.
+#' @export
+pdf_xobject_from_page <- function(dest_doc, src_doc, src_page_num = 1L) {
+  assert_readwrite(dest_doc)
+  checkmate::assert_class(src_doc, "pdfium_doc")
+  if (!is_open(src_doc)) {
+    stop("Source document has been closed.", call. = FALSE)
+  }
+  checkmate::assert_int(src_page_num, lower = 1L)
+  ptr <- cpp_xobject_from_page(dest_doc$ptr, src_doc$ptr,
+                                 as.integer(src_page_num) - 1L)
+  label <- sprintf("%s page %d", basename(src_doc$path),
+                    src_page_num)
+  new_pdfium_xobject(ptr, dest_doc, label)
+}
+
+#' Close an XObject handle
+#'
+#' Wraps `FPDF_CloseXObject`. Idempotent. Closing the XObject does
+#' NOT invalidate page-objects created from it via
+#' [pdf_obj_form_from_xobject()] — those are owned by their parent
+#' page and survive the XObject's release.
+#'
+#' @param xobject A `pdfium_xobject` from [pdf_xobject_from_page()].
+#' @return Invisibly returns `xobject`.
+#' @export
+pdf_xobject_close <- function(xobject) {
+  checkmate::assert_class(xobject, "pdfium_xobject")
+  cpp_xobject_close(xobject$ptr)
+  invisible(xobject)
+}
+
+#' Instantiate an XObject as a form page-object on a page
+#'
+#' Wraps `FPDF_NewFormObjectFromXObject` + `FPDFPage_InsertObject`.
+#' Creates a fresh form-xobject page-object referencing the shared
+#' XObject content and inserts it on `page`. The page-object can
+#' then be transformed / placed via the usual
+#' [pdf_obj_set_matrix()] setter.
+#'
+#' @param page A `pdfium_page` from [pdf_page_new()] or
+#'   [pdf_page_load()] (parent doc must be readwrite).
+#' @param xobject A `pdfium_xobject` from [pdf_xobject_from_page()].
+#'   The XObject must have been created against the same `dest_doc`
+#'   that owns `page`.
+#' @return The new `pdfium_obj` (type `"form"`).
+#' @seealso [pdf_xobject_from_page()].
+#' @export
+pdf_obj_form_from_xobject <- function(page, xobject) {
+  checkmate::assert_class(xobject, "pdfium_xobject")
+  if (!cpp_handle_is_valid(xobject$ptr)) {
+    stop("XObject handle has been closed.", call. = FALSE)
+  }
+  ph <- as_page_and_doc(page)
+  assert_readwrite(ph$doc)
+  obj_ptr <- cpp_form_obj_from_xobject(xobject$ptr)
+  # cpp_form_obj_from_xobject returns a detached page-object. Insert
+  # via cpp_page_insert_object (already wrapped for the existing
+  # creators).
+  cpp_page_insert_object(ph$page$ptr, obj_ptr)
+  idx <- cpp_page_object_count(ph$page$ptr)
+  mark_page_dirty(ph$doc, ph$page$index)
+  new_pdfium_obj(obj_ptr, ph$page, idx, "form")
+}
+
+#' Remove a child page-object from a form-xobject
+#'
+#' Wraps `FPDFFormObj_RemoveObject`. The child must currently belong
+#' to the form-xobject. After removal the child's R-side externalptr
+#' is unchanged (PDFium destroys the child internally); calling other
+#' setters on the same handle will error cleanly via the existing
+#' `is_open()` chain because PDFium's pointer is no longer valid.
+#'
+#' @param form_obj A `pdfium_obj` of `type = "form"`.
+#' @param child A `pdfium_obj` from [pdf_form_objects()] (the
+#'   enumeration of children).
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @export
+pdf_form_obj_remove_object <- function(form_obj, child) {
+  checkmate::assert_class(child, "pdfium_obj")
+  ctx <- assert_obj_writable(form_obj, allowed_types = "form",
+                              arg = "form_obj")
+  expect_setter_ok(
+    cpp_form_obj_remove_child(form_obj$ptr, child$ptr),
+    "FPDFFormObj_RemoveObject")
+  finalize_obj_setter(ctx)
+}
+
+#' Import page ranges from a source doc into a destination doc
+#'
+#' Wraps `FPDF_ImportPages` — the string-range variant of
+#' [pdf_docs_merge()]. Takes a comma-separated range like
+#' `"1-3,5,7-10"` instead of an integer vector.
+#'
+#' @param dest_doc A `pdfium_doc` opened with `readwrite = TRUE`.
+#' @param src_doc Source `pdfium_doc`.
+#' @param range Character — the page range. Empty string `""` (the
+#'   default) imports every page.
+#' @param at One-based insertion index in `dest_doc`. Defaults to the
+#'   end (use `pdf_page_count(dest_doc) + 1`).
+#' @return Invisibly returns `dest_doc`.
+#' @seealso [pdf_docs_merge()] for the integer-vector variant.
+#' @export
+pdf_docs_import_pages <- function(dest_doc, src_doc, range = "",
+                                    at = NULL) {
+  assert_readwrite(dest_doc)
+  checkmate::assert_class(src_doc, "pdfium_doc")
+  if (!is_open(src_doc)) {
+    stop("Source document has been closed.", call. = FALSE)
+  }
+  checkmate::assert_string(range, na.ok = FALSE)
+  if (is.null(at)) {
+    at <- pdf_page_count(dest_doc) + 1L
+  }
+  checkmate::assert_int(at, lower = 1L)
+  expect_setter_ok(
+    cpp_doc_import_pages_string(dest_doc$ptr, src_doc$ptr, range,
+                                  as.integer(at) - 1L),
+    "FPDF_ImportPages")
+  invisible(dest_doc)
+}
+
+# ===========================================================================
 # The three FFL-env-requiring setters PDFium exposes —
 # FPDFAnnot_SetFocusableSubtypes, FPDFAnnot_SetFontColor,
 # FPDFAnnot_SetFormFieldFlags — segfault inside PDFium

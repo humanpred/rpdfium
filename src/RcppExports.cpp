@@ -849,6 +849,77 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// cpp_xobject_from_page
+SEXP cpp_xobject_from_page(SEXP dest_doc_ptr, SEXP src_doc_ptr, int src_page_index_zero);
+RcppExport SEXP _pdfium_cpp_xobject_from_page(SEXP dest_doc_ptrSEXP, SEXP src_doc_ptrSEXP, SEXP src_page_index_zeroSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type dest_doc_ptr(dest_doc_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type src_doc_ptr(src_doc_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type src_page_index_zero(src_page_index_zeroSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_xobject_from_page(dest_doc_ptr, src_doc_ptr, src_page_index_zero));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_xobject_close
+void cpp_xobject_close(SEXP xo_ptr);
+RcppExport SEXP _pdfium_cpp_xobject_close(SEXP xo_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type xo_ptr(xo_ptrSEXP);
+    cpp_xobject_close(xo_ptr);
+    return R_NilValue;
+END_RCPP
+}
+// cpp_form_obj_from_xobject
+SEXP cpp_form_obj_from_xobject(SEXP xo_ptr);
+RcppExport SEXP _pdfium_cpp_form_obj_from_xobject(SEXP xo_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type xo_ptr(xo_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_form_obj_from_xobject(xo_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_page_insert_object
+void cpp_page_insert_object(SEXP page_ptr, SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_page_insert_object(SEXP page_ptrSEXP, SEXP obj_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
+    cpp_page_insert_object(page_ptr, obj_ptr);
+    return R_NilValue;
+END_RCPP
+}
+// cpp_form_obj_remove_child
+bool cpp_form_obj_remove_child(SEXP form_obj_ptr, SEXP child_ptr);
+RcppExport SEXP _pdfium_cpp_form_obj_remove_child(SEXP form_obj_ptrSEXP, SEXP child_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type form_obj_ptr(form_obj_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type child_ptr(child_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_form_obj_remove_child(form_obj_ptr, child_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_doc_import_pages_string
+bool cpp_doc_import_pages_string(SEXP dest_ptr, SEXP src_ptr, std::string range, int dest_index_zero);
+RcppExport SEXP _pdfium_cpp_doc_import_pages_string(SEXP dest_ptrSEXP, SEXP src_ptrSEXP, SEXP rangeSEXP, SEXP dest_index_zeroSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type dest_ptr(dest_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type src_ptr(src_ptrSEXP);
+    Rcpp::traits::input_parameter< std::string >::type range(rangeSEXP);
+    Rcpp::traits::input_parameter< int >::type dest_index_zero(dest_index_zeroSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_doc_import_pages_string(dest_ptr, src_ptr, range, dest_index_zero));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_page_transform_with_clip
 bool cpp_page_transform_with_clip(SEXP page_ptr, Rcpp::NumericVector matrix, Rcpp::NumericVector clip_rect);
 RcppExport SEXP _pdfium_cpp_page_transform_with_clip(SEXP page_ptrSEXP, SEXP matrixSEXP, SEXP clip_rectSEXP) {
@@ -3061,6 +3132,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_clip_path_close", (DL_FUNC) &_pdfium_cpp_clip_path_close, 1},
     {"_pdfium_cpp_page_insert_clip_path", (DL_FUNC) &_pdfium_cpp_page_insert_clip_path, 2},
     {"_pdfium_cpp_obj_transform_clip_path", (DL_FUNC) &_pdfium_cpp_obj_transform_clip_path, 7},
+    {"_pdfium_cpp_xobject_from_page", (DL_FUNC) &_pdfium_cpp_xobject_from_page, 3},
+    {"_pdfium_cpp_xobject_close", (DL_FUNC) &_pdfium_cpp_xobject_close, 1},
+    {"_pdfium_cpp_form_obj_from_xobject", (DL_FUNC) &_pdfium_cpp_form_obj_from_xobject, 1},
+    {"_pdfium_cpp_page_insert_object", (DL_FUNC) &_pdfium_cpp_page_insert_object, 2},
+    {"_pdfium_cpp_form_obj_remove_child", (DL_FUNC) &_pdfium_cpp_form_obj_remove_child, 2},
+    {"_pdfium_cpp_doc_import_pages_string", (DL_FUNC) &_pdfium_cpp_doc_import_pages_string, 4},
     {"_pdfium_cpp_page_transform_with_clip", (DL_FUNC) &_pdfium_cpp_page_transform_with_clip, 3},
     {"_pdfium_cpp_attachment_new", (DL_FUNC) &_pdfium_cpp_attachment_new, 2},
     {"_pdfium_cpp_attachment_delete", (DL_FUNC) &_pdfium_cpp_attachment_delete, 2},

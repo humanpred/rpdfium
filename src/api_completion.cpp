@@ -22,6 +22,7 @@
 #include "fpdf_formfill.h"
 #include "fpdf_text.h"
 #include "fpdf_transformpage.h"
+#include "fpdf_ppo.h"
 #include "action_helpers.h"
 #include "handle_validation.h"
 
@@ -865,6 +866,105 @@ void cpp_obj_transform_clip_path(SEXP obj_ptr,
 // Page-level transform-with-clip — applies the matrix to the entire
 // page content stream and (optionally) clips to the given rect.
 // PDFium takes a NULL clipRect when none is wanted.
+// ===========================================================================
+// Phase D — form-XObject / page-merge extras.
+// ===========================================================================
+
+namespace {
+
+inline FPDF_XOBJECT acomp_xobj_from_ptr(SEXP xo_ptr) {
+  return static_cast<FPDF_XOBJECT>(
+      pdfium_r::validate_handle(xo_ptr, "XObject",
+                                  /*require_prot_alive=*/false));
+}
+
+void xobject_finalizer(SEXP xo_ptr) {
+  if (TYPEOF(xo_ptr) != EXTPTRSXP) return;
+  FPDF_XOBJECT xo = static_cast<FPDF_XOBJECT>(R_ExternalPtrAddr(xo_ptr));
+  if (xo == nullptr) return;
+  FPDF_CloseXObject(xo);
+  R_ClearExternalPtr(xo_ptr);
+}
+
+}  // namespace
+
+// Create an FPDF_XOBJECT from a source-doc page.
+// [[Rcpp::export(name = "cpp_xobject_from_page")]]
+SEXP cpp_xobject_from_page(SEXP dest_doc_ptr, SEXP src_doc_ptr,
+                             int src_page_index_zero) {
+  FPDF_DOCUMENT dest = acomp_doc_from_ptr(dest_doc_ptr);
+  FPDF_DOCUMENT src  = acomp_doc_from_ptr(src_doc_ptr);
+  FPDF_XOBJECT xo = FPDF_NewXObjectFromPage(dest, src,
+                                              src_page_index_zero);
+  if (xo == nullptr) {
+    Rcpp::stop("FPDF_NewXObjectFromPage returned NULL.");
+  }
+  // prot = dest_doc so the source-side doc isn't pinned (the XObject's
+  // data has already been copied into dest_doc).
+  SEXP ext = PROTECT(R_MakeExternalPtr(xo, R_NilValue, dest_doc_ptr));
+  R_RegisterCFinalizerEx(ext, xobject_finalizer,
+                         static_cast<Rboolean>(TRUE));
+  UNPROTECT(1);
+  return ext;
+}
+
+// Idempotent close.
+// [[Rcpp::export(name = "cpp_xobject_close")]]
+void cpp_xobject_close(SEXP xo_ptr) {
+  if (TYPEOF(xo_ptr) != EXTPTRSXP) return;
+  FPDF_XOBJECT xo = static_cast<FPDF_XOBJECT>(R_ExternalPtrAddr(xo_ptr));
+  if (xo == nullptr) return;
+  FPDF_CloseXObject(xo);
+  R_ClearExternalPtr(xo_ptr);
+}
+
+// Create a form-xobject page-object from an FPDF_XOBJECT handle.
+// The XObject can be reused across multiple form-obj instantiations
+// (it stays alive until FPDF_CloseXObject is called). Returns a
+// page-object externalptr; caller is responsible for inserting it
+// into a page.
+// [[Rcpp::export(name = "cpp_form_obj_from_xobject")]]
+SEXP cpp_form_obj_from_xobject(SEXP xo_ptr) {
+  FPDF_XOBJECT xo = acomp_xobj_from_ptr(xo_ptr);
+  FPDF_PAGEOBJECT obj = FPDF_NewFormObjectFromXObject(xo);
+  if (obj == nullptr) {
+    Rcpp::stop("FPDF_NewFormObjectFromXObject returned NULL.");
+  }
+  // The page-object is detached until inserted into a page. prot =
+  // the xobject pointer pins it (so the XObject outlives any
+  // page-objects derived from it).
+  return R_MakeExternalPtr(obj, R_NilValue, xo_ptr);
+}
+
+// Insert a detached page-object (e.g. returned by
+// cpp_form_obj_from_xobject) into a page. Wraps
+// FPDFPage_InsertObject for the standalone-insertion path the
+// existing creators do internally.
+// [[Rcpp::export(name = "cpp_page_insert_object")]]
+void cpp_page_insert_object(SEXP page_ptr, SEXP obj_ptr) {
+  FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
+  FPDF_PAGEOBJECT obj = acomp_obj_from_ptr(obj_ptr);
+  FPDFPage_InsertObject(page, obj);
+}
+
+// Remove a child page-object from a form-xobject.
+// [[Rcpp::export(name = "cpp_form_obj_remove_child")]]
+bool cpp_form_obj_remove_child(SEXP form_obj_ptr, SEXP child_ptr) {
+  FPDF_PAGEOBJECT form_obj = acomp_obj_from_ptr(form_obj_ptr);
+  FPDF_PAGEOBJECT child    = acomp_obj_from_ptr(child_ptr);
+  return FPDFFormObj_RemoveObject(form_obj, child) != 0;
+}
+
+// String-range import: "1-3,5,7-10" syntax for page ranges.
+// [[Rcpp::export(name = "cpp_doc_import_pages_string")]]
+bool cpp_doc_import_pages_string(SEXP dest_ptr, SEXP src_ptr,
+                                   std::string range, int dest_index_zero) {
+  FPDF_DOCUMENT dest = acomp_doc_from_ptr(dest_ptr);
+  FPDF_DOCUMENT src  = acomp_doc_from_ptr(src_ptr);
+  const char* range_arg = range.empty() ? nullptr : range.c_str();
+  return FPDF_ImportPages(dest, src, range_arg, dest_index_zero) != 0;
+}
+
 // [[Rcpp::export(name = "cpp_page_transform_with_clip")]]
 bool cpp_page_transform_with_clip(SEXP page_ptr,
                                     Rcpp::NumericVector matrix,

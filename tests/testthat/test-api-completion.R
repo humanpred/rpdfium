@@ -479,6 +479,61 @@ test_that("pdf_page_transform_with_clip validates matrix shape", {
                "Assertion on")
 })
 
+# =========================================================================
+# Phase D — form-XObject / page-merge extras
+# =========================================================================
+
+test_that("pdf_xobject_from_page + pdf_obj_form_from_xobject round-trip", {
+  src <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(src), add = TRUE)
+  dest <- pdf_doc_new()
+  on.exit(pdf_doc_close(dest), add = TRUE)
+  page <- pdf_page_new(dest, page_num = 1L, width = 612, height = 792)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+
+  xo <- pdf_xobject_from_page(dest, src, 1L)
+  expect_s3_class(xo, "pdfium_xobject")
+  form <- pdf_obj_form_from_xobject(page, xo)
+  expect_s3_class(form, "pdfium_obj")
+  expect_identical(form$type, "form")
+  # Closing the XObject after instantiating doesn't kill the form.
+  pdf_xobject_close(xo)
+  expect_silent(pdf_xobject_close(xo))  # idempotent
+})
+
+test_that("pdf_obj_form_from_xobject refuses a closed xobject", {
+  src <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(src), add = TRUE)
+  dest <- pdf_doc_new()
+  on.exit(pdf_doc_close(dest), add = TRUE)
+  page <- pdf_page_new(dest, page_num = 1L, width = 612, height = 792)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  xo <- pdf_xobject_from_page(dest, src, 1L)
+  pdf_xobject_close(xo)
+  expect_error(pdf_obj_form_from_xobject(page, xo),
+               "XObject handle has been closed")
+})
+
+test_that("pdf_docs_import_pages with explicit range works", {
+  src <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(src), add = TRUE)
+  src_n <- pdf_page_count(src)
+  dest <- pdf_doc_new()
+  on.exit(pdf_doc_close(dest), add = TRUE)
+  pdf_docs_import_pages(dest, src, range = "1")
+  expect_equal(pdf_page_count(dest), 1L)
+})
+
+test_that("pdf_docs_import_pages with empty range imports everything", {
+  src <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(src), add = TRUE)
+  src_n <- pdf_page_count(src)
+  dest <- pdf_doc_new()
+  on.exit(pdf_doc_close(dest), add = TRUE)
+  pdf_docs_import_pages(dest, src, range = "")
+  expect_equal(pdf_page_count(dest), src_n)
+})
+
 test_that("pdf_annot_add_file_attachment returns a pdfium_attachment", {
   s <- annot_blank_page()
   a <- pdf_annot_new(s$page, "fileattachment",
