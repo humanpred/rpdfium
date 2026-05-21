@@ -65,7 +65,8 @@ SEXP cpp_font_load_standard(SEXP doc_ptr, std::string font_name) {
         font_name.c_str());
   }
   SEXP ext = PROTECT(R_MakeExternalPtr(font, R_NilValue, doc_ptr));
-  R_RegisterCFinalizerEx(ext, font_finalizer, TRUE);
+  R_RegisterCFinalizerEx(ext, font_finalizer,
+                         static_cast<Rboolean>(TRUE));
   UNPROTECT(1);
   return ext;
 }
@@ -88,7 +89,8 @@ SEXP cpp_font_load_truetype(SEXP doc_ptr, Rcpp::RawVector font_data,
         font_type == 1 ? "Type1" : "TrueType");
   }
   SEXP ext = PROTECT(R_MakeExternalPtr(font, R_NilValue, doc_ptr));
-  R_RegisterCFinalizerEx(ext, font_finalizer, TRUE);
+  R_RegisterCFinalizerEx(ext, font_finalizer,
+                         static_cast<Rboolean>(TRUE));
   UNPROTECT(1);
   return ext;
 }
