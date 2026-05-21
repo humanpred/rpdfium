@@ -9,7 +9,7 @@ pdf_image_set_bitmap(image, bitmap)
 \arguments{
 \item{image}{A \code{pdfium_obj} of \code{type = "image"}.}
 
-\item{bitmap}{A \code{pdfium_bitmap}.}
+\item{bitmap}{A \code{pdfium_image_buffer}.}
 }
 \value{
 Invisibly returns the parent \code{pdfium_doc}.

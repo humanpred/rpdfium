@@ -7,7 +7,7 @@
 pdf_bitmap_fill_rect(bitmap, left, top, width, height, color)
 }
 \arguments{
-\item{bitmap}{A \code{pdfium_bitmap}.}
+\item{bitmap}{A \code{pdfium_image_buffer}.}
 
 \item{left, top, width, height}{Integer — rectangle in bitmap pixels.}
 

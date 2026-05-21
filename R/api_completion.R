@@ -1353,6 +1353,73 @@ pdf_image_set_bitmap <- function(image, bitmap) {
 }
 
 # ===========================================================================
+# Phase G — system font integration (inspectable surface only).
+# ===========================================================================
+
+#' PDFium's default charset → TTF substitution map
+#'
+#' Wraps `FPDF_GetDefaultTTFMapCount` + `FPDF_GetDefaultTTFMapEntry`.
+#' Returns the static "PDF charset code → TrueType font name"
+#' substitution table PDFium ships with the build. When a PDF
+#' references a font by charset code only (e.g. `/Encoding /WinAnsi`
+#' with no /BaseFont resolution), PDFium consults this table to
+#' decide which TTF to fall back to.
+#'
+#' Useful for auditing why a particular missing-glyph PDF rendered
+#' with a substitute font, and for confirming which charsets PDFium
+#' can serve without an explicit `pdf_font_load()`.
+#'
+#' @return A tibble with columns `charset` (integer code) and
+#'   `fontname` (character).
+#' @seealso [pdf_system_fonts_install_default()] to install the
+#'   platform's default sys-font-info provider so the substitution
+#'   actually fires.
+#' @export
+pdf_system_fonts_default_ttf_map <- function() {
+  n <- cpp_default_ttf_map_size()
+  if (n <= 0L) {
+    return(tibble::tibble(charset = integer(0),
+                            fontname = character(0)))
+  }
+  charset <- integer(n)
+  fontname <- character(n)
+  for (i in seq_len(n)) {
+    e <- cpp_default_ttf_map_entry(i - 1L)
+    charset[[i]] <- as.integer(e$charset)
+    fontname[[i]] <- e$fontname
+  }
+  tibble::tibble(charset = charset, fontname = fontname)
+}
+
+#' Install PDFium's default system-font-info provider
+#'
+#' Wraps `FPDF_SetSystemFontInfo(FPDF_GetDefaultSystemFontInfo())`.
+#' Tells PDFium to use the platform's default callback table for
+#' resolving font requests against installed system fonts. Without
+#' this, PDFium falls back to its built-in (static) substitution
+#' table only — which is fine for most documents but misses
+#' platform-installed typefaces.
+#'
+#' Idempotent across calls; the provider persists for the package's
+#' lifetime (PDFium retains the pointer; we don't call
+#' `FPDF_FreeDefaultSystemFontInfo` because the provider is
+#' library-global).
+#'
+#' Custom providers (R-side callbacks for font enumeration) are
+#' deferred to a later release — they require marshalling
+#' `FPDF_SYSFONTINFO`'s callback table into R closures, which is
+#' non-trivial.
+#'
+#' @return Invisibly returns `TRUE` if the provider was installed,
+#'   `FALSE` if the platform has no default provider (e.g.
+#'   stripped-down builds).
+#' @export
+pdf_system_fonts_install_default <- function() {
+  ok <- cpp_install_default_sysfont_info()
+  invisible(ok)
+}
+
+# ===========================================================================
 # The three FFL-env-requiring setters PDFium exposes —
 # FPDFAnnot_SetFocusableSubtypes, FPDFAnnot_SetFontColor,
 # FPDFAnnot_SetFormFieldFlags — segfault inside PDFium

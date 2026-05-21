@@ -480,6 +480,23 @@ test_that("pdf_page_transform_with_clip validates matrix shape", {
 })
 
 # =========================================================================
+# Phase G — system font integration
+# =========================================================================
+
+test_that("pdf_system_fonts_default_ttf_map returns a tibble", {
+  m <- pdf_system_fonts_default_ttf_map()
+  expect_s3_class(m, "tbl_df")
+  expect_named(m, c("charset", "fontname"))
+  expect_gt(nrow(m), 0L)
+  expect_true(all(nzchar(m$fontname)))
+})
+
+test_that("pdf_system_fonts_install_default returns TRUE on supported platforms", {
+  ok <- pdf_system_fonts_install_default()
+  expect_true(isTRUE(ok))
+})
+
+# =========================================================================
 # Phase E — image-bitmap embedding
 # =========================================================================
 

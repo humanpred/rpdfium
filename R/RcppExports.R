@@ -317,6 +317,18 @@ cpp_image_set_bitmap <- function(image_obj_ptr, bitmap_ptr) {
     .Call(`_pdfium_cpp_image_set_bitmap`, image_obj_ptr, bitmap_ptr)
 }
 
+cpp_default_ttf_map_size <- function() {
+    .Call(`_pdfium_cpp_default_ttf_map_size`)
+}
+
+cpp_default_ttf_map_entry <- function(index_zero) {
+    .Call(`_pdfium_cpp_default_ttf_map_entry`, index_zero)
+}
+
+cpp_install_default_sysfont_info <- function() {
+    .Call(`_pdfium_cpp_install_default_sysfont_info`)
+}
+
 cpp_doc_import_pages_string <- function(dest_ptr, src_ptr, range, dest_index_zero) {
     .Call(`_pdfium_cpp_doc_import_pages_string`, dest_ptr, src_ptr, range, dest_index_zero)
 }

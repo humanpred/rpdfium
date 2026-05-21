@@ -7,7 +7,7 @@
 pdf_bitmap_close(bitmap)
 }
 \arguments{
-\item{bitmap}{A \code{pdfium_bitmap}.}
+\item{bitmap}{A \code{pdfium_image_buffer}.}
 }
 \value{
 Invisibly returns \code{bitmap}.

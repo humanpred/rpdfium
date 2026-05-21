@@ -13,7 +13,7 @@ pdf_bitmap_new(width, height, alpha = TRUE)
 alpha channel.}
 }
 \value{
-A \code{pdfium_bitmap} handle.
+A \code{pdfium_image_buffer} handle.
 }
 \description{
 Wraps \code{FPDFBitmap_Create}. Allocates a \verb{width × height} bitmap

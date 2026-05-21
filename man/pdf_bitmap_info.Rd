@@ -7,7 +7,7 @@
 pdf_bitmap_info(bitmap)
 }
 \arguments{
-\item{bitmap}{A \code{pdfium_bitmap}.}
+\item{bitmap}{A \code{pdfium_image_buffer}.}
 }
 \value{
 Named list — \code{width}, \code{height}, \code{stride}, \code{format}.

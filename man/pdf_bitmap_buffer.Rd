@@ -10,7 +10,7 @@ pdf_bitmap_buffer(bitmap)
 pdf_bitmap_set_buffer(bitmap, bytes)
 }
 \arguments{
-\item{bitmap}{A \code{pdfium_bitmap}.}
+\item{bitmap}{A \code{pdfium_image_buffer}.}
 
 \item{bytes}{For \code{\link[=pdf_bitmap_set_buffer]{pdf_bitmap_set_buffer()}} — a raw vector of
 length \code{stride * height}.}

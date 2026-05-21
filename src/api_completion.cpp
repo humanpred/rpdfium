@@ -23,6 +23,7 @@
 #include "fpdf_text.h"
 #include "fpdf_transformpage.h"
 #include "fpdf_ppo.h"
+#include "fpdf_sysfontinfo.h"
 #include "action_helpers.h"
 #include "handle_validation.h"
 
@@ -1071,6 +1072,74 @@ bool cpp_image_set_bitmap(SEXP image_obj_ptr, SEXP bitmap_ptr) {
   // page afterward via FPDFPage_InsertObject. PDFium documents
   // accept count = 0 + pages = nullptr.
   return FPDFImageObj_SetBitmap(nullptr, 0, image_obj, bm) != 0;
+}
+
+// ===========================================================================
+// Phase G — system font integration (inspectable surface only).
+// ===========================================================================
+//
+// PDFium's font-substitution system has three layers:
+//   1. A static "charset → TTF name" map shipped with the build,
+//      accessible via FPDF_GetDefaultTTFMap[Count|Entry]. The map
+//      tells PDFium which TTF to substitute when a doc references
+//      a font by charset code only.
+//   2. The platform's default sys-font-info provider
+//      (FPDF_GetDefaultSystemFontInfo) — a callback table that
+//      enumerates installed fonts and maps requests by name to a
+//      handle PDFium can read bytes from.
+//   3. A custom provider (FPDF_SetSystemFontInfo) — the embedder
+//      installs its own callback table. R-side callbacks here would
+//      require complex marshalling and are deferred to v0.2.0+.
+//
+// What's wrapped:
+//   * cpp_default_ttf_map_size / cpp_default_ttf_map_entry — readers
+//     for the static map.
+//   * cpp_install_default_sysfont_info — calls
+//     FPDF_SetSystemFontInfo(FPDF_GetDefaultSystemFontInfo()) so
+//     PDFium uses the platform's default fallback provider when
+//     resolving missing glyphs.
+//
+// What's skipped (deferred):
+//   * FPDF_AddInstalledFont — only called from within an EnumFonts
+//     callback, requires R-side callback machinery.
+//   * FPDF_FreeDefaultSystemFontInfo — internal cleanup of the
+//     default provider; managed by the install_default call.
+//   * Custom FPDF_SetSystemFontInfo with R callbacks — needs full
+//     FPDF_SYSFONTINFO marshalling.
+
+// [[Rcpp::export(name = "cpp_default_ttf_map_size")]]
+int cpp_default_ttf_map_size() {
+  return static_cast<int>(FPDF_GetDefaultTTFMapCount());
+}
+
+// Returns charset code + TTF name for the entry at `index_zero`.
+// [[Rcpp::export(name = "cpp_default_ttf_map_entry")]]
+Rcpp::List cpp_default_ttf_map_entry(int index_zero) {
+  const FPDF_CharsetFontMap* entry =
+      FPDF_GetDefaultTTFMapEntry(static_cast<size_t>(index_zero));
+  if (entry == nullptr) {
+    Rcpp::stop("FPDF_GetDefaultTTFMapEntry returned NULL "
+               "(index %d out of bounds).", index_zero);
+  }
+  std::string name(entry->fontname != nullptr ? entry->fontname : "");
+  return Rcpp::List::create(
+    Rcpp::_["charset"] = entry->charset,
+    Rcpp::_["fontname"] = name);
+}
+
+// Install PDFium's platform-default system font info provider.
+// One-shot; subsequent calls reinstall the same provider.
+// [[Rcpp::export(name = "cpp_install_default_sysfont_info")]]
+bool cpp_install_default_sysfont_info() {
+  FPDF_SYSFONTINFO* info = FPDF_GetDefaultSystemFontInfo();
+  if (info == nullptr) {
+    return false;
+  }
+  FPDF_SetSystemFontInfo(info);
+  // Note: we deliberately don't call FPDF_FreeDefaultSystemFontInfo
+  // here — PDFium retains the pointer for the lifetime of the
+  // library. The provider lives until package unload.
+  return true;
 }
 
 // String-range import: "1-3,5,7-10" syntax for page ranges.
