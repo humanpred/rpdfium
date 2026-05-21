@@ -58,6 +58,9 @@ prior art rather than repeating their motivation.
 - `FPDFAttachment_SetSubtype` — patch drafted 2026-05-21 (CL 6
   below); see
   `dev/upstream-patches/pdfium-FPDFAttachment_SetSubtype.patch`.
+- `FPDFAnnot_SetNumberValue` — patch drafted 2026-05-21 (CL 7
+  below); see
+  `dev/upstream-patches/pdfium-FPDFAnnot_SetNumberValue.patch`.
 
 ## Proposed CLs
 
@@ -412,7 +415,7 @@ read-only.
 
 **Self-contained?** yes.
 
-### CL 7: Annotation Number / numeric-key writers
+### CL 7: Annotation Number / numeric-key writers — **drafted**
 
 **Symbols proposed:**
 

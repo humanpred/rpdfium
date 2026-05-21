@@ -18,6 +18,49 @@ their own machine.
 
 ## Active patches
 
+### `pdfium-FPDFAnnot_SetNumberValue.patch`
+
+**Status:** Drafted on 2026-05-21 against upstream HEAD `e30fc3988`.
+Not yet uploaded to Gerrit.
+
+Adds the public symbol:
+
+```c
+FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
+FPDFAnnot_SetNumberValue(FPDF_ANNOTATION annot,
+                         FPDF_BYTESTRING key,
+                         float value);
+```
+
+so embedders can write common numeric annotation fields like `/CA`
+(constant opacity 0..1), `/IT` (free-text rotation), `/BS/W` (border
+width), or arbitrary custom-namespace floats. This was CL 7 in
+`dev/upstream-api-gaps.md`.
+
+Mirrors `FPDFAnnot_SetStringValue` line-for-line: get the mutable
+annot dict, write a `CPDF_Number` via `SetNewFor`. The smallest
+contained CL in the tracker (3 LOC of implementation), exact mirror
+of an existing precedent.
+
+Files touched (against upstream HEAD `e30fc3988`):
+* `public/fpdf_annot.h` — declaration immediately after
+  `FPDFAnnot_SetStringValue`.
+* `fpdfsdk/fpdf_annot.cpp` — 14-line implementation immediately
+  after `FPDFAnnot_SetStringValue`.
+* `fpdfsdk/fpdf_view_c_api_test.c` — `CHK` entry next to the
+  existing `FPDFAnnot_Set*` block.
+* `fpdfsdk/fpdf_annot_embeddertest.cpp` — new
+  `FPDFAnnotEmbedderTest::SetNumberValue` test exercising
+  invalid-arg rejection, overwrite of existing numeric key,
+  setting a previously-absent key, negative/zero/fractional
+  round-trip, and type-replacement of a non-number key (the
+  "value type becomes NUMBER regardless of what was there before"
+  contract).
+
+The commit message carries the deterministic
+`Change-Id: I7bf21fa3f70763f69fdcabd54baa2f0771af80cf` so re-uploads
+all land on the same Gerrit CL.
+
 ### `pdfium-FPDFAttachment_SetSubtype.patch`
 
 **Status:** Drafted on 2026-05-21 against upstream HEAD `e30fc3988`.
