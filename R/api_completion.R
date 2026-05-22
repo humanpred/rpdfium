@@ -542,10 +542,10 @@ pdf_annot_add_ink_stroke <- function(annot, points) {
                             ncols = 2L)
   ctx <- assert_annot_writable(annot)
   idx <- cpp_annot_add_ink_stroke(annot$ptr, points)
-  if (idx < 0L) {                                           # nocov start
+  if (idx < 0L) {
     stop("FPDFAnnot_AddInkStroke failed; ensure the annotation is ",
          "of subtype 'ink'.", call. = FALSE)
-  }                                                          # nocov end
+  }
   finalize_annot_setter(ctx)
   invisible(idx + 1L)
 }
@@ -649,16 +649,15 @@ pdf_annot_append_object <- function(annot, obj) {
 #' @export
 pdf_annot_remove_object <- function(annot, index) {
   checkmate::assert_int(index, lower = 1L)
-  # nocov start — exercising this in the testthat scaffold segfaults
-  # at page-close after FPDFAnnot_RemoveObject corrupts the annot's
-  # content-stream walk. The function works for real callers that
-  # pdf_save() before letting the page handle GC.
   ctx <- assert_annot_writable(annot)
+  # The success path (PDFium returns true) corrupts the annot's
+  # content-stream walk and segfaults the test worker at page-close;
+  # the failure path (PDFium returns false on a bad index or empty
+  # annot) is what the tests exercise. Both go through expect_setter_ok.
   expect_setter_ok(
     cpp_annot_remove_object(annot$ptr, as.integer(index) - 1L),
     "FPDFAnnot_RemoveObject")
-  finalize_annot_setter(ctx)
-  # nocov end
+  finalize_annot_setter(ctx)  # nocov — success path crashes at teardown
 }
 
 #' Update an embedded page-object after mutating it
@@ -1119,17 +1118,16 @@ pdf_obj_form_from_xobject <- function(page, xobject) {
 #' @export
 pdf_form_obj_remove_object <- function(form_obj, child) {
   checkmate::assert_class(child, "pdfium_obj")
-  # nocov start — exercising this in the testthat scaffold segfaults
-  # at page-close after the FPDFFormObj_RemoveObject call corrupts
-  # PDFium's content-stream walk. The function works for real
-  # callers that pdf_save() before letting the page handle GC.
   ctx <- assert_obj_writable(form_obj, allowed_types = "form",
                               arg = "form_obj")
+  # As with pdf_annot_remove_object, the success path corrupts the
+  # form-xobject's content-stream walk and segfaults the test worker
+  # at page-close. The failure path (mismatched child) is exercised
+  # via the cpp shim test below.
   expect_setter_ok(
     cpp_form_obj_remove_child(form_obj$ptr, child$ptr),
     "FPDFFormObj_RemoveObject")
-  finalize_obj_setter(ctx)
-  # nocov end
+  finalize_obj_setter(ctx)  # nocov — success path crashes at teardown
 }
 
 #' Import page ranges from a source doc into a destination doc

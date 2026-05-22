@@ -365,6 +365,21 @@ test_that("pdf_annot_set_appearance accepts each mode", {
   }
 })
 
+test_that("pdf_annot_set_appearance accepts a non-empty value", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  # Trip the UTF-16 encoding branch of cpp_annot_set_appearance: a
+  # minimal content stream that re-fills the stamp's rect. PDFium
+  # accepts whatever bytes we hand it — the FPDFAnnot_SetAP call
+  # writes them into /AP without parsing.
+  expect_identical(
+    pdf_annot_set_appearance(
+      a, mode = "normal",
+      value = "q 1 0 0 rg 0 0 100 100 re f Q"),
+    s$doc
+  )
+})
+
 test_that("pdf_annot_set_appearance rejects unknown modes", {
   s <- annot_blank_page()
   a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
@@ -378,6 +393,41 @@ test_that("pdf_annot_line returns NA-filled vector for non-line annots", {
   v <- pdf_annot_line(a)
   expect_named(v, c("start_x", "start_y", "end_x", "end_y"))
   expect_true(all(is.na(v)))
+})
+
+test_that("pdf_annot_line returns endpoints when /L is set", {
+  # PDFium's FPDFPage_CreateAnnot rejects subtype "line" outright;
+  # we hand-craft the minimum PDF with a /Line annotation that
+  # carries a populated /L array. This exercises the success-path
+  # branch of cpp_annot_line.
+  bytes <- charToRaw(paste0(
+    "%PDF-1.4\n",
+    "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n",
+    "2 0 obj << /Type /Pages /Count 1 /Kids [3 0 R] >> endobj\n",
+    "3 0 obj << /Type /Page /Parent 2 0 R /Resources << >>\n",
+    "  /MediaBox [0 0 612 792] /Annots [4 0 R] >> endobj\n",
+    "4 0 obj << /Type /Annot /Subtype /Line /Rect [50 50 150 150]\n",
+    "  /L [60 70 140 130] /F 4 >> endobj\n",
+    "xref\n0 5\n",
+    "0000000000 65535 f \n",
+    "0000000009 00000 n \n",
+    "0000000053 00000 n \n",
+    "0000000098 00000 n \n",
+    "0000000196 00000 n \n",
+    "trailer << /Size 5 /Root 1 0 R >>\nstartxref\n275\n%%EOF\n"
+  ))
+  tf <- withr::local_tempfile(fileext = ".pdf")
+  writeBin(bytes, tf)
+  doc <- pdf_doc_open(tf)
+  withr::defer(pdf_doc_close(doc))
+  page <- pdf_page_load(doc, 1L)
+  withr::defer(pdf_page_close(page), priority = "first")
+  annots <- pdf_annotations(page)
+  expect_length(annots, 1L)
+  expect_identical(pdf_annot_subtype(annots[[1L]]), "line")
+  v <- pdf_annot_line(annots[[1L]])
+  expect_named(v, c("start_x", "start_y", "end_x", "end_y"))
+  expect_equal(unname(v), c(60, 70, 140, 130))
 })
 
 test_that("pdf_annot_link returns NULL for non-link annots", {
@@ -509,6 +559,17 @@ test_that("pdf_bitmap_new + close round-trip", {
   expect_silent(pdf_bitmap_close(bm))
 })
 
+test_that("bitmap finalizer releases the FPDF_BITMAP on GC", {
+  # Drop the only reference to the bitmap *without* calling
+  # pdf_bitmap_close(); the registered C finalizer must run on the
+  # next garbage-collection pass and call FPDFBitmap_Destroy.
+  local({
+    bm <- pdf_bitmap_new(4L, 4L, alpha = TRUE)
+    expect_s3_class(bm, "pdfium_image_buffer")
+  })
+  expect_silent(gc(verbose = FALSE))
+})
+
 test_that("pdf_bitmap_info reports the expected dims + format", {
   bm <- pdf_bitmap_new(40L, 20L, alpha = TRUE)
   on.exit(pdf_bitmap_close(bm), add = TRUE)
@@ -605,6 +666,23 @@ test_that("pdf_obj_form_from_xobject refuses a closed xobject", {
   pdf_xobject_close(xo)
   expect_error(pdf_obj_form_from_xobject(page, xo),
                "XObject handle has been closed")
+})
+
+test_that("xobject finalizer releases the FPDF_XOBJECT on GC", {
+  # Drop the only reference to the XObject *without* calling
+  # pdf_xobject_close(); the registered C finalizer must run on the
+  # next garbage-collection pass and call FPDF_CloseXObject. The
+  # XObject's data has been copied into the dest doc, so it's safe
+  # to release after the round-trip.
+  src <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(src), add = TRUE)
+  dest <- pdf_doc_new()
+  on.exit(pdf_doc_close(dest), add = TRUE)
+  local({
+    xo <- pdf_xobject_from_page(dest, src, 1L)
+    expect_s3_class(xo, "pdfium_xobject")
+  })
+  expect_silent(gc(verbose = FALSE))
 })
 
 test_that("pdf_docs_import_pages with explicit range works", {
@@ -772,17 +850,41 @@ test_that("pdf_form_field_set_flags writes the bitmask", {
 # CPDFSDK_PageView pointing into a freed doc, which segfaults when
 # the form_field's finalizer (or any later FFL call) walks it.
 # The closed-handle branch (line ~1502 of R/api_completion.R) is
-# documented as `# nocov` in lieu of a safe test path.
+# documented as coverage-excluded in lieu of a safe test path.
 
 test_that("pdf_annot_remove_object validates its index argument", {
-  # Exercise the index assertion only — the success path is
-  # # nocov-marked because FPDFAnnot_RemoveObject corrupts the
-  # annotation's content-stream walk in a way that segfaults the
-  # test worker at page-close.
   s <- annot_blank_page()
   a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
   expect_error(pdf_annot_remove_object(a, 0L), "Assertion on")
   expect_error(pdf_annot_remove_object(a, -1L), "Assertion on")
+})
+
+test_that("pdf_annot_remove_object errors on a no-child annot", {
+  # Failure path: PDFium returns false on an empty annot, the
+  # wrapper raises before reaching finalize. The success path
+  # (which corrupts state and segfaults at teardown) stays
+  # coverage-excluded.
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  expect_error(pdf_annot_remove_object(a, 1L),
+               "FPDFAnnot_RemoveObject")
+})
+
+test_that("pdf_form_obj_remove_object errors on a mismatched child", {
+  # Same shape as the annot case: mismatched child → PDFium false →
+  # wrapper raises before finalize. Success path stays excluded.
+  doc <- pdf_doc_open(fixture_path("form_xobject"), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  objs <- pdf_page_objects(page)
+  forms <- objs[vapply(objs, function(o) o$type, "") == "form"]
+  skip_if(length(forms) == 0L, "no form-xobject in fixture")
+  form_obj <- forms[[1L]]
+  expect_error(
+    pdf_form_obj_remove_object(form_obj, form_obj),
+    "FPDFFormObj_RemoveObject"
+  )
 })
 
 test_that("Phase A page-bound functions reject a closed page", {
@@ -805,6 +907,118 @@ test_that("Phase A page-bound functions reject a closed page", {
                "Page has been closed")
   expect_error(pdf_page_bounding_box(page),
                "Page has been closed")
+})
+
+# =========================================================================
+# C++ defensive-path coverage — call the cpp shims directly with
+# inputs that trigger PDFium's NULL-return / failure branches.
+# =========================================================================
+
+test_that("cpp_obj_mark_set_blob/remove_param error on bad mark index", {
+  s <- annot_blank_page()
+  rect <- pdf_rect_new(s$page, 0, 0, 50, 50)
+  # The R wrappers translate 1-based index → 0-based for the shim
+  # and use FPDFPageObj_GetMark; an out-of-bounds index returns NULL
+  # and the shim raises.
+  expect_error(
+    pdfium:::cpp_obj_mark_remove_param(rect$ptr, 99L, "k"),
+    "FPDFPageObj_GetMark returned NULL"
+  )
+  expect_error(
+    pdfium:::cpp_obj_mark_set_blob(s$doc$ptr, rect$ptr, 99L,
+                                     "k", raw(1L)),
+    "FPDFPageObj_GetMark returned NULL"
+  )
+})
+
+test_that("pdf_font_load_cidtype2 errors on garbage TTF bytes", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  expect_error(
+    pdf_font_load_cidtype2(doc, as.raw(c(0xDE, 0xAD, 0xBE, 0xEF)),
+                            to_unicode_cmap = "/CIDInit",
+                            cid_to_gid = as.raw(c(0x00, 0x01))),
+    "FPDFText_LoadCidType2Font returned NULL"
+  )
+})
+
+test_that("cpp_annot_get_object errors on out-of-bounds index", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 50, 50))
+  # 0-based for the shim; the annot has no embedded objects so
+  # any non-negative index fails.
+  expect_error(
+    pdfium:::cpp_annot_get_object(a$ptr, 0L),
+    "FPDFAnnot_GetObject returned NULL"
+  )
+})
+
+test_that("pdf_annot_add_file_attachment errors on non-fileattachment", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "square", bounds = c(0, 0, 50, 50))
+  expect_error(
+    pdf_annot_add_file_attachment(a, "data.bin"),
+    "FPDFAnnot_AddFileAttachment returned NULL"
+  )
+})
+
+test_that("pdf_xobject_from_page errors on out-of-bounds src page", {
+  src <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(src), add = TRUE)
+  dest <- pdf_doc_new()
+  on.exit(pdf_doc_close(dest), add = TRUE)
+  # Source has fewer than 999 pages.
+  expect_error(
+    pdf_xobject_from_page(dest, src, 999L),
+    "FPDF_NewXObjectFromPage returned NULL"
+  )
+})
+
+test_that("cpp_default_ttf_map_entry errors on out-of-bounds index", {
+  n <- pdfium:::cpp_default_ttf_map_size()
+  expect_error(
+    pdfium:::cpp_default_ttf_map_entry(n + 100L),
+    "FPDF_GetDefaultTTFMapEntry returned NULL"
+  )
+})
+
+test_that("cpp_annot_remove_object returns FALSE on a bad index", {
+  # Exercise the C-side body without triggering the page-close
+  # segfault that happens after a successful remove: pass an
+  # invalid index so PDFium returns false but doesn't corrupt
+  # state. The R wrapper validates index >= 1 before reaching the
+  # shim, so we go through ::: directly.
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 50, 50))
+  out <- pdfium:::cpp_annot_remove_object(a$ptr, 99L)
+  expect_false(out)
+})
+
+test_that("cpp_form_obj_remove_child returns FALSE on a mismatched child", {
+  # Mismatched (page-obj from one form-xobj passed as the child of
+  # another) makes PDFium reject without corrupting state, so we
+  # can exercise the shim without the page-close segfault.
+  doc <- pdf_doc_open(fixture_path("form_xobject"), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  objs <- pdf_page_objects(page)
+  forms <- objs[vapply(objs, function(o) o$type, "") == "form"]
+  skip_if(length(forms) == 0L, "no form-xobject in fixture")
+  form_obj <- forms[[1L]]
+  # Pass the form_obj itself as the child — guaranteed mismatch.
+  out <- pdfium:::cpp_form_obj_remove_child(form_obj$ptr, form_obj$ptr)
+  expect_false(out)
+})
+
+test_that("pdf_text_bounded returns empty string for an empty rect", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  # Rect outside the page bounds — no text inside.
+  out <- pdf_text_bounded(page, c(-10000, -10000, -9999, -9999))
+  expect_identical(out, "")
 })
 
 test_that("pdf_bookmark_child_count returns an int for a live bookmark", {
@@ -833,29 +1047,25 @@ test_that("pdf_annot_index rejects a closed annot", {
                "Annotation handle has been closed")
 })
 
-test_that("pdf_annot_add_ink_stroke errors when called on a non-ink annot", {
-  # PDFium silently accepts AddInkStroke on most subtypes today but
-  # returns -1 when it can't update the InkList; the wrapper turns
-  # that into a clean stop().
+test_that("pdf_annot_add_ink_stroke errors on a non-ink annot", {
+  # FPDFAnnot_AddInkStroke returns -1 when the annot isn't of
+  # subtype 'ink'; the R wrapper turns that into a clean stop().
   s <- annot_blank_page()
-  a <- pdf_annot_new(s$page, "ink", bounds = c(0, 0, 100, 100))
-  # Trigger the failure branch by passing a 1-row matrix (some
-  # PDFium builds reject 1-point strokes; if the call succeeds the
-  # test still passes — we're covering the helper's stop branch,
-  # not asserting PDFium's behaviour).
-  pts <- matrix(c(50, 50), ncol = 2)
-  tryCatch(pdf_annot_add_ink_stroke(a, pts),
-           error = function(e) invisible(NULL))
-  succeed("add_ink_stroke exercised")
+  a <- pdf_annot_new(s$page, "square", bounds = c(0, 0, 100, 100))
+  pts <- matrix(c(10, 10, 50, 50), ncol = 2, byrow = TRUE)
+  expect_error(
+    pdf_annot_add_ink_stroke(a, pts),
+    "FPDFAnnot_AddInkStroke failed"
+  )
 })
 
-# pdf_form_obj_remove_object's success path is exercised only via
-# the # nocov-marked block in R/api_completion.R: PDFium's
+# pdf_form_obj_remove_object's success path is covered via a
+# coverage-excluded block in R/api_completion.R. PDFium's
 # FPDFFormObj_RemoveObject corrupts the page's content-stream state
 # when followed by FPDF_ClosePage, so a normal test teardown
-# segfaults. The function works for callers that hold the doc open
-# and save before exit, but we have no way to exercise it in the
-# testthat scaffold without crashing the worker.
+# segfaults the worker. The function is correct for callers that
+# pdf_save() before letting the page handle GC, but we have no
+# safe way to exercise it in the testthat scaffold.
 
 test_that("pdf_annot_set_font_color works on a freetext annot", {
   s <- annot_blank_page()

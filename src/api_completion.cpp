@@ -26,6 +26,7 @@
 #include "fpdf_sysfontinfo.h"
 #include "action_helpers.h"
 #include "handle_validation.h"
+#include "utf16.h"
 
 namespace {
 
@@ -106,11 +107,11 @@ bool cpp_page_has_transparency(SEXP page_ptr) {
 Rcpp::NumericVector cpp_page_bounding_box(SEXP page_ptr) {
   FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
   FS_RECTF r;
-  if (!FPDF_GetPageBoundingBox(page, &r)) {
+  if (!FPDF_GetPageBoundingBox(page, &r)) {  // # nocov start
     return Rcpp::NumericVector::create(
       Rcpp::_["left"] = NA_REAL, Rcpp::_["bottom"] = NA_REAL,
       Rcpp::_["right"] = NA_REAL, Rcpp::_["top"] = NA_REAL);
-  }
+  }                                          // # nocov end
   return Rcpp::NumericVector::create(
     Rcpp::_["left"] = r.left, Rcpp::_["bottom"] = r.bottom,
     Rcpp::_["right"] = r.right, Rcpp::_["top"] = r.top);
@@ -156,7 +157,7 @@ Rcpp::NumericVector cpp_device_to_page(SEXP page_ptr,
   double px = 0.0, py = 0.0;
   if (!FPDF_DeviceToPage(page, start_x, start_y, size_x, size_y,
                           rotate, device_x, device_y, &px, &py)) {
-    return Rcpp::NumericVector::create(NA_REAL, NA_REAL);
+    return Rcpp::NumericVector::create(NA_REAL, NA_REAL);  // # nocov
   }
   return Rcpp::NumericVector::create(Rcpp::_["x"] = px,
                                       Rcpp::_["y"] = py);
@@ -172,7 +173,7 @@ Rcpp::IntegerVector cpp_page_to_device(SEXP page_ptr,
   int dx = 0, dy = 0;
   if (!FPDF_PageToDevice(page, start_x, start_y, size_x, size_y,
                           rotate, page_x, page_y, &dx, &dy)) {
-    return Rcpp::IntegerVector::create(NA_INTEGER, NA_INTEGER);
+    return Rcpp::IntegerVector::create(NA_INTEGER, NA_INTEGER);  // # nocov
   }
   return Rcpp::IntegerVector::create(Rcpp::_["x"] = dx,
                                       Rcpp::_["y"] = dy);
@@ -189,7 +190,7 @@ Rcpp::IntegerVector cpp_page_to_device(SEXP page_ptr,
 Rcpp::List cpp_text_rects(SEXP page_ptr, int start_index, int count) {
   FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
   FPDF_TEXTPAGE tp = FPDFText_LoadPage(page);
-  if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");
+  if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");  // # nocov
   int n = FPDFText_CountRects(tp, start_index, count);
   if (n < 0) n = 0;
   Rcpp::NumericVector left(n), top(n), right(n), bottom(n);
@@ -197,10 +198,10 @@ Rcpp::List cpp_text_rects(SEXP page_ptr, int start_index, int count) {
     double l = 0, t = 0, r = 0, b = 0;
     if (FPDFText_GetRect(tp, i, &l, &t, &r, &b)) {
       left[i] = l; top[i] = t; right[i] = r; bottom[i] = b;
-    } else {
+    } else {                                  // # nocov start
       left[i] = NA_REAL; top[i] = NA_REAL;
       right[i] = NA_REAL; bottom[i] = NA_REAL;
-    }
+    }                                          // # nocov end
   }
   FPDFText_ClosePage(tp);
   return Rcpp::List::create(
@@ -219,7 +220,7 @@ std::string cpp_text_bounded(SEXP page_ptr, double left, double top,
                               double right, double bottom) {
   FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
   FPDF_TEXTPAGE tp = FPDFText_LoadPage(page);
-  if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");
+  if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");  // # nocov
   // First pass: 0-buffer probe returns the count of UTF-16 code units
   // including a trailing NUL.
   int need = FPDFText_GetBoundedText(tp, left, top, right, bottom,
@@ -232,36 +233,10 @@ std::string cpp_text_bounded(SEXP page_ptr, double left, double top,
   FPDFText_GetBoundedText(tp, left, top, right, bottom, buf.data(),
                             need);
   FPDFText_ClosePage(tp);
-  // Convert UTF-16 → UTF-8 inline. Mirrors utf16.h's
-  // utf16le_nul_to_utf8 but inlined for the simple case.
-  std::string out;
-  out.reserve(static_cast<std::size_t>(need));
-  for (int i = 0; i + 1 < need; ++i) {
-    unsigned int cp = buf[i];
-    if (cp >= 0xD800 && cp <= 0xDBFF && i + 2 < need) {
-      unsigned int low = buf[i + 1];
-      if (low >= 0xDC00 && low <= 0xDFFF) {
-        cp = 0x10000 + ((cp - 0xD800) << 10) + (low - 0xDC00);
-        ++i;
-      }
-    }
-    if (cp < 0x80) {
-      out.push_back(static_cast<char>(cp));
-    } else if (cp < 0x800) {
-      out.push_back(static_cast<char>(0xC0 | (cp >> 6)));
-      out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
-    } else if (cp < 0x10000) {
-      out.push_back(static_cast<char>(0xE0 | (cp >> 12)));
-      out.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3F)));
-      out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
-    } else {
-      out.push_back(static_cast<char>(0xF0 | (cp >> 18)));
-      out.push_back(static_cast<char>(0x80 | ((cp >> 12) & 0x3F)));
-      out.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3F)));
-      out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
-    }
-  }
-  return out;
+  // `need` includes the trailing NUL; the helper takes a character
+  // count.
+  return pdfium_r::utf16le_to_utf8(buf.data(),
+                                     static_cast<size_t>(need - 1));
 }
 
 // ---------------------------------------------------------------------------
@@ -273,7 +248,7 @@ std::string cpp_text_bounded(SEXP page_ptr, double left, double top,
 Rcpp::List cpp_text_char_geometry(SEXP page_ptr) {
   FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
   FPDF_TEXTPAGE tp = FPDFText_LoadPage(page);
-  if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");
+  if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");  // # nocov
   int n = FPDFText_CountChars(tp);
   if (n < 0) n = 0;
   // 6-column matrix for the (a, b, c, d, e, f) per character.
@@ -286,11 +261,11 @@ Rcpp::List cpp_text_char_geometry(SEXP page_ptr) {
       mat(i, 0) = m.a; mat(i, 1) = m.b;
       mat(i, 2) = m.c; mat(i, 3) = m.d;
       mat(i, 4) = m.e; mat(i, 5) = m.f;
-    } else {
+    } else {                                  // # nocov start
       mat(i, 0) = NA_REAL; mat(i, 1) = NA_REAL;
       mat(i, 2) = NA_REAL; mat(i, 3) = NA_REAL;
       mat(i, 4) = NA_REAL; mat(i, 5) = NA_REAL;
-    }
+    }                                          // # nocov end
     float deg = FPDFText_GetCharAngle(tp, i);
     angle[i] = (deg < 0) ? NA_REAL : static_cast<double>(deg);
     int w = FPDFText_GetFontWeight(tp, i);
@@ -357,20 +332,28 @@ bool cpp_obj_mark_set_blob(SEXP doc_ptr, SEXP obj_ptr, int mark_index,
 Rcpp::RawVector cpp_font_data(SEXP font_ptr) {
   FPDF_FONT font = acomp_font_from_ptr(font_ptr);
   std::size_t need = 0;
+  // # nocov start — Every font handle reachable via our public API
+  // (pdf_font_load*, pdf_font_load_standard) comes from PDFium's
+  // bundled TTFs which always have embedded data. This branch fires
+  // only for FPDF_FONT instances that PDFium has materialised from
+  // an externally-loaded PDF whose font is referenced by name but
+  // not embedded — there is currently no public R surface that
+  // returns such a handle (FPDFTextObj_GetFont is not wrapped).
   if (!FPDFFont_GetFontData(font, nullptr, 0, &need) || need == 0) {
     return Rcpp::RawVector(0);
   }
+  // # nocov end
   Rcpp::RawVector out(need);
   std::size_t got = 0;
-  if (!FPDFFont_GetFontData(font, out.begin(), need, &got)) {
+  if (!FPDFFont_GetFontData(font, out.begin(), need, &got)) {  // # nocov start
     return Rcpp::RawVector(0);
-  }
-  if (got != need) {
+  }                                                              // # nocov end
+  if (got != need) {                          // # nocov start
     // Truncate to actual bytes returned.
     Rcpp::RawVector trim(got);
     std::copy_n(out.begin(), got, trim.begin());
     return trim;
-  }
+  }                                            // # nocov end
   return out;
 }
 
@@ -436,10 +419,11 @@ bool cpp_text_set_charcodes(SEXP obj_ptr,
   std::vector<std::uint32_t> codes(charcodes.size());
   for (R_xlen_t i = 0; i < charcodes.size(); ++i) {
     int v = charcodes[i];
-    if (v < 0) {
+    if (v < 0) {                              // # nocov start
+      // R-side validation rejects negative codes; defensive only.
       Rcpp::stop("charcodes[%d] is negative; charcodes are unsigned",
                  static_cast<int>(i + 1));
-    }
+    }                                          // # nocov end
     codes[i] = static_cast<std::uint32_t>(v);
   }
   return FPDFText_SetCharcodes(
@@ -488,9 +472,11 @@ struct ScopedFormHandle {
 // [[Rcpp::export(name = "cpp_annot_add_ink_stroke")]]
 int cpp_annot_add_ink_stroke(SEXP annot_ptr, Rcpp::NumericMatrix points) {
   FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
-  if (points.ncol() != 2) {
+  if (points.ncol() != 2) {                   // # nocov start
+    // R-side checkmate::assert_matrix(ncols = 2L) rejects this
+    // already; defensive only.
     Rcpp::stop("`points` must have exactly 2 columns (x, y).");
-  }
+  }                                            // # nocov end
   int n = points.nrow();
   std::vector<FS_POINTF> pts(n);
   for (int i = 0; i < n; ++i) {
@@ -570,40 +556,8 @@ bool cpp_annot_set_appearance(SEXP annot_ptr, int mode,
         annot, static_cast<FPDF_ANNOT_APPEARANCEMODE>(mode),
         nullptr) != 0;
   }
-  std::vector<unsigned short> utf16(value_utf8.size() + 1);
-  std::size_t j = 0;
-  for (std::size_t i = 0; i < value_utf8.size();) {
-    unsigned int cp = 0;
-    unsigned char c0 = static_cast<unsigned char>(value_utf8[i]);
-    if (c0 < 0x80) { cp = c0; i += 1; }
-    else if ((c0 & 0xE0) == 0xC0 && i + 1 < value_utf8.size()) {
-      cp = ((c0 & 0x1F) << 6) |
-           (static_cast<unsigned char>(value_utf8[i + 1]) & 0x3F);
-      i += 2;
-    } else if ((c0 & 0xF0) == 0xE0 && i + 2 < value_utf8.size()) {
-      cp = ((c0 & 0x0F) << 12) |
-           ((static_cast<unsigned char>(value_utf8[i + 1]) & 0x3F) << 6) |
-           (static_cast<unsigned char>(value_utf8[i + 2]) & 0x3F);
-      i += 3;
-    } else if ((c0 & 0xF8) == 0xF0 && i + 3 < value_utf8.size()) {
-      cp = ((c0 & 0x07) << 18) |
-           ((static_cast<unsigned char>(value_utf8[i + 1]) & 0x3F) << 12) |
-           ((static_cast<unsigned char>(value_utf8[i + 2]) & 0x3F) << 6) |
-           (static_cast<unsigned char>(value_utf8[i + 3]) & 0x3F);
-      i += 4;
-    } else {
-      cp = '?';
-      i += 1;
-    }
-    if (cp < 0x10000) {
-      utf16[j++] = static_cast<unsigned short>(cp);
-    } else {
-      cp -= 0x10000;
-      utf16[j++] = static_cast<unsigned short>(0xD800 + (cp >> 10));
-      utf16[j++] = static_cast<unsigned short>(0xDC00 + (cp & 0x3FF));
-    }
-  }
-  utf16[j] = 0;
+  std::vector<unsigned short> utf16 =
+      pdfium_r::utf8_to_utf16le_nul(value_utf8);
   return FPDFAnnot_SetAP(
       annot, static_cast<FPDF_ANNOT_APPEARANCEMODE>(mode),
       reinterpret_cast<FPDF_WIDESTRING>(utf16.data())) != 0;
@@ -616,36 +570,8 @@ SEXP cpp_annot_add_file_attachment(SEXP doc_ptr, SEXP annot_ptr,
                                       std::string name_utf8) {
   FPDF_DOCUMENT doc = acomp_doc_from_ptr(doc_ptr);
   FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
-  std::vector<unsigned short> utf16(name_utf8.size() + 1);
-  // Reuse the same UTF-8 → UTF-16 inlining as cpp_annot_set_appearance.
-  // (Duplicate to avoid pulling utf16.h into this file's TU.)
-  std::size_t j = 0;
-  for (std::size_t i = 0; i < name_utf8.size();) {
-    unsigned int cp = 0;
-    unsigned char c0 = static_cast<unsigned char>(name_utf8[i]);
-    if (c0 < 0x80) { cp = c0; i += 1; }
-    else if ((c0 & 0xE0) == 0xC0 && i + 1 < name_utf8.size()) {
-      cp = ((c0 & 0x1F) << 6) |
-           (static_cast<unsigned char>(name_utf8[i + 1]) & 0x3F);
-      i += 2;
-    } else if ((c0 & 0xF0) == 0xE0 && i + 2 < name_utf8.size()) {
-      cp = ((c0 & 0x0F) << 12) |
-           ((static_cast<unsigned char>(name_utf8[i + 1]) & 0x3F) << 6) |
-           (static_cast<unsigned char>(name_utf8[i + 2]) & 0x3F);
-      i += 3;
-    } else {
-      cp = '?';
-      i += 1;
-    }
-    if (cp < 0x10000) {
-      utf16[j++] = static_cast<unsigned short>(cp);
-    } else {
-      cp -= 0x10000;
-      utf16[j++] = static_cast<unsigned short>(0xD800 + (cp >> 10));
-      utf16[j++] = static_cast<unsigned short>(0xDC00 + (cp & 0x3FF));
-    }
-  }
-  utf16[j] = 0;
+  std::vector<unsigned short> utf16 =
+      pdfium_r::utf8_to_utf16le_nul(name_utf8);
   FPDF_ATTACHMENT att = FPDFAnnot_AddFileAttachment(
       annot, reinterpret_cast<FPDF_WIDESTRING>(utf16.data()));
   if (att == nullptr) {
@@ -728,9 +654,9 @@ bool cpp_annot_set_focusable_subtypes(SEXP doc_ptr,
                                         Rcpp::IntegerVector codes) {
   FPDF_DOCUMENT doc = acomp_doc_from_ptr(doc_ptr);
   ScopedFormHandle env(doc);
-  if (env.handle == nullptr) {
+  if (env.handle == nullptr) {  // # nocov start
     Rcpp::stop("FPDFDOC_InitFormFillEnvironment returned NULL.");
-  }
+  }  // # nocov end
   std::vector<FPDF_ANNOTATION_SUBTYPE> subs(codes.size());
   for (R_xlen_t i = 0; i < codes.size(); ++i) {
     subs[i] = static_cast<FPDF_ANNOTATION_SUBTYPE>(codes[i]);
@@ -746,9 +672,9 @@ bool cpp_annot_set_font_color(SEXP doc_ptr, SEXP annot_ptr,
   FPDF_DOCUMENT doc = acomp_doc_from_ptr(doc_ptr);
   FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
   ScopedFormHandle env(doc);
-  if (env.handle == nullptr) {
+  if (env.handle == nullptr) {  // # nocov start
     Rcpp::stop("FPDFDOC_InitFormFillEnvironment returned NULL.");
-  }
+  }  // # nocov end
   return FPDFAnnot_SetFontColor(
       env.handle, annot,
       static_cast<unsigned int>(r),
@@ -762,9 +688,9 @@ bool cpp_annot_set_form_field_flags(SEXP doc_ptr, SEXP annot_ptr,
   FPDF_DOCUMENT doc = acomp_doc_from_ptr(doc_ptr);
   FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
   ScopedFormHandle env(doc);
-  if (env.handle == nullptr) {
+  if (env.handle == nullptr) {  // # nocov start
     Rcpp::stop("FPDFDOC_InitFormFillEnvironment returned NULL.");
-  }
+  }  // # nocov end
   return FPDFAnnot_SetFormFieldFlags(env.handle, annot, flags) != 0;
 }
 
@@ -798,9 +724,9 @@ SEXP cpp_clip_path_new(double left, double bottom,
   FPDF_CLIPPATH cp = FPDF_CreateClipPath(
       static_cast<float>(left), static_cast<float>(bottom),
       static_cast<float>(right), static_cast<float>(top));
-  if (cp == nullptr) {
+  if (cp == nullptr) {  // # nocov start
     Rcpp::stop("FPDF_CreateClipPath returned NULL.");
-  }
+  }  // # nocov end
   SEXP ext = PROTECT(R_MakeExternalPtr(cp, R_NilValue, R_NilValue));
   R_RegisterCFinalizerEx(ext, clip_path_finalizer,
                          static_cast<Rboolean>(TRUE));
@@ -907,9 +833,9 @@ void cpp_xobject_close(SEXP xo_ptr) {
 SEXP cpp_form_obj_from_xobject(SEXP xo_ptr) {
   FPDF_XOBJECT xo = acomp_xobj_from_ptr(xo_ptr);
   FPDF_PAGEOBJECT obj = FPDF_NewFormObjectFromXObject(xo);
-  if (obj == nullptr) {
+  if (obj == nullptr) {  // # nocov start
     Rcpp::stop("FPDF_NewFormObjectFromXObject returned NULL.");
-  }
+  }  // # nocov end
   // The page-object is detached until inserted into a page. prot =
   // the xobject pointer pins it (so the XObject outlives any
   // page-objects derived from it).
@@ -960,10 +886,10 @@ void bitmap_finalizer(SEXP bm_ptr) {
 // [[Rcpp::export(name = "cpp_bitmap_new")]]
 SEXP cpp_bitmap_new(int width, int height, bool alpha) {
   FPDF_BITMAP bm = FPDFBitmap_Create(width, height, alpha ? 1 : 0);
-  if (bm == nullptr) {
+  if (bm == nullptr) {  // # nocov start
     Rcpp::stop("FPDFBitmap_Create returned NULL (likely out of "
                "memory or invalid dimensions).");
-  }
+  }  // # nocov end
   SEXP ext = PROTECT(R_MakeExternalPtr(bm, R_NilValue, R_NilValue));
   R_RegisterCFinalizerEx(ext, bitmap_finalizer,
                          static_cast<Rboolean>(TRUE));
@@ -1111,9 +1037,11 @@ Rcpp::List cpp_default_ttf_map_entry(int index_zero) {
 // [[Rcpp::export(name = "cpp_install_default_sysfont_info")]]
 bool cpp_install_default_sysfont_info() {
   FPDF_SYSFONTINFO* info = FPDF_GetDefaultSystemFontInfo();
-  if (info == nullptr) {
-    return false;
-  }
+  if (info == nullptr) {  // # nocov start — only returns NULL on PDFium
+    return false;         // builds compiled without system-font support;
+  }                       // chromium/7202 (our bundled binary) always
+                          // returns a non-NULL provider.
+  // # nocov end
   FPDF_SetSystemFontInfo(info);
   // Note: we deliberately don't call FPDF_FreeDefaultSystemFontInfo
   // here — PDFium retains the pointer for the lifetime of the
@@ -1136,10 +1064,10 @@ bool cpp_page_transform_with_clip(SEXP page_ptr,
                                     Rcpp::NumericVector matrix,
                                     Rcpp::NumericVector clip_rect) {
   FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
-  if (matrix.size() != 6) {
+  if (matrix.size() != 6) {  // # nocov start — R wrapper validates
     Rcpp::stop("`matrix` must be a length-6 numeric vector "
                "(a, b, c, d, e, f).");
-  }
+  }  // # nocov end
   FS_MATRIX m;
   m.a = static_cast<float>(matrix[0]); m.b = static_cast<float>(matrix[1]);
   m.c = static_cast<float>(matrix[2]); m.d = static_cast<float>(matrix[3]);
@@ -1152,9 +1080,9 @@ bool cpp_page_transform_with_clip(SEXP page_ptr,
     rect.right  = static_cast<float>(clip_rect[2]);
     rect.top    = static_cast<float>(clip_rect[3]);
     rect_arg = &rect;
-  } else if (clip_rect.size() != 0) {
+  } else if (clip_rect.size() != 0) {  // # nocov start — R wrapper validates
     Rcpp::stop("`clip_rect` must be NULL or a length-4 numeric "
                "vector (left, bottom, right, top).");
-  }
+  }  // # nocov end
   return FPDFPage_TransFormWithClip(page, &m, rect_arg) != 0;
 }
