@@ -46,10 +46,23 @@ void finalize_annot(SEXP ptr) {
   if (TYPEOF(ptr) != EXTPTRSXP) return;
   FPDF_ANNOTATION a =
       static_cast<FPDF_ANNOTATION>(R_ExternalPtrAddr(ptr));
-  if (a != nullptr) {
+  if (a == nullptr) return;
+  // Only call FPDFPage_CloseAnnot when the parent page is still
+  // alive. PDFium's CPDF_AnnotContext destructor walks the annot's
+  // embedded page-object tree, which holds back-references into the
+  // page's content stream; if the page closed first (its
+  // externalptr cleared), those references are dangling and the
+  // dtor segfaults inside ~deque<SubobjectIterator>. The annot's
+  // C-side cleanup was already done when the page closed, so
+  // skipping the call here is correct.
+  SEXP page_prot = R_ExternalPtrProtected(ptr);
+  bool page_alive = (page_prot != R_NilValue
+                     && TYPEOF(page_prot) == EXTPTRSXP
+                     && R_ExternalPtrAddr(page_prot) != nullptr);
+  if (page_alive) {
     FPDFPage_CloseAnnot(a);
-    R_ClearExternalPtr(ptr);
   }
+  R_ClearExternalPtr(ptr);
 }
 
 std::string read_annot_string_local(FPDF_ANNOTATION annot, const char* key) {

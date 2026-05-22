@@ -149,6 +149,148 @@ release on scope grounds (see `CLAUDE.md` §"Scope"):
   `pdf_page_set_box()`, `pdf_doc_set_language()`, `pdf_page_flush()`
   — add, remove, reorder, and reshape pages.
 
+## v0.1.0 "complete the relevant PDFium surface" pass
+
+A late v0.1.0 pass closes the remaining wrapping gaps so that every
+PDFium public symbol that maps cleanly to an R-side concept now has
+a wrapper. New exports broken out by topic:
+
+### Text low-level geometry
+
+* `pdf_text_rects()` — `FPDFText_CountRects` + `FPDFText_GetRect`.
+  Returns a tibble of axis-aligned rectangles for a character range.
+* `pdf_text_bounded()` — `FPDFText_GetBoundedText`. Extracts Unicode
+  text inside a bounding rectangle on the page.
+* `pdf_text_char_geometry()` — `FPDFText_GetMatrix` +
+  `FPDFText_GetCharAngle` + `FPDFText_GetFontWeight`. Returns a
+  per-character tibble (`char_index`, `matrix`, `angle_deg`,
+  `font_weight`); the matrix column is a list-column of length-6
+  numeric vectors.
+
+### Page + document probes
+
+* `pdf_doc_form_type()` — `FPDF_GetFormType` (none / acro_form /
+  xfa_full / xfa_foreground).
+* `pdf_page_has_transparency()` — `FPDFPage_HasTransparency`.
+* `pdf_page_bounding_box()` — `FPDF_GetPageBoundingBox`.
+* `pdf_page_transform_annots()` — `FPDFPage_TransformAnnots`.
+* `pdf_annot_index()` — `FPDFPage_GetAnnotIndex`.
+* `pdf_device_to_page()` / `pdf_page_to_device()` — `FPDF_DeviceToPage`
+  / `FPDF_PageToDevice` coordinate conversion.
+* `pdf_bookmark_child_count()` — `FPDFBookmark_GetCount`.
+
+### Page-object setters
+
+* `pdf_path_set_dash_phase()` — `FPDFPageObj_SetDashPhase`. Fine-
+  grained complement to `pdf_path_set_dash()`.
+* `pdf_obj_mark_set_blob()` / `pdf_obj_mark_remove_param()` —
+  `FPDFPageObjMark_SetBlobParam` / `RemoveParam`.
+
+### Font extras
+
+* `pdf_font_data()` — `FPDFFont_GetFontData`. Extracts the bytes
+  of an embedded font (raw vector).
+* `pdf_font_load_cidtype2()` — `FPDFText_LoadCidType2Font`. Loads
+  a CID Type 2 (composite TrueType) font with explicit ToUnicode
+  CMap and CID-to-GID mapping.
+* `pdf_text_set_charcodes()` — `FPDFText_SetCharcodes`. Sets
+  explicit glyph charcodes on a text object (bypasses the font's
+  cmap; lower-level than `pdf_text_set_content()`).
+
+### Annotation authoring completers
+
+* `pdf_annot_add_ink_stroke()` / `pdf_annot_remove_ink_list()` —
+  `FPDFAnnot_AddInkStroke` / `RemoveInkList`. Build / clear the
+  ink-list of an ink annotation.
+* `pdf_annot_object_count()`, `pdf_annot_objects()`,
+  `pdf_annot_append_object()`, `pdf_annot_remove_object()`,
+  `pdf_annot_update_object()` — `FPDFAnnot_GetObjectCount` /
+  `GetObject` / `AppendObject` / `RemoveObject` / `UpdateObject`.
+  Manage the embedded page-objects inside stamp / freetext
+  annotations.
+* `pdf_annot_set_uri()` — `FPDFAnnot_SetURI`.
+* `pdf_annot_set_appearance()` — `FPDFAnnot_SetAP` (modes: `normal`,
+  `rollover`, `down`).
+* `pdf_annot_add_file_attachment()` — `FPDFAnnot_AddFileAttachment`.
+* `pdf_annot_line()` — `FPDFAnnot_GetLine`. Endpoints of a line
+  annotation.
+* `pdf_annot_link()` — `FPDFAnnot_GetLink` + action / dest
+  classifier. Returns a 1-row tibble (action_type, uri, filepath,
+  dest_page, dest_view, dest_x, dest_y, dest_zoom).
+* `pdf_annot_set_border()` — `FPDFAnnot_SetBorder` (corner radii +
+  width).
+
+* `pdf_annot_set_font_color()`, `pdf_form_field_set_flags()`,
+  `pdf_doc_set_focusable_subtypes()` — `FPDFAnnot_SetFontColor` /
+  `_SetFormFieldFlags` / `_SetFocusableSubtypes`. These three
+  setters route through a transient form-fill environment; our
+  RAII wrapper around `FPDFDOC_InitFormFillEnvironment` /
+  `_ExitFormFillEnvironment` originally stored the
+  `FPDF_FORMFILLINFO` struct as a constructor-local, which went
+  out of scope before Exit ran and segfaulted PDFium when it
+  dereferenced its retained pointer. Root-caused via gdb and
+  documented in `dev/reprex/README.md`; fixed by moving the
+  `FORMFILLINFO` to a struct member.
+
+### Clip-path authoring
+
+* `pdf_clip_path_new()` — `FPDF_CreateClipPath`. Returns a new
+  `pdfium_clip_box` S3 class (named `_clip_box` to avoid colliding
+  with the existing read-side `pdfium_clip_path` class returned by
+  `pdf_obj_clip_path()`).
+* `pdf_clip_path_close()` — `FPDF_DestroyClipPath` (idempotent).
+* `pdf_page_insert_clip_path()` — `FPDFPage_InsertClipPath`.
+  Transfers ownership of the clip box to the page.
+* `pdf_obj_transform_clip_path()` — `FPDFPageObj_TransformClipPath`.
+* `pdf_page_transform_with_clip()` — `FPDFPage_TransFormWithClip`.
+
+### Form-XObject + page-merge extras
+
+* `pdf_xobject_from_page()` — `FPDF_NewXObjectFromPage`. Copies a
+  page's visual content from a source doc into the destination doc
+  as a reusable form XObject. Returns the new `pdfium_xobject` S3
+  class.
+* `pdf_xobject_close()` — `FPDF_CloseXObject`.
+* `pdf_obj_form_from_xobject()` — `FPDF_NewFormObjectFromXObject` +
+  `FPDFPage_InsertObject`. Instantiates an XObject on a page as a
+  form page-object.
+* `pdf_form_obj_remove_object()` — `FPDFFormObj_RemoveObject`.
+  Removes a child page-object from a form XObject.
+* `pdf_docs_import_pages()` — `FPDF_ImportPages` (string-range
+  variant of `pdf_docs_merge()`, e.g. `"1-3,5,7-10"`).
+
+### Image-bitmap embedding
+
+* `pdf_bitmap_new()` / `pdf_bitmap_close()` — `FPDFBitmap_Create` /
+  `Destroy`. New `pdfium_image_buffer` S3 class wrapping
+  `FPDF_BITMAP` handles. Named `_image_buffer` to avoid colliding
+  with the existing read-side `pdfium_bitmap` class (the integer
+  matrix returned by `pdf_render_page()`).
+* `pdf_bitmap_info()` — width / height / stride / format.
+* `pdf_bitmap_fill_rect()` — `FPDFBitmap_FillRect` (color encoded
+  as `0xAARRGGBB`).
+* `pdf_bitmap_buffer()` / `pdf_bitmap_set_buffer()` —
+  `FPDFBitmap_GetBuffer` + setter. Read or write raw pixel bytes
+  as a length-checked raw vector.
+* `pdf_image_set_bitmap()` — `FPDFImageObj_SetBitmap`. The v0.1.0
+  PNG / raw-bitmap embedding path; pair with `pdf_image_new()` for
+  the JPEG path.
+
+### System font integration
+
+* `pdf_system_fonts_default_ttf_map()` —
+  `FPDF_GetDefaultTTFMap[Count|Entry]`. Returns a tibble of
+  (`charset`, `fontname`) — PDFium's built-in substitution table.
+* `pdf_system_fonts_install_default()` —
+  `FPDF_SetSystemFontInfo(FPDF_GetDefaultSystemFontInfo())`. Enables
+  the platform's default sys-font-info provider so PDFium can
+  resolve missing glyphs against installed system fonts.
+
+  Custom-provider registration (`FPDF_SetSystemFontInfo` with an
+  R-defined `FPDF_SYSFONTINFO` struct + R-side callbacks) is
+  deferred — it requires marshalling PDFium's font-resolution
+  callback table into R closures, which is non-trivial.
+
 ## Page-object mutation
 
 * `pdf_obj_set_matrix()`, `pdf_obj_set_active()`,

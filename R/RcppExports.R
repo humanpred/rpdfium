@@ -121,6 +121,222 @@ cpp_annots_list <- function(doc_ptr, page_ptr) {
     .Call(`_pdfium_cpp_annots_list`, doc_ptr, page_ptr)
 }
 
+cpp_bookmark_child_count <- function(bm_ptr) {
+    .Call(`_pdfium_cpp_bookmark_child_count`, bm_ptr)
+}
+
+cpp_doc_form_type <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_doc_form_type`, doc_ptr)
+}
+
+cpp_page_has_transparency <- function(page_ptr) {
+    .Call(`_pdfium_cpp_page_has_transparency`, page_ptr)
+}
+
+cpp_page_bounding_box <- function(page_ptr) {
+    .Call(`_pdfium_cpp_page_bounding_box`, page_ptr)
+}
+
+cpp_page_transform_annots <- function(page_ptr, a, b, c, d, e, f) {
+    invisible(.Call(`_pdfium_cpp_page_transform_annots`, page_ptr, a, b, c, d, e, f))
+}
+
+cpp_page_annot_index <- function(page_ptr, annot_ptr) {
+    .Call(`_pdfium_cpp_page_annot_index`, page_ptr, annot_ptr)
+}
+
+cpp_device_to_page <- function(page_ptr, start_x, start_y, size_x, size_y, rotate, device_x, device_y) {
+    .Call(`_pdfium_cpp_device_to_page`, page_ptr, start_x, start_y, size_x, size_y, rotate, device_x, device_y)
+}
+
+cpp_page_to_device <- function(page_ptr, start_x, start_y, size_x, size_y, rotate, page_x, page_y) {
+    .Call(`_pdfium_cpp_page_to_device`, page_ptr, start_x, start_y, size_x, size_y, rotate, page_x, page_y)
+}
+
+cpp_text_rects <- function(page_ptr, start_index, count) {
+    .Call(`_pdfium_cpp_text_rects`, page_ptr, start_index, count)
+}
+
+cpp_text_bounded <- function(page_ptr, left, top, right, bottom) {
+    .Call(`_pdfium_cpp_text_bounded`, page_ptr, left, top, right, bottom)
+}
+
+cpp_text_char_geometry <- function(page_ptr) {
+    .Call(`_pdfium_cpp_text_char_geometry`, page_ptr)
+}
+
+cpp_obj_set_dash_phase <- function(obj_ptr, phase) {
+    .Call(`_pdfium_cpp_obj_set_dash_phase`, obj_ptr, phase)
+}
+
+cpp_obj_mark_remove_param <- function(obj_ptr, mark_index, key) {
+    .Call(`_pdfium_cpp_obj_mark_remove_param`, obj_ptr, mark_index, key)
+}
+
+cpp_obj_mark_set_blob <- function(doc_ptr, obj_ptr, mark_index, key, value) {
+    .Call(`_pdfium_cpp_obj_mark_set_blob`, doc_ptr, obj_ptr, mark_index, key, value)
+}
+
+cpp_font_data <- function(font_ptr) {
+    .Call(`_pdfium_cpp_font_data`, font_ptr)
+}
+
+cpp_font_load_cidtype2 <- function(doc_ptr, font_data, to_unicode_cmap, cid_to_gid) {
+    .Call(`_pdfium_cpp_font_load_cidtype2`, doc_ptr, font_data, to_unicode_cmap, cid_to_gid)
+}
+
+cpp_text_set_charcodes <- function(obj_ptr, charcodes) {
+    .Call(`_pdfium_cpp_text_set_charcodes`, obj_ptr, charcodes)
+}
+
+cpp_annot_add_ink_stroke <- function(annot_ptr, points) {
+    .Call(`_pdfium_cpp_annot_add_ink_stroke`, annot_ptr, points)
+}
+
+cpp_annot_remove_ink_list <- function(annot_ptr) {
+    .Call(`_pdfium_cpp_annot_remove_ink_list`, annot_ptr)
+}
+
+cpp_annot_append_object <- function(annot_ptr, obj_ptr) {
+    .Call(`_pdfium_cpp_annot_append_object`, annot_ptr, obj_ptr)
+}
+
+cpp_annot_remove_object <- function(annot_ptr, index_zero) {
+    .Call(`_pdfium_cpp_annot_remove_object`, annot_ptr, index_zero)
+}
+
+cpp_annot_update_object <- function(annot_ptr, obj_ptr) {
+    .Call(`_pdfium_cpp_annot_update_object`, annot_ptr, obj_ptr)
+}
+
+cpp_annot_object_count <- function(annot_ptr) {
+    .Call(`_pdfium_cpp_annot_object_count`, annot_ptr)
+}
+
+cpp_annot_get_object <- function(annot_ptr, index_zero) {
+    .Call(`_pdfium_cpp_annot_get_object`, annot_ptr, index_zero)
+}
+
+cpp_annot_set_uri <- function(annot_ptr, uri) {
+    .Call(`_pdfium_cpp_annot_set_uri`, annot_ptr, uri)
+}
+
+cpp_annot_set_appearance <- function(annot_ptr, mode, value_utf8) {
+    .Call(`_pdfium_cpp_annot_set_appearance`, annot_ptr, mode, value_utf8)
+}
+
+cpp_annot_add_file_attachment <- function(doc_ptr, annot_ptr, name_utf8) {
+    .Call(`_pdfium_cpp_annot_add_file_attachment`, doc_ptr, annot_ptr, name_utf8)
+}
+
+cpp_annot_line <- function(annot_ptr) {
+    .Call(`_pdfium_cpp_annot_line`, annot_ptr)
+}
+
+cpp_annot_link_info <- function(doc_ptr, annot_ptr) {
+    .Call(`_pdfium_cpp_annot_link_info`, doc_ptr, annot_ptr)
+}
+
+cpp_annot_set_border <- function(annot_ptr, h_radius, v_radius, width) {
+    .Call(`_pdfium_cpp_annot_set_border`, annot_ptr, h_radius, v_radius, width)
+}
+
+cpp_annot_set_focusable_subtypes <- function(doc_ptr, codes) {
+    .Call(`_pdfium_cpp_annot_set_focusable_subtypes`, doc_ptr, codes)
+}
+
+cpp_annot_set_font_color <- function(doc_ptr, annot_ptr, r, g, b) {
+    .Call(`_pdfium_cpp_annot_set_font_color`, doc_ptr, annot_ptr, r, g, b)
+}
+
+cpp_annot_set_form_field_flags <- function(doc_ptr, annot_ptr, flags) {
+    .Call(`_pdfium_cpp_annot_set_form_field_flags`, doc_ptr, annot_ptr, flags)
+}
+
+cpp_clip_path_new <- function(left, bottom, right, top) {
+    .Call(`_pdfium_cpp_clip_path_new`, left, bottom, right, top)
+}
+
+cpp_clip_path_close <- function(cp_ptr) {
+    invisible(.Call(`_pdfium_cpp_clip_path_close`, cp_ptr))
+}
+
+cpp_page_insert_clip_path <- function(page_ptr, cp_ptr) {
+    invisible(.Call(`_pdfium_cpp_page_insert_clip_path`, page_ptr, cp_ptr))
+}
+
+cpp_obj_transform_clip_path <- function(obj_ptr, a, b, c, d, e, f) {
+    invisible(.Call(`_pdfium_cpp_obj_transform_clip_path`, obj_ptr, a, b, c, d, e, f))
+}
+
+cpp_xobject_from_page <- function(dest_doc_ptr, src_doc_ptr, src_page_index_zero) {
+    .Call(`_pdfium_cpp_xobject_from_page`, dest_doc_ptr, src_doc_ptr, src_page_index_zero)
+}
+
+cpp_xobject_close <- function(xo_ptr) {
+    invisible(.Call(`_pdfium_cpp_xobject_close`, xo_ptr))
+}
+
+cpp_form_obj_from_xobject <- function(xo_ptr) {
+    .Call(`_pdfium_cpp_form_obj_from_xobject`, xo_ptr)
+}
+
+cpp_page_insert_object <- function(page_ptr, obj_ptr) {
+    invisible(.Call(`_pdfium_cpp_page_insert_object`, page_ptr, obj_ptr))
+}
+
+cpp_form_obj_remove_child <- function(form_obj_ptr, child_ptr) {
+    .Call(`_pdfium_cpp_form_obj_remove_child`, form_obj_ptr, child_ptr)
+}
+
+cpp_bitmap_new <- function(width, height, alpha) {
+    .Call(`_pdfium_cpp_bitmap_new`, width, height, alpha)
+}
+
+cpp_bitmap_close <- function(bm_ptr) {
+    invisible(.Call(`_pdfium_cpp_bitmap_close`, bm_ptr))
+}
+
+cpp_bitmap_info <- function(bm_ptr) {
+    .Call(`_pdfium_cpp_bitmap_info`, bm_ptr)
+}
+
+cpp_bitmap_fill_rect <- function(bm_ptr, left, top, width, height, color) {
+    .Call(`_pdfium_cpp_bitmap_fill_rect`, bm_ptr, left, top, width, height, color)
+}
+
+cpp_bitmap_buffer <- function(bm_ptr) {
+    .Call(`_pdfium_cpp_bitmap_buffer`, bm_ptr)
+}
+
+cpp_bitmap_set_buffer <- function(bm_ptr, data) {
+    .Call(`_pdfium_cpp_bitmap_set_buffer`, bm_ptr, data)
+}
+
+cpp_image_set_bitmap <- function(image_obj_ptr, bitmap_ptr) {
+    .Call(`_pdfium_cpp_image_set_bitmap`, image_obj_ptr, bitmap_ptr)
+}
+
+cpp_default_ttf_map_size <- function() {
+    .Call(`_pdfium_cpp_default_ttf_map_size`)
+}
+
+cpp_default_ttf_map_entry <- function(index_zero) {
+    .Call(`_pdfium_cpp_default_ttf_map_entry`, index_zero)
+}
+
+cpp_install_default_sysfont_info <- function() {
+    .Call(`_pdfium_cpp_install_default_sysfont_info`)
+}
+
+cpp_doc_import_pages_string <- function(dest_ptr, src_ptr, range, dest_index_zero) {
+    .Call(`_pdfium_cpp_doc_import_pages_string`, dest_ptr, src_ptr, range, dest_index_zero)
+}
+
+cpp_page_transform_with_clip <- function(page_ptr, matrix, clip_rect) {
+    .Call(`_pdfium_cpp_page_transform_with_clip`, page_ptr, matrix, clip_rect)
+}
+
 cpp_attachment_new <- function(doc_ptr, name_utf8) {
     .Call(`_pdfium_cpp_attachment_new`, doc_ptr, name_utf8)
 }

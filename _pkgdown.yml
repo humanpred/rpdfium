@@ -351,6 +351,65 @@ reference:
       - pdf_attachment_delete
       - pdf_attachment_set_dict_value
       - pdf_attachment_set_data
+  - title: API-completion additions
+    desc: >
+      The v0.1.0 "complete the relevant PDFium surface" pass picks
+      up the last batch of single-call wrappers that pair with the
+      existing readers + setters. Grouped by topic below; all live
+      in `R/api_completion.R`.
+    contents:
+      - pdf_doc_form_type
+      - pdf_bookmark_child_count
+      - pdf_page_has_transparency
+      - pdf_page_bounding_box
+      - pdf_page_transform_annots
+      - pdf_annot_index
+      - pdf_device_to_page
+      - pdf_page_to_device
+      - pdf_text_rects
+      - pdf_text_bounded
+      - pdf_text_char_geometry
+      - pdf_path_set_dash_phase
+      - pdf_obj_mark_set_blob
+      - pdf_obj_mark_remove_param
+      - pdf_font_data
+      - pdf_font_load_cidtype2
+      - pdf_text_set_charcodes
+      - pdf_annot_add_ink_stroke
+      - pdf_annot_remove_ink_list
+      - pdf_annot_object_count
+      - pdf_annot_objects
+      - pdf_annot_append_object
+      - pdf_annot_remove_object
+      - pdf_annot_update_object
+      - pdf_annot_set_uri
+      - pdf_annot_set_appearance
+      - pdf_annot_add_file_attachment
+      - pdf_annot_line
+      - pdf_annot_link
+      - pdf_annot_set_border
+      - pdf_clip_path_new
+      - pdf_clip_path_close
+      - pdf_page_insert_clip_path
+      - pdf_obj_transform_clip_path
+      - pdf_page_transform_with_clip
+      - pdf_xobject_from_page
+      - pdf_xobject_close
+      - pdf_obj_form_from_xobject
+      - pdf_form_obj_remove_object
+      - pdf_docs_import_pages
+      - pdf_bitmap_new
+      - pdf_bitmap_close
+      - pdf_bitmap_info
+      - pdf_bitmap_fill_rect
+      - pdf_bitmap_buffer
+      - pdf_bitmap_set_buffer
+      - pdf_image_set_bitmap
+      - pdf_system_fonts_default_ttf_map
+      - pdf_system_fonts_install_default
+      - pdf_annot_set_font_color
+      - pdf_form_field_set_flags
+      - pdf_doc_set_focusable_subtypes
   - title: Enum code <-> name helpers
     desc: >
       Bidirectional converters between PDFium's integer enum codes

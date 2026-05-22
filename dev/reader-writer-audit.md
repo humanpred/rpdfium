@@ -455,27 +455,27 @@ readers. Status: **OK as is.**
 
 ## Action items rolled up
 
-The audit produces a short list of reader-API adjustments needed
+The audit produced a short list of reader-API adjustments needed
 for write-symmetry. All are additive (no breaking change to existing
-column types or row counts):
+column types or row counts) and have **all shipped in v0.1.0**:
 
 | Reader | Change | Tier | Status |
 |---|---|---|---|
-| `pdf_annotations` | add `subtype_code` integer column | Tier 1 | TODO |
-| `pdf_annotations` | add `quad_points` list-column | Tier 1 | TODO |
-| `pdf_annotations` | add `vertices` list-column | Tier 1 | TODO |
-| `pdf_annotations` | add `ink_paths` list-column | Tier 1 | TODO |
-| `pdf_annotations` | add `linked_index` integer column | Tier 2 | TODO |
-| `pdf_annotations` | add `font_color_*` + `font_size` columns | Tier 2 | TODO |
-| `pdf_form_fields` | add `is_option_selected` list-column | Tier 1 | TODO |
-| `pdf_form_fields` | add `export_value` column | Tier 1 | TODO |
-| `pdf_form_fields` | add `control_index` integer | Tier 1 | TODO |
-| `pdf_form_fields` | add `additional_actions_js` list-column | Tier 1 | TODO |
-| `pdf_form_fields` | document the value/export distinction | Tier 1 | TODO |
-| `pdf_page_links` | add `quad_points` list-column | Tier 1 | TODO |
-| `pdf_text_runs` | add `obj_index` integer column | Tier 1 | TODO |
-| `pdf_structure_tree` | add `attributes` list-column | Tier 2 | TODO |
-| `pdf_path_segments` | clarify Bezier triple in docs | Tier 1 | TODO |
+| `pdf_annotations` | add `subtype_code` integer column | Tier 1 | **shipped** (column populated via `pdfium_annot_subtype_code()`) |
+| `pdf_annotations` | add `quad_points` list-column | Tier 1 | **shipped** (`pdf_annot_quad_points()` returns the same data per handle; column added) |
+| `pdf_annotations` | add `vertices` list-column | Tier 1 | **shipped** (`pdf_annot_vertices()` per handle; column added) |
+| `pdf_annotations` | add `ink_paths` list-column | Tier 1 | **shipped** (`pdf_annot_ink_paths()` per handle; column added) |
+| `pdf_annotations` | add `linked_index` integer column | Tier 2 | **shipped** as handle-returning probes (`pdf_annot_popup()`, `pdf_annot_in_reply_to()`) instead of an integer column — ADR-017 §3 prefers handle round-trips over surfaced indices |
+| `pdf_annotations` | add `font_color_*` + `font_size` columns | Tier 2 | **shipped** (`pdf_annot_font_color()`, `pdf_annot_font_size()`) |
+| `pdf_form_fields` | add `is_option_selected` list-column | Tier 1 | **shipped** as `pdf_form_field_is_option_selected(field, option_index)` per handle |
+| `pdf_form_fields` | add `export_value` column | Tier 1 | **shipped** (`pdf_form_field_export_value()` + tibble column) |
+| `pdf_form_fields` | add `control_index` integer | Tier 1 | **shipped** (`pdf_form_field_control_index()` + tibble column) |
+| `pdf_form_fields` | add `additional_actions_js` list-column | Tier 1 | **shipped** (`pdf_form_field_additional_actions_js()` + tibble column) |
+| `pdf_form_fields` | document the value/export distinction | Tier 1 | **shipped** in the `pdf_form_field_set_value()` Rd page |
+| `pdf_page_links` | add `quad_points` list-column | Tier 1 | **shipped** (`FPDFLink_GetQuadPoints` wrapped; column added) |
+| `pdf_text_runs` | add `obj_index` integer column | Tier 1 | **shipped** (column added so a tibble row round-trips to its `pdfium_obj`) |
+| `pdf_structure_tree` | add `attributes` list-column | Tier 2 | **shipped** with full nested-array recursion (`FPDF_StructElement_Attr_*`) |
+| `pdf_path_segments` | clarify Bezier triple in docs | Tier 1 | **shipped** in the `pdf_path_segments()` Rd page (`segment_index` + close-figure flag explained alongside the bezier triple) |
 
 All other readers pass the audit unchanged.
 
@@ -502,21 +502,32 @@ small genuinely-niche residue have landed in v0.1.0:
 
 ### Still deferred — and why
 
-These reader symbols intentionally do NOT land in v0.1.0:
+These reader symbols intentionally do NOT land in v0.1.0. The
+list has shrunk substantially as the v0.1.0 plan absorbed the
+"complete the relevant PDFium surface" goal — the entries below
+are what remains genuinely deferred.
 
 | Deferred symbol | Reason |
 |---|---|
-| `FPDFAnnot_GetObject` | Returns an embedded page-object handle from a stamp / FreeText annotation. Useful in principle, but requires wrapping the handle as a child object whose parent is the annotation — a small S3-class change that fits the v0.2.0 mutation work better. |
 | `FPDFAnnot_IsSupportedSubtype` / `IsObjectSupportedSubtype` | Viewer-UI capability checks. Returns whether PDFium's reference viewer can render this subtype; not useful for tabular workflows. |
 | `FPDFAvail_*` (streaming) | Incremental loading from network sources. The `pdfium` package's "open a local file" core workflow doesn't benefit; the streaming API would only matter for an HTTP-backed wrapper, which is out of scope. |
-| `FPDF_GetDefaultTTFMapEntry`, `FPDF_FreeDefaultSystemFontInfo` | Internal font-resolution tables that PDFium uses for fallback glyph rendering. Not interpretable at the R level without exposing PDFium's full font-substitution machinery. |
 | `FPDF_RenderPageBitmapWithColorScheme_Start` | Progressive rendering with a custom palette (used for "dark mode" PDF viewers). Niche; users wanting custom colours can post-process the bitmap from `pdf_render_page()` array-wise. |
-| `FPDFPage_TransFormWithClip` | Mutation — fits the v0.2.0 plan. |
 | `FPDF_StructElement_GetParent` | Already addressable via `pdf_structure_tree()$parent_index`. |
 | `FPDF_StructElement_GetStringAttribute` | Already addressable via filtering `pdf_structure_tree()$attributes` on the desired key. |
 | `FPDF_StructElement_GetChildMarkedContentID` | Per-child MCID detail. The element-level `mcid` / `mcid_count` columns already aggregate; the per-K-child distinction is rarely meaningful for downstream consumers. |
+| `FORM_*` interactive event callbacks (`OnKeyDown`, `OnLButtonDown`, ...) | GUI-only event handlers for an interactive PDF viewer. Out of scope for a batch library. |
+| `FPDF_RenderPage` (Windows GDI) / `FPDF_RenderPageSkia` / `FPDF_SetPrintMode` | Alternative render backends. We ship the AGG/FreeType path via `FPDF_RenderPageBitmap*`. |
+| `FPDF_BStr_*`, `FPDF_LoadXFA`, XFA packet getters | XFA forms (an Adobe-specific dialect). Out of scope. |
+| `FSDK_Set*` (testing hooks), `FPDF_SetSandBoxPolicy` | Internal embedder primitives; not user-facing. |
+| Deprecated readers (`FPDF_GetPageWidth`, `FPDF_GetPageHeight`, `FPDF_GetPageSizeByIndex`, `FPDF_LoadMemDocument`, `FPDF_InitLibrary`) | Superseded by the `_F` / `_64` / `*WithConfig` variants we already wrap. |
 
-Everything else PDFium exposes as a reader is wrapped.
+Everything else PDFium exposes as a reader is wrapped. The v0.1.0
+"complete the relevant API surface" pass also picked up the
+following writer/extra symbols previously listed here:
+`FPDFAnnot_GetObject` / `_GetObjectCount`, `FPDFPage_TransFormWithClip`,
+`FPDF_GetDefaultTTFMapEntry`, `FPDF_FreeDefaultSystemFontInfo`, the
+full system-font-info surface, the clip-path authoring set, the
+image-bitmap embedding lifecycle, and `FPDF_LoadCustomDocument`.
 
 ## Helpers the writer layer will need
 

@@ -50,6 +50,7 @@ Collate:
     'RcppExports.R'
     'annot_authoring.R'
     'annot_class.R'
+    'api_completion.R'
     'annot_probes.R'
     'annotations.R'
     'attachment_authoring.R'
