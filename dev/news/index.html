@@ -119,6 +119,111 @@
 <code><a href="../reference/pdf_page_new.html">pdf_page_new()</a></code>, <code><a href="../reference/pdf_page_delete.html">pdf_page_delete()</a></code>, <code><a href="../reference/pdf_pages_reorder.html">pdf_pages_reorder()</a></code>, <code><a href="../reference/pdf_docs_merge.html">pdf_docs_merge()</a></code>, <code><a href="../reference/pdf_n_up.html">pdf_n_up()</a></code>, <code><a href="../reference/pdf_page_set_rotation.html">pdf_page_set_rotation()</a></code>, <code><a href="../reference/pdf_page_set_box.html">pdf_page_set_box()</a></code>, <code><a href="../reference/pdf_doc_set_language.html">pdf_doc_set_language()</a></code>, <code><a href="../reference/pdf_page_flush.html">pdf_page_flush()</a></code> — add, remove, reorder, and reshape pages.</li>
 </ul></div>
 <div class="section level3">
+<h3 id="v010-complete-the-relevant-pdfium-surface-pass-0-1-0">v0.1.0 “complete the relevant PDFium surface” pass<a class="anchor" aria-label="anchor" href="#v010-complete-the-relevant-pdfium-surface-pass-0-1-0"></a></h3>
+<p>A late v0.1.0 pass closes the remaining wrapping gaps so that every PDFium public symbol that maps cleanly to an R-side concept now has a wrapper. New exports broken out by topic:</p>
+<div class="section level4">
+<h4 id="text-low-level-geometry-0-1-0">Text low-level geometry<a class="anchor" aria-label="anchor" href="#text-low-level-geometry-0-1-0"></a></h4>
+<ul><li>
+<code><a href="../reference/pdf_text_rects.html">pdf_text_rects()</a></code> — <code>FPDFText_CountRects</code> + <code>FPDFText_GetRect</code>. Returns a tibble of axis-aligned rectangles for a character range.</li>
+<li>
+<code><a href="../reference/pdf_text_bounded.html">pdf_text_bounded()</a></code> — <code>FPDFText_GetBoundedText</code>. Extracts Unicode text inside a bounding rectangle on the page.</li>
+<li>
+<code><a href="../reference/pdf_text_char_geometry.html">pdf_text_char_geometry()</a></code> — <code>FPDFText_GetMatrix</code> + <code>FPDFText_GetCharAngle</code> + <code>FPDFText_GetFontWeight</code>. Returns a per-character tibble (<code>char_index</code>, <code>matrix</code>, <code>angle_deg</code>, <code>font_weight</code>); the matrix column is a list-column of length-6 numeric vectors.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="page--document-probes-0-1-0">Page + document probes<a class="anchor" aria-label="anchor" href="#page--document-probes-0-1-0"></a></h4>
+<ul><li>
+<code><a href="../reference/pdf_doc_form_type.html">pdf_doc_form_type()</a></code> — <code>FPDF_GetFormType</code> (none / acro_form / xfa_full / xfa_foreground).</li>
+<li>
+<code><a href="../reference/pdf_page_has_transparency.html">pdf_page_has_transparency()</a></code> — <code>FPDFPage_HasTransparency</code>.</li>
+<li>
+<code><a href="../reference/pdf_page_bounding_box.html">pdf_page_bounding_box()</a></code> — <code>FPDF_GetPageBoundingBox</code>.</li>
+<li>
+<code><a href="../reference/pdf_page_transform_annots.html">pdf_page_transform_annots()</a></code> — <code>FPDFPage_TransformAnnots</code>.</li>
+<li>
+<code><a href="../reference/pdf_annot_index.html">pdf_annot_index()</a></code> — <code>FPDFPage_GetAnnotIndex</code>.</li>
+<li>
+<code><a href="../reference/pdf_device_to_page.html">pdf_device_to_page()</a></code> / <code><a href="../reference/pdf_page_to_device.html">pdf_page_to_device()</a></code> — <code>FPDF_DeviceToPage</code> / <code>FPDF_PageToDevice</code> coordinate conversion.</li>
+<li>
+<code><a href="../reference/pdf_bookmark_child_count.html">pdf_bookmark_child_count()</a></code> — <code>FPDFBookmark_GetCount</code>.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="page-object-setters-0-1-0">Page-object setters<a class="anchor" aria-label="anchor" href="#page-object-setters-0-1-0"></a></h4>
+<ul><li>
+<code><a href="../reference/pdf_path_set_dash_phase.html">pdf_path_set_dash_phase()</a></code> — <code>FPDFPageObj_SetDashPhase</code>. Fine- grained complement to <code><a href="../reference/pdf_path_set_dash.html">pdf_path_set_dash()</a></code>.</li>
+<li>
+<code><a href="../reference/pdf_obj_mark_set_blob.html">pdf_obj_mark_set_blob()</a></code> / <code><a href="../reference/pdf_obj_mark_remove_param.html">pdf_obj_mark_remove_param()</a></code> — <code>FPDFPageObjMark_SetBlobParam</code> / <code>RemoveParam</code>.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="font-extras-0-1-0">Font extras<a class="anchor" aria-label="anchor" href="#font-extras-0-1-0"></a></h4>
+<ul><li>
+<code><a href="../reference/pdf_font_data.html">pdf_font_data()</a></code> — <code>FPDFFont_GetFontData</code>. Extracts the bytes of an embedded font (raw vector).</li>
+<li>
+<code><a href="../reference/pdf_font_load_cidtype2.html">pdf_font_load_cidtype2()</a></code> — <code>FPDFText_LoadCidType2Font</code>. Loads a CID Type 2 (composite TrueType) font with explicit ToUnicode CMap and CID-to-GID mapping.</li>
+<li>
+<code><a href="../reference/pdf_text_set_charcodes.html">pdf_text_set_charcodes()</a></code> — <code>FPDFText_SetCharcodes</code>. Sets explicit glyph charcodes on a text object (bypasses the font’s cmap; lower-level than <code><a href="../reference/pdf_text_set_content.html">pdf_text_set_content()</a></code>).</li>
+</ul></div>
+<div class="section level4">
+<h4 id="annotation-authoring-completers-0-1-0">Annotation authoring completers<a class="anchor" aria-label="anchor" href="#annotation-authoring-completers-0-1-0"></a></h4>
+<ul><li><p><code><a href="../reference/pdf_annot_add_ink_stroke.html">pdf_annot_add_ink_stroke()</a></code> / <code><a href="../reference/pdf_annot_remove_ink_list.html">pdf_annot_remove_ink_list()</a></code> — <code>FPDFAnnot_AddInkStroke</code> / <code>RemoveInkList</code>. Build / clear the ink-list of an ink annotation.</p></li>
+<li><p><code><a href="../reference/pdf_annot_object_count.html">pdf_annot_object_count()</a></code>, <code><a href="../reference/pdf_annot_objects.html">pdf_annot_objects()</a></code>, <code><a href="../reference/pdf_annot_append_object.html">pdf_annot_append_object()</a></code>, <code><a href="../reference/pdf_annot_remove_object.html">pdf_annot_remove_object()</a></code>, <code><a href="../reference/pdf_annot_update_object.html">pdf_annot_update_object()</a></code> — <code>FPDFAnnot_GetObjectCount</code> / <code>GetObject</code> / <code>AppendObject</code> / <code>RemoveObject</code> / <code>UpdateObject</code>. Manage the embedded page-objects inside stamp / freetext annotations.</p></li>
+<li><p><code><a href="../reference/pdf_annot_set_uri.html">pdf_annot_set_uri()</a></code> — <code>FPDFAnnot_SetURI</code>.</p></li>
+<li><p><code><a href="../reference/pdf_annot_set_appearance.html">pdf_annot_set_appearance()</a></code> — <code>FPDFAnnot_SetAP</code> (modes: <code>normal</code>, <code>rollover</code>, <code>down</code>).</p></li>
+<li><p><code><a href="../reference/pdf_annot_add_file_attachment.html">pdf_annot_add_file_attachment()</a></code> — <code>FPDFAnnot_AddFileAttachment</code>.</p></li>
+<li><p><code><a href="../reference/pdf_annot_line.html">pdf_annot_line()</a></code> — <code>FPDFAnnot_GetLine</code>. Endpoints of a line annotation.</p></li>
+<li><p><code><a href="../reference/pdf_annot_link.html">pdf_annot_link()</a></code> — <code>FPDFAnnot_GetLink</code> + action / dest classifier. Returns a 1-row tibble (action_type, uri, filepath, dest_page, dest_view, dest_x, dest_y, dest_zoom).</p></li>
+<li><p><code><a href="../reference/pdf_annot_set_border.html">pdf_annot_set_border()</a></code> — <code>FPDFAnnot_SetBorder</code> (corner radii + width).</p></li>
+<li><p><code><a href="../reference/pdf_annot_set_font_color.html">pdf_annot_set_font_color()</a></code>, <code><a href="../reference/pdf_form_field_set_flags.html">pdf_form_field_set_flags()</a></code>, <code><a href="../reference/pdf_doc_set_focusable_subtypes.html">pdf_doc_set_focusable_subtypes()</a></code> — <code>FPDFAnnot_SetFontColor</code> / <code>_SetFormFieldFlags</code> / <code>_SetFocusableSubtypes</code>. These three setters route through a transient form-fill environment; our RAII wrapper around <code>FPDFDOC_InitFormFillEnvironment</code> / <code>_ExitFormFillEnvironment</code> originally stored the <code>FPDF_FORMFILLINFO</code> struct as a constructor-local, which went out of scope before Exit ran and segfaulted PDFium when it dereferenced its retained pointer. Root-caused via gdb and documented in <code>dev/reprex/README.md</code>; fixed by moving the <code>FORMFILLINFO</code> to a struct member.</p></li>
+</ul></div>
+<div class="section level4">
+<h4 id="clip-path-authoring-0-1-0">Clip-path authoring<a class="anchor" aria-label="anchor" href="#clip-path-authoring-0-1-0"></a></h4>
+<ul><li>
+<code><a href="../reference/pdf_clip_path_new.html">pdf_clip_path_new()</a></code> — <code>FPDF_CreateClipPath</code>. Returns a new <code>pdfium_clip_box</code> S3 class (named <code>_clip_box</code> to avoid colliding with the existing read-side <code>pdfium_clip_path</code> class returned by <code><a href="../reference/pdf_obj_clip_path.html">pdf_obj_clip_path()</a></code>).</li>
+<li>
+<code><a href="../reference/pdf_clip_path_close.html">pdf_clip_path_close()</a></code> — <code>FPDF_DestroyClipPath</code> (idempotent).</li>
+<li>
+<code><a href="../reference/pdf_page_insert_clip_path.html">pdf_page_insert_clip_path()</a></code> — <code>FPDFPage_InsertClipPath</code>. Transfers ownership of the clip box to the page.</li>
+<li>
+<code><a href="../reference/pdf_obj_transform_clip_path.html">pdf_obj_transform_clip_path()</a></code> — <code>FPDFPageObj_TransformClipPath</code>.</li>
+<li>
+<code><a href="../reference/pdf_page_transform_with_clip.html">pdf_page_transform_with_clip()</a></code> — <code>FPDFPage_TransFormWithClip</code>.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="form-xobject--page-merge-extras-0-1-0">Form-XObject + page-merge extras<a class="anchor" aria-label="anchor" href="#form-xobject--page-merge-extras-0-1-0"></a></h4>
+<ul><li>
+<code><a href="../reference/pdf_xobject_from_page.html">pdf_xobject_from_page()</a></code> — <code>FPDF_NewXObjectFromPage</code>. Copies a page’s visual content from a source doc into the destination doc as a reusable form XObject. Returns the new <code>pdfium_xobject</code> S3 class.</li>
+<li>
+<code><a href="../reference/pdf_xobject_close.html">pdf_xobject_close()</a></code> — <code>FPDF_CloseXObject</code>.</li>
+<li>
+<code><a href="../reference/pdf_obj_form_from_xobject.html">pdf_obj_form_from_xobject()</a></code> — <code>FPDF_NewFormObjectFromXObject</code> + <code>FPDFPage_InsertObject</code>. Instantiates an XObject on a page as a form page-object.</li>
+<li>
+<code><a href="../reference/pdf_form_obj_remove_object.html">pdf_form_obj_remove_object()</a></code> — <code>FPDFFormObj_RemoveObject</code>. Removes a child page-object from a form XObject.</li>
+<li>
+<code><a href="../reference/pdf_docs_import_pages.html">pdf_docs_import_pages()</a></code> — <code>FPDF_ImportPages</code> (string-range variant of <code><a href="../reference/pdf_docs_merge.html">pdf_docs_merge()</a></code>, e.g. <code>"1-3,5,7-10"</code>).</li>
+</ul></div>
+<div class="section level4">
+<h4 id="image-bitmap-embedding-0-1-0">Image-bitmap embedding<a class="anchor" aria-label="anchor" href="#image-bitmap-embedding-0-1-0"></a></h4>
+<ul><li>
+<code><a href="../reference/pdf_bitmap_new.html">pdf_bitmap_new()</a></code> / <code><a href="../reference/pdf_bitmap_close.html">pdf_bitmap_close()</a></code> — <code>FPDFBitmap_Create</code> / <code>Destroy</code>. New <code>pdfium_image_buffer</code> S3 class wrapping <code>FPDF_BITMAP</code> handles. Named <code>_image_buffer</code> to avoid colliding with the existing read-side <code>pdfium_bitmap</code> class (the integer matrix returned by <code><a href="../reference/pdf_render_page.html">pdf_render_page()</a></code>).</li>
+<li>
+<code><a href="../reference/pdf_bitmap_info.html">pdf_bitmap_info()</a></code> — width / height / stride / format.</li>
+<li>
+<code><a href="../reference/pdf_bitmap_fill_rect.html">pdf_bitmap_fill_rect()</a></code> — <code>FPDFBitmap_FillRect</code> (color encoded as <code>0xAARRGGBB</code>).</li>
+<li>
+<code><a href="../reference/pdf_bitmap_buffer.html">pdf_bitmap_buffer()</a></code> / <code><a href="../reference/pdf_bitmap_buffer.html">pdf_bitmap_set_buffer()</a></code> — <code>FPDFBitmap_GetBuffer</code> + setter. Read or write raw pixel bytes as a length-checked raw vector.</li>
+<li>
+<code><a href="../reference/pdf_image_set_bitmap.html">pdf_image_set_bitmap()</a></code> — <code>FPDFImageObj_SetBitmap</code>. The v0.1.0 PNG / raw-bitmap embedding path; pair with <code><a href="../reference/pdf_image_new.html">pdf_image_new()</a></code> for the JPEG path.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="system-font-integration-0-1-0">System font integration<a class="anchor" aria-label="anchor" href="#system-font-integration-0-1-0"></a></h4>
+<ul><li><p><code><a href="../reference/pdf_system_fonts_default_ttf_map.html">pdf_system_fonts_default_ttf_map()</a></code> — <code>FPDF_GetDefaultTTFMap[Count|Entry]</code>. Returns a tibble of (<code>charset</code>, <code>fontname</code>) — PDFium’s built-in substitution table.</p></li>
+<li>
+<p><code><a href="../reference/pdf_system_fonts_install_default.html">pdf_system_fonts_install_default()</a></code> — <code>FPDF_SetSystemFontInfo(FPDF_GetDefaultSystemFontInfo())</code>. Enables the platform’s default sys-font-info provider so PDFium can resolve missing glyphs against installed system fonts.</p>
+<p>Custom-provider registration (<code>FPDF_SetSystemFontInfo</code> with an R-defined <code>FPDF_SYSFONTINFO</code> struct + R-side callbacks) is deferred — it requires marshalling PDFium’s font-resolution callback table into R closures, which is non-trivial.</p>
+</li>
+</ul></div>
+</div>
+<div class="section level3">
 <h3 id="page-object-mutation-0-1-0">Page-object mutation<a class="anchor" aria-label="anchor" href="#page-object-mutation-0-1-0"></a></h3>
 <ul><li>
 <code><a href="../reference/pdf_obj_set_matrix.html">pdf_obj_set_matrix()</a></code>, <code><a href="../reference/pdf_obj_set_active.html">pdf_obj_set_active()</a></code>, <code><a href="../reference/pdf_obj_set_blend_mode.html">pdf_obj_set_blend_mode()</a></code>, <code><a href="../reference/pdf_path_set_stroke.html">pdf_path_set_stroke()</a></code>, <code><a href="../reference/pdf_path_set_fill.html">pdf_path_set_fill()</a></code>, <code><a href="../reference/pdf_path_set_line_cap.html">pdf_path_set_line_cap()</a></code>, <code><a href="../reference/pdf_path_set_line_join.html">pdf_path_set_line_join()</a></code>, <code><a href="../reference/pdf_path_set_dash.html">pdf_path_set_dash()</a></code>, <code><a href="../reference/pdf_path_set_draw_mode.html">pdf_path_set_draw_mode()</a></code>, <code><a href="../reference/pdf_text_set_content.html">pdf_text_set_content()</a></code>, <code><a href="../reference/pdf_text_set_render_mode.html">pdf_text_set_render_mode()</a></code>, <code><a href="../reference/pdf_obj_add_mark.html">pdf_obj_add_mark()</a></code>, <code><a href="../reference/pdf_obj_remove_mark.html">pdf_obj_remove_mark()</a></code> — styling and metadata setters.</li>

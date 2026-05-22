@@ -875,6 +875,118 @@ natural sequence for a fresh attachment is
 - [`pdf_attachment_set_data()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_attachment_set_data.md)
   : Set the raw bytes of an embedded file attachment
 
+## API-completion additions
+
+The v0.1.0 “complete the relevant PDFium surface” pass picks up the last
+batch of single-call wrappers that pair with the existing readers +
+setters. Grouped by topic below; all live in `R/api_completion.R`.
+
+- [`pdf_doc_form_type()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_form_type.md)
+  : Form-type flavour of the document
+- [`pdf_bookmark_child_count()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bookmark_child_count.md)
+  : Number of children for a bookmark
+- [`pdf_page_has_transparency()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_has_transparency.md)
+  : Does the page contain transparency?
+- [`pdf_page_bounding_box()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_bounding_box.md)
+  : Page bounding box (cropbox ∩ mediabox)
+- [`pdf_page_transform_annots()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_transform_annots.md)
+  : Transform every annotation on a page in one shot
+- [`pdf_annot_index()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_index.md)
+  : Find an annotation's page-relative index by handle
+- [`pdf_device_to_page()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_device_to_page.md)
+  : Convert device (screen) coordinates to PDF page coordinates
+- [`pdf_page_to_device()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_to_device.md)
+  : Convert PDF page coordinates to device (screen) coordinates
+- [`pdf_text_rects()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_rects.md)
+  : Rectangles occupied by a character range
+- [`pdf_text_bounded()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_bounded.md)
+  : Extract text inside a bounding rectangle
+- [`pdf_text_char_geometry()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_char_geometry.md)
+  : Per-character geometry: transformation matrix, rotation angle, font
+  weight
+- [`pdf_path_set_dash_phase()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_path_set_dash_phase.md)
+  : Set just the dash phase of a path object
+- [`pdf_obj_mark_set_blob()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_mark_set_blob.md)
+  : Set a binary-blob content-mark parameter
+- [`pdf_obj_mark_remove_param()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_mark_remove_param.md)
+  : Remove a content-mark parameter
+- [`pdf_font_data()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_data.md)
+  : Extract the bytes of an embedded font
+- [`pdf_font_load_cidtype2()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load_cidtype2.md)
+  : Load a CID Type 2 (composite TrueType) font with explicit mappings
+- [`pdf_text_set_charcodes()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_set_charcodes.md)
+  : Populate a text object with explicit glyph charcodes
+- [`pdf_annot_add_ink_stroke()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_add_ink_stroke.md)
+  : Append an ink stroke to an ink annotation
+- [`pdf_annot_remove_ink_list()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_remove_ink_list.md)
+  : Remove all ink strokes from an ink annotation
+- [`pdf_annot_object_count()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_object_count.md)
+  : Number of embedded page-objects inside an annotation
+- [`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_objects.md)
+  : Page-objects embedded inside an annotation
+- [`pdf_annot_append_object()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_append_object.md)
+  : Append a page-object to an annotation
+- [`pdf_annot_remove_object()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_remove_object.md)
+  : Remove a page-object from an annotation
+- [`pdf_annot_update_object()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_update_object.md)
+  : Update an embedded page-object after mutating it
+- [`pdf_annot_set_uri()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_set_uri.md)
+  : Set the URI of a link annotation
+- [`pdf_annot_set_appearance()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_set_appearance.md)
+  : Set the appearance stream content for an annotation
+- [`pdf_annot_add_file_attachment()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_add_file_attachment.md)
+  : Attach a file to a file-attachment annotation
+- [`pdf_annot_line()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_line.md)
+  : Line endpoints of a line annotation
+- [`pdf_annot_link()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_link.md)
+  : Link metadata for a link annotation
+- [`pdf_annot_set_border()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_set_border.md)
+  : Set the border of an annotation
+- [`pdf_clip_path_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_clip_path_new.md)
+  : Create a clip path covering a rectangle
+- [`pdf_clip_path_close()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_clip_path_close.md)
+  : Release a clip-path handle
+- [`pdf_page_insert_clip_path()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_insert_clip_path.md)
+  : Insert a clip path into a page
+- [`pdf_obj_transform_clip_path()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_transform_clip_path.md)
+  : Transform the clip path of a page object
+- [`pdf_page_transform_with_clip()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_transform_with_clip.md)
+  : Apply a transform to a page's content stream with an optional clip
+- [`pdf_xobject_from_page()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_xobject_from_page.md)
+  : Create an XObject (reusable form) from a source-doc page
+- [`pdf_xobject_close()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_xobject_close.md)
+  : Close an XObject handle
+- [`pdf_obj_form_from_xobject()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_form_from_xobject.md)
+  : Instantiate an XObject as a form page-object on a page
+- [`pdf_form_obj_remove_object()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_form_obj_remove_object.md)
+  : Remove a child page-object from a form-xobject
+- [`pdf_docs_import_pages()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_docs_import_pages.md)
+  : Import page ranges from a source doc into a destination doc
+- [`pdf_bitmap_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bitmap_new.md)
+  : Create a fresh in-memory bitmap
+- [`pdf_bitmap_close()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bitmap_close.md)
+  : Release a bitmap handle
+- [`pdf_bitmap_info()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bitmap_info.md)
+  : Bitmap dimensions and format
+- [`pdf_bitmap_fill_rect()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bitmap_fill_rect.md)
+  : Fill a rectangle of the bitmap with a solid color
+- [`pdf_bitmap_buffer()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bitmap_buffer.md)
+  [`pdf_bitmap_set_buffer()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bitmap_buffer.md)
+  : Read or write the bitmap's raw pixel bytes
+- [`pdf_image_set_bitmap()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_image_set_bitmap.md)
+  : Set a bitmap on an image page-object
+- [`pdf_system_fonts_default_ttf_map()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_system_fonts_default_ttf_map.md)
+  : PDFium's default charset → TTF substitution map
+- [`pdf_system_fonts_install_default()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_system_fonts_install_default.md)
+  : Install PDFium's default system-font-info provider
+- [`pdf_annot_set_font_color()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_set_font_color.md)
+  : Set the font color of an annotation
+- [`pdf_form_field_set_flags()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_form_field_set_flags.md)
+  : Set the form-field flag bitmask on a form-field widget
+- [`pdf_doc_set_focusable_subtypes()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_set_focusable_subtypes.md)
+  : Set the doc-wide list of annotation subtypes that participate in tab
+  focus
+
 ## Enum code \<-\> name helpers
 
 Bidirectional converters between PDFium’s integer enum codes and their

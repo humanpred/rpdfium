@@ -254,6 +254,195 @@ release on scope grounds (see `CLAUDE.md` §“Scope”):
   [`pdf_page_flush()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_flush.md)
   — add, remove, reorder, and reshape pages.
 
+### v0.1.0 “complete the relevant PDFium surface” pass
+
+A late v0.1.0 pass closes the remaining wrapping gaps so that every
+PDFium public symbol that maps cleanly to an R-side concept now has a
+wrapper. New exports broken out by topic:
+
+#### Text low-level geometry
+
+- [`pdf_text_rects()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_rects.md)
+  — `FPDFText_CountRects` + `FPDFText_GetRect`. Returns a tibble of
+  axis-aligned rectangles for a character range.
+- [`pdf_text_bounded()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_bounded.md)
+  — `FPDFText_GetBoundedText`. Extracts Unicode text inside a bounding
+  rectangle on the page.
+- [`pdf_text_char_geometry()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_char_geometry.md)
+  — `FPDFText_GetMatrix` + `FPDFText_GetCharAngle` +
+  `FPDFText_GetFontWeight`. Returns a per-character tibble
+  (`char_index`, `matrix`, `angle_deg`, `font_weight`); the matrix
+  column is a list-column of length-6 numeric vectors.
+
+#### Page + document probes
+
+- [`pdf_doc_form_type()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_form_type.md)
+  — `FPDF_GetFormType` (none / acro_form / xfa_full / xfa_foreground).
+- [`pdf_page_has_transparency()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_has_transparency.md)
+  — `FPDFPage_HasTransparency`.
+- [`pdf_page_bounding_box()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_bounding_box.md)
+  — `FPDF_GetPageBoundingBox`.
+- [`pdf_page_transform_annots()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_transform_annots.md)
+  — `FPDFPage_TransformAnnots`.
+- [`pdf_annot_index()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_index.md)
+  — `FPDFPage_GetAnnotIndex`.
+- [`pdf_device_to_page()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_device_to_page.md)
+  /
+  [`pdf_page_to_device()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_to_device.md)
+  — `FPDF_DeviceToPage` / `FPDF_PageToDevice` coordinate conversion.
+- [`pdf_bookmark_child_count()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bookmark_child_count.md)
+  — `FPDFBookmark_GetCount`.
+
+#### Page-object setters
+
+- [`pdf_path_set_dash_phase()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_path_set_dash_phase.md)
+  — `FPDFPageObj_SetDashPhase`. Fine- grained complement to
+  [`pdf_path_set_dash()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_path_set_dash.md).
+- [`pdf_obj_mark_set_blob()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_mark_set_blob.md)
+  /
+  [`pdf_obj_mark_remove_param()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_mark_remove_param.md)
+  — `FPDFPageObjMark_SetBlobParam` / `RemoveParam`.
+
+#### Font extras
+
+- [`pdf_font_data()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_data.md)
+  — `FPDFFont_GetFontData`. Extracts the bytes of an embedded font (raw
+  vector).
+- [`pdf_font_load_cidtype2()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_font_load_cidtype2.md)
+  — `FPDFText_LoadCidType2Font`. Loads a CID Type 2 (composite TrueType)
+  font with explicit ToUnicode CMap and CID-to-GID mapping.
+- [`pdf_text_set_charcodes()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_set_charcodes.md)
+  — `FPDFText_SetCharcodes`. Sets explicit glyph charcodes on a text
+  object (bypasses the font’s cmap; lower-level than
+  [`pdf_text_set_content()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_text_set_content.md)).
+
+#### Annotation authoring completers
+
+- [`pdf_annot_add_ink_stroke()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_add_ink_stroke.md)
+  /
+  [`pdf_annot_remove_ink_list()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_remove_ink_list.md)
+  — `FPDFAnnot_AddInkStroke` / `RemoveInkList`. Build / clear the
+  ink-list of an ink annotation.
+
+- [`pdf_annot_object_count()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_object_count.md),
+  [`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_objects.md),
+  [`pdf_annot_append_object()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_append_object.md),
+  [`pdf_annot_remove_object()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_remove_object.md),
+  [`pdf_annot_update_object()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_update_object.md)
+  — `FPDFAnnot_GetObjectCount` / `GetObject` / `AppendObject` /
+  `RemoveObject` / `UpdateObject`. Manage the embedded page-objects
+  inside stamp / freetext annotations.
+
+- [`pdf_annot_set_uri()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_set_uri.md)
+  — `FPDFAnnot_SetURI`.
+
+- [`pdf_annot_set_appearance()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_set_appearance.md)
+  — `FPDFAnnot_SetAP` (modes: `normal`, `rollover`, `down`).
+
+- [`pdf_annot_add_file_attachment()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_add_file_attachment.md)
+  — `FPDFAnnot_AddFileAttachment`.
+
+- [`pdf_annot_line()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_line.md)
+  — `FPDFAnnot_GetLine`. Endpoints of a line annotation.
+
+- [`pdf_annot_link()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_link.md)
+  — `FPDFAnnot_GetLink` + action / dest classifier. Returns a 1-row
+  tibble (action_type, uri, filepath, dest_page, dest_view, dest_x,
+  dest_y, dest_zoom).
+
+- [`pdf_annot_set_border()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_set_border.md)
+  — `FPDFAnnot_SetBorder` (corner radii + width).
+
+- [`pdf_annot_set_font_color()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_annot_set_font_color.md),
+  [`pdf_form_field_set_flags()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_form_field_set_flags.md),
+  [`pdf_doc_set_focusable_subtypes()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_doc_set_focusable_subtypes.md)
+  — `FPDFAnnot_SetFontColor` / `_SetFormFieldFlags` /
+  `_SetFocusableSubtypes`. These three setters route through a transient
+  form-fill environment; our RAII wrapper around
+  `FPDFDOC_InitFormFillEnvironment` / `_ExitFormFillEnvironment`
+  originally stored the `FPDF_FORMFILLINFO` struct as a
+  constructor-local, which went out of scope before Exit ran and
+  segfaulted PDFium when it dereferenced its retained pointer.
+  Root-caused via gdb and documented in `dev/reprex/README.md`; fixed by
+  moving the `FORMFILLINFO` to a struct member.
+
+#### Clip-path authoring
+
+- [`pdf_clip_path_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_clip_path_new.md)
+  — `FPDF_CreateClipPath`. Returns a new `pdfium_clip_box` S3 class
+  (named `_clip_box` to avoid colliding with the existing read-side
+  `pdfium_clip_path` class returned by
+  [`pdf_obj_clip_path()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_clip_path.md)).
+- [`pdf_clip_path_close()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_clip_path_close.md)
+  — `FPDF_DestroyClipPath` (idempotent).
+- [`pdf_page_insert_clip_path()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_insert_clip_path.md)
+  — `FPDFPage_InsertClipPath`. Transfers ownership of the clip box to
+  the page.
+- [`pdf_obj_transform_clip_path()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_transform_clip_path.md)
+  — `FPDFPageObj_TransformClipPath`.
+- [`pdf_page_transform_with_clip()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_page_transform_with_clip.md)
+  — `FPDFPage_TransFormWithClip`.
+
+#### Form-XObject + page-merge extras
+
+- [`pdf_xobject_from_page()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_xobject_from_page.md)
+  — `FPDF_NewXObjectFromPage`. Copies a page’s visual content from a
+  source doc into the destination doc as a reusable form XObject.
+  Returns the new `pdfium_xobject` S3 class.
+- [`pdf_xobject_close()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_xobject_close.md)
+  — `FPDF_CloseXObject`.
+- [`pdf_obj_form_from_xobject()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_form_from_xobject.md)
+  — `FPDF_NewFormObjectFromXObject` + `FPDFPage_InsertObject`.
+  Instantiates an XObject on a page as a form page-object.
+- [`pdf_form_obj_remove_object()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_form_obj_remove_object.md)
+  — `FPDFFormObj_RemoveObject`. Removes a child page-object from a form
+  XObject.
+- [`pdf_docs_import_pages()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_docs_import_pages.md)
+  — `FPDF_ImportPages` (string-range variant of
+  [`pdf_docs_merge()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_docs_merge.md),
+  e.g. `"1-3,5,7-10"`).
+
+#### Image-bitmap embedding
+
+- [`pdf_bitmap_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bitmap_new.md)
+  /
+  [`pdf_bitmap_close()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bitmap_close.md)
+  — `FPDFBitmap_Create` / `Destroy`. New `pdfium_image_buffer` S3 class
+  wrapping `FPDF_BITMAP` handles. Named `_image_buffer` to avoid
+  colliding with the existing read-side `pdfium_bitmap` class (the
+  integer matrix returned by
+  [`pdf_render_page()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_render_page.md)).
+- [`pdf_bitmap_info()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bitmap_info.md)
+  — width / height / stride / format.
+- [`pdf_bitmap_fill_rect()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bitmap_fill_rect.md)
+  — `FPDFBitmap_FillRect` (color encoded as `0xAARRGGBB`).
+- [`pdf_bitmap_buffer()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bitmap_buffer.md)
+  /
+  [`pdf_bitmap_set_buffer()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_bitmap_buffer.md)
+  — `FPDFBitmap_GetBuffer` + setter. Read or write raw pixel bytes as a
+  length-checked raw vector.
+- [`pdf_image_set_bitmap()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_image_set_bitmap.md)
+  — `FPDFImageObj_SetBitmap`. The v0.1.0 PNG / raw-bitmap embedding
+  path; pair with
+  [`pdf_image_new()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_image_new.md)
+  for the JPEG path.
+
+#### System font integration
+
+- [`pdf_system_fonts_default_ttf_map()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_system_fonts_default_ttf_map.md)
+  — `FPDF_GetDefaultTTFMap[Count|Entry]`. Returns a tibble of
+  (`charset`, `fontname`) — PDFium’s built-in substitution table.
+
+- [`pdf_system_fonts_install_default()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_system_fonts_install_default.md)
+  — `FPDF_SetSystemFontInfo(FPDF_GetDefaultSystemFontInfo())`. Enables
+  the platform’s default sys-font-info provider so PDFium can resolve
+  missing glyphs against installed system fonts.
+
+  Custom-provider registration (`FPDF_SetSystemFontInfo` with an
+  R-defined `FPDF_SYSFONTINFO` struct + R-side callbacks) is deferred —
+  it requires marshalling PDFium’s font-resolution callback table into R
+  closures, which is non-trivial.
+
 ### Page-object mutation
 
 - [`pdf_obj_set_matrix()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_obj_set_matrix.md),
