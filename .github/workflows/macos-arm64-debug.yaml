@@ -1,0 +1,212 @@
+# macos-arm64-debug.yaml — localise the segfault reported in
+# humanpred/rpdfium#44 (R 4.6 on Apple Silicon, "plot(bmp) draws
+# into a PDF device" + lazy `grid` load crashes at "address
+# 0x656c696620686375" — ASCII bytes in a function-pointer slot).
+#
+# Manual trigger only. Each step runs the same reprex under a
+# different set of macOS libsystem_malloc debug env vars; the
+# first one to reproduce the fault localises the bug. The lldb
+# job captures a full backtrace when the crash hits.
+#
+# To run: GitHub → Actions → macos-arm64-debug → Run workflow.
+
+name: macos-arm64-debug
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  malloc-modes:
+    runs-on: macos-latest      # GitHub's macos-latest is arm64.
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - name: baseline
+            env: { }
+          - name: nano-zone-off
+            env: { MallocNanoZone: "0" }
+          - name: guard-edges
+            env: { MallocGuardEdges: "1", MallocDoNotProtectPrelude: "0", MallocDoNotProtectPostlude: "0" }
+          - name: scribble
+            env: { MallocScribble: "1", MallocPreScribble: "1" }
+          - name: corruption-abort
+            env: { MallocCorruptionAbort: "1", MallocErrorAbort: "1", MallocCheckHeapStart: "1", MallocCheckHeapEach: "100" }
+          - name: stack-logging
+            env: { MallocStackLoggingNoCompact: "1" }
+          - name: nano-off-plus-guard
+            env: { MallocNanoZone: "0", MallocGuardEdges: "1" }
+
+    name: "${{ matrix.config.name }}"
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: "yes"
+      # Tests run via the reprex script, not testthat; the
+      # `skip_on_os("mac")` in test-render.R is irrelevant here.
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::devtools, local::.
+          needs: check
+
+      - name: Install package (release mode)
+        run: R CMD INSTALL .
+
+      - name: Show malloc envs in use
+        run: |
+          echo "MallocNanoZone=$MallocNanoZone"
+          echo "MallocGuardEdges=$MallocGuardEdges"
+          echo "MallocScribble=$MallocScribble"
+          echo "MallocPreScribble=$MallocPreScribble"
+          echo "MallocCorruptionAbort=$MallocCorruptionAbort"
+          echo "MallocErrorAbort=$MallocErrorAbort"
+          echo "MallocStackLoggingNoCompact=$MallocStackLoggingNoCompact"
+          echo "MallocCheckHeapStart=$MallocCheckHeapStart"
+          echo "MallocCheckHeapEach=$MallocCheckHeapEach"
+        env: ${{ matrix.config.env }}
+
+      - name: Run reprex
+        id: reprex
+        continue-on-error: true
+        run: |
+          set +e
+          Rscript dev/reprex/macos-arm64-segfault.R \
+            > "/tmp/reprex-${{ matrix.config.name }}.out" \
+            2> "/tmp/reprex-${{ matrix.config.name }}.err"
+          ec=$?
+          echo "exit_code=$ec" | tee -a "$GITHUB_OUTPUT"
+          echo "==== stdout ===="
+          cat "/tmp/reprex-${{ matrix.config.name }}.out"
+          echo "==== stderr ===="
+          cat "/tmp/reprex-${{ matrix.config.name }}.err"
+          echo "==== exit code: $ec ===="
+          # Surface SEGV (139) / SIGABRT (134) / SIGBUS (138) prominently.
+          case "$ec" in
+            0)   echo "::notice::reprex passed under ${{ matrix.config.name }}" ;;
+            134) echo "::warning::SIGABRT under ${{ matrix.config.name }} (corruption detected by allocator)" ;;
+            138) echo "::warning::SIGBUS under ${{ matrix.config.name }}" ;;
+            139) echo "::warning::SIGSEGV under ${{ matrix.config.name }} — same signal as the original CI failure" ;;
+            *)   echo "::warning::reprex exited $ec under ${{ matrix.config.name }}" ;;
+          esac
+          exit 0
+        env: ${{ matrix.config.env }}
+
+      - name: Collect crash reports
+        if: always()
+        run: |
+          set +e
+          mkdir -p /tmp/crash-artifacts
+          # macOS crash reporter writes here. Filter to recent files
+          # owned by this run.
+          for d in \
+            "$HOME/Library/Logs/DiagnosticReports" \
+            "/Library/Logs/DiagnosticReports"; do
+            if [ -d "$d" ]; then
+              find "$d" -mmin -30 -type f \
+                \( -name "*.crash" -o -name "*.ips" -o -name "*.diag" \) \
+                -exec cp -v {} /tmp/crash-artifacts/ \;
+            fi
+          done
+          # Also save the reprex output.
+          cp -v "/tmp/reprex-${{ matrix.config.name }}.out" \
+                "/tmp/reprex-${{ matrix.config.name }}.err" \
+                /tmp/crash-artifacts/ 2>/dev/null || true
+          ls -la /tmp/crash-artifacts/
+          # Show any .ips contents inline so you can read the
+          # crash without downloading the artifact.
+          for f in /tmp/crash-artifacts/*.ips; do
+            [ -f "$f" ] || continue
+            echo "==== $f ===="
+            cat "$f" | head -200
+          done
+
+      - name: Upload crash artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crash-${{ matrix.config.name }}
+          path: /tmp/crash-artifacts/
+          if-no-files-found: warn
+
+  lldb-bt:
+    runs-on: macos-latest
+    name: "lldb-bt"
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::devtools, local::.
+          needs: check
+
+      - name: Install package
+        run: R CMD INSTALL .
+
+      - name: Locate R binary + libpdfium
+        run: |
+          R_EXEC="$(Rscript -e 'cat(file.path(R.home("bin"), "exec", "R"))')"
+          echo "R_EXEC=$R_EXEC"
+          file "$R_EXEC" || true
+          LIB="$(Rscript -e 'cat(system.file("lib", "libpdfium.dylib", package = "pdfium"))')"
+          echo "LIB=$LIB"
+          file "$LIB" || true
+
+      - name: Run reprex under lldb, full backtrace on crash
+        continue-on-error: true
+        run: |
+          set +e
+          R_BIN="$(Rscript -e 'cat(file.path(R.home("bin"), "exec", "R"))')"
+          # `lldb --batch` runs the commands in order, doesn't
+          # require a TTY. `process handle ... --stop true` keeps
+          # the process stopped at the fault so we can `bt all`.
+          # `image lookup -a $pc` shows what (if anything) the PC
+          # value is in. `process handle` accepts settings before
+          # the process exists; lldb applies them on launch.
+          lldb --batch \
+            -o "process handle SIGSEGV --pass true --stop true --notify true" \
+            -o "process handle SIGBUS  --pass true --stop true --notify true" \
+            -o "process handle SIGABRT --pass true --stop true --notify true" \
+            -o "run --no-save --no-restore --vanilla -f dev/reprex/macos-arm64-segfault.R" \
+            -o "bt all" \
+            -o "register read" \
+            -o "image list" \
+            -o "image lookup --address \$pc" \
+            -o "memory read --size 1 --count 64 \$pc - 32" \
+            -o "thread list" \
+            -o "quit" \
+            -- "$R_BIN" \
+            2>&1 | tee /tmp/lldb-bt.out
+          echo "==== lldb session ended ===="
+          # Print the crash report if one landed.
+          for d in \
+            "$HOME/Library/Logs/DiagnosticReports" \
+            "/Library/Logs/DiagnosticReports"; do
+            if [ -d "$d" ]; then
+              find "$d" -mmin -10 -type f \
+                \( -name "*.ips" -o -name "*.crash" \) \
+                -exec sh -c 'echo "==== $1 ===="; cat "$1"' _ {} \;
+            fi
+          done
+
+      - name: Upload lldb output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lldb-bt
+          path: /tmp/lldb-bt.out
+          if-no-files-found: warn
