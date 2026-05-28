@@ -13,9 +13,9 @@ test_that("pdf_structure_tree returns 0 rows for an untagged PDF", {
     expect_equal(nrow(out), 0L)
     expect_named(out, c(
       "element_index", "parent_index", "level",
-      "type", "obj_type", "title", "lang",
+      "type", "parent_type", "obj_type", "title", "lang",
       "alt_text", "actual_text", "id",
-      "mcid", "mcid_count", "attributes"
+      "mcid", "mcid_count", "attributes", "child_mcids"
     ))
   }
 })
@@ -37,6 +37,56 @@ test_that("pdf_structure_tree walks the tagged-PDF tree", {
   expect_equal(res$mcid[[2L]], 0L)
   expect_equal(res$mcid_count[[1L]], 0L)
   expect_equal(res$mcid_count[[2L]], 1L)
+  # parent_type: Document is at the tree root (empty parent type),
+  # P's parent is the Document element above it.
+  expect_identical(res$parent_type, c("", "Document"))
+  # child_mcids: the per-page walk surfaces just Document + P, but
+  # the underlying CountChildren still reports the full tree —
+  # Document has H1/P/Figure (all nested struct-elements, so all
+  # NA), and P has one MCR child (MCID 0).
+  expect_type(res$child_mcids, "list")
+  expect_length(res$child_mcids, 2L)
+  expect_true(all(is.na(res$child_mcids[[1L]])))
+  expect_equal(length(res$child_mcids[[1L]]), 3L)
+  expect_identical(res$child_mcids[[2L]], 0L)
+})
+
+test_that("pdf_structure_tree honours string_attrs", {
+  doc <- pdf_doc_open(fixture_path("tagged"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- pdf_structure_tree(doc, page_num = 1L,
+                              string_attrs = c("Lang", "Headers"))
+  # The fixture's elements have no /A/Lang or /A/Headers attribute
+  # objects, so the by-name lookup returns "" for both. The point
+  # is that the columns appear with the right types.
+  expect_true(all(c("Lang", "Headers") %in% colnames(res)))
+  expect_type(res$Lang, "character")
+  expect_type(res$Headers, "character")
+  expect_length(res$Lang, nrow(res))
+  expect_length(res$Headers, nrow(res))
+})
+
+test_that("pdf_structure_tree's empty-tibble path includes string_attrs", {
+  out <- pdf_structure_tree(pdf_doc_open(fixture_path("minimal")),
+                              page_num = 1L,
+                              string_attrs = c("Scope"))
+  expect_equal(nrow(out), 0L)
+  expect_true("Scope" %in% colnames(out))
+  expect_type(out$Scope, "character")
+})
+
+test_that("pdf_structure_tree validates string_attrs", {
+  doc <- pdf_doc_open(fixture_path("tagged"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  # Non-character input is rejected by checkmate.
+  expect_error(pdf_structure_tree(doc, string_attrs = 1L),
+                 "Assertion on")
+  # Empty-string elements are rejected (min.chars = 1L).
+  expect_error(pdf_structure_tree(doc, string_attrs = c("Lang", "")),
+                 "Assertion on")
+  # NA elements are rejected.
+  expect_error(pdf_structure_tree(doc, string_attrs = NA_character_),
+                 "Assertion on")
 })
 
 test_that("pdf_structure_tree accepts a doc + page_num or a page", {

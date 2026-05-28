@@ -202,14 +202,59 @@ StructElementMCID resolve_element_mcid(FPDF_STRUCTELEMENT element) {
   return out;
 }
 
+// Read the parent element's structural type via FPDF_StructElement_GetParent.
+// Returns "" for the structure-tree root (PDFium contract: GetParent
+// returns NULL on the StructTreeRoot).
+std::string read_parent_type(FPDF_STRUCTELEMENT element) {
+  FPDF_STRUCTELEMENT parent = FPDF_StructElement_GetParent(element);
+  if (parent == nullptr) return std::string();
+  return read_struct_string(parent, FPDF_StructElement_GetType);
+}
+
+// Per-child marked-content IDs via FPDF_StructElement_GetChildMarkedContentID.
+// This is the strict-MCR sibling of FPDF_StructElement_GetMarkedContentIdAtIndex:
+// it returns -1 for children that are themselves struct elements (rather
+// than direct marked-content references), so the per-slot vector
+// preserves the layout of the element's /K array. NA_INTEGER in R = -1
+// here.
+Rcpp::IntegerVector read_child_mcids(FPDF_STRUCTELEMENT element) {
+  int n_children = FPDF_StructElement_CountChildren(element);
+  if (n_children <= 0) return Rcpp::IntegerVector(0);
+  Rcpp::IntegerVector out(n_children);
+  for (int i = 0; i < n_children; ++i) {
+    int id = FPDF_StructElement_GetChildMarkedContentID(element, i);
+    out[i] = (id < 0) ? NA_INTEGER : id;
+  }
+  return out;
+}
+
+// Read a named string attribute via FPDF_StructElement_GetStringAttribute.
+// Distinct from PDFium's per-key getters (GetLang, GetID, etc.) — this
+// reads from the element's attribute *objects* (the /A array) rather
+// than the element's direct dict entries. PDFium documents the call
+// shape as the standard "0-buffer probe, then real call" length-first
+// protocol; the byte buffer is UTF-8 already (not UTF-16LE).
+std::string read_string_attribute(FPDF_STRUCTELEMENT element,
+                                  const char* name) {
+  unsigned long need = FPDF_StructElement_GetStringAttribute(
+      element, name, nullptr, 0);
+  if (need <= 1) return std::string();  // 1 byte = NUL only.
+  std::vector<char> buf(need);
+  FPDF_StructElement_GetStringAttribute(element, name, buf.data(), need);
+  // Strip the trailing NUL.
+  return std::string(buf.data(), need - 1);
+}
+
 // Depth-first walk over the structure subtree rooted at `element`.
 // Emits one entry per element into the parallel output vectors.
 void walk_struct(FPDF_STRUCTELEMENT element,
                  int parent_index,
                  int level,
+                 const std::vector<std::string>& string_attr_names,
                  std::vector<int>& parent_indices,
                  std::vector<int>& levels,
                  std::vector<std::string>& types,
+                 std::vector<std::string>& parent_types,
                  std::vector<std::string>& obj_types,
                  std::vector<std::string>& titles,
                  std::vector<std::string>& langs,
@@ -218,11 +263,14 @@ void walk_struct(FPDF_STRUCTELEMENT element,
                  std::vector<std::string>& ids,
                  std::vector<int>& mcids,
                  std::vector<int>& mcid_counts,
-                 Rcpp::List& attributes) {
+                 Rcpp::List& attributes,
+                 Rcpp::List& child_mcids,
+                 std::vector<std::vector<std::string>>& string_attrs) {
   if (element == nullptr) return;
   parent_indices.push_back(parent_index);
   levels.push_back(level);
   types.push_back(read_struct_string(element, FPDF_StructElement_GetType));
+  parent_types.push_back(read_parent_type(element));
   obj_types.push_back(
       read_struct_string(element, FPDF_StructElement_GetObjType));
   titles.push_back(read_struct_string(element, FPDF_StructElement_GetTitle));
@@ -236,28 +284,36 @@ void walk_struct(FPDF_STRUCTELEMENT element,
   mcids.push_back(m.mcid);
   mcid_counts.push_back(m.count);
   attributes.push_back(read_struct_attributes(element));
+  child_mcids.push_back(read_child_mcids(element));
+  for (std::size_t a = 0; a < string_attr_names.size(); ++a) {
+    string_attrs[a].push_back(
+        read_string_attribute(element, string_attr_names[a].c_str()));
+  }
 
   int this_index = static_cast<int>(parent_indices.size());
   int n_children = FPDF_StructElement_CountChildren(element);
   for (int i = 0; i < n_children; ++i) {
     FPDF_STRUCTELEMENT child =
         FPDF_StructElement_GetChildAtIndex(element, i);
-    walk_struct(child, this_index, level + 1,
-                parent_indices, levels, types, obj_types, titles,
-                langs, alt_texts, actual_texts, ids, mcids,
-                mcid_counts, attributes);
+    walk_struct(child, this_index, level + 1, string_attr_names,
+                parent_indices, levels, types, parent_types,
+                obj_types, titles, langs, alt_texts, actual_texts,
+                ids, mcids, mcid_counts, attributes, child_mcids,
+                string_attrs);
   }
 }
 
 }  // namespace
 
 // [[Rcpp::export(name = "cpp_struct_tree_page")]]
-Rcpp::List cpp_struct_tree_page(SEXP page_ptr) {
+Rcpp::List cpp_struct_tree_page(SEXP page_ptr,
+                                  std::vector<std::string> string_attr_names) {
   FPDF_PAGE page = struct_page_from_ptr(page_ptr);
 
   std::vector<int> parent_indices;
   std::vector<int> levels;
   std::vector<std::string> types;
+  std::vector<std::string> parent_types;
   std::vector<std::string> obj_types;
   std::vector<std::string> titles;
   std::vector<std::string> langs;
@@ -267,6 +323,9 @@ Rcpp::List cpp_struct_tree_page(SEXP page_ptr) {
   std::vector<int> mcids;
   std::vector<int> mcid_counts;
   Rcpp::List attributes;
+  Rcpp::List child_mcids;
+  std::vector<std::vector<std::string>> string_attrs(
+      string_attr_names.size());
 
   FPDF_STRUCTTREE tree = FPDF_StructTree_GetForPage(page);
   if (tree != nullptr) {
@@ -275,17 +334,26 @@ Rcpp::List cpp_struct_tree_page(SEXP page_ptr) {
       FPDF_STRUCTELEMENT root_child =
           FPDF_StructTree_GetChildAtIndex(tree, i);
       walk_struct(root_child, /*parent=*/0, /*level=*/1,
-                  parent_indices, levels, types, obj_types, titles,
-                  langs, alt_texts, actual_texts, ids, mcids,
-                  mcid_counts, attributes);
+                  string_attr_names,
+                  parent_indices, levels, types, parent_types,
+                  obj_types, titles, langs, alt_texts, actual_texts,
+                  ids, mcids, mcid_counts, attributes, child_mcids,
+                  string_attrs);
     }
     FPDF_StructTree_Close(tree);
   }
+
+  Rcpp::List string_attrs_out(string_attr_names.size());
+  for (std::size_t a = 0; a < string_attr_names.size(); ++a) {
+    string_attrs_out[a] = Rcpp::wrap(string_attrs[a]);
+  }
+  string_attrs_out.attr("names") = Rcpp::wrap(string_attr_names);
 
   return Rcpp::List::create(
       Rcpp::_["parent_index"] = parent_indices,
       Rcpp::_["level"]        = levels,
       Rcpp::_["type"]         = types,
+      Rcpp::_["parent_type"]  = parent_types,
       Rcpp::_["obj_type"]     = obj_types,
       Rcpp::_["title"]        = titles,
       Rcpp::_["lang"]         = langs,
@@ -294,5 +362,7 @@ Rcpp::List cpp_struct_tree_page(SEXP page_ptr) {
       Rcpp::_["id"]           = ids,
       Rcpp::_["mcid"]         = mcids,
       Rcpp::_["mcid_count"]   = mcid_counts,
-      Rcpp::_["attributes"]   = attributes);
+      Rcpp::_["attributes"]   = attributes,
+      Rcpp::_["child_mcids"]  = child_mcids,
+      Rcpp::_["string_attrs"] = string_attrs_out);
 }

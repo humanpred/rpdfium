@@ -333,6 +333,10 @@ cpp_doc_import_pages_string <- function(dest_ptr, src_ptr, range, dest_index_zer
     .Call(`_pdfium_cpp_doc_import_pages_string`, dest_ptr, src_ptr, range, dest_index_zero)
 }
 
+cpp_doc_copy_viewer_preferences <- function(dest_ptr, src_ptr) {
+    .Call(`_pdfium_cpp_doc_copy_viewer_preferences`, dest_ptr, src_ptr)
+}
+
 cpp_page_transform_with_clip <- function(page_ptr, matrix, clip_rect) {
     .Call(`_pdfium_cpp_page_transform_with_clip`, page_ptr, matrix, clip_rect)
 }
@@ -1005,8 +1009,8 @@ cpp_signature_byte_range <- function(doc_ptr, index_zero) {
     .Call(`_pdfium_cpp_signature_byte_range`, doc_ptr, index_zero)
 }
 
-cpp_struct_tree_page <- function(page_ptr) {
-    .Call(`_pdfium_cpp_struct_tree_page`, page_ptr)
+cpp_struct_tree_page <- function(page_ptr, string_attr_names) {
+    .Call(`_pdfium_cpp_struct_tree_page`, page_ptr, string_attr_names)
 }
 
 cpp_text_font_size <- function(obj_ptr) {

@@ -4,7 +4,7 @@
 \alias{pdf_structure_tree}
 \title{Read the tagged-PDF structure tree for a page}
 \usage{
-pdf_structure_tree(page, page_num = 1L)
+pdf_structure_tree(page, page_num = 1L, string_attrs = character())
 }
 \arguments{
 \item{page}{A \code{pdfium_page} from \code{\link[=pdf_page_load]{pdf_page_load()}}, or a
@@ -12,6 +12,16 @@ pdf_structure_tree(page, page_num = 1L)
 
 \item{page_num}{One-based page index. Only used when \code{page} is
 a \code{pdfium_doc}. Ignored otherwise.}
+
+\item{string_attrs}{Optional character vector of attribute-object
+names (e.g. \code{"Headers"}, \code{"Scope"}, \code{"RowSpan"}). For each
+name, the result adds a column with that name populated via
+\code{FPDF_StructElement_GetStringAttribute(element, name)}. Distinct
+from the typed \code{attributes} list-column: this path reads the
+element's \verb{/A} attribute objects keyed by name, returning the
+value as UTF-8 bytes from PDFium's standard
+\code{name}-or-\code{string}-typed lookup. Empty string when the
+attribute is absent.}
 }
 \value{
 A tibble with columns:
@@ -26,6 +36,10 @@ structure-tree root).
 UTF-8. Common values follow the PDF spec's standard
 structure types (e.g. \code{"Document"}, \code{"Sect"}, \code{"P"},
 \code{"H1"}, \code{"Span"}, \code{"Figure"}, \code{"Table"}).
+\item \code{parent_type} character - the structural type of the
+parent element (via \code{FPDF_StructElement_GetParent});
+empty when the element is a direct child of the
+structure-tree root.
 \item \code{title} character - the element's \verb{/T} title (often empty).
 \item \code{lang} character - the element's \verb{/Lang} IETF BCP 47 code
 (e.g. \code{"en"}, \code{"fr"}); empty when none is set.
@@ -54,7 +68,16 @@ character for \verb{/Placement} / \verb{/TextAlign} /
 \verb{/A} attribute objects. Aggregated across all attribute
 dictionaries on the element (PDF's nested attribute-class
 layout is flattened to a single namespace).
+\item \code{child_mcids} list-column - one integer vector per row,
+one entry per child slot in the element's \verb{/K} array. The
+value is the child's marked-content ID via
+\code{FPDF_StructElement_GetChildMarkedContentID}, or \code{NA} when
+the child is itself a nested structure element rather than
+a direct marked-content reference. Distinct from \code{mcid} /
+\code{mcid_count}, which only enumerate MCID-typed children.
 }
+
+Plus one extra column per name in \code{string_attrs}.
 
 Returns a 0-row tibble of the same schema when the page has
 no associated structure tree (typical for untagged PDFs).
@@ -74,9 +97,10 @@ Most PDFs are not tagged; for those, this function returns a
 accessibility, screen-reader support, and PDF/UA conformance.
 
 Wraps \code{FPDF_StructTree_GetForPage}, \code{FPDF_StructTree_*Children},
-\code{FPDF_StructElement_GetType} / \code{GetTitle} / \code{GetLang} /
-\code{GetAltText} / \code{GetActualText} / \code{GetID} /
-\code{GetMarkedContentID}.
+\code{FPDF_StructElement_GetType} / \code{GetParent} / \code{GetTitle} /
+\code{GetLang} / \code{GetAltText} / \code{GetActualText} / \code{GetID} /
+\code{GetMarkedContentID} / \code{GetChildMarkedContentID} /
+\code{GetStringAttribute}.
 }
 \seealso{
 \code{\link[=pdf_doc_is_tagged]{pdf_doc_is_tagged()}} for a fast yes/no check at the

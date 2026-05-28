@@ -398,6 +398,7 @@ reference:
       - pdf_obj_form_from_xobject
       - pdf_form_obj_remove_object
       - pdf_docs_import_pages
+      - pdf_docs_copy_viewer_preferences
       - pdf_bitmap_new
       - pdf_bitmap_close
       - pdf_bitmap_info

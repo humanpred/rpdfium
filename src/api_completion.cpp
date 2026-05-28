@@ -1059,6 +1059,20 @@ bool cpp_doc_import_pages_string(SEXP dest_ptr, SEXP src_ptr,
   return FPDF_ImportPages(dest, src, range_arg, dest_index_zero) != 0;
 }
 
+// Copy /ViewerPreferences (PageLayout, PageMode, NonFullScreenPageMode,
+// Direction, ViewArea, ViewClip, PrintArea, PrintClip, PrintScaling,
+// Duplex, PickTrayByPDFSize, PrintPageRange, NumCopies, etc.) from src
+// into dest. PDFium creates the entry on dest if absent, replaces it
+// otherwise. Useful when constructing a derived document
+// (concatenation, n-up, reordering) that should inherit display hints
+// from the original.
+// [[Rcpp::export(name = "cpp_doc_copy_viewer_preferences")]]
+bool cpp_doc_copy_viewer_preferences(SEXP dest_ptr, SEXP src_ptr) {
+  FPDF_DOCUMENT dest = acomp_doc_from_ptr(dest_ptr);
+  FPDF_DOCUMENT src  = acomp_doc_from_ptr(src_ptr);
+  return FPDF_CopyViewerPreferences(dest, src) != 0;
+}
+
 // [[Rcpp::export(name = "cpp_page_transform_with_clip")]]
 bool cpp_page_transform_with_clip(SEXP page_ptr,
                                     Rcpp::NumericVector matrix,
