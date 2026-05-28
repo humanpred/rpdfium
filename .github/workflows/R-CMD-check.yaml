@@ -48,3 +48,129 @@ jobs:
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+
+      # On macOS, when R CMD check segfaults the testthat traceback shows
+      # the R-level call but not the C-level frame. This step picks up
+      # the kernel's crash report from `~/Library/Logs/DiagnosticReports`,
+      # extracts the faulting thread's frames, and runs `atos` against
+      # our own binaries (pdfium.so + bundled libpdfium.dylib) to
+      # symbolicate them. Output goes inline in the job log + as an
+      # uploadable artifact. Linux + Windows have their own native paths
+      # (core dumps / WinDbg) and are skipped here.
+      - name: Capture macOS crash reports (on failure)
+        if: failure() && runner.os == 'macOS'
+        shell: bash
+        run: |
+          set +e
+          mkdir -p "$RUNNER_TEMP/macos-crashes"
+
+          # The kernel writes the .ips report asynchronously; give it
+          # a few seconds to land before we scan.
+          files=""
+          for i in 1 2 3 4 5; do
+            sleep 2
+            files=$(find "$HOME/Library/Logs/DiagnosticReports" \
+                         /Library/Logs/DiagnosticReports \
+                         -mmin -30 -type f \
+                         \( -name "*.ips" -o -name "*.crash" \) \
+                         2>/dev/null)
+            [ -n "$files" ] && break
+          done
+          if [ -z "$files" ]; then
+            echo "::warning::No macOS crash reports found in DiagnosticReports/ within 10s"
+            exit 0
+          fi
+
+          # Find our installed binaries so atos has something to
+          # symbolicate against.
+          pkg_lib=$(Rscript -e 'cat(system.file("libs", package = "pdfium"))' 2>/dev/null)
+          pkg_dylib=$(Rscript -e 'cat(system.file("lib", "libpdfium.dylib", package = "pdfium"))' 2>/dev/null)
+          echo "package shared object dir: $pkg_lib"
+          echo "bundled libpdfium.dylib  : $pkg_dylib"
+          echo ""
+
+          for f in $files; do
+            cp -v "$f" "$RUNNER_TEMP/macos-crashes/"
+            echo ""
+            echo "==== $f (full content) ===="
+            cat "$f"
+            echo "==== end $f ===="
+            echo ""
+
+            # .ips v2 is two JSON documents: a one-line header and a
+            # multi-line body. Skip the header and feed the body to jq.
+            body=$(tail -n +2 "$f")
+            if [ -z "$body" ]; then
+              echo "::warning::$f has no body, skipping symbolication"
+              continue
+            fi
+
+            # Symbolicate the faulting thread, focusing on frames that
+            # live in our binaries. apple-system frames get a name-only
+            # entry; pdfium-related frames get the full atos lookup.
+            python3 - "$f" "$pkg_lib" "$pkg_dylib" <<'PYEOF'
+          import json, os, subprocess, sys
+          ips_path, pkg_lib, pkg_dylib = sys.argv[1], sys.argv[2], sys.argv[3]
+          our_binaries = []
+          if pkg_lib:
+              # pdfium.so lives at <pkg_lib>/pdfium.so on macOS.
+              for cand in (os.path.join(pkg_lib, "pdfium.so"),
+                           os.path.join(pkg_lib, "pdfium.dylib")):
+                  if os.path.exists(cand):
+                      our_binaries.append(cand)
+          if pkg_dylib and os.path.exists(pkg_dylib):
+              our_binaries.append(pkg_dylib)
+          with open(ips_path) as fh:
+              raw = fh.read()
+          parts = raw.split("\n", 1)
+          if len(parts) < 2:
+              print("(no body to symbolicate)"); sys.exit(0)
+          try:
+              body = json.loads(parts[1])
+          except Exception as e:
+              print(f"(could not parse .ips body: {e})"); sys.exit(0)
+          threads = body.get("threads", [])
+          images = body.get("usedImages", [])
+          fidx = body.get("faultingThread", 0)
+          if fidx >= len(threads):
+              print("(no faulting thread)"); sys.exit(0)
+          frames = threads[fidx].get("frames", [])
+          print(f"---- symbolicated faulting thread #{fidx} ({len(frames)} frames) ----")
+          for n, fr in enumerate(frames):
+              imi = fr.get("imageIndex", -1)
+              off = fr.get("imageOffset", 0)
+              if imi < 0 or imi >= len(images):
+                  print(f"  #{n:02d} <unknown image>")
+                  continue
+              img = images[imi]
+              path = img.get("path", "")
+              base = img.get("base", 0)
+              name = os.path.basename(path) or "<unknown>"
+              is_ours = (
+                  any(os.path.realpath(path) == os.path.realpath(b)
+                      for b in our_binaries)
+                  or "pdfium" in name
+              )
+              if is_ours and os.path.exists(path):
+                  try:
+                      out = subprocess.check_output(
+                          ["atos", "-arch", "arm64", "-o", path,
+                           "-l", hex(base), hex(base + off)],
+                          stderr=subprocess.STDOUT, timeout=10
+                      ).decode().strip()
+                      print(f"  #{n:02d} {out}  [{name}+0x{off:x}]")
+                      continue
+                  except Exception as e:
+                      pass
+              print(f"  #{n:02d} {name}+0x{off:x}")
+          PYEOF
+            echo ""
+          done
+
+      - name: Upload macOS crash reports
+        if: failure() && runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-${{ matrix.config.r }}-crashes
+          path: ${{ runner.temp }}/macos-crashes/
+          if-no-files-found: warn

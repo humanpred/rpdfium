@@ -1,8 +1,20 @@
 # macOS arm64 segfault triage — `plot(bmp)` + lazy `grid` load
 
-**Status:** Investigation in progress. No macOS arm64 hardware available
-locally; conclusions below are from code reading + Linux differential
-testing. Final root-cause confirmation requires `lldb` on actual hardware.
+**Status: RESOLVED.** The crash on PR #43 was rooted in an unprotected
+SEXP across allocations in `src/struct_tree.cpp`'s
+`read_struct_attributes` — `std::vector<SEXP>` collected the results of
+`Rcpp::wrap()` across two subsequent `Rcpp::List` / `CharacterVector`
+allocations, both of which can trigger GC. Apple Silicon's
+`libsystem_malloc` packs the freed slot tightly enough that the
+adjacent allocation (PDFium font/string buffers, the fixture path
+`/Users/runner/...`) overwrites the dangling SEXP, surfacing later
+as "address `0x<ASCII>`, cause 'invalid permissions'" wherever R
+next dereferences the slot. See **§9 Resolution** at the bottom.
+
+The §1–§8 material below is the investigation as it stood before the
+fix; preserved as a record of how the bug was localised.
+
+---
 
 **Symptom (from PR #43 CI):**
 
@@ -580,3 +592,150 @@ Hold this change until the macOS lldb session confirms the renderer
 init is the culprit — declaring `version = 4` makes us responsible
 for honoring the version-3 + version-4 ABI on every platform, and
 the Linux/Windows builds may not need it.
+
+## 9. Resolution
+
+The "allocator-density adjacency" hypothesis from §4 was structurally
+correct but the *writer* turned out to be on the rpdfium side, not
+PDFium's. The debug workflow built in §5 (matrix of `Malloc*` modes
++ `lldb-bt` against a standalone reprex) found no crash because the
+reprex exercised only the render + plot path; the writer lived in
+the structure-tree readout.
+
+A second push to the branch surfaced the real failing test:
+
+```
+*** caught segfault ***
+address 0x656e6e75722f7372, cause 'invalid permissions'
+Traceback:
+ 1: cpp_struct_tree_page(page$ptr, string_attrs)
+ 2: pdf_structure_tree(doc, page_num = 1L,
+                       string_attrs = c("Placement", "O", "Headers"))
+```
+
+`0x656e6e75722f7372` little-endian = `72 73 2f 72 75 6e 6e 65` = ASCII
+**"rs/runne"** — the middle of `/Users/runner/...` (the GitHub
+Actions worker home path). A function-pointer slot was holding a
+filesystem-path byte fragment.
+
+### 9.1 The bug
+
+`src/struct_tree.cpp:read_struct_attributes` (pre-fix):
+
+```cpp
+SEXP read_struct_attributes(FPDF_STRUCTELEMENT element) {
+  ...
+  std::vector<std::string> all_keys;
+  std::vector<SEXP> all_vals;        // <-- invisible to R's GC
+  for (int a = 0; a < n_attrs; ++a) {
+    for (int k = 0; k < n_keys; ++k) {
+      ...
+      all_vals.push_back(read_attr_value(val));  // bare Rcpp::wrap
+    }
+  }
+  Rcpp::List out(all_keys.size());   // <-- allocation -> may GC
+  Rcpp::CharacterVector names(...);  // <-- allocation -> may GC
+  for (...) out[i] = all_vals[i];    // freed SEXP -> ASCII bytes
+  ...
+}
+```
+
+`Rcpp::wrap()` returns a SEXP that R can collect at the next
+allocation. `std::vector<SEXP>` is not a recognised PROTECT root, so
+the values queued in `all_vals` can be reclaimed when the
+subsequent `Rcpp::List out(n)` / `CharacterVector names(n)`
+allocations trigger GC. The freed slots get reused for adjacent
+allocations — on the macos-latest runner that included the fixture
+path string `/Users/runner/work/rpdfium/rpdfium/tests/...`. When the
+"now-restore from vector" loop ran, `out[i] = all_vals[i]` copied
+the byte pattern from the reused slot. Some time later R
+dereferenced a pointer through that slot and the AArch64 control-
+flow-integrity hardware caught it.
+
+### 9.2 Why Linux/glibc was clean
+
+glibc's allocator (especially with `tcache` enabled) places freed
+small allocations in per-thread caches that stay associated with
+recent free()s rather than being immediately reused by unrelated
+allocators (like PDFium's malloc through the same arena). The freed
+SEXP slot was almost always still readable — and conservative mark-
+sweep would often find the dangling SEXP referenced via the
+register / stack of the surrounding C++ frame and refuse to collect
+it.
+
+Apple's `libsystem_malloc` (nano zone for small allocations) is the
+opposite: it explicitly packs tightly to minimise TLB pressure, and
+it doesn't keep an inter-allocator cache. A freed 64-byte cell is
+the very next allocation's home. That makes the latent bug fatal
+on macOS arm64 only.
+
+### 9.3 The fix (commit f6a271e)
+
+```cpp
+SEXP read_struct_attributes(FPDF_STRUCTELEMENT element) {
+  ...
+  Rcpp::List out;                    // grows; protects each push_back
+  std::vector<std::string> names_vec;
+  for (int a = 0; a < n_attrs; ++a) {
+    for (int k = 0; k < n_keys; ++k) {
+      ...
+      out.push_back(read_attr_value(val));     // protected via `out`
+      names_vec.push_back(std::move(key));
+    }
+  }
+  out.attr("names") = Rcpp::wrap(names_vec);
+  return out;
+}
+```
+
+`Rcpp::List::push_back(SEXP)` immediately roots the value through
+the list's own PROTECT chain — so when the next `read_attr_value()`
+call allocates, the previous value is safe. Mirrors the safe shape
+already used in `read_attr_value`'s array branch.
+
+Audit of the rest of `src/` (commit f6a271e + follow-up grep):
+`std::vector<SEXP>` appears nowhere else in the codebase.
+
+### 9.4 Process notes — what worked, what didn't
+
+| Approach | Verdict |
+|---|---|
+| Code-reading audit of `cpp_render_page` + UTF-16 helpers + Rcpp::stop | Useful (ruled out the obvious suspects) but missed the real bug — not in any of the audited files |
+| Linux `MALLOC_CHECK_=3` + glibc `MALLOC_PERTURB_` | Did not reproduce. Confirmed the bug is allocator-density-specific |
+| Linux valgrind | Skipped (would have found it on Linux had the bug surfaced there — it didn't, because conservative GC kept the dangling SEXP alive) |
+| `dev/reprex/macos-arm64-segfault.R` standalone reprex on macos-latest | Did not reproduce. Wrong code path — the standalone exercised only render + grid, not struct-tree |
+| `MallocNanoZone=0` etc. matrix on macos-latest | Did not reproduce — same reason |
+| Re-running R CMD check on macos-latest with our actual test suite | **Reproduced.** The bug needed the full test fixture set + the struct-tree test sequence |
+| Code audit of the `cpp_struct_tree_page` call chain triggered by the new traceback | Found the bug |
+
+Generalised lesson: when triaging a memory-corruption crash, the
+fault address's *content* (ASCII fragment, hex of a known pointer,
+small integer, …) is the single best clue. The first triage round
+focused on "what kind of allocator could put 'uch file' near R's
+dyn-load table?" rather than "what code path is being called when
+'uch file' shows up?" — the answer to the second question was
+much shorter.
+
+### 9.5 macOS crash capture — added to CI
+
+`.github/workflows/R-CMD-check.yaml` now has a
+`Capture macOS crash reports` post-step that, on `failure() && runner.os == 'macOS'`:
+
+1. Polls `~/Library/Logs/DiagnosticReports/` for `.ips` files
+   created in the last 30 min.
+2. Dumps the full report inline in the job log.
+3. Parses the JSON body, walks the faulting thread's frames, and
+   runs `atos -arch arm64 -o <binary> -l <load_address> <crash_address>`
+   for any frame in our `pdfium.so` or the bundled `libpdfium.dylib`,
+   so the C-level call site is symbolicated automatically.
+4. Uploads the raw `.ips` files as an artifact.
+
+If a future macOS arm64 crash slips past local testing, the job log
+will have the C-level frame next to the testthat traceback — no
+need for an out-of-band lldb session on borrowed hardware.
+
+The standalone `macos-arm64-debug` workflow + `dev/reprex/...` reprex
+that were built during this investigation are removed in the
+follow-up commit; the crash-capture step in R-CMD-check.yaml
+supersedes them. This document is the durable artifact.
+
