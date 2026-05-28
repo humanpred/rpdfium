@@ -347,6 +347,36 @@ v0.1.0 so the surface ships complete:
   previous two-step `pdf_text_char_obj_index() ->
   pdf_page_objects()[[i]]`.
 
+### Test infrastructure
+
+* `test-render.R::"plot(bmp) draws into a PDF device without
+  erroring"` is `skip_on_os("mac")`'d. R 4.6.0 on macOS arm64
+  segfaults inside `dyn.load()` while lazy-loading the `grid`
+  namespace from inside `plot.pdfium_bitmap()`. The trace's
+  segfault address is ASCII string data, indicating memory
+  corruption rather than a true `grid.raster` bug — the failing
+  test is just the first one in the file to touch `grid::*`. The
+  same path passes on Ubuntu R-release/devel/oldrel and under
+  ASan/UBSan. A cross-platform companion test exercises the
+  `pdf_render_page()` + `as.array()` path without `grid` so any
+  regression that does manifest still has a check. Tracked in
+  https://github.com/humanpred/rpdfium/issues/44.
+
+### Documentation
+
+* `vignettes/comparison.Rmd` — added a "Structural mutation
+  without Java or shell-outs" section detailing
+  `pdf_page_set_rotation()`, `pdf_page_delete()`,
+  `pdf_pages_reorder()`, `pdf_docs_merge()`, `pdf_n_up()`,
+  `pdf_page_set_box()`, `pdf_doc_set_language()` vs `qpdf`,
+  `staplr` (Java + pdftk), and `xmpdf`. Refreshed the feature
+  matrix with new rows for N-up imposition, page-box write, and
+  `/Lang` write.
+* `dev/v0.2.0-plan.md` §3.2 — updated to mark all six
+  structural-mutation entries as shipped in v0.1.0 (under
+  object-first names per ADR-019) instead of listing them as
+  v0.2.0 deferrals.
+
 ## Page-object mutation
 
 * `pdf_obj_set_matrix()`, `pdf_obj_set_active()`,
