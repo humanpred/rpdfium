@@ -141,11 +141,21 @@ SEXP read_attr_value(FPDF_STRUCTELEMENT_ATTR_VALUE value) {
 // callers see a single flat namespace. Duplicate keys are kept as
 // the last-write-wins value (PDFium does not normalise attribute
 // objects on the read side).
+//
+// Memory note: every read_attr_value() result must be assigned into
+// a live R SEXP container before the next read_attr_value() call —
+// the result is bare Rcpp::wrap output and a `std::vector<SEXP>` is
+// invisible to R's GC. Holding values in a std::vector until a
+// final `Rcpp::List out(n)` allocation can collect them: on macOS
+// arm64 the freed slot is reused for adjacent heap strings and
+// loading the slot later faults with "invalid permissions" at an
+// ASCII-byte pseudo-address. We push directly into the growing
+// Rcpp::List instead.
 SEXP read_struct_attributes(FPDF_STRUCTELEMENT element) {
   int n_attrs = FPDF_StructElement_GetAttributeCount(element);
   if (n_attrs <= 0) return Rcpp::List();
-  std::vector<std::string> all_keys;
-  std::vector<SEXP> all_vals;
+  Rcpp::List out;
+  std::vector<std::string> names_vec;
   for (int a = 0; a < n_attrs; ++a) {
     FPDF_STRUCTELEMENT_ATTR attr =
         FPDF_StructElement_GetAttributeAtIndex(element, a);
@@ -169,17 +179,11 @@ SEXP read_struct_attributes(FPDF_STRUCTELEMENT element) {
       std::string key(key_buf.data(), key_buflen - 1);
       FPDF_STRUCTELEMENT_ATTR_VALUE val =
           FPDF_StructElement_Attr_GetValue(attr, key.c_str());
-      all_keys.push_back(key);
-      all_vals.push_back(read_attr_value(val));
+      out.push_back(read_attr_value(val));
+      names_vec.push_back(std::move(key));
     }
   }
-  Rcpp::List out(all_keys.size());
-  Rcpp::CharacterVector names(all_keys.size());
-  for (size_t i = 0; i < all_keys.size(); ++i) {
-    names[i] = all_keys[i];
-    out[i]   = all_vals[i];
-  }
-  out.attr("names") = names;
+  out.attr("names") = Rcpp::wrap(names_vec);
   return out;
 }
 
