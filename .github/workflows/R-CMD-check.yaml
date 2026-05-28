@@ -174,3 +174,66 @@ jobs:
           name: macOS-${{ matrix.config.r }}-crashes
           path: ${{ runner.temp }}/macos-crashes/
           if-no-files-found: warn
+
+      # Run the crashing reprex under lldb so SIGSEGV stops in the
+      # debugger and we get a real C-level backtrace. The R-level
+      # traceback from R CMD check above shows only the Rcpp shim
+      # name (cpp_struct_tree_page); this step shows the frames
+      # inside that shim — exactly where the bad write happened.
+      #
+      # Runs `if: failure() && runner.os == 'macOS'` so it only fires
+      # when there's something to debug. Output is captured to the
+      # job log + uploaded as an artifact for offline inspection.
+      - name: Run struct-tree reprex under lldb (macOS, on failure)
+        if: failure() && runner.os == 'macOS'
+        shell: bash
+        run: |
+          set +e
+          mkdir -p "$RUNNER_TEMP/lldb-output"
+          R_BIN="$(Rscript -e 'cat(file.path(R.home("bin"), "exec", "R"))')"
+          echo "R binary: $R_BIN"
+          file "$R_BIN" || true
+
+          # lldb commands:
+          #   1. Have lldb intercept SIGSEGV / SIGBUS / SIGABRT so
+          #      they stop in the debugger instead of killing R.
+          #   2. `settings set target.process.follow-fork-mode child`
+          #      — testthat (and rcmdcheck) fork Rscript children;
+          #      we want to follow whichever process actually segvs.
+          #   3. Run R with the reprex script.
+          #   4. On stop, dump full diagnostic info: bt all, register
+          #      state, instruction at $pc, neighborhood of the
+          #      faulting address.
+          lldb --batch \
+            -o "settings set target.process.follow-fork-mode child" \
+            -o "process handle SIGSEGV --pass true --stop true --notify true" \
+            -o "process handle SIGBUS  --pass true --stop true --notify true" \
+            -o "process handle SIGABRT --pass true --stop true --notify true" \
+            -o "run --no-save --no-restore --vanilla -f dev/reprex/macos-arm64-struct-tree.R" \
+            -o "echo === thread list ===" \
+            -o "thread list" \
+            -o "echo === backtrace all threads ===" \
+            -o "thread backtrace all" \
+            -o "echo === register state ===" \
+            -o "register read --all" \
+            -o "echo === image holding pc ===" \
+            -o "image lookup --address \$pc" \
+            -o "echo === disassembly around pc ===" \
+            -o "disassemble --pc --count 16" \
+            -o "echo === image list (loaded binaries) ===" \
+            -o "image list" \
+            -o "echo === memory near pc ===" \
+            -o "memory read --size 1 --count 128 \$pc - 32" \
+            -o "quit" \
+            -- "$R_BIN" \
+            2>&1 | tee "$RUNNER_TEMP/lldb-output/lldb-bt.log"
+          echo ""
+          echo "==== lldb session complete; output saved to artifact ===="
+
+      - name: Upload lldb output (macOS)
+        if: failure() && runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-${{ matrix.config.r }}-lldb
+          path: ${{ runner.temp }}/lldb-output/
+          if-no-files-found: warn
