@@ -213,10 +213,18 @@ jobs:
             CHECK_LIBDIR=$(find / -name pdfium.Rcheck -type d 2>/dev/null | grep -v Library | head -1)
           fi
           if [ -n "$CHECK_LIBDIR" ] && [ -d "$CHECK_LIBDIR/pdfium" ]; then
-            export R_LIBS_USER="$CHECK_LIBDIR"
-            echo "R_LIBS_USER set to: $R_LIBS_USER"
-            ls "$R_LIBS_USER" | head -10
-            ls "$R_LIBS_USER/pdfium/libs/" 2>&1 | head -5 || true
+            # Use R_LIBS (prepended to .libPaths()) instead of
+            # R_LIBS_USER (which REPLACES the default user library).
+            # Default R_LIBS_USER is /Users/runner/work/_temp/Library
+            # where r-lib actions put Rcpp + dependencies; we need
+            # both that and the check dir to be searched.
+            export R_LIBS="$CHECK_LIBDIR"
+            echo "R_LIBS prepended: $R_LIBS"
+            echo "R_LIBS_USER (existing): $R_LIBS_USER"
+            ls "$CHECK_LIBDIR" | head -10
+            ls "$CHECK_LIBDIR/pdfium/libs/" 2>&1 | head -5 || true
+            # Verify Rcpp is reachable so library(pdfium) works.
+            echo "Rcpp present in R_LIBS_USER? $(test -d "$R_LIBS_USER/Rcpp" && echo yes || echo no)"
           else
             echo "::warning::pdfium.Rcheck not found — library(pdfium) will fail"
             echo "  fallback CHECK_LIBDIR='$CHECK_LIBDIR'"
