@@ -1,18 +1,69 @@
 # macOS arm64 segfault triage — `plot(bmp)` + lazy `grid` load
 
-**Status: RESOLVED.** The crash on PR #43 was rooted in an unprotected
-SEXP across allocations in `src/struct_tree.cpp`'s
-`read_struct_attributes` — `std::vector<SEXP>` collected the results of
-`Rcpp::wrap()` across two subsequent `Rcpp::List` / `CharacterVector`
-allocations, both of which can trigger GC. Apple Silicon's
-`libsystem_malloc` packs the freed slot tightly enough that the
-adjacent allocation (PDFium font/string buffers, the fixture path
-`/Users/runner/...`) overwrites the dangling SEXP, surfacing later
-as "address `0x<ASCII>`, cause 'invalid permissions'" wherever R
-next dereferences the slot. See **§9 Resolution** at the bottom.
+**Status: investigation ongoing.** The original "RESOLVED" claim
+based on the `std::vector<SEXP>` hypothesis in §9 was wrong — that
+fix was reverted (see git log). The CI-instrumented R-CMD-check
+on macos-latest produced two independent symbolicated `.ips`
+backtraces (commits 7d8d9fa and d371a03 runs) that pinpoint the
+**actual** crash site:
 
-The §1–§8 material below is the investigation as it stood before the
-fix; preserved as a record of how the bug was localised.
+```
+#4  get_package_CEntry_table  R/src/main/Rdynload.c:1738   ← fault
+#5  R_GetCCallable            R/src/main/Rdynload.c:1760
+#6  char_get_string_elt       Rcpp routines.h:218 (inline)
+#7  Rcpp::internal::as_string_elt__impl<std::string>
+#8  Rcpp::internal::export_range__dispatch<...>
+#9  Rcpp::traits::RangeExporter<vector<string>>::get()
+#10 Rcpp::as<vector<string>>(SEXP)
+#11 _pdfium_cpp_struct_tree_page  RcppExports.cpp:3103  (Rcpp shim)
+#12 R_doDotCall                                       dotcode.c:757
+```
+
+The fault is at `R_findVarInFrame(CEntryTable, pname)` —
+`CEntryTable` is R's process-global static `SEXP` caching
+`package_name -> C-entry-table` mappings, initialised once on
+first `R_RegisterCCallable` / `R_GetCCallable` call and pinned via
+`R_PreserveObject`. Some operation earlier in the same testthat
+subprocess writes "rs/runne" (a fragment of
+`/Users/runner/...`) into either `CEntryTable` itself, the hash
+environment it points to, the `pname` symbol returned by
+`install("methods")`, or the corresponding `R_SymbolTable` slot.
+
+The crash happens **before any of our hand-written C++ runs** —
+inside Rcpp's automatic conversion of the `string_attrs`
+argument (`c("Placement", "O", "Headers")`) from SEXP to
+`std::vector<std::string>`. Rcpp routes per-element string
+extraction through R's `R_GetCCallable("methods",
+"char_get_string_elt")`, and that lookup is the trip wire that
+hits the corrupted slot.
+
+**Implications:**
+
+* The bug is NOT in `cpp_struct_tree_page`'s body, and is NOT in
+  the `read_struct_attributes` `std::vector<SEXP>` pattern that
+  the reverted §9 commit blamed.
+* The wild write must come from an EARLIER test in the same
+  testthat subprocess. test-struct-tree.R runs in its own forked
+  subprocess (Config/testthat/parallel: true), so candidates are
+  bounded to that file. Suspect operations: any test that opens
+  the `tagged.pdf` fixture, reads structure attributes, or
+  exercises an Rcpp `as<vector<string>>` path.
+* Mitigation paths to consider:
+  - Change `cpp_struct_tree_page`'s signature from
+    `std::vector<std::string>` to `Rcpp::CharacterVector` (or raw
+    `SEXP`) so the Rcpp conversion path doesn't touch
+    `R_GetCCallable`. This MASKS the symptom but doesn't fix the
+    underlying wild write.
+  - Bisect tests in test-struct-tree.R to find the operation
+    that corrupts `CEntryTable`. Then audit that operation's
+    C++ for an OOB write.
+  - Run R CMD check on macOS with `MallocGuardEdges=1` +
+    `MallocStackLoggingNoCompact=1` to capture the source of
+    the bad write.
+
+The §1–§8 material below is the original investigation log
+(pre-diagnosis). §9 was the wrong hypothesis (now reverted); §10
+captures the actual diagnosis.
 
 ---
 
