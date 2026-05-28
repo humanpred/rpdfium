@@ -12,6 +12,7 @@
 // vectors. The R side reconstructs the tree from those columns.
 
 #include <Rcpp.h>
+#include <unordered_set>
 #include <vector>
 #include "fpdfview.h"
 #include "fpdf_doc.h"
@@ -35,20 +36,32 @@ FPDF_BOOKMARK bm_from_ptr(SEXP bm_ptr) {
 }
 
 // Depth-first walk over the bookmark tree, collecting handles plus
-// structural (parent_index, level) parallel vectors.
+// structural (parent_index, level) parallel vectors. Keeps a `seen`
+// set of bookmark pointers — malformed PDFs can carry circular
+// /Outlines trees (NextSibling pointing back at an ancestor, Last
+// missing the /Next chain, etc.) that PDFium's walkers happily
+// follow into an infinite recursion. Stop the walk at the first
+// already-visited bookmark; the partial tree we've already
+// collected is what callers see. Mirrors pypdfium2's get_toc()
+// cycle detection.
 void collect_bookmarks(FPDF_DOCUMENT doc, FPDF_BOOKMARK current,
                         int parent_index, int level,
+                        std::unordered_set<void*>& seen,
                         std::vector<FPDF_BOOKMARK>& bms,
                         std::vector<int>& parent_indices,
                         std::vector<int>& levels) {
   while (current != nullptr) {
+    if (!seen.insert(static_cast<void*>(current)).second) {
+      // Already visited — cycle detected; stop following this branch.
+      return;
+    }
     bms.push_back(current);
     parent_indices.push_back(parent_index);
     levels.push_back(level);
     int this_index = static_cast<int>(bms.size());
     FPDF_BOOKMARK child = FPDFBookmark_GetFirstChild(doc, current);
     if (child != nullptr) {
-      collect_bookmarks(doc, child, this_index, level + 1,
+      collect_bookmarks(doc, child, this_index, level + 1, seen,
                          bms, parent_indices, levels);
     }
     current = FPDFBookmark_GetNextSibling(doc, current);
@@ -72,8 +85,9 @@ Rcpp::List cpp_bookmark_handles(SEXP doc_ptr) {
   std::vector<FPDF_BOOKMARK> bms;
   std::vector<int> parent_indices;
   std::vector<int> levels;
+  std::unordered_set<void*> seen;
   FPDF_BOOKMARK root = FPDFBookmark_GetFirstChild(doc, nullptr);
-  collect_bookmarks(doc, root, /*parent=*/0, /*level=*/1,
+  collect_bookmarks(doc, root, /*parent=*/0, /*level=*/1, seen,
                      bms, parent_indices, levels);
   Rcpp::List handles(bms.size());
   for (size_t i = 0; i < bms.size(); ++i) {

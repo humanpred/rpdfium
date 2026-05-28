@@ -23,6 +23,57 @@ test_that("pdf_doc_bookmarks returns a pdfium_bookmark_list", {
   expect_s3_class(bm[[1L]], "pdfium_bookmark")
 })
 
+test_that("pdf_doc_bookmarks terminates on a circular /Outlines tree", {
+  # Construct a minimal PDF whose /Outlines tree has a one-bookmark
+  # cycle: bookmark A's /Next points back at itself. Without
+  # cycle detection in collect_bookmarks, this would recurse
+  # forever in FPDFBookmark_GetNextSibling and hang the worker.
+  # The fix is mirrored from pypdfium2's get_toc() seen-set
+  # protocol.
+  bytes <- charToRaw(paste0(
+    "%PDF-1.4\n",
+    "1 0 obj << /Type /Catalog /Pages 2 0 R /Outlines 4 0 R >> endobj\n",
+    "2 0 obj << /Type /Pages /Count 1 /Kids [3 0 R] >> endobj\n",
+    "3 0 obj << /Type /Page /Parent 2 0 R /Resources << >>\n",
+    "  /MediaBox [0 0 100 100] >> endobj\n",
+    "4 0 obj << /Type /Outlines /First 5 0 R /Last 5 0 R\n",
+    "  /Count 1 >> endobj\n",
+    # Bookmark whose /Next references itself - the cycle.
+    "5 0 obj << /Title (Loop) /Parent 4 0 R /Next 5 0 R >> endobj\n"
+  ))
+  # Compute xref offsets relative to the bytes vector.
+  obj_bodies <- c(
+    "1 0 obj << /Type /Catalog /Pages 2 0 R /Outlines 4 0 R >> endobj\n",
+    "2 0 obj << /Type /Pages /Count 1 /Kids [3 0 R] >> endobj\n",
+    paste0("3 0 obj << /Type /Page /Parent 2 0 R /Resources << >>\n",
+           "  /MediaBox [0 0 100 100] >> endobj\n"),
+    paste0("4 0 obj << /Type /Outlines /First 5 0 R /Last 5 0 R\n",
+           "  /Count 1 >> endobj\n")
+  )
+  offs <- 9L + c(0L, cumsum(nchar(obj_bodies)))
+  xref_off <- length(bytes)
+  xref <- charToRaw(paste0(
+    "xref\n0 6\n0000000000 65535 f \n",
+    paste(sprintf("%010d 00000 n ", offs), collapse = "\n"), "\n"
+  ))
+  trailer <- charToRaw(sprintf(
+    "trailer << /Size 6 /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n",
+    xref_off
+  ))
+  full <- c(bytes, xref, trailer)
+  tf <- withr::local_tempfile(fileext = ".pdf")
+  writeBin(full, tf)
+  doc <- pdf_doc_open(tf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  # If cycle detection works, pdf_doc_bookmarks returns within
+  # a reasonable time. We don't assert nrow because PDFium may
+  # surface zero or one bookmark depending on how it interprets
+  # the malformed tree — the assertion is just that the call
+  # returns without hanging.
+  bm <- pdf_doc_bookmarks(doc)
+  expect_s3_class(bm, "pdfium_bookmark_list")
+})
+
 test_that("pdf_doc_bookmarks returns 0 handles for a doc without an outline", {
   res <- pdf_doc_bookmarks(fixture_path("shapes"))
   expect_s3_class(res, "pdfium_bookmark_list")
