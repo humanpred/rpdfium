@@ -104,9 +104,11 @@ Returns a named `logical` vector with eight permission flags.
 
 ### `pdf_doc_is_tagged` / `pdf_doc_page_mode` / `pdf_doc_javascript` / `pdf_doc_viewer_preferences` / `pdf_doc_named_dests` / `pdf_doc_file_id`
 
-Scalar / small-tibble readouts. No writer counterparts planned (PDFium
-exposes only `FPDF_CopyViewerPreferences` and a small set of catalog
-mutators that aren't on the 0.2.0 roadmap).
+Scalar / small-tibble readouts. `pdf_doc_viewer_preferences` has a
+*copy* counterpart shipped in v0.1.0 — `pdf_docs_copy_viewer_preferences()`
+wraps `FPDF_CopyViewerPreferences` for the "inherit the source's
+display hints into a derived doc" workflow. No per-key mutator is
+on the v0.2.0 roadmap.
 
 **Status:** **OK as is.**
 
@@ -438,9 +440,26 @@ Tagged-PDF structure tree readout.
   the `/StructTreeRoot`. 0.2.0 will not ship structure mutation.
 * Status: **OK as is, read-only.**
 
-**Audit finding:** add `attributes` list-column (Tier 2) so the
-`FPDF_StructElement_GetAttribute*` family is surfaced. Read-only
-addition.
+**Audit finding:** the v0.1.0 tibble surfaces every reader symbol
+PDFium exposes for structure elements:
+
+| Column | PDFium symbol |
+|---|---|
+| `type` | `FPDF_StructElement_GetType` |
+| `parent_type` | `FPDF_StructElement_GetParent` + `GetType` |
+| `obj_type` | `FPDF_StructElement_GetObjType` |
+| `title` | `FPDF_StructElement_GetTitle` |
+| `lang` | `FPDF_StructElement_GetLang` |
+| `alt_text` | `FPDF_StructElement_GetAltText` |
+| `actual_text` | `FPDF_StructElement_GetActualText` |
+| `id` | `FPDF_StructElement_GetID` |
+| `mcid` / `mcid_count` | `FPDF_StructElement_GetMarkedContentID` + `*IdAtIndex` |
+| `attributes` (list-column) | `FPDF_StructElement_GetAttributeCount` + `_AtIndex` + `Attr_*` family with nested-array recursion |
+| `child_mcids` (list-column) | `FPDF_StructElement_GetChildMarkedContentID` |
+| `parent_index`, `element_index`, `level` | `FPDF_StructElement_CountChildren` + `GetChildAtIndex` walk |
+| User-named columns via `string_attrs = c("Headers", ...)` | `FPDF_StructElement_GetStringAttribute` |
+
+Read-only by design.
 
 ### `pdf_render_page` / `pdf_render_to_png` / `plot.pdfium_bitmap`
 

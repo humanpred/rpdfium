@@ -1036,6 +1036,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_doc_copy_viewer_preferences
+bool cpp_doc_copy_viewer_preferences(SEXP dest_ptr, SEXP src_ptr);
+RcppExport SEXP _pdfium_cpp_doc_copy_viewer_preferences(SEXP dest_ptrSEXP, SEXP src_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type dest_ptr(dest_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type src_ptr(src_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_doc_copy_viewer_preferences(dest_ptr, src_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_page_transform_with_clip
 bool cpp_page_transform_with_clip(SEXP page_ptr, Rcpp::NumericVector matrix, Rcpp::NumericVector clip_rect);
 RcppExport SEXP _pdfium_cpp_page_transform_with_clip(SEXP page_ptrSEXP, SEXP matrixSEXP, SEXP clip_rectSEXP) {
@@ -3049,13 +3061,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_struct_tree_page
-Rcpp::List cpp_struct_tree_page(SEXP page_ptr);
-RcppExport SEXP _pdfium_cpp_struct_tree_page(SEXP page_ptrSEXP) {
+Rcpp::List cpp_struct_tree_page(SEXP page_ptr, std::vector<std::string> string_attr_names);
+RcppExport SEXP _pdfium_cpp_struct_tree_page(SEXP page_ptrSEXP, SEXP string_attr_namesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_struct_tree_page(page_ptr));
+    Rcpp::traits::input_parameter< std::vector<std::string> >::type string_attr_names(string_attr_namesSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_struct_tree_page(page_ptr, string_attr_names));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3264,6 +3277,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_default_ttf_map_entry", (DL_FUNC) &_pdfium_cpp_default_ttf_map_entry, 1},
     {"_pdfium_cpp_install_default_sysfont_info", (DL_FUNC) &_pdfium_cpp_install_default_sysfont_info, 0},
     {"_pdfium_cpp_doc_import_pages_string", (DL_FUNC) &_pdfium_cpp_doc_import_pages_string, 4},
+    {"_pdfium_cpp_doc_copy_viewer_preferences", (DL_FUNC) &_pdfium_cpp_doc_copy_viewer_preferences, 2},
     {"_pdfium_cpp_page_transform_with_clip", (DL_FUNC) &_pdfium_cpp_page_transform_with_clip, 3},
     {"_pdfium_cpp_attachment_new", (DL_FUNC) &_pdfium_cpp_attachment_new, 2},
     {"_pdfium_cpp_attachment_delete", (DL_FUNC) &_pdfium_cpp_attachment_delete, 2},
@@ -3432,7 +3446,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_signatures_list", (DL_FUNC) &_pdfium_cpp_signatures_list, 1},
     {"_pdfium_cpp_signature_contents", (DL_FUNC) &_pdfium_cpp_signature_contents, 2},
     {"_pdfium_cpp_signature_byte_range", (DL_FUNC) &_pdfium_cpp_signature_byte_range, 2},
-    {"_pdfium_cpp_struct_tree_page", (DL_FUNC) &_pdfium_cpp_struct_tree_page, 1},
+    {"_pdfium_cpp_struct_tree_page", (DL_FUNC) &_pdfium_cpp_struct_tree_page, 2},
     {"_pdfium_cpp_text_font_size", (DL_FUNC) &_pdfium_cpp_text_font_size, 1},
     {"_pdfium_cpp_text_content", (DL_FUNC) &_pdfium_cpp_text_content, 1},
     {"_pdfium_cpp_text_font", (DL_FUNC) &_pdfium_cpp_text_font, 1},

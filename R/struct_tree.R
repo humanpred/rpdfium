@@ -19,14 +19,24 @@
 #' accessibility, screen-reader support, and PDF/UA conformance.
 #'
 #' Wraps `FPDF_StructTree_GetForPage`, `FPDF_StructTree_*Children`,
-#' `FPDF_StructElement_GetType` / `GetTitle` / `GetLang` /
-#' `GetAltText` / `GetActualText` / `GetID` /
-#' `GetMarkedContentID`.
+#' `FPDF_StructElement_GetType` / `GetParent` / `GetTitle` /
+#' `GetLang` / `GetAltText` / `GetActualText` / `GetID` /
+#' `GetMarkedContentID` / `GetChildMarkedContentID` /
+#' `GetStringAttribute`.
 #'
 #' @param page A `pdfium_page` from [pdf_page_load()], or a
 #'   `pdfium_doc`.
 #' @param page_num One-based page index. Only used when `page` is
 #'   a `pdfium_doc`. Ignored otherwise.
+#' @param string_attrs Optional character vector of attribute-object
+#'   names (e.g. `"Headers"`, `"Scope"`, `"RowSpan"`). For each
+#'   name, the result adds a column with that name populated via
+#'   `FPDF_StructElement_GetStringAttribute(element, name)`. Distinct
+#'   from the typed `attributes` list-column: this path reads the
+#'   element's `/A` attribute objects keyed by name, returning the
+#'   value as UTF-8 bytes from PDFium's standard
+#'   `name`-or-`string`-typed lookup. Empty string when the
+#'   attribute is absent.
 #' @return A tibble with columns:
 #'   * `element_index` integer - 1-based pre-order position in the
 #'     page's tree walk.
@@ -38,6 +48,10 @@
 #'     UTF-8. Common values follow the PDF spec's standard
 #'     structure types (e.g. `"Document"`, `"Sect"`, `"P"`,
 #'     `"H1"`, `"Span"`, `"Figure"`, `"Table"`).
+#'   * `parent_type` character - the structural type of the
+#'     parent element (via `FPDF_StructElement_GetParent`);
+#'     empty when the element is a direct child of the
+#'     structure-tree root.
 #'   * `title` character - the element's `/T` title (often empty).
 #'   * `lang` character - the element's `/Lang` IETF BCP 47 code
 #'     (e.g. `"en"`, `"fr"`); empty when none is set.
@@ -66,6 +80,15 @@
 #'     `/A` attribute objects. Aggregated across all attribute
 #'     dictionaries on the element (PDF's nested attribute-class
 #'     layout is flattened to a single namespace).
+#'   * `child_mcids` list-column - one integer vector per row,
+#'     one entry per child slot in the element's `/K` array. The
+#'     value is the child's marked-content ID via
+#'     `FPDF_StructElement_GetChildMarkedContentID`, or `NA` when
+#'     the child is itself a nested structure element rather than
+#'     a direct marked-content reference. Distinct from `mcid` /
+#'     `mcid_count`, which only enumerate MCID-typed children.
+#'
+#' Plus one extra column per name in `string_attrs`.
 #'
 #' Returns a 0-row tibble of the same schema when the page has
 #' no associated structure tree (typical for untagged PDFs).
@@ -73,18 +96,22 @@
 #' @seealso [pdf_doc_is_tagged()] for a fast yes/no check at the
 #'   document level.
 #' @export
-pdf_structure_tree <- function(page, page_num = 1L) {
+pdf_structure_tree <- function(page, page_num = 1L,
+                                 string_attrs = character()) {
   page <- as_open_page(page, page_num)
-  raw <- cpp_struct_tree_page(page$ptr)
+  checkmate::assert_character(string_attrs, any.missing = FALSE,
+                                min.chars = 1L)
+  raw <- cpp_struct_tree_page(page$ptr, string_attrs)
   n <- length(raw$type)
   if (n == 0L) {
-    return(empty_structure_tree_tibble())
+    return(empty_structure_tree_tibble(string_attrs))
   }
-  tibble::tibble(
+  out <- tibble::tibble(
     element_index = seq_len(n),
     parent_index  = as.integer(raw$parent_index),
     level         = as.integer(raw$level),
     type          = as.character(raw$type),
+    parent_type   = as.character(raw$parent_type),
     obj_type      = as.character(raw$obj_type),
     title         = as.character(raw$title),
     lang          = as.character(raw$lang),
@@ -93,18 +120,26 @@ pdf_structure_tree <- function(page, page_num = 1L) {
     id            = as.character(raw$id),
     mcid          = as.integer(raw$mcid),
     mcid_count    = as.integer(raw$mcid_count),
-    attributes    = raw$attributes
+    attributes    = raw$attributes,
+    child_mcids   = raw$child_mcids
   )
+  if (length(string_attrs) > 0L) {
+    for (a in string_attrs) {
+      out[[a]] <- as.character(raw$string_attrs[[a]])
+    }
+  }
+  out
 }
 
 # Internal: zero-row return shape so column-type stability is
 # preserved across the empty and non-empty paths.
-empty_structure_tree_tibble <- function() {
-  tibble::tibble(
+empty_structure_tree_tibble <- function(string_attrs = character()) {
+  out <- tibble::tibble(
     element_index = integer(),
     parent_index  = integer(),
     level         = integer(),
     type          = character(),
+    parent_type   = character(),
     obj_type      = character(),
     title         = character(),
     lang          = character(),
@@ -113,6 +148,11 @@ empty_structure_tree_tibble <- function() {
     id            = character(),
     mcid          = integer(),
     mcid_count    = integer(),
-    attributes    = list()
+    attributes    = list(),
+    child_mcids   = list()
   )
+  for (a in string_attrs) {
+    out[[a]] <- character()
+  }
+  out
 }

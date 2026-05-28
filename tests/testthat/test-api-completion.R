@@ -705,6 +705,65 @@ test_that("pdf_docs_import_pages with empty range imports everything", {
   expect_equal(pdf_page_count(dest), src_n)
 })
 
+test_that("pdf_docs_copy_viewer_preferences copies the prefs dict", {
+  # PDFium's FPDF_CopyViewerPreferences returns FALSE when the
+  # source document has no /ViewerPreferences entry, so we
+  # hand-craft a tiny PDF whose catalog declares one.
+  bytes <- charToRaw(paste0(
+    "%PDF-1.4\n",
+    "1 0 obj << /Type /Catalog /Pages 2 0 R\n",
+    "  /ViewerPreferences << /HideToolbar true /Direction /R2L >> >>\n",
+    "endobj\n",
+    "2 0 obj << /Type /Pages /Count 1 /Kids [3 0 R] >> endobj\n",
+    "3 0 obj << /Type /Page /Parent 2 0 R /Resources << >>\n",
+    "  /MediaBox [0 0 612 792] >> endobj\n",
+    "xref\n0 4\n",
+    "0000000000 65535 f \n",
+    "0000000009 00000 n \n",
+    "0000000100 00000 n \n",
+    "0000000150 00000 n \n",
+    "trailer << /Size 4 /Root 1 0 R >>\nstartxref\n230\n%%EOF\n"
+  ))
+  tf <- withr::local_tempfile(fileext = ".pdf")
+  writeBin(bytes, tf)
+  src <- pdf_doc_open(tf)
+  on.exit(pdf_doc_close(src), add = TRUE)
+  dest <- pdf_doc_new()
+  on.exit(pdf_doc_close(dest), add = TRUE)
+  ret <- pdf_docs_copy_viewer_preferences(dest, src)
+  expect_identical(ret, dest)
+})
+
+test_that("pdf_docs_copy_viewer_preferences errors when src has no prefs", {
+  # Bundled fixtures (e.g. shapes.pdf) carry no /ViewerPreferences,
+  # so the call returns FALSE and the wrapper raises. Documents the
+  # PDFium-side contract.
+  src <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(src), add = TRUE)
+  dest <- pdf_doc_new()
+  on.exit(pdf_doc_close(dest), add = TRUE)
+  expect_error(pdf_docs_copy_viewer_preferences(dest, src),
+                 "FPDF_CopyViewerPreferences")
+})
+
+test_that("pdf_docs_copy_viewer_preferences rejects a closed source", {
+  src <- pdf_doc_open(fixture_path("shapes"))
+  pdf_doc_close(src)
+  dest <- pdf_doc_new()
+  on.exit(pdf_doc_close(dest), add = TRUE)
+  expect_error(pdf_docs_copy_viewer_preferences(dest, src),
+                 "Source document has been closed")
+})
+
+test_that("pdf_docs_copy_viewer_preferences requires readwrite dest", {
+  src <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(src), add = TRUE)
+  dest_ro <- pdf_doc_open(fixture_path("shapes"), readwrite = FALSE)
+  on.exit(pdf_doc_close(dest_ro), add = TRUE)
+  expect_error(pdf_docs_copy_viewer_preferences(dest_ro, src),
+                 "readwrite")
+})
+
 # =========================================================================
 # Coverage round-out: closed-handle branches + format/print + empties
 # =========================================================================

@@ -13,13 +13,19 @@ actual Gerrit CL.
 
 ## Provenance
 
-- Date: 2026-05-21.
-- Upstream HEAD walked: `e30fc3988` (immediately before the
-  in-flight `FPDFAnnot_AppendOption` patch lands in
-  `/home/bill/src/pdfium`). Bundled headers in
-  `inst/include/fpdf_*.h` track `chromium/7202`; the structural
-  gap analysis below is stable across the small delta between the
-  two.
+- Date: 2026-05-22.
+- Upstream HEAD walked: `aa0184217` (PDFium `main` after the
+  `FPDFAnnot_SetNumberValue` patch landed). Bundled headers in
+  `inst/include/fpdf*.h` track `chromium/7202`; the structural gap
+  analysis below is stable across the small delta between the two.
+- Note: this document tracks gaps in PDFium *upstream* (symbols
+  PDFium itself doesn't expose publicly). It is distinct from
+  `dev/v0.1.0-api-gap-audit.md`, which tracks gaps in *rpdfium's
+  coverage* of PDFium's existing public API. As of 2026-05-22 the
+  rpdfium-side coverage is complete for every in-scope export
+  (see that file for the out-of-scope categories), so the only
+  remaining "missing functionality" lives on this list — upstream
+  PDFium itself doesn't ship it yet.
 - Method:
   1. Grep `FPDF_EXPORT` declarations across all 22 public headers
      in `public/fpdf_*.h` to enumerate every exposed symbol.
@@ -49,8 +55,10 @@ prior art rather than repeating their motivation.
 
 - `FPDFPath_GetBezierControlPoints` — CL 147810, patchset 2,
   uploaded 2026-05-15.
-- `FPDFTextObj_SetFontSize` — patch drafted 2026-05-20, ready to
-  upload from a CLA-signed account.
+- `FPDFTextObj_SetFontSize` — CL 148170 uploaded 2026-05-20;
+  patchset 2 (2026-05-22) addresses Lei Zhang's review comments
+  (trim commit message, `ScopedFPDFPageObject`,
+  `OpenScopedSavedDocument`).
 - `FPDFAnnot_AppendOption` + `FPDFAnnot_RemoveOptions` — patch
   drafted 2026-05-20, ready to upload.
 - `FPDF_SetMetaText` — patch drafted 2026-05-21 (CL 1 below); see
