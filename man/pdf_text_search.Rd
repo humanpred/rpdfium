@@ -10,6 +10,7 @@ pdf_text_search(
   case_sensitive = FALSE,
   whole_word = FALSE,
   consecutive = FALSE,
+  direction = c("next", "prev"),
   password = NULL
 )
 }
@@ -33,6 +34,12 @@ Default \code{FALSE}.}
 \emph{immediately} after the match end; if \code{FALSE} (default), PDFium
 skips ahead by one character before searching again, so
 overlapping matches are not reported.}
+
+\item{direction}{Search direction: \code{"next"} (default) walks from
+page start to end via \code{FPDFText_FindNext}; \code{"prev"} walks from
+end to start via \code{FPDFText_FindPrev}. Results are returned in
+iteration order, so reverse search produces matches in
+right-to-left / bottom-to-top order on each page.}
 
 \item{password}{Optional password for encrypted PDFs when \code{doc}
 is a path. Ignored when \code{doc} is already an open \code{pdfium_doc}.}

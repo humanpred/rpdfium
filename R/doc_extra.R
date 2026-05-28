@@ -341,3 +341,63 @@ pdf_doc_javascript <- function(doc, password = NULL) {
   raw <- cpp_doc_javascript(doc$ptr)
   tibble::tibble(name = raw$name, script = raw$script)
 }
+
+#' Install PDFium's unsupported-feature event handler
+#'
+#' Wraps `FSDK_SetUnSpObjProcessHandler`. After installation, PDFium
+#' buffers a string per "feature not supported" event it encounters
+#' while parsing or rendering a document — XFA forms, custom
+#' encryption types, 3D / movie / sound annotations, signature
+#' annotations, and so on. The buffer is drained with
+#' [pdf_drain_unsupported_features()].
+#'
+#' This is opt-in. Without installing the handler, PDFium silently
+#' produces a partial render when it can't fully process a document
+#' and rpdfium emits no diagnostic. Installing the handler lets
+#' callers detect "did my PDF have anything PDFium couldn't render"
+#' before relying on the result.
+#'
+#' Installation is process-global. Once installed, the handler stays
+#' active for the lifetime of the R session and affects every
+#' `pdfium_doc` opened — there's no per-doc scope.
+#'
+#' @return Invisibly returns `TRUE`.
+#' @seealso [pdf_drain_unsupported_features()] to read and clear the
+#'   buffer.
+#' @examples
+#' pdf_install_unsupported_handler()
+#' doc <- pdf_doc_open(system.file("extdata", "fixtures", "shapes.pdf",
+#'                                  package = "pdfium"))
+#' pdf_drain_unsupported_features()  # character(0) -- nothing flagged
+#' pdf_doc_close(doc)
+#' @export
+pdf_install_unsupported_handler <- function() {
+  ok <- cpp_install_unsupported_handler()
+  if (!isTRUE(ok)) {
+    stop("FSDK_SetUnSpObjProcessHandler failed.", call. = FALSE)  # nocov
+  }
+  invisible(TRUE)
+}
+
+#' Read and clear the PDFium unsupported-feature event buffer
+#'
+#' Returns the human-readable feature names PDFium has flagged as
+#' unsupported since the previous call (or since the handler was
+#' installed via [pdf_install_unsupported_handler()]). The buffer is
+#' cleared on read.
+#'
+#' Returns `character(0)` when nothing has been flagged or when the
+#' handler is not installed (no events are buffered until
+#' installation).
+#'
+#' @return Character vector of feature names. Each entry is a human-
+#'   readable string drawn from the `FPDF_UNSP_*` enum, e.g.
+#'   `"XFA form"`, `"3D annotation"`, `"document security"`,
+#'   `"signature annotation"`. Possibly contains duplicates if a
+#'   feature was flagged multiple times.
+#' @seealso [pdf_install_unsupported_handler()] to enable the
+#'   handler.
+#' @export
+pdf_drain_unsupported_features <- function() {
+  cpp_drain_unsupported_features()
+}

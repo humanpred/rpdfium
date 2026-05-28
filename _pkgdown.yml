@@ -44,6 +44,8 @@ reference:
       - pdf_doc_trailer_ends
       - pdf_doc_is_tagged
       - pdf_doc_javascript
+      - pdf_install_unsupported_handler
+      - pdf_drain_unsupported_features
       - pdf_doc_focusable_subtypes
       - pdf_doc_viewer_preferences
       - pdf_doc_viewer_preference_by_name
@@ -406,6 +408,11 @@ reference:
       - pdf_bitmap_buffer
       - pdf_bitmap_set_buffer
       - pdf_image_set_bitmap
+      - pdf_image_new_from_bitmap
+      - pdf_image_extract
+      - pdf_bitmap_to_page
+      - pdf_bitmap_from_page
+      - pdf_text_obj_at_char
       - pdf_system_fonts_default_ttf_map
       - pdf_system_fonts_install_default
       - pdf_annot_set_font_color

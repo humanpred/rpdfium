@@ -199,3 +199,32 @@ test_that("pdf_text_search round-trips non-ASCII query strings", {
   expect_s3_class(out_3byte, "tbl_df")
   expect_s3_class(out_4byte, "tbl_df")
 })
+
+# ---- direction = "prev" ----------------------------------------------------
+
+test_that("pdf_text_search direction = 'prev' walks page from end to start", {
+  # unicode.pdf has "Hello\nworld\npdfium" so "l" matches at three
+  # positions: in "Hello" (twice) and in "world" (once). With
+  # direction = "next" the rows come out in left-to-right /
+  # top-to-bottom order (smallest start_char first). With "prev"
+  # PDFium walks in the opposite direction, so the rows come out
+  # with largest start_char first.
+  fwd <- pdf_text_search(fixture_path("unicode"), "l")
+  bwd <- pdf_text_search(fixture_path("unicode"), "l",
+                          direction = "prev")
+  expect_equal(nrow(fwd), nrow(bwd))
+  expect_gte(nrow(fwd), 2L)
+  expect_true(all(diff(fwd$start_char) >= 0L),
+              "forward search yields non-decreasing start_char")
+  expect_true(all(diff(bwd$start_char) <= 0L),
+              "reverse search yields non-increasing start_char")
+  # The two directions visit the same set of matches.
+  expect_setequal(fwd$start_char, bwd$start_char)
+})
+
+test_that("pdf_text_search direction validates", {
+  expect_error(
+    pdf_text_search(fixture_path("shapes"), "Hello", direction = "sideways"),
+    "should be one of"
+  )
+})

@@ -67,6 +67,13 @@ SEXP fpdf_bitmap_to_native(FPDF_BITMAP bmp) {
           r = row[x * 4 + 2];
           a = row[x * 4 + 3];
           break;
+        // # nocov start — FPDFTextObj_GetRenderedBitmap unconditionally
+        // allocates an FPDFBitmap_BGRA bitmap in PDFium chromium/7202
+        // (see CPDF_TextRenderer::DrawTextPath via the public API), so
+        // the BGRx / BGR / Gray / default branches are unreachable from
+        // this call site. The dispatch is kept structurally complete so
+        // it mirrors the broader image-bitmap converter in
+        // src/images.cpp, where each branch IS exercised.
         case FPDFBitmap_BGRx:
           b = row[x * 4 + 0];
           g = row[x * 4 + 1];
@@ -85,6 +92,7 @@ SEXP fpdf_bitmap_to_native(FPDF_BITMAP bmp) {
           break;
         default:
           break;
+        // # nocov end
       }
       uint32_t abgr = (static_cast<uint32_t>(a) << 24) |
                       (static_cast<uint32_t>(b) << 16) |

@@ -475,3 +475,80 @@ test_that("plot.pdfium_bitmap routes through as.array + grid::grid.raster", {
     "plot.pdfium_bitmap must not call rasterImage directly"
   )
 })
+
+# ---- pdf_bitmap_to_page / pdf_bitmap_from_page (PdfPosConv) ----------------
+
+test_that("pdf_bitmap_to_page / pdf_bitmap_from_page round-trip", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  bmp <- pdf_render_page(doc, dpi = 72)
+  expect_s3_class(bmp, "pdfium_bitmap")
+  # At dpi = 72 pixels-per-inch equals points-per-inch, so the
+  # bitmap pixel grid maps 1:1 onto PDF page-space points but the
+  # y-axis is flipped (bitmap origin top-left, PDF origin bottom-
+  # left). Round-trip integer pixel inputs and confirm exact
+  # recovery.
+  pdf_pt <- pdf_bitmap_to_page(bmp, x = c(0, 50), y = c(0, 50))
+  expect_s3_class(pdf_pt, "tbl_df")
+  expect_named(pdf_pt, c("x", "y"))
+  expect_type(pdf_pt$x, "double")
+  expect_type(pdf_pt$y, "double")
+  back <- pdf_bitmap_from_page(bmp, x = pdf_pt$x, y = pdf_pt$y)
+  expect_type(back$x, "integer")
+  expect_type(back$y, "integer")
+  expect_equal(back$x, c(0L, 50L))
+  expect_equal(back$y, c(0L, 50L))
+})
+
+test_that("pdf_bitmap_to_page recycles unequal-length x and y", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  bmp <- pdf_render_page(doc, dpi = 72)
+  out <- pdf_bitmap_to_page(bmp, x = c(0, 10, 20), y = 5)
+  expect_equal(nrow(out), 3L)
+})
+
+test_that("pdf_bitmap_to_page rejects bitmaps with no render-geometry", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  bmp <- pdf_render_page(doc, dpi = 72)
+  attr(bmp, "render_geometry") <- NULL
+  expect_error(pdf_bitmap_to_page(bmp, 0, 0),
+                 "no render-geometry metadata")
+  expect_error(pdf_bitmap_from_page(bmp, 0, 0),
+                 "no render-geometry metadata")
+})
+
+test_that("pdf_bitmap_to_page validates inputs", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  bmp <- pdf_render_page(doc, dpi = 72)
+  expect_error(pdf_bitmap_to_page(bmp, NA, 0), "Assertion on")
+  expect_error(pdf_bitmap_to_page(bmp, Inf, 0), "Assertion on")
+  expect_error(pdf_bitmap_to_page("not a bitmap", 0, 0),
+                 "Must inherit from class")
+})
+
+test_that("pdf_bitmap_to_page / from_page reject a closed parent doc", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  bmp <- pdf_render_page(doc, dpi = 72)
+  pdf_doc_close(doc)
+  expect_error(pdf_bitmap_to_page(bmp, 0, 0),
+                 "Parent document has been closed")
+  expect_error(pdf_bitmap_from_page(bmp, 0, 0),
+                 "Parent document has been closed")
+})
+
+test_that("pdf_render_page_with_matrix bitmaps lack render-geometry", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  bmp <- pdf_render_page_with_matrix(
+    page, matrix = c(1, 0, 0, 1, 0, 0),
+    pixel_width = 100L, pixel_height = 100L
+  )
+  expect_null(attr(bmp, "render_geometry"))
+  expect_error(pdf_bitmap_to_page(bmp, 0, 0),
+                 "no render-geometry metadata")
+})

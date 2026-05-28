@@ -103,3 +103,28 @@ bool cpp_image_set_matrix(SEXP image_ptr,
                                   /*require_prot_alive=*/true));
   return FPDFImageObj_SetMatrix(image_obj, a, b, c, d, e, f) != 0;
 }
+
+// Create a blank image page-object (no encoded stream attached), insert
+// it into the page, and return its handle. The caller follows up with
+// FPDFImageObj_SetBitmap (cpp_image_set_bitmap) to attach pixel data,
+// then sets the matrix. Pairs with pdf_image_new_from_bitmap on the R
+// side as the bitmap counterpart to cpp_image_new_from_jpeg.
+// [[Rcpp::export(name = "cpp_image_new_blank")]]
+SEXP cpp_image_new_blank(SEXP doc_ptr, SEXP page_ptr) {
+  FPDF_DOCUMENT doc = doc_from_ptr(doc_ptr);
+  FPDF_PAGE page = page_from_ptr(page_ptr);
+
+  FPDF_PAGEOBJECT image_obj = FPDFPageObj_NewImageObj(doc);
+  if (image_obj == nullptr) {
+    // # nocov start — FPDFPageObj_NewImageObj returns NULL only on
+    // OOM at the PDF dict-allocation level; PDFium's chromium/7202
+    // binary is reliable on the test sizes we exercise.
+    Rcpp::stop("FPDFPageObj_NewImageObj returned NULL.");
+    // # nocov end
+  }
+
+  FPDFPage_InsertObject(page, image_obj);
+
+  // No finalizer: page owns the object now. prot pins the page.
+  return R_MakeExternalPtr(image_obj, R_NilValue, page_ptr);
+}

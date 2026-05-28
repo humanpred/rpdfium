@@ -143,14 +143,13 @@ pdf_page_actions <- function(page, page_num = 1L) {
   if (n == 0L) {
     return(empty_page_actions_tibble())
   }
-  build_page_actions_tibble(raw) # nocov
+  build_page_actions_tibble(raw)
 }
 
 # Internal: build the populated tibble for pdf_page_actions().
 # Pulled out so the wrapper can keep the empty-case path
-# straightforward; the populated branch needs a fixture with /AA
-# OpenAction or CloseAction, which the shipped fixture set lacks.
-# nocov start
+# straightforward; the populated branch is exercised by
+# test-page-nav.R's "/AA /O and /C" inline-PDF test.
 build_page_actions_tibble <- function(raw) {
   tibble::tibble(
     trigger      = as.character(raw$trigger),
@@ -164,7 +163,6 @@ build_page_actions_tibble <- function(raw) {
     dest_zoom    = raw$dest_zoom
   )
 }
-# nocov end
 
 empty_page_actions_tibble <- function() {
   tibble::tibble(

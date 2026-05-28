@@ -147,5 +147,21 @@ test_that("cpp_* shims reject non-externalptr arguments", {
     expect_error(pdfium:::cpp_attachment_count(bad))
     expect_error(pdfium:::cpp_signature_count(bad))
     expect_error(pdfium:::cpp_bookmark_handles(bad))
+    # page_nav.cpp guards: cpp_link_at_point's first arg is doc_ptr,
+    # cpp_page_aactions's first arg is doc_ptr. Both must validate
+    # TYPEOF == EXTPTRSXP via the local nav_doc_from_ptr helper.
+    expect_error(pdfium:::cpp_link_at_point(bad, bad, 0, 0))
+    expect_error(pdfium:::cpp_page_aactions(bad, bad))
+  }
+})
+
+test_that("cpp_link_at_point / cpp_page_aactions reject a non-EXTPTR page", {
+  # Trigger the page-pointer-side TYPEOF guard (page_nav.cpp line 36)
+  # by passing a valid doc_ptr and a non-externalptr page argument.
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  for (bad in list(NULL, 42, "string", list(), TRUE, NA)) {
+    expect_error(pdfium:::cpp_link_at_point(doc$ptr, bad, 0, 0))
+    expect_error(pdfium:::cpp_page_aactions(doc$ptr, bad))
   }
 })

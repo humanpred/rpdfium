@@ -31,7 +31,8 @@ Rcpp::List cpp_text_search_page(SEXP page_ptr,
                                 std::string query,
                                 bool match_case,
                                 bool match_whole_word,
-                                bool consecutive) {
+                                bool consecutive,
+                                bool reverse = false) {
   if (TYPEOF(page_ptr) != EXTPTRSXP) {
     Rcpp::stop("Expected an external pointer.");
   }
@@ -63,8 +64,17 @@ Rcpp::List cpp_text_search_page(SEXP page_ptr,
   if (consecutive)       flags |= 0x00000004UL;
 
   std::vector<unsigned short> wquery = utf8_to_utf16le_nul(query);
+  // For reverse search, start at the page's last character and walk
+  // backwards via FPDFText_FindPrev. PDFium documents that
+  // FPDFText_FindStart accepts the character count as a valid start
+  // position for reverse iteration.
+  int start_index = 0;
+  if (reverse) {
+    start_index = FPDFText_CountChars(tp);
+    if (start_index < 0) start_index = 0;
+  }
   FPDF_SCHHANDLE sh =
-      FPDFText_FindStart(tp, wquery.data(), flags, /*start_index=*/0);
+      FPDFText_FindStart(tp, wquery.data(), flags, start_index);
   if (sh == nullptr) {
     FPDFText_ClosePage(tp);
     Rcpp::stop("FPDFText_FindStart returned NULL.");
@@ -72,9 +82,16 @@ Rcpp::List cpp_text_search_page(SEXP page_ptr,
 
   std::vector<int> starts;
   std::vector<int> counts;
-  while (FPDFText_FindNext(sh)) {
-    starts.push_back(FPDFText_GetSchResultIndex(sh));
-    counts.push_back(FPDFText_GetSchCount(sh));
+  if (reverse) {
+    while (FPDFText_FindPrev(sh)) {
+      starts.push_back(FPDFText_GetSchResultIndex(sh));
+      counts.push_back(FPDFText_GetSchCount(sh));
+    }
+  } else {
+    while (FPDFText_FindNext(sh)) {
+      starts.push_back(FPDFText_GetSchResultIndex(sh));
+      counts.push_back(FPDFText_GetSchCount(sh));
+    }
   }
   FPDFText_FindClose(sh);
 

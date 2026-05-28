@@ -37,6 +37,11 @@
 #'   *immediately* after the match end; if `FALSE` (default), PDFium
 #'   skips ahead by one character before searching again, so
 #'   overlapping matches are not reported.
+#' @param direction Search direction: `"next"` (default) walks from
+#'   page start to end via `FPDFText_FindNext`; `"prev"` walks from
+#'   end to start via `FPDFText_FindPrev`. Results are returned in
+#'   iteration order, so reverse search produces matches in
+#'   right-to-left / bottom-to-top order on each page.
 #' @param password Optional password for encrypted PDFs when `doc`
 #'   is a path. Ignored when `doc` is already an open `pdfium_doc`.
 #' @return A tibble with one row per match and columns:
@@ -68,8 +73,10 @@ pdf_text_search <- function(doc, query,
                             case_sensitive = FALSE,
                             whole_word = FALSE,
                             consecutive = FALSE,
+                            direction = c("next", "prev"),
                             password = NULL) {
   validate_text_search_args(query, case_sensitive, whole_word, consecutive)
+  direction <- match.arg(direction)
 
   doc <- as_open_doc(doc, password = password)
 
@@ -83,7 +90,8 @@ pdf_text_search <- function(doc, query,
       page$ptr, query_utf8,
       match_case = case_sensitive,
       match_whole_word = whole_word,
-      consecutive = consecutive
+      consecutive = consecutive,
+      reverse = identical(direction, "prev")
     )
     pdf_page_close(page)
 

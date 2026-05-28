@@ -668,12 +668,15 @@ local({
     obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
 
     # Page content stream: a tagged 50x50 stroked rectangle inside
-    # /P <</MCID 0>> BDC ... EMC, so PDFium sees one page object
-    # carrying marked-content ID 0. Used by pdf_obj_marks() /
-    # pdf_obj_marked_content_id() coverage tests.
+    # /P <</MCID 0 /Lang (en) /Title /Body>> BDC ... EMC, so PDFium
+    # sees one page object carrying marked-content ID 0. Used by
+    # pdf_obj_marks() / pdf_obj_marked_content_id() coverage tests.
+    # The /Lang and /Title entries exercise the String- and
+    # Name-typed parameter branches of read_param_value() in
+    # src/obj_marks.cpp; /MCID exercises the Number branch.
     page_content <- paste(
       "q",
-      "/P <</MCID 0>> BDC",
+      "/P <</MCID 0 /Lang (en) /Title /Body>> BDC",
       "0.8 0.2 0.2 RG",
       "1 w",
       "50 50 100 100 re",

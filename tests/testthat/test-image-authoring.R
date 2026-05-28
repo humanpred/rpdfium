@@ -125,3 +125,66 @@ test_that("pdf_image_new round-trips through pdf_save", {
   types <- vapply(objs, function(o) o$type, character(1L))
   expect_true("image" %in% types)
 })
+
+# ---- pdf_image_new_from_bitmap ---------------------------------------------
+
+test_that("pdf_image_new_from_bitmap inserts an image obj from a bitmap", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 612, height = 792)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  bm <- pdf_bitmap_new(16L, 16L, alpha = TRUE)
+  on.exit(pdf_bitmap_close(bm), add = TRUE)
+  pdf_bitmap_fill_rect(bm, 0L, 0L, 16L, 16L, 0xFF00FF00)
+
+  img <- pdf_image_new_from_bitmap(page, bm,
+                                    bounds = c(72, 600, 272, 700))
+  expect_s3_class(img, "pdfium_obj")
+  expect_identical(img$type, "image")
+
+  # Confirm the obj is on the page and survives a save+reload.
+  out <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(doc, out)
+  doc2 <- pdf_doc_open(out)
+  on.exit(pdf_doc_close(doc2), add = TRUE)
+  page2 <- pdf_page_load(doc2, 1L)
+  on.exit(pdf_page_close(page2), add = TRUE, after = FALSE)
+  types <- vapply(pdf_page_objects(page2),
+                   function(o) o$type, character(1L))
+  expect_true("image" %in% types)
+})
+
+test_that("pdf_image_new_from_bitmap works without explicit bounds", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 612, height = 792)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  bm <- pdf_bitmap_new(8L, 8L, alpha = FALSE)
+  on.exit(pdf_bitmap_close(bm), add = TRUE)
+  img <- pdf_image_new_from_bitmap(page, bm)
+  expect_s3_class(img, "pdfium_obj")
+})
+
+test_that("pdf_image_new_from_bitmap validates inputs", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 100, height = 100)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  expect_error(pdf_image_new_from_bitmap(page, "not a bitmap"),
+                 "Must inherit from class")
+  bm <- pdf_bitmap_new(4L, 4L, alpha = TRUE)
+  pdf_bitmap_close(bm)
+  expect_error(pdf_image_new_from_bitmap(page, bm),
+                 "Bitmap handle has been closed")
+})
+
+test_that("pdf_image_new_from_bitmap rejects bad bounds", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 100, height = 100)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  bm <- pdf_bitmap_new(4L, 4L, alpha = TRUE)
+  on.exit(pdf_bitmap_close(bm), add = TRUE)
+  expect_error(pdf_image_new_from_bitmap(page, bm, bounds = c(1, 2, 3)),
+                 "Assertion on")
+})

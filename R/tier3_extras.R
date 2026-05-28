@@ -85,3 +85,38 @@ pdf_text_char_obj_index <- function(page, char_index, page_num = 1L) {
   )
   na_if_negative(idx)
 }
+
+#' Look up the text page-object owning a given char by direct accessor
+#'
+#' Wraps `FPDFText_GetTextObject`. Returns a `pdfium_obj` of type
+#' `"text"` for the page-object that contains the character at the
+#' given 1-based `char_index` on the page's text page (matching the
+#' `char_index` column of [pdf_text_chars()]). Returns `NULL` when
+#' the char has no associated page-object (e.g. PDFium-synthesised
+#' whitespace).
+#'
+#' Functionally equivalent to chaining
+#' `pdf_text_char_obj_index() -> pdf_page_objects()[[i]]`, but
+#' short-circuited through PDFium's direct accessor so callers
+#' don't have to enumerate every page-object.
+#'
+#' @inheritParams pdf_text_chars
+#' @param char_index One-based character index (matches
+#'   `pdf_text_chars()$char_index`).
+#' @return A `pdfium_obj` of type `"text"`, or `NULL` when the
+#'   char has no associated page-object.
+#' @seealso [pdf_text_char_obj_index()] for the index-only version,
+#'   [pdf_text_chars()] for per-character readouts.
+#' @export
+pdf_text_obj_at_char <- function(page, char_index, page_num = 1L) {
+  checkmate::assert_count(char_index, positive = TRUE)
+  page <- as_open_page(page, page_num)
+  raw <- cpp_text_obj_at_char(
+    page$ptr,
+    as.integer(char_index - 1L)
+  )
+  if (is.null(raw$ptr) || is.na(raw$obj_index)) {
+    return(NULL)
+  }
+  new_pdfium_obj(raw$ptr, page, as.integer(raw$obj_index), "text")
+}

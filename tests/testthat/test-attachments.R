@@ -178,3 +178,33 @@ test_that("pdf_attachment_dict_value validates inputs", {
     "Assertion on"
   )
 })
+
+# Direct-shim coverage for the legacy bulk readers in attachments.cpp
+# that the per-handle pdf_attachment_*() API has superseded.
+
+test_that("cpp_attachments_list reports the documented attachment", {
+  # The R-side as_tibble.pdfium_attachment_list() calls this shim
+  # for non-empty lists, but going through the higher-level path
+  # leaves a few lines on cpp_attachments_list / cpp_attachment_data
+  # untested. Direct invocation exercises both end-to-end.
+  doc <- pdf_doc_open(fixture_path("attachments"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  out <- pdfium:::cpp_attachments_list(doc$ptr)
+  expect_named(out, c("name", "mime_type", "size_bytes"))
+  expect_identical(out$name, "hello.txt")
+  expect_identical(out$mime_type, "text/plain")
+  expect_identical(out$size_bytes, 12)
+})
+
+test_that("cpp_attachment_data returns the embedded bytes verbatim", {
+  # The high-level pdf_attachment_data() now calls
+  # cpp_attachment_data_handle (attachment_handles.cpp). The legacy
+  # doc-index variant in attachments.cpp is reached only via the
+  # direct shim.
+  doc <- pdf_doc_open(fixture_path("attachments"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  data <- pdfium:::cpp_attachment_data(doc$ptr, 0L)
+  expect_type(data, "raw")
+  expect_length(data, 12L)
+  expect_identical(rawToChar(data), "hello world\n")
+})

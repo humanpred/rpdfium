@@ -138,12 +138,20 @@ Rcpp::List cpp_bookmark_find_handle(SEXP doc_ptr,
                                    counter, target,
                                    idx, parent_idx, lvl);
   if (!ok) {
+    // # nocov start — FPDFBookmark_Find resolves bookmarks against
+    // the same outline tree our walker traverses (catalog
+    // /Outlines), so a successful Find followed by a failed walk
+    // implies a corrupt PDF whose /Outlines tree doesn't reach the
+    // matched node (e.g. a bookmark referenced from /Names but
+    // detached from /Outlines). Defensive shape preserved for that
+    // case.
     return Rcpp::List::create(
         Rcpp::_["found"]        = false,
         Rcpp::_["handle"]       = R_NilValue,
         Rcpp::_["index"]        = NA_INTEGER,
         Rcpp::_["parent_index"] = NA_INTEGER,
         Rcpp::_["level"]        = NA_INTEGER);
+    // # nocov end
   }
   // Doc owns the bookmark; no finalizer. prot pins the doc.
   SEXP handle = R_MakeExternalPtr(static_cast<void*>(target),
@@ -168,9 +176,15 @@ Rcpp::List cpp_form_field_at_point(SEXP doc_ptr, SEXP page_ptr,
   ffi.version = 2;
   FPDF_FORMHANDLE form = FPDFDOC_InitFormFillEnvironment(doc, &ffi);
   if (form == nullptr) {
+    // # nocov start — FPDFDOC_InitFormFillEnvironment only returns
+    // NULL on OOM (or, for now-removed PDFium builds, an XFA-only
+    // doc compiled without XFA support). The shipped libpdfium.so
+    // is built with the standard form support, so the NULL branch
+    // is unreachable on every supported platform.
     return Rcpp::List::create(
         Rcpp::_["field_type"] = NA_INTEGER,
         Rcpp::_["z_order"]    = NA_INTEGER);
+    // # nocov end
   }
   int ftype  = FPDFPage_HasFormFieldAtPoint(form, page, x, y);
   int zorder = FPDFPage_FormFieldZOrderAtPoint(form, page, x, y);

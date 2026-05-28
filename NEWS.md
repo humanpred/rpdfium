@@ -305,6 +305,48 @@ a wrapper. New exports broken out by topic:
   deferred — it requires marshalling PDFium's font-resolution
   callback table into R closures, which is non-trivial.
 
+### Pypdfium2-parity additions
+
+Six items sourced from the pypdfium2 side-by-side comparison
+(`dev/pypdfium2-comparison.md`, audit 2026-05-22), promoted into
+v0.1.0 so the surface ships complete:
+
+* `pdf_install_unsupported_handler()` /
+  `pdf_drain_unsupported_features()` —
+  `FSDK_SetUnSpObjProcessHandler`. Opt-in registration of a
+  process-global handler that buffers PDFium's "feature not
+  supported" events (XFA, custom encryption, 3D / movie / sound /
+  signature annotations, ...). Draining returns the buffered
+  feature-name strings and clears the buffer. Before this, opening
+  a PDF that hit one of those features produced a silent partial
+  render; embedders now have a clean signal.
+* `pdf_image_extract(obj, path)` — best-effort image-to-file.
+  Walks `pdf_image_filters()`, picks a sensible on-disk format
+  (`.jpg` for DCTDecode, `.jp2` for JPXDecode, `.png` otherwise via
+  the `png` soft dependency), writes the bytes. Mirrors
+  pypdfium2's `PdfImage.extract()`. Returns the path used so the
+  caller knows the chosen extension.
+* `pdf_image_new_from_bitmap(page, bitmap, bounds)` — bitmap
+  embedding helper composing the v0.1.0 primitives
+  (`pdf_bitmap_new` + `pdf_image_set_bitmap`). Pairs with the
+  JPEG-bytes path `pdf_image_new()`.
+* `pdf_bitmap_to_page(bitmap, x, y)` /
+  `pdf_bitmap_from_page(bitmap, x, y)` — bitmap ↔ PDF page-space
+  coordinate converters. `pdf_render_page()` now stashes the
+  render geometry (`start_x`, `start_y`, `size_x`, `size_y`,
+  `rotate`) on its `pdfium_bitmap` return, so callers can
+  round-trip pixel positions through `FPDF_DeviceToPage` /
+  `FPDF_PageToDevice` without re-supplying the render args. Mirrors
+  pypdfium2's `PdfBitmap.get_posconv(page)` ergonomic.
+* `pdf_text_search(direction = c("next", "prev"))` — surface
+  `FPDFText_FindPrev` as the reverse-iteration direction.
+  Previously search was forward-only.
+* `pdf_text_obj_at_char(textpage, char_index)` —
+  `FPDFText_GetTextObject`. Returns the `pdfium_obj` that owns a
+  given char on the text-page directly, short-circuiting the
+  previous two-step `pdf_text_char_obj_index() ->
+  pdf_page_objects()[[i]]`.
+
 ## Page-object mutation
 
 * `pdf_obj_set_matrix()`, `pdf_obj_set_active()`,

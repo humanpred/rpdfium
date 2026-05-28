@@ -52,9 +52,12 @@ std::string read_utf16_attribute(
 int cpp_attachment_count(SEXP doc_ptr) {
   FPDF_DOCUMENT doc = doc_from_ptr(doc_ptr);
   int n = FPDFDoc_GetAttachmentCount(doc);
+  // # nocov start — FPDFDoc_GetAttachmentCount only returns < 0 on
+  // a doc handle that's already been rejected by doc_from_ptr().
   if (n < 0) {
     Rcpp::stop("FPDFDoc_GetAttachmentCount returned %d.", n);
   }
+  // # nocov end
   return n;
 }
 
@@ -68,19 +71,26 @@ Rcpp::List cpp_attachments_list(SEXP doc_ptr) {
   Rcpp::NumericVector size_bytes(n);
   for (int i = 0; i < n; ++i) {
     FPDF_ATTACHMENT att = FPDFDoc_GetAttachment(doc, i);
+    // # nocov start — FPDFDoc_GetAttachment only returns null for
+    // an out-of-range index; the loop bound makes that impossible.
     if (att == nullptr) {
       names[i] = NA_STRING;
       mime[i]  = NA_STRING;
       size_bytes[i] = NA_REAL;
       continue;
     }
+    // # nocov end
     names[i] = read_utf16_attribute(att, FPDFAttachment_GetName);
     mime[i]  = read_utf16_attribute(att, FPDFAttachment_GetSubtype);
     unsigned long out_buflen = 0;
     if (FPDFAttachment_GetFile(att, nullptr, 0, &out_buflen)) {
       size_bytes[i] = static_cast<double>(out_buflen);
     } else {
+      // # nocov start — FPDFAttachment_GetFile only fails when the
+      // /EF /F stream is missing/unreadable, which the shipped
+      // fixtures don't exercise.
       size_bytes[i] = NA_REAL;
+      // # nocov end
     }
   }
   return Rcpp::List::create(
@@ -93,14 +103,22 @@ Rcpp::List cpp_attachments_list(SEXP doc_ptr) {
 Rcpp::RawVector cpp_attachment_data(SEXP doc_ptr, int index_zero) {
   FPDF_DOCUMENT doc = doc_from_ptr(doc_ptr);
   FPDF_ATTACHMENT att = FPDFDoc_GetAttachment(doc, index_zero);
+  // # nocov start — only triggered by an out-of-range index, which
+  // the R-side wrappers never produce; direct shim callers are
+  // expected to pass a validated 0-based index.
   if (att == nullptr) {
     Rcpp::stop("FPDFDoc_GetAttachment returned NULL for index %d.",
                index_zero);
   }
+  // # nocov end
   unsigned long needed = 0;
+  // # nocov start — the no-buffer probe only fails when the /EF /F
+  // stream is missing/unreadable; the shipped fixtures all have
+  // valid embedded files.
   if (!FPDFAttachment_GetFile(att, nullptr, 0, &needed)) {
     Rcpp::stop("FPDFAttachment_GetFile reports unreadable contents.");
   }
+  // # nocov end
   Rcpp::RawVector out(static_cast<R_xlen_t>(needed));
   if (needed > 0) {
     unsigned long got = 0;

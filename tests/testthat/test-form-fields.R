@@ -318,3 +318,246 @@ test_that("per-handle getters reject closed-page form fields", {
     expect_error(fn(f1), "has been closed")
   }
 })
+
+# Defensive C-side guards ------------------------------------------
+#
+# Every cpp_form_field_*_handle shim validates (annot_ptr, doc_ptr) at
+# entry: each must be EXTPTRSXP and must have a non-NULL address. Only
+# the R wrappers normally feed those guards; calling the shims via `:::`
+# with a non-externalptr exercises the TYPEOF != EXTPTRSXP arm so it's
+# covered in addition to the closed-handle (NULL-address) arm above.
+
+test_that("cpp_form_field_*_handle shims reject non-externalptr args", {
+  # Each shim takes (annot_ptr, doc_ptr) in that order. Hitting the
+  # EXTPTRSXP arm only needs one bad arg; we feed both as integer so
+  # ff_annot_from_ptr trips first for some shims and ff_doc_from_ptr
+  # trips for others where the doc arg is validated first.
+  shims <- list(
+    pdfium:::cpp_form_field_name_handle,
+    pdfium:::cpp_form_field_alternate_name_handle,
+    pdfium:::cpp_form_field_value_handle,
+    pdfium:::cpp_form_field_export_value_handle,
+    pdfium:::cpp_form_field_flags_handle,
+    pdfium:::cpp_form_field_is_checked_handle,
+    pdfium:::cpp_form_field_control_count_handle,
+    pdfium:::cpp_form_field_control_index_handle,
+    pdfium:::cpp_form_field_options_handle,
+    pdfium:::cpp_form_field_is_option_selected_handle,
+    pdfium:::cpp_form_field_additional_actions_handle
+  )
+  for (shim in shims) {
+    # Integer for both args → trips one of ff_*_from_ptr's
+    # TYPEOF != EXTPTRSXP guards.
+    expect_error(shim(42L, 42L), "externalptr")
+  }
+})
+
+test_that("cpp_form_field_*_handle shims reject closed doc handles", {
+  # Closed-doc path: open a form-bearing doc, capture the doc's
+  # externalptr, close the doc (which clears the address), then call
+  # each shim with a still-live annot externalptr from another doc
+  # paired with the now-null doc_ptr. Hits the ff_doc_from_ptr
+  # "Document handle is NULL" branch.
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  fields <- pdf_form_fields(doc)
+  annot_ptr <- fields[[1L]]$ptr
+  doc_ptr <- doc$ptr
+  pdf_doc_close(doc)  # clears doc_ptr's address; annot_ptr remains live
+  shims <- list(
+    pdfium:::cpp_form_field_name_handle,
+    pdfium:::cpp_form_field_alternate_name_handle,
+    pdfium:::cpp_form_field_value_handle,
+    pdfium:::cpp_form_field_export_value_handle,
+    pdfium:::cpp_form_field_flags_handle,
+    pdfium:::cpp_form_field_is_checked_handle,
+    pdfium:::cpp_form_field_control_count_handle,
+    pdfium:::cpp_form_field_control_index_handle,
+    pdfium:::cpp_form_field_options_handle,
+    pdfium:::cpp_form_field_is_option_selected_handle,
+    pdfium:::cpp_form_field_additional_actions_handle
+  )
+  for (shim in shims) {
+    expect_error(shim(annot_ptr, doc_ptr),
+                 "[Dd]ocument handle is NULL")
+  }
+})
+
+# cpp_form_fields_list -- defensive doc_ptr guards -----------------
+
+test_that("cpp_form_fields_list rejects non-externalptr arg", {
+  expect_error(pdfium:::cpp_form_fields_list(42L),
+               "external pointer")
+})
+
+test_that("cpp_form_fields_list rejects a closed doc", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  doc_ptr <- doc$ptr
+  pdf_doc_close(doc)
+  expect_error(pdfium:::cpp_form_fields_list(doc_ptr),
+               "[Dd]ocument handle is closed")
+})
+
+# Combobox + AA JavaScript via inline-constructed PDF --------------
+#
+# The shipped fixtures only carry textfield + checkbox widgets, so the
+# read_form_options, read_option_selected, and read_additional_actions_js
+# code paths in src/form_fields.cpp (and the matching shim paths in
+# src/form_field_per_handle.cpp) never get exercised by them. Build a
+# minimal hand-crafted PDF inline (same byte-construction pattern as
+# test-bookmarks.R's circular-outline test) so those paths see real,
+# non-empty data.
+
+# Helper: assemble a PDF body + xref + trailer for `obj_bodies`.
+# `obj_bodies` is a vector of complete "N 0 obj\n...\nendobj\n"
+# strings; we compute offsets, append the xref/trailer, and return
+# the byte vector ready for writeBin().
+form_fields_build_pdf <- function(obj_bodies) {
+  header <- "%PDF-1.4\n"
+  body <- paste0(header, paste0(obj_bodies, collapse = ""))
+  bytes <- charToRaw(body)
+  offs <- nchar(header) +
+    c(0L, cumsum(nchar(obj_bodies))[-length(obj_bodies)])
+  xref_off <- length(bytes)
+  size <- length(obj_bodies) + 1L  # +1 for the 0-th free entry
+  xref <- charToRaw(paste0(
+    "xref\n0 ", size, "\n0000000000 65535 f \n",
+    paste(sprintf("%010d 00000 n ", offs), collapse = "\n"), " \n"
+  ))
+  trailer <- charToRaw(sprintf(
+    "trailer << /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n",
+    size, xref_off
+  ))
+  c(bytes, xref, trailer)
+}
+
+test_that("pdf_form_fields decodes combobox /Opt labels + selection state", {
+  # Combobox widget with /Opt [(One)(Two)(Three)] and /V (One). PDFium
+  # treats /Ch fields with single-select as a combobox/listbox; the
+  # mapping reaches FPDFAnnot_GetOptionCount > 0 so both
+  # read_form_options (lines 65-76 of form_fields.cpp) and
+  # read_option_selected (lines 86-91) get exercised.
+  obj_bodies <- c(
+    paste0("1 0 obj\n<< /Type /Catalog /Pages 2 0 R ",
+           "/AcroForm << /Fields [4 0 R] >> >>\nendobj\n"),
+    "2 0 obj\n<< /Type /Pages /Count 1 /Kids [3 0 R] >>\nendobj\n",
+    paste0("3 0 obj\n<< /Type /Page /Parent 2 0 R ",
+           "/MediaBox [0 0 400 400] /Resources << >> ",
+           "/Annots [4 0 R] >>\nendobj\n"),
+    paste0("4 0 obj\n<< /Type /Annot /Subtype /Widget /FT /Ch ",
+           "/T (combo1) /Rect [10 10 100 30] ",
+           "/Opt [(One) (Two) (Three)] /V (One) >>\nendobj\n")
+  )
+  full <- form_fields_build_pdf(obj_bodies)
+  tf <- withr::local_tempfile(fileext = ".pdf")
+  writeBin(full, tf)
+  res <- tibble::as_tibble(pdf_form_fields(tf))
+  expect_equal(nrow(res), 1L)
+  expect_identical(res$options[[1L]], c("One", "Two", "Three"))
+  expect_identical(res$is_option_selected[[1L]],
+                   c(TRUE, FALSE, FALSE))
+})
+
+test_that("pdf_form_fields surfaces an empty-/Opt combobox as zero options", {
+  # Combobox with no /Opt at all -> FPDFAnnot_GetOptionCount returns 0
+  # so read_form_options returns empty and read_option_selected hits
+  # the n <= 0 short-circuit (line 85). Already covered by other
+  # fixtures, but pinning the behaviour explicitly is cheap.
+  obj_bodies <- c(
+    paste0("1 0 obj\n<< /Type /Catalog /Pages 2 0 R ",
+           "/AcroForm << /Fields [4 0 R] >> >>\nendobj\n"),
+    "2 0 obj\n<< /Type /Pages /Count 1 /Kids [3 0 R] >>\nendobj\n",
+    paste0("3 0 obj\n<< /Type /Page /Parent 2 0 R ",
+           "/MediaBox [0 0 400 400] /Resources << >> ",
+           "/Annots [4 0 R] >>\nendobj\n"),
+    paste0("4 0 obj\n<< /Type /Annot /Subtype /Widget /FT /Ch ",
+           "/T (combo_empty) /Rect [10 10 100 30] >>\nendobj\n")
+  )
+  full <- form_fields_build_pdf(obj_bodies)
+  tf <- withr::local_tempfile(fileext = ".pdf")
+  writeBin(full, tf)
+  res <- tibble::as_tibble(pdf_form_fields(tf))
+  expect_equal(nrow(res), 1L)
+  expect_length(res$options[[1L]], 0L)
+  expect_length(res$is_option_selected[[1L]], 0L)
+})
+
+test_that("pdf_form_fields decodes /AA JavaScript triggers", {
+  # Widget with the full set of additional-actions JavaScript triggers
+  # (/K /F /V /C) — PDFium maps these onto the AACTION_KEY_STROKE,
+  # AACTION_FORMAT, AACTION_VALIDATE, AACTION_CALCULATE enum values
+  # exposed by FPDFAnnot_GetFormAdditionalActionJavaScript. Triggers
+  # the needed > 2 branch in read_additional_actions_js (lines
+  # 112-118 of form_fields.cpp).
+  obj_bodies <- c(
+    paste0("1 0 obj\n<< /Type /Catalog /Pages 2 0 R ",
+           "/AcroForm << /Fields [4 0 R] >> >>\nendobj\n"),
+    "2 0 obj\n<< /Type /Pages /Count 1 /Kids [3 0 R] >>\nendobj\n",
+    paste0("3 0 obj\n<< /Type /Page /Parent 2 0 R ",
+           "/MediaBox [0 0 400 400] /Resources << >> ",
+           "/Annots [4 0 R] >>\nendobj\n"),
+    paste0("4 0 obj\n<< /Type /Annot /Subtype /Widget /FT /Tx ",
+           "/T (text_with_aa) /Rect [10 10 100 30] ",
+           "/AA << ",
+           "/K << /S /JavaScript /JS (alert(0)) >> ",
+           "/F << /S /JavaScript /JS (alert(1)) >> ",
+           "/V << /S /JavaScript /JS (alert(2)) >> ",
+           "/C << /S /JavaScript /JS (alert(3)) >> ",
+           ">> >>\nendobj\n")
+  )
+  full <- form_fields_build_pdf(obj_bodies)
+  tf <- withr::local_tempfile(fileext = ".pdf")
+  writeBin(full, tf)
+  res <- tibble::as_tibble(pdf_form_fields(tf))
+  expect_equal(nrow(res), 1L)
+  aa <- res$additional_actions_js[[1L]]
+  expect_named(aa, c("key_stroke", "format", "validate", "calculate"))
+  expect_identical(aa[["key_stroke"]], "alert(0)")
+  expect_identical(aa[["format"]],     "alert(1)")
+  expect_identical(aa[["validate"]],   "alert(2)")
+  expect_identical(aa[["calculate"]],  "alert(3)")
+})
+
+test_that("per-handle accessors read combobox options + AA JS", {
+  # Same inline PDF but exercised via the handle-based per-field
+  # accessors, which run through src/form_field_per_handle.cpp's
+  # cpp_form_field_options_handle, cpp_form_field_is_option_selected_handle,
+  # and cpp_form_field_additional_actions_handle. Lines 170-182,
+  # 194-198, and 227-233 of that file.
+  obj_bodies <- c(
+    paste0("1 0 obj\n<< /Type /Catalog /Pages 2 0 R ",
+           "/AcroForm << /Fields [4 0 R 5 0 R] >> >>\nendobj\n"),
+    "2 0 obj\n<< /Type /Pages /Count 1 /Kids [3 0 R] >>\nendobj\n",
+    paste0("3 0 obj\n<< /Type /Page /Parent 2 0 R ",
+           "/MediaBox [0 0 400 400] /Resources << >> ",
+           "/Annots [4 0 R 5 0 R] >>\nendobj\n"),
+    paste0("4 0 obj\n<< /Type /Annot /Subtype /Widget /FT /Ch ",
+           "/T (combo_h) /Rect [10 10 100 30] ",
+           "/Opt [(Alpha) (Beta)] /V (Alpha) >>\nendobj\n"),
+    paste0("5 0 obj\n<< /Type /Annot /Subtype /Widget /FT /Tx ",
+           "/T (text_aa_h) /Rect [10 50 100 70] ",
+           "/AA << ",
+           "/K << /S /JavaScript /JS (k_js) >> ",
+           "/F << /S /JavaScript /JS (f_js) >> ",
+           "/V << /S /JavaScript /JS (v_js) >> ",
+           "/C << /S /JavaScript /JS (c_js) >> ",
+           ">> >>\nendobj\n")
+  )
+  full <- form_fields_build_pdf(obj_bodies)
+  tf <- withr::local_tempfile(fileext = ".pdf")
+  writeBin(full, tf)
+  doc <- pdf_doc_open(tf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  fields <- pdf_form_fields(doc)
+  expect_length(fields, 2L)
+  combo <- fields[[1L]]
+  expect_identical(pdf_form_field_options(combo), c("Alpha", "Beta"))
+  expect_identical(pdf_form_field_is_option_selected(combo),
+                   c(TRUE, FALSE))
+  text <- fields[[2L]]
+  aa <- pdf_form_field_additional_actions_js(text)
+  expect_named(aa, c("key_stroke", "format", "validate", "calculate"))
+  expect_identical(aa[["key_stroke"]], "k_js")
+  expect_identical(aa[["format"]],     "f_js")
+  expect_identical(aa[["validate"]],   "v_js")
+  expect_identical(aa[["calculate"]],  "c_js")
+})
