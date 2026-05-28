@@ -28,6 +28,16 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
+      # macOS-only: enable libsystem_malloc's debug protections during
+      # the test suite. Other matrix cells ignore these env vars. The
+      # goal is to SIGSEGV at the moment a wild write happens (instead
+      # of detecting it later when something reads the trampled slot),
+      # so the .ips backtrace points at the writer, not the reader.
+      MallocGuardEdges: '1'
+      MallocCheckHeapStart: '1'
+      MallocCheckHeapEach: '10'
+      MallocErrorAbort: '1'
+      MallocCorruptionAbort: '1'
 
     steps:
       - uses: actions/checkout@v6
@@ -181,14 +191,31 @@ jobs:
           export R_HOME="$R_HOME_DIR"
           # R CMD check installs the package into check/pdfium.Rcheck/
           # rather than the user library; tell library() to look there.
-          CHECK_LIBDIR=$(find check -maxdepth 2 -name pdfium.Rcheck -type d 2>/dev/null | head -1)
-          if [ -n "$CHECK_LIBDIR" ]; then
-            export R_LIBS_USER="$(pwd)/$CHECK_LIBDIR"
-            echo "R_LIBS_USER = $R_LIBS_USER"
-            ls -la "$R_LIBS_USER" || true
+          # Print diagnostics so if discovery fails we can see why.
+          echo "::group::workspace discovery"
+          echo "pwd        = $(pwd)"
+          echo "GITHUB_WORKSPACE = $GITHUB_WORKSPACE"
+          echo "ls .       :"
+          ls -la 2>&1 | head -30
+          echo "ls check/  :"
+          ls -la check/ 2>&1 | head -10 || echo "  no check/ dir"
+          if [ -d check/pdfium.Rcheck ]; then
+            CHECK_LIBDIR="$(pwd)/check/pdfium.Rcheck"
+          elif [ -d "$GITHUB_WORKSPACE/check/pdfium.Rcheck" ]; then
+            CHECK_LIBDIR="$GITHUB_WORKSPACE/check/pdfium.Rcheck"
           else
-            echo "::warning::could not find check/pdfium.Rcheck — library(pdfium) will likely fail"
+            CHECK_LIBDIR=$(find / -name pdfium.Rcheck -type d 2>/dev/null | grep -v Library | head -1)
           fi
+          if [ -n "$CHECK_LIBDIR" ] && [ -d "$CHECK_LIBDIR/pdfium" ]; then
+            export R_LIBS_USER="$CHECK_LIBDIR"
+            echo "R_LIBS_USER set to: $R_LIBS_USER"
+            ls "$R_LIBS_USER" | head -10
+            ls "$R_LIBS_USER/pdfium/libs/" 2>&1 | head -5 || true
+          else
+            echo "::warning::pdfium.Rcheck not found — library(pdfium) will fail"
+            echo "  fallback CHECK_LIBDIR='$CHECK_LIBDIR'"
+          fi
+          echo "::endgroup::"
           echo "R_HOME = $R_HOME_DIR"
           echo "R binary = $R_BIN"
           file "$R_BIN" || true
