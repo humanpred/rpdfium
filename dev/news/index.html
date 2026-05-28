@@ -88,7 +88,7 @@
 <li>
 <code><a href="../reference/pdf_extract_paths.html">pdf_extract_paths()</a></code> — one-call helper for the path-extraction workflow that motivated the package.</li>
 <li>
-<code><a href="../reference/pdf_structure_tree.html">pdf_structure_tree()</a></code> — tagged-PDF / accessibility structure tree walk.</li>
+<code><a href="../reference/pdf_structure_tree.html">pdf_structure_tree()</a></code> — tagged-PDF / accessibility structure tree walk. Surfaces every PDFium <code>FPDF_StructElement_*</code> reader symbol: <code>parent_type</code> (via <code>_GetParent</code> + <code>_GetType</code>), the standard per-key fields (<code>type</code>, <code>lang</code>, <code>alt_text</code>, <code>actual_text</code>, <code>id</code>, <code>title</code>, <code>mcid</code>, <code>mcid_count</code>), an <code>attributes</code> list-column with full nested-array recursion (<code>_GetAttributeCount</code> / <code>_AtIndex</code> / <code>Attr_*</code>), <code>child_mcids</code> for per-slot marked-content IDs (via <code>_GetChildMarkedContentID</code>), plus an optional <code>string_attrs =</code> argument that names attribute-object keys to materialise as extra columns (via <code>_GetStringAttribute</code>).</li>
 </ul></div>
 <div class="section level3">
 <h3 id="annotations-and-form-fields-0-1-0">Annotations and form fields<a class="anchor" aria-label="anchor" href="#annotations-and-form-fields-0-1-0"></a></h3>
@@ -200,6 +200,8 @@
 <code><a href="../reference/pdf_form_obj_remove_object.html">pdf_form_obj_remove_object()</a></code> — <code>FPDFFormObj_RemoveObject</code>. Removes a child page-object from a form XObject.</li>
 <li>
 <code><a href="../reference/pdf_docs_import_pages.html">pdf_docs_import_pages()</a></code> — <code>FPDF_ImportPages</code> (string-range variant of <code><a href="../reference/pdf_docs_merge.html">pdf_docs_merge()</a></code>, e.g. <code>"1-3,5,7-10"</code>).</li>
+<li>
+<code><a href="../reference/pdf_docs_copy_viewer_preferences.html">pdf_docs_copy_viewer_preferences()</a></code> — <code>FPDF_CopyViewerPreferences</code>. One-shot copy of the source document’s <code>/ViewerPreferences</code> dictionary (PageLayout, PageMode, NonFullScreenPageMode, Duplex, PrintScaling, …) into the destination. Useful when assembling a derived doc (concatenation, n-up, page reordering) that should inherit display and print hints from the original.</li>
 </ul></div>
 <div class="section level4">
 <h4 id="image-bitmap-embedding-0-1-0">Image-bitmap embedding<a class="anchor" aria-label="anchor" href="#image-bitmap-embedding-0-1-0"></a></h4>

@@ -158,7 +158,16 @@ release on scope grounds (see `CLAUDE.md` §“Scope”):
   — one-call helper for the path-extraction workflow that motivated the
   package.
 - [`pdf_structure_tree()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_structure_tree.md)
-  — tagged-PDF / accessibility structure tree walk.
+  — tagged-PDF / accessibility structure tree walk. Surfaces every
+  PDFium `FPDF_StructElement_*` reader symbol: `parent_type` (via
+  `_GetParent` + `_GetType`), the standard per-key fields (`type`,
+  `lang`, `alt_text`, `actual_text`, `id`, `title`, `mcid`,
+  `mcid_count`), an `attributes` list-column with full nested-array
+  recursion (`_GetAttributeCount` / `_AtIndex` / `Attr_*`),
+  `child_mcids` for per-slot marked-content IDs (via
+  `_GetChildMarkedContentID`), plus an optional `string_attrs =`
+  argument that names attribute-object keys to materialise as extra
+  columns (via `_GetStringAttribute`).
 
 ### Annotations and form fields
 
@@ -401,6 +410,13 @@ wrapper. New exports broken out by topic:
   — `FPDF_ImportPages` (string-range variant of
   [`pdf_docs_merge()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_docs_merge.md),
   e.g. `"1-3,5,7-10"`).
+- [`pdf_docs_copy_viewer_preferences()`](https://humanpred.github.io/rpdfium/dev/reference/pdf_docs_copy_viewer_preferences.md)
+  — `FPDF_CopyViewerPreferences`. One-shot copy of the source document’s
+  `/ViewerPreferences` dictionary (PageLayout, PageMode,
+  NonFullScreenPageMode, Duplex, PrintScaling, …) into the destination.
+  Useful when assembling a derived doc (concatenation, n-up, page
+  reordering) that should inherit display and print hints from the
+  original.
 
 #### Image-bitmap embedding
 

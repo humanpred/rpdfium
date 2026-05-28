@@ -67,7 +67,7 @@ tree shape (parent_index + level).</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pdf_structure_tree</span><span class="op">(</span><span class="va">page</span>, page_num <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">pdf_structure_tree</span><span class="op">(</span><span class="va">page</span>, page_num <span class="op">=</span> <span class="fl">1L</span>, string_attrs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">character</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -83,6 +83,18 @@ tree shape (parent_index + level).</p>
 <dd><p>One-based page index. Only used when <code>page</code> is
 a <code>pdfium_doc</code>. Ignored otherwise.</p></dd>
 
+
+<dt id="arg-string-attrs">string_attrs<a class="anchor" aria-label="anchor" href="#arg-string-attrs"></a></dt>
+<dd><p>Optional character vector of attribute-object
+names (e.g. <code>"Headers"</code>, <code>"Scope"</code>, <code>"RowSpan"</code>). For each
+name, the result adds a column with that name populated via
+<code>FPDF_StructElement_GetStringAttribute(element, name)</code>. Distinct
+from the typed <code>attributes</code> list-column: this path reads the
+element's <code>/A</code> attribute objects keyed by name, returning the
+value as UTF-8 bytes from PDFium's standard
+<code>name</code>-or-<code>string</code>-typed lookup. Empty string when the
+attribute is absent.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -96,6 +108,10 @@ structure-tree root).</p></li>
 UTF-8. Common values follow the PDF spec's standard
 structure types (e.g. <code>"Document"</code>, <code>"Sect"</code>, <code>"P"</code>,
 <code>"H1"</code>, <code>"Span"</code>, <code>"Figure"</code>, <code>"Table"</code>).</p></li>
+<li><p><code>parent_type</code> character - the structural type of the
+parent element (via <code>FPDF_StructElement_GetParent</code>);
+empty when the element is a direct child of the
+structure-tree root.</p></li>
 <li><p><code>title</code> character - the element's <code>/T</code> title (often empty).</p></li>
 <li><p><code>lang</code> character - the element's <code>/Lang</code> IETF BCP 47 code
 (e.g. <code>"en"</code>, <code>"fr"</code>); empty when none is set.</p></li>
@@ -124,7 +140,15 @@ character for <code>/Placement</code> / <code>/TextAlign</code> /
 <code>/A</code> attribute objects. Aggregated across all attribute
 dictionaries on the element (PDF's nested attribute-class
 layout is flattened to a single namespace).</p></li>
-</ul><p>Returns a 0-row tibble of the same schema when the page has
+<li><p><code>child_mcids</code> list-column - one integer vector per row,
+one entry per child slot in the element's <code>/K</code> array. The
+value is the child's marked-content ID via
+<code>FPDF_StructElement_GetChildMarkedContentID</code>, or <code>NA</code> when
+the child is itself a nested structure element rather than
+a direct marked-content reference. Distinct from <code>mcid</code> /
+<code>mcid_count</code>, which only enumerate MCID-typed children.</p></li>
+</ul><p>Plus one extra column per name in <code>string_attrs</code>.</p>
+<p>Returns a 0-row tibble of the same schema when the page has
 no associated structure tree (typical for untagged PDFs).</p>
     </div>
     <div class="section level2">
@@ -133,9 +157,10 @@ no associated structure tree (typical for untagged PDFs).</p>
 0-row tibble. Tagging is required for <code>print_high_res</code>-quality
 accessibility, screen-reader support, and PDF/UA conformance.</p>
 <p>Wraps <code>FPDF_StructTree_GetForPage</code>, <code>FPDF_StructTree_*Children</code>,
-<code>FPDF_StructElement_GetType</code> / <code>GetTitle</code> / <code>GetLang</code> /
-<code>GetAltText</code> / <code>GetActualText</code> / <code>GetID</code> /
-<code>GetMarkedContentID</code>.</p>
+<code>FPDF_StructElement_GetType</code> / <code>GetParent</code> / <code>GetTitle</code> /
+<code>GetLang</code> / <code>GetAltText</code> / <code>GetActualText</code> / <code>GetID</code> /
+<code>GetMarkedContentID</code> / <code>GetChildMarkedContentID</code> /
+<code>GetStringAttribute</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
