@@ -180,3 +180,22 @@ test_that("pdf_text_search consecutive flag enables overlapping matches", {
   )
   expect_gte(nrow(consec), nrow(non_consec))
 })
+
+test_that("pdf_text_search round-trips non-ASCII query strings", {
+  # Exercise pdfium_r::utf8_to_utf16le_nul's multi-byte UTF-8 decode
+  # branches (utf16.h lines 65-99). Queries don't need to match real
+  # text in the fixture — the encoder is still called on the input
+  # query before PDFium scans the page. 2-byte ("é" -> U+00E9),
+  # 3-byte ("中" -> U+4E2D), and 4-byte ("\U1F600" -> U+1F600
+  # emoji, requiring surrogate-pair emission lines 96-99) all flow
+  # through the same helper.
+  fix <- fixture_path("shapes")
+  out_2byte <- pdf_text_search(fix, "é")    # Latin-1 supplement
+  out_3byte <- pdf_text_search(fix, "中")    # CJK Unified Ideograph
+  out_4byte <- pdf_text_search(fix, "\U0001F600")  # Grinning Face emoji
+  # Fixture has no matches for any of these, so we expect 0 rows
+  # without errors — the point is that the encoder didn't crash.
+  expect_s3_class(out_2byte, "tbl_df")
+  expect_s3_class(out_3byte, "tbl_df")
+  expect_s3_class(out_4byte, "tbl_df")
+})

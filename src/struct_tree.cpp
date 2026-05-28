@@ -75,19 +75,26 @@ SEXP read_attr_value(FPDF_STRUCTELEMENT_ATTR_VALUE value) {
     return Rcpp::wrap(NA_REAL);
   }
   if (type == FPDF_OBJECT_STRING || type == FPDF_OBJECT_NAME) {
+    // PDFium uses UTF-16LE for attribute string values (via
+    // Utf16EncodeMaybeCopyAndReturnLength in fpdfsdk/fpdf_structtree.cpp).
+    // out_buflen is in bytes, including the trailing UTF-16 NUL
+    // (2 bytes). Allocate as `unsigned short` so the buffer is
+    // properly aligned and convert to UTF-8 for R.
     unsigned long out_buflen = 0;
     if (!FPDF_StructElement_Attr_GetStringValue(value, nullptr, 0,
                                                   &out_buflen)) {
       return Rcpp::wrap(NA_STRING);
     }
     if (out_buflen <= 2) return Rcpp::wrap(std::string());
-    std::vector<char> buf(out_buflen);
+    std::vector<unsigned short> buf(out_buflen / 2);
     if (!FPDF_StructElement_Attr_GetStringValue(value, buf.data(),
                                                   out_buflen,
                                                   &out_buflen)) {
       return Rcpp::wrap(NA_STRING);
     }
-    return Rcpp::wrap(std::string(buf.data(), out_buflen - 1));
+    // out_buflen / 2 includes the trailing NUL; strip it for R.
+    std::size_t wchars = (out_buflen >= 2 ? out_buflen / 2 - 1 : 0);
+    return Rcpp::wrap(pdfium_r::utf16le_to_utf8(buf.data(), wchars));
   }
   if (type == FPDF_OBJECT_ARRAY) {
     int n = FPDF_StructElement_Attr_CountChildren(value);
@@ -231,18 +238,19 @@ Rcpp::IntegerVector read_child_mcids(FPDF_STRUCTELEMENT element) {
 // Read a named string attribute via FPDF_StructElement_GetStringAttribute.
 // Distinct from PDFium's per-key getters (GetLang, GetID, etc.) — this
 // reads from the element's attribute *objects* (the /A array) rather
-// than the element's direct dict entries. PDFium documents the call
-// shape as the standard "0-buffer probe, then real call" length-first
-// protocol; the byte buffer is UTF-8 already (not UTF-16LE).
+// than the element's direct dict entries. PDFium emits UTF-16LE bytes
+// via Utf16EncodeMaybeCopyAndReturnLength; `need` is byte count
+// including the trailing UTF-16 NUL (2 bytes).
 std::string read_string_attribute(FPDF_STRUCTELEMENT element,
                                   const char* name) {
   unsigned long need = FPDF_StructElement_GetStringAttribute(
       element, name, nullptr, 0);
-  if (need <= 1) return std::string();  // 1 byte = NUL only.
-  std::vector<char> buf(need);
+  if (need <= 2) return std::string();  // 2 bytes = UTF-16 NUL only.
+  std::vector<unsigned short> buf(need / 2);
   FPDF_StructElement_GetStringAttribute(element, name, buf.data(), need);
   // Strip the trailing NUL.
-  return std::string(buf.data(), need - 1);
+  std::size_t wchars = need / 2 - 1;
+  return pdfium_r::utf16le_to_utf8(buf.data(), wchars);
 }
 
 // Depth-first walk over the structure subtree rooted at `element`.

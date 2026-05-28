@@ -76,6 +76,68 @@ test_that("pdf_doc_meta refuses a closed doc", {
   )
 })
 
+test_that("pdf_doc_meta round-trips non-ASCII characters via UTF-16LE", {
+  # Exercise pdfium_r::utf16le_to_utf8 (utf16.h) for the 2-byte
+  # (Latin supplement), 3-byte (CJK), and 4-byte (supplementary
+  # plane / emoji, surrogate-pair branch lines 24-29 + 42-45)
+  # UTF-8 emit paths. The /Info dict in a PDF is a natural place
+  # to round-trip arbitrary Unicode because PDFium emits it via
+  # FPDF_GetMetaText -> UTF-16LE -> our decoder.
+  bytes <- charToRaw(paste0(
+    "%PDF-1.4\n",
+    "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n",
+    "2 0 obj << /Type /Pages /Count 1 /Kids [3 0 R] >> endobj\n",
+    "3 0 obj << /Type /Page /Parent 2 0 R /Resources << >>\n",
+    "  /MediaBox [0 0 100 100] >> endobj\n"
+  ))
+  # Build an Info dict whose Title is a UTF-16BE-encoded
+  # string carrying "é中\U0001F600" (Latin-1 supplement + CJK +
+  # supplementary-plane emoji requiring a surrogate pair).
+  # PDF spec: text strings are detected as UTF-16BE if they
+  # start with the BOM (0xFE 0xFF).
+  bom <- as.raw(c(0xFE, 0xFF))
+  # UTF-16BE bytes for U+00E9 (é), U+4E2D (中), U+1F600 (surrogate
+  # pair: D83D DE00).
+  u16be <- as.raw(c(
+    0x00, 0xE9,            # é
+    0x4E, 0x2D,            # 中
+    0xD8, 0x3D, 0xDE, 0x00 # 😀
+  ))
+  # Escape "(" and ")" in PDF literal strings; none of these bytes
+  # collide, so we can write them as a literal string between
+  # parentheses.
+  title_bytes <- c(charToRaw("("), bom, u16be, charToRaw(")"))
+  info_head <- charToRaw("4 0 obj << /Title ")
+  info_tail <- charToRaw(" >> endobj\n")
+  info_obj <- c(info_head, title_bytes, info_tail)
+
+  obj1_off <- 9L  # after "%PDF-1.4\n"
+  obj2_off <- obj1_off + nchar("1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n")
+  obj3_off <- obj2_off + nchar("2 0 obj << /Type /Pages /Count 1 /Kids [3 0 R] >> endobj\n")
+  obj4_off <- length(bytes)
+  xref_off <- obj4_off + length(info_obj)
+  xref_lines <- c(
+    "xref\n0 5\n",
+    "0000000000 65535 f \n",
+    sprintf("%010d 00000 n \n", obj1_off),
+    sprintf("%010d 00000 n \n", obj2_off),
+    sprintf("%010d 00000 n \n", obj3_off),
+    sprintf("%010d 00000 n \n", obj4_off)
+  )
+  xref_bytes <- charToRaw(paste(xref_lines, collapse = ""))
+  trailer_bytes <- charToRaw(sprintf(
+    "trailer << /Size 5 /Root 1 0 R /Info 4 0 R >>\nstartxref\n%d\n%%%%EOF\n",
+    xref_off
+  ))
+  full <- c(bytes, info_obj, xref_bytes, trailer_bytes)
+  tf <- withr::local_tempfile(fileext = ".pdf")
+  writeBin(full, tf)
+  doc <- pdf_doc_open(tf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  title <- pdf_doc_meta(doc, "Title")
+  expect_identical(title, "é中\U0001F600")
+})
+
 test_that("pdf_parse_date handles common PDF formats", {
   # Full form with UTC Z suffix.
   expect_equal(

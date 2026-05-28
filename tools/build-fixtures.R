@@ -707,10 +707,23 @@ local({
                 paste0("<< /Type /StructElem /S /H1 ",
                        "/P 5 0 R /T (Title) ",
                        "/Lang (en) /Alt (Heading) /ID (h1-1) >>"))
-    # P child (with marked content ID 0 on page 3)
+    # P child (with marked content ID 0 on page 3). The /A entry
+    # carries a Layout attribute object with typed values exercising
+    # each branch of read_attr_value():
+    #   /SpaceBefore (Number), /Placement (Name), /BBox (Array of
+    #   Number), /BorderStyle (Array of Name), /Hidden (Boolean).
+    # /A is wrapped in a single-element array so PDFium's
+    # FPDF_StructElement_GetStringAttribute (which requires
+    # /A to be an array) can find the named keys.
     obj7 <- obj(7,
                 paste0("<< /Type /StructElem /S /P ",
                        "/P 5 0 R /Pg 3 0 R ",
+                       "/A [<< /O /Layout ",
+                       "/Placement /Block ",
+                       "/SpaceBefore 12.5 ",
+                       "/BBox [10 20 110 120] ",
+                       "/BorderStyle [/Solid /Solid /Solid /Solid] ",
+                       "/Hidden false >>] ",
                        "/K << /Type /MCR /Pg 3 0 R /MCID 0 >> >>"))
     # Figure child (alt text only)
     obj8 <- obj(8,
