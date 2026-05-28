@@ -82,9 +82,20 @@ jobs:
           fi
 
           # Find our installed binaries so atos has something to
-          # symbolicate against.
+          # symbolicate against. R CMD check installs into a tempdir
+          # under check/pdfium.Rcheck/, NOT the user library, so
+          # `system.file()` from a fresh Rscript returns empty. Fall
+          # back to a glob.
           pkg_lib=$(Rscript -e 'cat(system.file("libs", package = "pdfium"))' 2>/dev/null)
           pkg_dylib=$(Rscript -e 'cat(system.file("lib", "libpdfium.dylib", package = "pdfium"))' 2>/dev/null)
+          if [ -z "$pkg_lib" ] || [ ! -d "$pkg_lib" ]; then
+            pkg_lib=$(find check -path '*/pdfium.Rcheck/pdfium/libs' -type d 2>/dev/null | head -1)
+            echo "Falling back to check-dir install: pkg_lib=$pkg_lib"
+          fi
+          if [ -z "$pkg_dylib" ] || [ ! -f "$pkg_dylib" ]; then
+            pkg_dylib=$(find check -path '*/pdfium.Rcheck/pdfium/lib/libpdfium.dylib' -type f 2>/dev/null | head -1)
+            echo "Falling back to check-dir install: pkg_dylib=$pkg_dylib"
+          fi
           echo "package shared object dir: $pkg_lib"
           echo "bundled libpdfium.dylib  : $pkg_dylib"
           echo ""
@@ -108,59 +119,85 @@ jobs:
             # Symbolicate the faulting thread, focusing on frames that
             # live in our binaries. apple-system frames get a name-only
             # entry; pdfium-related frames get the full atos lookup.
-            python3 - "$f" "$pkg_lib" "$pkg_dylib" <<'PYEOF'
-          import json, os, subprocess, sys
-          ips_path, pkg_lib, pkg_dylib = sys.argv[1], sys.argv[2], sys.argv[3]
+            # .ips v2 is two JSON documents: line 1 = header, the rest
+            # = body. The body sometimes contains stray characters that
+            # strict json.loads rejects; we fall back to scanning each
+            # line for "usedImages" / "frames" with `ast.literal_eval`
+            # when strict parsing fails.
+            python3 - "$f" "$pkg_lib" "$pkg_dylib" "$(pwd)" <<'PYEOF'
+          import json, os, re, subprocess, sys
+          ips_path, pkg_lib, pkg_dylib, cwd = sys.argv[1:5]
           our_binaries = []
+          # Glob our binaries out of the check-dir install if needed.
           if pkg_lib:
-              # pdfium.so lives at <pkg_lib>/pdfium.so on macOS.
               for cand in (os.path.join(pkg_lib, "pdfium.so"),
                            os.path.join(pkg_lib, "pdfium.dylib")):
                   if os.path.exists(cand):
                       our_binaries.append(cand)
           if pkg_dylib and os.path.exists(pkg_dylib):
               our_binaries.append(pkg_dylib)
+          # Also scan the check tree for any pdfium-named binary.
+          for root, _, files in os.walk(os.path.join(cwd, "check"),
+                                         followlinks=False):
+              for nm in files:
+                  if nm in ("pdfium.so", "libpdfium.dylib"):
+                      our_binaries.append(os.path.join(root, nm))
+          print("symbolication targets:")
+          for b in our_binaries:
+              print(f"  {b}")
+
           with open(ips_path) as fh:
               raw = fh.read()
           parts = raw.split("\n", 1)
           if len(parts) < 2:
               print("(no body to symbolicate)"); sys.exit(0)
-          try:
-              body = json.loads(parts[1])
-          except Exception as e:
-              print(f"(could not parse .ips body: {e})"); sys.exit(0)
+          body_str = parts[1]
+          body = None
+          for kw in ({}, {"strict": False}):
+              try:
+                  body = json.loads(body_str, **kw)
+                  break
+              except Exception as e:
+                  last_err = e
+                  continue
+          if body is None:
+              print(f"(json.loads rejected .ips body: {last_err}; "
+                    f"first chars: {body_str[:120]!r})")
+              sys.exit(0)
           threads = body.get("threads", [])
           images = body.get("usedImages", [])
           fidx = body.get("faultingThread", 0)
           if fidx >= len(threads):
               print("(no faulting thread)"); sys.exit(0)
           frames = threads[fidx].get("frames", [])
-          print(f"---- symbolicated faulting thread #{fidx} ({len(frames)} frames) ----")
+          print(f"---- symbolicated faulting thread #{fidx} "
+                f"({len(frames)} frames) ----")
           for n, fr in enumerate(frames):
               imi = fr.get("imageIndex", -1)
               off = fr.get("imageOffset", 0)
               if imi < 0 or imi >= len(images):
-                  print(f"  #{n:02d} <unknown image>")
+                  print(f"  #{n:02d} <unknown image>+0x{off:x}")
                   continue
               img = images[imi]
               path = img.get("path", "")
               base = img.get("base", 0)
               name = os.path.basename(path) or "<unknown>"
-              is_ours = (
-                  any(os.path.realpath(path) == os.path.realpath(b)
-                      for b in our_binaries)
-                  or "pdfium" in name
-              )
-              if is_ours and os.path.exists(path):
+              # Try every candidate binary whose basename matches.
+              cand = next(
+                  (b for b in our_binaries
+                   if os.path.basename(b) == name),
+                  None,
+              ) or (path if os.path.exists(path) else None)
+              if cand:
                   try:
                       out = subprocess.check_output(
-                          ["atos", "-arch", "arm64", "-o", path,
+                          ["atos", "-arch", "arm64", "-o", cand,
                            "-l", hex(base), hex(base + off)],
                           stderr=subprocess.STDOUT, timeout=10
                       ).decode().strip()
                       print(f"  #{n:02d} {out}  [{name}+0x{off:x}]")
                       continue
-                  except Exception as e:
+                  except Exception:
                       pass
               print(f"  #{n:02d} {name}+0x{off:x}")
           PYEOF
@@ -190,39 +227,57 @@ jobs:
         run: |
           set +e
           mkdir -p "$RUNNER_TEMP/lldb-output"
-          R_BIN="$(Rscript -e 'cat(file.path(R.home("bin"), "exec", "R"))')"
-          echo "R binary: $R_BIN"
+
+          # R's actual binary lives at <R_HOME>/bin/exec/R and needs
+          # R_HOME set in the environment — the wrapper shell script
+          # at <R_HOME>/bin/R is what normally exports it. We export
+          # R_HOME ourselves so lldb launches the binary cleanly.
+          R_HOME_DIR="$(R RHOME)"
+          R_BIN="$R_HOME_DIR/bin/exec/R"
+          export R_HOME="$R_HOME_DIR"
+          echo "R_HOME = $R_HOME_DIR"
+          echo "R binary = $R_BIN"
           file "$R_BIN" || true
+          # Confirm the reprex script is on disk where we expect.
+          ls -la dev/reprex/macos-arm64-struct-tree.R
+
+          # The "marker" lldb command writes a recognisable banner to
+          # the session log without using `echo`, which isn't a valid
+          # lldb builtin on the GitHub macos-latest runner's lldb
+          # build. `script print(...)` runs through lldb's embedded
+          # Python interpreter, which is always available.
+          marker() {
+            printf -- '-o\nscript print("=== %s ===")\n' "$1"
+          }
 
           # lldb commands:
-          #   1. Have lldb intercept SIGSEGV / SIGBUS / SIGABRT so
-          #      they stop in the debugger instead of killing R.
-          #   2. `settings set target.process.follow-fork-mode child`
-          #      — testthat (and rcmdcheck) fork Rscript children;
-          #      we want to follow whichever process actually segvs.
-          #   3. Run R with the reprex script.
-          #   4. On stop, dump full diagnostic info: bt all, register
-          #      state, instruction at $pc, neighborhood of the
-          #      faulting address.
+          #   1. follow-fork-mode child — testthat (and rcmdcheck)
+          #      can fork Rscript children; we want lldb to follow
+          #      whichever process actually segvs.
+          #   2. process handle for SIGSEGV / SIGBUS / SIGABRT —
+          #      stop in the debugger instead of letting R die.
+          #   3. run the reprex; on stop, dump full diagnostics.
           lldb --batch \
             -o "settings set target.process.follow-fork-mode child" \
+            -o "settings set target.inherit-env true" \
             -o "process handle SIGSEGV --pass true --stop true --notify true" \
             -o "process handle SIGBUS  --pass true --stop true --notify true" \
             -o "process handle SIGABRT --pass true --stop true --notify true" \
+            -o "script print('=== launching R ===')" \
             -o "run --no-save --no-restore --vanilla -f dev/reprex/macos-arm64-struct-tree.R" \
-            -o "echo === thread list ===" \
+            -o "script print('=== thread list ===')" \
             -o "thread list" \
-            -o "echo === backtrace all threads ===" \
+            -o "script print('=== backtrace all threads ===')" \
             -o "thread backtrace all" \
-            -o "echo === register state ===" \
+            -o "script print('=== register state ===')" \
             -o "register read --all" \
-            -o "echo === image holding pc ===" \
+            -o "script print('=== image holding pc ===')" \
             -o "image lookup --address \$pc" \
-            -o "echo === disassembly around pc ===" \
+            -o "script print('=== disassembly around pc ===')" \
             -o "disassemble --pc --count 16" \
-            -o "echo === image list (loaded binaries) ===" \
+            -o "script print('=== image list (loaded binaries) ===')" \
             -o "image list" \
-            -o "echo === memory near pc ===" \
+            -o "script print('=== memory near pc ===')" \
             -o "memory read --size 1 --count 128 \$pc - 32" \
             -o "quit" \
             -- "$R_BIN" \
