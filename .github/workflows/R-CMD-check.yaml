@@ -116,91 +116,35 @@ jobs:
               continue
             fi
 
-            # Symbolicate the faulting thread, focusing on frames that
-            # live in our binaries. apple-system frames get a name-only
-            # entry; pdfium-related frames get the full atos lookup.
-            # .ips v2 is two JSON documents: line 1 = header, the rest
-            # = body. The body sometimes contains stray characters that
-            # strict json.loads rejects; we fall back to scanning each
-            # line for "usedImages" / "frames" with `ast.literal_eval`
-            # when strict parsing fails.
-            python3 - "$f" "$pkg_lib" "$pkg_dylib" "$(pwd)" <<'PYEOF'
-          import json, os, re, subprocess, sys
-          ips_path, pkg_lib, pkg_dylib, cwd = sys.argv[1:5]
-          our_binaries = []
-          # Glob our binaries out of the check-dir install if needed.
-          if pkg_lib:
-              for cand in (os.path.join(pkg_lib, "pdfium.so"),
-                           os.path.join(pkg_lib, "pdfium.dylib")):
-                  if os.path.exists(cand):
-                      our_binaries.append(cand)
-          if pkg_dylib and os.path.exists(pkg_dylib):
-              our_binaries.append(pkg_dylib)
-          # Also scan the check tree for any pdfium-named binary.
-          for root, _, files in os.walk(os.path.join(cwd, "check"),
-                                         followlinks=False):
-              for nm in files:
-                  if nm in ("pdfium.so", "libpdfium.dylib"):
-                      our_binaries.append(os.path.join(root, nm))
-          print("symbolication targets:")
-          for b in our_binaries:
-              print(f"  {b}")
-
-          with open(ips_path) as fh:
-              raw = fh.read()
-          parts = raw.split("\n", 1)
-          if len(parts) < 2:
-              print("(no body to symbolicate)"); sys.exit(0)
-          body_str = parts[1]
-          body = None
-          for kw in ({}, {"strict": False}):
-              try:
-                  body = json.loads(body_str, **kw)
-                  break
-              except Exception as e:
-                  last_err = e
-                  continue
-          if body is None:
-              print(f"(json.loads rejected .ips body: {last_err}; "
-                    f"first chars: {body_str[:120]!r})")
-              sys.exit(0)
-          threads = body.get("threads", [])
-          images = body.get("usedImages", [])
-          fidx = body.get("faultingThread", 0)
-          if fidx >= len(threads):
-              print("(no faulting thread)"); sys.exit(0)
-          frames = threads[fidx].get("frames", [])
-          print(f"---- symbolicated faulting thread #{fidx} "
-                f"({len(frames)} frames) ----")
-          for n, fr in enumerate(frames):
-              imi = fr.get("imageIndex", -1)
-              off = fr.get("imageOffset", 0)
-              if imi < 0 or imi >= len(images):
-                  print(f"  #{n:02d} <unknown image>+0x{off:x}")
-                  continue
-              img = images[imi]
-              path = img.get("path", "")
-              base = img.get("base", 0)
-              name = os.path.basename(path) or "<unknown>"
-              # Try every candidate binary whose basename matches.
-              cand = next(
-                  (b for b in our_binaries
-                   if os.path.basename(b) == name),
-                  None,
-              ) or (path if os.path.exists(path) else None)
-              if cand:
-                  try:
-                      out = subprocess.check_output(
-                          ["atos", "-arch", "arm64", "-o", cand,
-                           "-l", hex(base), hex(base + off)],
-                          stderr=subprocess.STDOUT, timeout=10
-                      ).decode().strip()
-                      print(f"  #{n:02d} {out}  [{name}+0x{off:x}]")
-                      continue
-                  except Exception:
-                      pass
-              print(f"  #{n:02d} {name}+0x{off:x}")
-          PYEOF
+            # Symbolicate the faulting thread using jq. macOS's .ips
+            # bodies have JSON-ish syntax that strict Python json
+            # rejects, but jq parses them. Apple's CrashReporter
+            # already pre-symbolicates most frames (symbol + sourceFile
+            # + sourceLine fields per frame), so we mostly just need
+            # to pretty-print them. Falls back gracefully if jq isn't
+            # happy.
+            body=$(tail -n +2 "$f")
+            if ! printf '%s' "$body" | jq '.faultingThread' >/dev/null 2>&1; then
+              echo "::warning::jq could not parse .ips body — frames unavailable"
+              continue
+            fi
+            faulting=$(printf '%s' "$body" | jq -r '.faultingThread // 0')
+            echo "---- faulting thread #$faulting (Apple-symbolicated frames) ----"
+            printf '%s' "$body" | jq -r --argjson ft "$faulting" '
+              .usedImages as $imgs
+              | .threads[$ft].frames
+              | to_entries[]
+              | "  #\(.key) "
+                + (.value.symbol // "<unsym>")
+                + " + " + ((.value.symbolLocation // 0) | tostring)
+                + (if .value.sourceFile then
+                     "  (" + .value.sourceFile + ":"
+                     + ((.value.sourceLine // 0) | tostring) + ")"
+                   else "" end)
+                + "  [" + ($imgs[.value.imageIndex].name // "?")
+                + "+0x" + ((.value.imageOffset // 0) | tostring) + "]"
+            '
+            echo ""
             echo ""
           done
 
@@ -235,6 +179,16 @@ jobs:
           R_HOME_DIR="$(R RHOME)"
           R_BIN="$R_HOME_DIR/bin/exec/R"
           export R_HOME="$R_HOME_DIR"
+          # R CMD check installs the package into check/pdfium.Rcheck/
+          # rather than the user library; tell library() to look there.
+          CHECK_LIBDIR=$(find check -maxdepth 2 -name pdfium.Rcheck -type d 2>/dev/null | head -1)
+          if [ -n "$CHECK_LIBDIR" ]; then
+            export R_LIBS_USER="$(pwd)/$CHECK_LIBDIR"
+            echo "R_LIBS_USER = $R_LIBS_USER"
+            ls -la "$R_LIBS_USER" || true
+          else
+            echo "::warning::could not find check/pdfium.Rcheck — library(pdfium) will likely fail"
+          fi
           echo "R_HOME = $R_HOME_DIR"
           echo "R binary = $R_BIN"
           file "$R_BIN" || true
