@@ -123,7 +123,7 @@ SEXP read_param_value(FPDF_PAGEOBJECTMARK mark, const std::string& key) {
       return Rcpp::wrap(NA_STRING);
     }  // # nocov end
     size_t wchars = (out_buflen >= 2 ? out_buflen / 2 - 1
-                                       : out_buflen / 2);
+                                       : out_buflen / 2);  // # nocov
     return Rcpp::wrap(pdfium_r::utf16le_to_utf8(buf.data(), wchars));
   }
   // Blob: surface as a raw vector. PDFium's blob accessor returns

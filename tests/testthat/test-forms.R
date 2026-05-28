@@ -183,3 +183,21 @@ test_that("pdf_form_objects refuses a closed parent page", {
     "Parent page has been closed"
   )
 })
+
+test_that("cpp_form_get_object rejects an out-of-range index", {
+  # Direct cpp::: call: the R-side iterates 0..n-1 from the count, so
+  # this shim's bad-index stop is unreachable through the wrapper.
+  doc <- pdf_doc_open(fixture_path("form_xobject"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  forms <- Filter(
+    function(o) identical(o$type, "form"),
+    pdf_page_objects(page)
+  )
+  skip_if(length(forms) == 0L, "no form objects")
+  expect_error(
+    pdfium:::cpp_form_get_object(forms[[1L]]$ptr, page$ptr, 999L),
+    "returned NULL"
+  )
+})

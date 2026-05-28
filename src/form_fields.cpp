@@ -133,10 +133,11 @@ Rcpp::List cpp_form_fields_list(SEXP doc_ptr) {
   FPDF_FORMFILLINFO ffi{};
   ffi.version = 2;
   FPDF_FORMHANDLE form = FPDFDOC_InitFormFillEnvironment(doc, &ffi);
-  if (form == nullptr) {  // nocov start — PDFium chromium/7202 always
-    // returns a non-NULL form environment even when the doc has no
-    // AcroForm; we keep this branch as a defensive shape-preserving
-    // empty-result for any future PDFium where init can fail.
+  // # nocov start — PDFium chromium/7202 always returns a non-NULL
+  // form environment even when the doc has no AcroForm; we keep this
+  // branch as a defensive shape-preserving empty-result for any
+  // future PDFium where init can fail.
+  if (form == nullptr) {
     return Rcpp::List::create(
         Rcpp::_["page_num"]      = Rcpp::IntegerVector(),
         Rcpp::_["field_type"]    = Rcpp::IntegerVector(),
@@ -155,7 +156,8 @@ Rcpp::List cpp_form_fields_list(SEXP doc_ptr) {
         Rcpp::_["options"]       = Rcpp::List(),
         Rcpp::_["is_option_selected"] = Rcpp::List(),
         Rcpp::_["additional_actions_js"] = Rcpp::List());
-  }  // nocov end
+  }
+  // # nocov end
 
   std::vector<int> page_nums;
   std::vector<int> field_types;
@@ -233,15 +235,17 @@ Rcpp::List cpp_form_fields_list(SEXP doc_ptr) {
         bottoms.push_back(rect.bottom);
         rights.push_back(rect.right);
         tops.push_back(rect.top);
-      } else {  // nocov start — every widget annotation carries a
-        // /Rect entry per PDF 1.7 §12.5.2; FPDFAnnot_GetRect only
-        // returns false when the annot dict is malformed, which
-        // PDFium would have rejected earlier in FPDFPage_GetAnnot.
+      } else {
+        // # nocov start — every widget annotation carries a /Rect entry
+        // per PDF 1.7 §12.5.2; FPDFAnnot_GetRect only returns false when
+        // the annot dict is malformed, which PDFium would have rejected
+        // earlier in FPDFPage_GetAnnot.
         lefts.push_back(NA_REAL);
         bottoms.push_back(NA_REAL);
         rights.push_back(NA_REAL);
         tops.push_back(NA_REAL);
-      }  // nocov end
+        // # nocov end
+      }
       options.push_back(Rcpp::wrap(read_form_options(form, annot)));
       is_option_selected.push_back(read_option_selected(form, annot));
       additional_actions_js.push_back(

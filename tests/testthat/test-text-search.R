@@ -167,6 +167,25 @@ test_that("pdf_text_search handles a text-less page without erroring", {
   }
 })
 
+test_that("cpp_text_search_page returns an empty result for an empty query", {
+  # The public R wrapper rejects empty queries via
+  # checkmate::assert_string(min.chars = 1L); drive the shim
+  # directly so the inline `query.empty()` belt-and-braces branch
+  # is covered.
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  out <- pdfium:::cpp_text_search_page(page$ptr, "",
+                                       match_case = FALSE,
+                                       match_whole_word = FALSE,
+                                       consecutive = FALSE)
+  expect_named(out, c("start_char", "char_count", "text",
+                      "left", "bottom", "right", "top"))
+  expect_length(out$start_char, 0L)
+  expect_length(out$text, 0L)
+})
+
 test_that("pdf_text_search consecutive flag enables overlapping matches", {
   # Match "ll" in "Hello": with consecutive = FALSE PDFium advances
   # past the first match (one match at chars 2..3). With consecutive

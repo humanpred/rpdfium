@@ -263,6 +263,37 @@ test_that("pdf_obj_remove_mark removes by 1-based index", {
   expect_equal(after, before - 1L)
 })
 
+test_that("cpp_obj_remove_mark rejects an out-of-range mark index", {
+  # Direct cpp::: call: the R wrapper only checks mark_index >= 1L
+  # so passing a too-large index lands in the cpp-side
+  # "No content mark at index" stop.
+  s <- setters_first_path()
+  expect_error(
+    pdfium:::cpp_obj_remove_mark(s$obj$ptr, 99L),
+    "No content mark"
+  )
+})
+
+test_that("cpp_obj_mark_set_int_param rejects an out-of-range mark index", {
+  s <- setters_first_path()
+  expect_error(
+    pdfium:::cpp_obj_mark_set_int_param(
+      s$doc$ptr, s$obj$ptr, 99L, "Lang", 1L
+    ),
+    "No content mark"
+  )
+})
+
+test_that("cpp_obj_mark_set_string_param rejects an out-of-range mark index", {
+  s <- setters_first_path()
+  expect_error(
+    pdfium:::cpp_obj_mark_set_string_param(
+      s$doc$ptr, s$obj$ptr, 99L, "Lang", "en"
+    ),
+    "No content mark"
+  )
+})
+
 test_that("pdf_obj_add_mark rejects bad params", {
   s <- setters_first_path()
   expect_error(

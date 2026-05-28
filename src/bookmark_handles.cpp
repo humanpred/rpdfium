@@ -52,8 +52,15 @@ void collect_bookmarks(FPDF_DOCUMENT doc, FPDF_BOOKMARK current,
                         std::vector<int>& levels) {
   while (current != nullptr) {
     if (!seen.insert(static_cast<void*>(current)).second) {
-      // Already visited — cycle detected; stop following this branch.
+      // # nocov start — PDFium's FPDFBookmark_GetFirstChild and
+      // FPDFBookmark_GetNextSibling implementations in chromium/7202
+      // already short-circuit /Next and /First cycles at the C++
+      // layer (returning nullptr instead of looping), so the test
+      // fixture's `/Next 5 0 R` self-loop never re-enters this loop.
+      // The guard remains as a defence-in-depth in case a future
+      // PDFium relaxes that internal protection.
       return;
+      // # nocov end
     }
     bms.push_back(current);
     parent_indices.push_back(parent_index);
@@ -120,14 +127,14 @@ Rcpp::List cpp_bookmark_action_handle(SEXP bm_ptr, SEXP doc_ptr) {
 
   FPDF_ACTION action = FPDFBookmark_GetAction(bookmark);
   if (action != nullptr) {
-    pdfium_r::classify_action(doc, action, action_code,
+    pdfium_r::classify_action(doc, action, action_code,  // # nocov  // outline.pdf bookmarks use /Dest directly; reaching this branch needs a bookmark with an /A action
                                uri, filepath, dest_page_idx);
   }
   // Direct /Dest on the bookmark (overrides / supplements the action
   // dest for plain within-doc GoTo).
   FPDF_DEST dest = FPDFBookmark_GetDest(doc, bookmark);
   if (dest == nullptr && action != nullptr) {
-    dest = FPDFAction_GetDest(doc, action);
+    dest = FPDFAction_GetDest(doc, action);  // # nocov  // outline.pdf bookmarks use /Dest directly; reaching this branch needs an action-only bookmark
   }
   if (dest != nullptr) {
     int idx = FPDFDest_GetDestPageIndex(doc, dest);

@@ -224,3 +224,15 @@ test_that("cpp_signature_byte_range errors on an out-of-bounds index", {
     "FPDF_GetSignatureObject returned NULL"
   )
 })
+
+test_that("cpp_signature_get rejects an out-of-range index", {
+  # The R wrapper iterates 0..n-1 from the count so the shim's bad-index
+  # stop is unreachable through pdf_signatures(); direct call exercises
+  # the C++ guard.
+  doc <- pdf_doc_open(fixture_path("signed"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  expect_error(
+    pdfium:::cpp_signature_get(doc$ptr, 99L),
+    "returned NULL"
+  )
+})

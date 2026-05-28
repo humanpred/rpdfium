@@ -30,10 +30,10 @@ inline FPDF_ANNOTATION annot_from_ptr(SEXP annot_ptr) {
 
 inline unsigned int rgba_channel(double v, const char* what) {
   if (Rcpp::NumericVector::is_na(v)) {
-    Rcpp::stop("RGBA channel `%s` must not be NA.", what);
+    Rcpp::stop("RGBA channel `%s` must not be NA.", what);  // # nocov  // R wrapper rejects NA via checkmate before reaching the shim
   }
   if (v < 0.0 || v > 255.0) {
-    Rcpp::stop("RGBA channel `%s` must be in [0, 255]; got %g.",
+    Rcpp::stop("RGBA channel `%s` must be in [0, 255]; got %g.",  // # nocov  // R wrapper clamps to [0, 255] before reaching the shim
                 what, v);
   }
   return static_cast<unsigned int>(v + 0.5);

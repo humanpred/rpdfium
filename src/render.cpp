@@ -26,7 +26,7 @@ Rcpp::IntegerMatrix cpp_render_page(SEXP page_ptr,
                                     int background_argb,
                                     bool fill_background) {
   if (TYPEOF(page_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer.");
+    Rcpp::stop("Expected an external pointer.");  // # nocov  // R wrapper validates via checkmate
   }
   FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
   if (page == nullptr) Rcpp::stop("Page handle is closed.");
@@ -36,7 +36,7 @@ Rcpp::IntegerMatrix cpp_render_page(SEXP page_ptr,
   FPDF_BITMAP bitmap = FPDFBitmap_Create(pixel_width, pixel_height,
                                          /*alpha=*/1);
   if (bitmap == nullptr) {
-    Rcpp::stop("FPDFBitmap_Create returned NULL (likely out of memory).");
+    Rcpp::stop("FPDFBitmap_Create returned NULL (likely out of memory).");  // # nocov  // only fails on out-of-memory
   }
 
   // FPDFBitmap_FillRect interprets `color` as 0xAARRGGBB regardless
@@ -100,7 +100,7 @@ Rcpp::IntegerMatrix cpp_render_page_with_matrix(
     int background_argb,
     bool fill_background) {
   if (TYPEOF(page_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer.");
+    Rcpp::stop("Expected an external pointer.");  // # nocov  // R wrapper validates via checkmate
   }
   FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
   if (page == nullptr) Rcpp::stop("Page handle is closed.");
@@ -110,7 +110,7 @@ Rcpp::IntegerMatrix cpp_render_page_with_matrix(
 
   FPDF_BITMAP bitmap = FPDFBitmap_Create(pixel_width, pixel_height,
                                           /*alpha=*/0);
-  if (bitmap == nullptr) Rcpp::stop("FPDFBitmap_Create returned NULL.");
+  if (bitmap == nullptr) Rcpp::stop("FPDFBitmap_Create returned NULL.");  // # nocov  // only fails on out-of-memory
   if (fill_background) {
     FPDFBitmap_FillRect(bitmap, 0, 0, pixel_width, pixel_height,
                         static_cast<FPDF_DWORD>(background_argb));

@@ -42,13 +42,13 @@ Rcpp::List cpp_path_segments(SEXP obj_ptr) {
   for (int i = 0; i < n; ++i) {
     FPDF_PATHSEGMENT seg = FPDFPath_GetPathSegment(obj, i);
     if (seg == nullptr) {
-      Rcpp::stop("FPDFPath_GetPathSegment returned NULL at index %d", i);
+      Rcpp::stop("FPDFPath_GetPathSegment returned NULL at index %d", i);  // # nocov  // PDFium guarantees handles 0..N-1 are valid for the count it just reported
     }
     type[i] = FPDFPathSegment_GetType(seg);
     float xi = 0.0f, yi = 0.0f;
     FPDF_BOOL ok = FPDFPathSegment_GetPoint(seg, &xi, &yi);
     if (!ok) {
-      Rcpp::stop("FPDFPathSegment_GetPoint failed at index %d", i);
+      Rcpp::stop("FPDFPathSegment_GetPoint failed at index %d", i);  // # nocov  // PDFium's GetPoint never fails on a valid segment handle
     }
     x[i] = static_cast<double>(xi);
     y[i] = static_cast<double>(yi);

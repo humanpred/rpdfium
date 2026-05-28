@@ -88,6 +88,18 @@ test_that("pdf_image_new validates `bounds` shape", {
                "Assertion on")
 })
 
+test_that("cpp_image_new_from_jpeg handles an empty raw vector", {
+  # Exercises the size == 0 -> nullptr branch in the FileAccess
+  # buffer setup. PDFium accepts the empty bytes silently (the inline
+  # JPEG loader copies zero bytes and produces an empty image object).
+  s <- img_blank_page()
+  obj_ptr <- pdfium:::cpp_image_new_from_jpeg(
+    s$doc$ptr, s$page$ptr, raw(0)
+  )
+  expect_type(obj_ptr, "externalptr")
+})
+
+
 # Read-only / closed-page rejection ---------------------------------
 
 test_that("pdf_image_new refuses a read-only doc", {

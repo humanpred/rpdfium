@@ -45,7 +45,7 @@ int read_jpeg_block(void* param, unsigned long position,
                     unsigned char* p_buf, unsigned long size) {
   JpegBuf* jb = static_cast<JpegBuf*>(param);
   if (position + size > jb->len) {
-    return 0;  // out of range
+    return 0;  // # nocov  // PDFium reads within jb->len it queried on the previous step
   }
   std::memcpy(p_buf, jb->data + position, size);
   return 1;
@@ -61,7 +61,7 @@ SEXP cpp_image_new_from_jpeg(SEXP doc_ptr, SEXP page_ptr,
 
   FPDF_PAGEOBJECT image_obj = FPDFPageObj_NewImageObj(doc);
   if (image_obj == nullptr) {
-    Rcpp::stop("FPDFPageObj_NewImageObj returned NULL.");
+    Rcpp::stop("FPDFPageObj_NewImageObj returned NULL.");  // # nocov  // only fails on out-of-memory
   }
 
   JpegBuf jb;
@@ -79,12 +79,12 @@ SEXP cpp_image_new_from_jpeg(SEXP doc_ptr, SEXP page_ptr,
   // the "Inline" suffix, retains a reference to file_access and
   // would dangle on return.)
   FPDF_PAGE pages[] = {page};
-  if (!FPDFImageObj_LoadJpegFileInline(pages, 1, image_obj,
+  if (!FPDFImageObj_LoadJpegFileInline(pages, 1, image_obj,  // # nocov start  // PDFium accepts any bytes (parses lazily); the FileAccess callback only fails on the OOM path
                                          &file_access)) {
     FPDFPageObj_Destroy(image_obj);
     Rcpp::stop("FPDFImageObj_LoadJpegFileInline failed; the bytes "
                "may not be valid JPEG.");
-  }
+  }  // # nocov end
 
   FPDFPage_InsertObject(page, image_obj);
 

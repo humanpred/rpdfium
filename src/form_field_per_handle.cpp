@@ -216,14 +216,16 @@ Rcpp::CharacterVector cpp_form_field_additional_actions_handle(
   Rcpp::CharacterVector out(4);
   out.attr("names") = Rcpp::CharacterVector::create(
       "key_stroke", "format", "validate", "calculate");
-  if (ffi.form == nullptr) {  // nocov start — PDFium chromium/7202
-    // always returns a non-NULL form environment when any AcroForm
-    // exists (and a pdfium_form_field handle implies one did at
-    // construction). The branch survives so the caller still gets
-    // the documented 4-name vector even if a future PDFium fails.
+  // # nocov start — PDFium chromium/7202 always returns a non-NULL
+  // form environment when any AcroForm exists (and a pdfium_form_field
+  // handle implies one did at construction). The branch survives so
+  // the caller still gets the documented 4-name vector even if a
+  // future PDFium fails.
+  if (ffi.form == nullptr) {
     for (int i = 0; i < 4; ++i) out[i] = "";
     return out;
-  }  // nocov end
+  }
+  // # nocov end
   for (int i = 0; i < 4; ++i) {
     unsigned long needed = FPDFAnnot_GetFormAdditionalActionJavaScript(
         ffi.form, a, kAdditionalActionEvents[i], nullptr, 0);

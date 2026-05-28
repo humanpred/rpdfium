@@ -82,9 +82,14 @@ int cpp_clip_path_count_segments(SEXP clip_ptr, int path_index_zero) {
 Rcpp::List cpp_clip_path_segments_df(SEXP clip_ptr) {
   FPDF_CLIPPATH clip = clip_from_ptr(clip_ptr);
   int n_paths = FPDFClipPath_CountPaths(clip);
+  // # nocov start — the R wrapper (R/clip.R) calls
+  // cpp_clip_path_count_paths() first and treats a 0/negative result
+  // as "no clip path" so cpp_clip_path_segments_df() is never
+  // entered with a negative-count clip. Belt-and-braces guard.
   if (n_paths < 0) {
     Rcpp::stop("FPDFClipPath_CountPaths returned %d.", n_paths);
   }
+  // # nocov end
   // Two-pass collection: first count total segments across all
   // sub-paths so we can pre-allocate the output columns.
   int total = 0;
@@ -107,6 +112,9 @@ Rcpp::List cpp_clip_path_segments_df(SEXP clip_ptr) {
     for (int s = 0; s < ns; ++s) {
       FPDF_PATHSEGMENT seg =
           FPDFClipPath_GetPathSegment(clip, p, s);
+      // # nocov start — FPDFClipPath_GetPathSegment never returns
+      // NULL for indices in [0, count); the NA fallback row is
+      // defensive against a future PDFium contract change.
       if (seg == nullptr) {
         path_index[row]   = p + 1;
         seg_index[row]    = s + 1;
@@ -117,6 +125,7 @@ Rcpp::List cpp_clip_path_segments_df(SEXP clip_ptr) {
         ++row;
         continue;
       }
+      // # nocov end
       float xf = 0.0f;
       float yf = 0.0f;
       FPDF_BOOL ok = FPDFPathSegment_GetPoint(seg, &xf, &yf);

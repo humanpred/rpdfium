@@ -75,10 +75,14 @@ Rcpp::List cpp_text_search_page(SEXP page_ptr,
   }
   FPDF_SCHHANDLE sh =
       FPDFText_FindStart(tp, wquery.data(), flags, start_index);
+  // # nocov start — FPDFText_FindStart only returns NULL for invalid
+  // inputs (NULL text-page, empty pattern) which the guards above
+  // already rule out; this is a belt-and-braces fallback.
   if (sh == nullptr) {
     FPDFText_ClosePage(tp);
     Rcpp::stop("FPDFText_FindStart returned NULL.");
   }
+  // # nocov end
 
   std::vector<int> starts;
   std::vector<int> counts;
@@ -139,7 +143,12 @@ Rcpp::List cpp_text_search_page(SEXP page_ptr,
       right[k]  = R;
       top[k]    = T;
     } else {
+      // # nocov start — FPDFText_GetCharBox succeeds for every
+      // character index returned by FPDFText_GetSchResultIndex on
+      // the same text-page; the all-NA fallback is defensive against
+      // future PDFium changes.
       left[k] = bottom[k] = right[k] = top[k] = NA_REAL;
+      // # nocov end
     }
   }
 

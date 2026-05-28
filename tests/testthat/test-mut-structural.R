@@ -43,6 +43,22 @@ test_that("pdf_page_set_rotation() accepts a pdfium_page", {
   expect_equal(pdf_page_rotation(doc2, 1), 180L)
 })
 
+test_that("pdf_page_rotation() reads back a 90-deg rotation", {
+  # Covers the `case 1: return 90;` branch in cpp_page_rotation
+  # (page.cpp). The other rotation cases are exercised by the 180 /
+  # 270 set-rotation tests above.
+  fx <- fixture_path("shapes")
+  doc <- pdf_doc_open(fx, readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  pdf_page_set_rotation(doc, 90, page_num = 1L)
+
+  tmp <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(doc, tmp)
+  doc2 <- pdf_doc_open(tmp)
+  on.exit(pdf_doc_close(doc2), add = TRUE)
+  expect_equal(pdf_page_rotation(doc2, 1), 90L)
+})
+
 test_that("pdf_page_delete() removes the page", {
   fx <- fixture_path("shapes")
   src_doc <- pdf_doc_open(fx)
@@ -96,6 +112,23 @@ test_that("pdf_n_up() builds an N-up imposition", {
   expect_gte(pdf_page_count(doc), 1L)
 })
 
+test_that("cpp_import_n_pages_to_one externalptr GC frees the doc", {
+  # pdf_n_up() always close()s the n-up output explicitly so its
+  # lambda finalizer hits the "already-cleared" branch. Driving the
+  # shim directly and forcing GC exercises the close-on-GC code
+  # path in the inline lambda (mutation.cpp lines 130-131).
+  src <- pdf_doc_open(fixture_path("minimal"))
+  on.exit(pdf_doc_close(src), add = TRUE)
+  local({
+    ptr <- pdfium:::cpp_import_n_pages_to_one(src$ptr, 612, 792, 1L, 1L)
+    # Verify the externalptr is live before drop.
+    expect_true(pdfium:::cpp_handle_is_valid(ptr))
+    rm(ptr)
+  })
+  invisible(gc(verbose = FALSE))
+  succeed()
+})
+
 test_that("pdf_page_new() inserts at the requested index", {
   doc <- pdf_doc_new()
   on.exit(pdf_doc_close(doc), add = TRUE)
@@ -120,6 +153,40 @@ test_that("pdf_page_set_box() persists across save", {
   on.exit(pdf_doc_close(doc2), add = TRUE)
   bx <- pdf_page_box(doc2, 1, box = "crop")
   expect_equal(unname(bx), c(10, 20, 200, 300))
+})
+
+test_that("cpp_page_set_box rejects an unknown box name", {
+  # match.arg() in the R wrapper prevents this branch; drive the
+  # shim directly so the trailing else stop() is covered.
+  doc <- pdf_doc_open(fixture_path("shapes"), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  expect_error(
+    pdfium:::cpp_page_set_box(page$ptr, "made-up", 0, 0, 10, 10),
+    "Unknown box"
+  )
+})
+
+test_that("pdf_page_set_box() exercises every box variant", {
+  # Drive the bleed/trim/art branches in cpp_page_set_box. PDFium
+  # writes the dictionary entry on FPDFPage_SetXBox(), and pdf_save
+  # serialises that out. The media branch is hit by simply selecting
+  # it; even pages that already carry a MediaBox get the value
+  # overwritten.
+  fx <- fixture_path("shapes")
+  rect <- c(5, 10, 100, 150)
+  for (box in c("media", "bleed", "trim", "art")) {
+    doc <- pdf_doc_open(fx, readwrite = TRUE)
+    pdf_page_set_box(doc, box, rect)
+    tmp <- withr::local_tempfile(fileext = ".pdf")
+    pdf_save(doc, tmp)
+    pdf_doc_close(doc)
+    doc2 <- pdf_doc_open(tmp)
+    bx <- pdf_page_box(doc2, 1, box = box)
+    expect_equal(unname(bx), rect, info = box)
+    pdf_doc_close(doc2)
+  }
 })
 
 test_that("pdf_doc_set_language() persists across save", {

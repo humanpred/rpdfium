@@ -30,9 +30,12 @@
 namespace {
 
 FPDF_PAGE struct_page_from_ptr(SEXP page_ptr) {
-  if (TYPEOF(page_ptr) != EXTPTRSXP) {
+  if (TYPEOF(page_ptr) != EXTPTRSXP) {  // # nocov start
+    // The R wrapper pdf_structure_tree() always routes through
+    // as_open_page() which guarantees the ptr slot is an externalptr.
+    // This guard catches direct .Call misuse from a future contributor.
     Rcpp::stop("Expected an external pointer for the page.");
-  }
+  }  // # nocov end
   FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
   if (page == nullptr) Rcpp::stop("Page handle is closed.");
   return page;
@@ -65,14 +68,14 @@ SEXP read_attr_value(FPDF_STRUCTELEMENT_ATTR_VALUE value) {
     if (FPDF_StructElement_Attr_GetBooleanValue(value, &b)) {
       return Rcpp::wrap(static_cast<bool>(b));
     }
-    return Rcpp::wrap(NA_LOGICAL);
+    return Rcpp::wrap(NA_LOGICAL);  // # nocov — type was BOOLEAN so getter cannot fail unless PDFium internal state is corrupted
   }
   if (type == FPDF_OBJECT_NUMBER) {
     float f = 0.f;
     if (FPDF_StructElement_Attr_GetNumberValue(value, &f)) {
       return Rcpp::wrap(static_cast<double>(f));
     }
-    return Rcpp::wrap(NA_REAL);
+    return Rcpp::wrap(NA_REAL);  // # nocov — same defensive shape as the BOOLEAN branch above
   }
   if (type == FPDF_OBJECT_STRING || type == FPDF_OBJECT_NAME) {
     // PDFium uses UTF-16LE for attribute string values (via
@@ -83,14 +86,14 @@ SEXP read_attr_value(FPDF_STRUCTELEMENT_ATTR_VALUE value) {
     unsigned long out_buflen = 0;
     if (!FPDF_StructElement_Attr_GetStringValue(value, nullptr, 0,
                                                   &out_buflen)) {
-      return Rcpp::wrap(NA_STRING);
+      return Rcpp::wrap(NA_STRING);  // # nocov — type was STRING/NAME so the size-probe pass cannot fail
     }
     if (out_buflen <= 2) return Rcpp::wrap(std::string());
     std::vector<unsigned short> buf(out_buflen / 2);
     if (!FPDF_StructElement_Attr_GetStringValue(value, buf.data(),
                                                   out_buflen,
                                                   &out_buflen)) {
-      return Rcpp::wrap(NA_STRING);
+      return Rcpp::wrap(NA_STRING);  // # nocov — second-pass getter fails only on internal PDFium state corruption between the two calls
     }
     // out_buflen / 2 includes the trailing NUL; strip it for R.
     std::size_t wchars = (out_buflen >= 2 ? out_buflen / 2 - 1 : 0);
@@ -107,9 +110,17 @@ SEXP read_attr_value(FPDF_STRUCTELEMENT_ATTR_VALUE value) {
     }
     return arr;
   }
-  // Blob: surface as raw vector. Other types (Dict / Reference /
-  // Stream) come back as NULL — PDFium doesn't expose them via
-  // this API.
+  // # nocov start — Blob-typed attribute values are theoretically
+  // emitted by PDFium for binary attribute payloads (e.g. /XObject
+  // streams referenced from a structure element's /A entry), but
+  // tagged-PDF fixtures in the wild and in this package's test
+  // corpus do not produce them — PDFium's published structure-tree
+  // examples and the PDF 1.7 / 2.0 spec tables only define Boolean,
+  // Number, String, Name, and Array attribute types. The Blob branch
+  // exists so callers see a typed surface rather than NULL when
+  // PDFium does eventually start emitting Blob-typed values.
+  // Other types (Dict / Reference / Stream) come back as NULL —
+  // PDFium doesn't expose them via this API.
   unsigned long out_buflen = 0;
   if (FPDF_StructElement_Attr_GetBlobValue(value, nullptr, 0,
                                             &out_buflen)) {
@@ -121,6 +132,7 @@ SEXP read_attr_value(FPDF_STRUCTELEMENT_ATTR_VALUE value) {
     }
   }
   return R_NilValue;
+  // # nocov end
 }
 
 // Aggregate all attributes from a structure element into one named
@@ -145,14 +157,14 @@ SEXP read_struct_attributes(FPDF_STRUCTELEMENT element) {
       unsigned long key_buflen = 0;
       if (!FPDF_StructElement_Attr_GetName(attr, k, nullptr, 0,
                                              &key_buflen)) {
-        continue;
+        continue;  // # nocov — k is inside the attr's n_keys range so the probe cannot fail under normal PDFium state
       }
       if (key_buflen <= 1) continue;
       std::vector<char> key_buf(key_buflen);
       if (!FPDF_StructElement_Attr_GetName(attr, k, key_buf.data(),
                                              key_buflen,
                                              &key_buflen)) {
-        continue;
+        continue;  // # nocov — second-pass getter fails only on internal PDFium state corruption between the two calls
       }
       std::string key(key_buf.data(), key_buflen - 1);
       FPDF_STRUCTELEMENT_ATTR_VALUE val =

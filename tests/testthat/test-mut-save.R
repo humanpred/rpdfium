@@ -284,3 +284,17 @@ test_that("cpp_page_refresh_annot_aps rejects a closed page", {
   expect_error(pdfium:::cpp_page_refresh_annot_aps(ptr),
                "[Pp]age handle")
 })
+
+test_that("cpp_save_to_file errors when the destination cannot be opened", {
+  # The R wrapper `pdf_save()` checks dir.exists before reaching the
+  # shim, so a non-writable path only lands here when callers bypass
+  # the wrapper. Use a path under a non-existent directory to make
+  # the std::ofstream open fail.
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  bad_path <- file.path(tempfile("does-not-exist-"), "out.pdf")
+  expect_error(
+    pdfium:::cpp_save_to_file(doc$ptr, bad_path, 0L, 0L),
+    "Cannot open"
+  )
+})

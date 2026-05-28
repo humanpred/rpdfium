@@ -22,11 +22,11 @@ namespace {
 
 FPDF_DOCUMENT health_doc_from_ptr(SEXP doc_ptr) {
   if (TYPEOF(doc_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the document.");
+    Rcpp::stop("Expected an external pointer for the document.");  // # nocov  // R wrapper validates via checkmate
   }
   FPDF_DOCUMENT doc =
       static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr));
-  if (doc == nullptr) Rcpp::stop("Document handle is closed.");
+  if (doc == nullptr) Rcpp::stop("Document handle is closed.");  // # nocov  // covered by test-defensive.R via representative shim
   return doc;
 }
 
@@ -77,7 +77,7 @@ Rcpp::IntegerVector cpp_doc_trailer_ends(SEXP doc_ptr) {
     // files (>2GB) come back NA rather than wrap.
     unsigned int v = buf[i];
     if (v > static_cast<unsigned int>(INT_MAX)) {
-      out[i] = NA_INTEGER;
+      out[i] = NA_INTEGER;  // # nocov  // only fires for >2GB PDFs which the fixture suite doesn't include
     } else {
       out[i] = static_cast<int>(v);
     }

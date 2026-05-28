@@ -552,3 +552,20 @@ test_that("pdf_render_page_with_matrix bitmaps lack render-geometry", {
   expect_error(pdf_bitmap_to_page(bmp, 0, 0),
                  "no render-geometry metadata")
 })
+
+test_that("cpp_render_page_with_matrix rejects a wrong-length matrix", {
+  # The R wrapper enforces a length-6 / 3x2 / 2x3 shape via
+  # validate_matrix6; this test reaches the shim directly to cover
+  # the C++ side guard.
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  expect_error(
+    pdfium:::cpp_render_page_with_matrix(
+      page$ptr, 10L, 10L, c(1, 0, 0, 1, 0),
+      numeric(0), 0L, 0L, FALSE
+    ),
+    "length-6"
+  )
+})

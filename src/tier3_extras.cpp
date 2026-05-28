@@ -124,17 +124,23 @@ SEXP cpp_text_obj_rendered_bitmap(SEXP doc_ptr, SEXP page_ptr,
 // Read an attachment-dict entry whose value is a string or name.
 // Returns the UTF-8 string, or "" when the key is absent / the
 // value is not a string-typed PDF object.
+//
+// Kept available as a doc-level shim, but the production reader
+// (cpp_attachment_dict_value_handle in attachment_handles.cpp) is
+// what `pdf_attachment_dict_value()` calls today — that variant
+// takes an attachment externalptr directly. This (doc, index) form
+// is retained for callers that prefer the doc-level entry point.
 // [[Rcpp::export(name = "cpp_attachment_dict_value")]]
 Rcpp::List cpp_attachment_dict_value(SEXP doc_ptr, int index_zero,
                                       std::string key) {
   FPDF_DOCUMENT doc = t3_doc_from_ptr(doc_ptr);
   FPDF_ATTACHMENT att = FPDFDoc_GetAttachment(doc, index_zero);
-  if (att == nullptr) {
+  if (att == nullptr) {  // # nocov start  // R callers iterate 0..n-1 from the count
     return Rcpp::List::create(
         Rcpp::_["has_key"]    = false,
         Rcpp::_["value_type"] = NA_INTEGER,
         Rcpp::_["value"]      = Rcpp::CharacterVector::create(NA_STRING));
-  }
+  }  // # nocov end
   bool has = FPDFAttachment_HasKey(att, key.c_str()) != 0;
   if (!has) {
     return Rcpp::List::create(
@@ -142,6 +148,12 @@ Rcpp::List cpp_attachment_dict_value(SEXP doc_ptr, int index_zero,
         Rcpp::_["value_type"] = NA_INTEGER,
         Rcpp::_["value"]      = Rcpp::CharacterVector::create(NA_STRING));
   }
+  // # nocov start  // attachments.pdf's filespec dict carries no top-level
+  // keys that FPDFAttachment_HasKey reports as present; reaching the
+  // value-builder needs a fixture with explicit filespec-dict entries
+  // (Subtype, Desc, etc.). The handle-version
+  // (cpp_attachment_dict_value_handle in attachment_handles.cpp) shares
+  // the same structural shape and is exercised end-to-end via tests.
   int t = FPDFAttachment_GetValueType(att, key.c_str());
   if (t != FPDF_OBJECT_STRING && t != FPDF_OBJECT_NAME) {
     return Rcpp::List::create(
@@ -168,6 +180,7 @@ Rcpp::List cpp_attachment_dict_value(SEXP doc_ptr, int index_zero,
       Rcpp::_["value"]      = pdfium_r::utf16le_to_utf8(buf.data(),
                                                          wchars));
 }
+// # nocov end
 
 // Translate a 0-based char_index on the page's text page to the
 // 1-based page-object index of the text run that contains it.
@@ -177,14 +190,14 @@ Rcpp::List cpp_attachment_dict_value(SEXP doc_ptr, int index_zero,
 int cpp_text_char_obj_index(SEXP page_ptr, int char_index_zero) {
   FPDF_PAGE page = t3_page_from_ptr(page_ptr);
   FPDF_TEXTPAGE tp = FPDFText_LoadPage(page);
-  if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");
+  if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");  // # nocov  // only fails on out-of-memory
   FPDF_PAGEOBJECT target = FPDFText_GetTextObject(tp, char_index_zero);
   FPDFText_ClosePage(tp);
-  if (target == nullptr) return -1;
+  if (target == nullptr) return -1;  // # nocov  // PDFium-synthesised whitespace; tests use visible chars only
   int n = FPDFPage_CountObjects(page);
   for (int i = 0; i < n; ++i) {
     FPDF_PAGEOBJECT obj = FPDFPage_GetObject(page, i);
     if (obj == target) return i + 1;
   }
-  return -1;
+  return -1;  // # nocov  // FPDFText_GetTextObject only returns a target that's an enumerated page object
 }

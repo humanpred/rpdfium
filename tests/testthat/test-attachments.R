@@ -208,3 +208,26 @@ test_that("cpp_attachment_data returns the embedded bytes verbatim", {
   expect_length(data, 12L)
   expect_identical(rawToChar(data), "hello world\n")
 })
+
+test_that("cpp_attachment_get rejects an out-of-range index", {
+  doc <- pdf_doc_open(fixture_path("attachments"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  expect_error(
+    pdfium:::cpp_attachment_get(doc$ptr, 99L),
+    "returned NULL"
+  )
+})
+
+test_that("cpp_attachment_has_key_handle reports key presence", {
+  # Exported-but-unused shim from src/attachment_handles.cpp. The
+  # production reader (cpp_attachment_dict_value_handle) returns
+  # has_key alongside the value; this lighter shim is kept available
+  # for callers that only need the existence check.
+  atts <- pdf_attachments(fixture_path("attachments"))
+  # Pick a key that the fixture's filespec dict shape guarantees we
+  # can probe either way — "Type" is universal on filespec dicts.
+  res_missing <- pdfium:::cpp_attachment_has_key_handle(
+    atts[[1L]]$ptr, "DefinitelyNotAKey"
+  )
+  expect_false(res_missing)
+})

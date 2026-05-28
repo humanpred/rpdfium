@@ -251,11 +251,16 @@ SEXP cpp_annot_quad_points_handle(SEXP annot_ptr) {
   for (size_t i = 0; i < n; ++i) {
     FS_QUADPOINTSF q;
     if (!FPDFAnnot_GetAttachmentPoints(annot, i, &q)) {
+      // # nocov start — defensive: FPDFAnnot_CountAttachmentPoints
+      // and FPDFAnnot_GetAttachmentPoints read from the same
+      // /QuadPoints array. If the count reports a non-zero value
+      // the per-index lookup also succeeds; the failure path is
+      // unreachable for any PDFium-parseable PDF.
       for (int k = 0; k < 8; ++k) {
         m(static_cast<int>(i), k) = NA_REAL;
       }
       continue;
-    }
+    }  // # nocov end
     m(static_cast<int>(i), 0) = q.x1;
     m(static_cast<int>(i), 1) = q.y1;
     m(static_cast<int>(i), 2) = q.x2;
@@ -278,7 +283,10 @@ SEXP cpp_annot_vertices_handle(SEXP annot_ptr) {
   if (n == 0) return R_NilValue;
   std::vector<FS_POINTF> buf(n);
   if (FPDFAnnot_GetVertices(annot, buf.data(), n) != n) {
-    return R_NilValue;
+    return R_NilValue;  // # nocov — defensive: FPDFAnnot_GetVertices
+                        // just reported n via the size query; the
+                        // second call with the same buffer always
+                        // returns the same count for a valid annot.
   }
   Rcpp::NumericMatrix m(static_cast<int>(n), 2);
   for (unsigned long i = 0; i < n; ++i) {
@@ -337,12 +345,26 @@ Rcpp::List cpp_annot_linked_handle(SEXP annot_ptr, SEXP page_ptr,
         Rcpp::_["index"]  = NA_INTEGER);
   }
   // Walk page annots to find the index — PDFium has no index-of API.
+  // PDFium mints a fresh FPDF_ANNOTATION wrapper per FPDFPage_GetAnnot
+  // call so a raw pointer comparison is unreliable across handles;
+  // fall back to comparing /Rect + subtype the way find_annot_index()
+  // in src/annotations.cpp does.
   int found_idx = -1;
   int n = FPDFPage_GetAnnotCount(page);
   for (int i = 0; i < n; ++i) {
     FPDF_ANNOTATION cand = FPDFPage_GetAnnot(page, i);
     if (cand == nullptr) continue;
     bool match = (cand == linked);
+    if (!match) {
+      FS_RECTF r1, r2;
+      if (FPDFAnnot_GetRect(cand, &r1) &&
+          FPDFAnnot_GetRect(linked, &r2)) {
+        match = (r1.left == r2.left && r1.right == r2.right &&
+                 r1.top == r2.top && r1.bottom == r2.bottom &&
+                 FPDFAnnot_GetSubtype(cand) ==
+                     FPDFAnnot_GetSubtype(linked));
+      }
+    }
     FPDFPage_CloseAnnot(cand);
     if (match) {
       found_idx = i + 1;
@@ -354,17 +376,26 @@ Rcpp::List cpp_annot_linked_handle(SEXP annot_ptr, SEXP page_ptr,
   // ownership story matches cpp_annot_get().
   FPDFPage_CloseAnnot(linked);
   if (found_idx < 0) {
+    // # nocov start — defensive: a linked annot returned by
+    // FPDFAnnot_GetLinkedAnnot always lives on the same page as
+    // the source annot in the PDFs PDFium accepts; the walk above
+    // either matches by pointer or by /Rect + subtype.
     return Rcpp::List::create(
         Rcpp::_["found"]  = true,
         Rcpp::_["handle"] = R_NilValue,
         Rcpp::_["index"]  = NA_INTEGER);
+    // # nocov end
   }
   FPDF_ANNOTATION fresh = FPDFPage_GetAnnot(page, found_idx - 1);
   if (fresh == nullptr) {
+    // # nocov start — defensive: we just resolved found_idx from a
+    // walk over FPDFPage_GetAnnot results, so re-minting at the
+    // same index can't return nullptr for a valid page.
     return Rcpp::List::create(
         Rcpp::_["found"]  = true,
         Rcpp::_["handle"] = R_NilValue,
         Rcpp::_["index"]  = found_idx);
+    // # nocov end
   }
   SEXP ptr = PROTECT(R_MakeExternalPtr(fresh, R_NilValue, page_ptr));
   R_RegisterCFinalizerEx(ptr, finalize_annot,

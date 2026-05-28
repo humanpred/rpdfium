@@ -176,3 +176,17 @@ test_that("pdf_text_obj_at_char validates char_index", {
   expect_error(pdf_text_obj_at_char(doc, NA), "Assertion on")
   expect_error(pdf_text_obj_at_char(doc, -1L), "Assertion on")
 })
+
+test_that("cpp_attachment_dict_value (doc-level shim) still works", {
+  # The handle-level variant cpp_attachment_dict_value_handle is what
+  # the public pdf_attachment_dict_value() calls today; this shim is
+  # exported but otherwise unused. Direct call keeps it linked-and-
+  # callable for back-compat.
+  doc <- pdf_doc_open(fixture_path("attachments"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  out <- pdfium:::cpp_attachment_dict_value(doc$ptr, 0L, "Subtype")
+  expect_named(out, c("has_key", "value_type", "value"))
+  # Missing-key path.
+  missing <- pdfium:::cpp_attachment_dict_value(doc$ptr, 0L, "NoSuchKey")
+  expect_false(missing$has_key)
+})

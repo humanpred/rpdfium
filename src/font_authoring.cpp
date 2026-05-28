@@ -118,17 +118,17 @@ SEXP cpp_text_new_with_font(SEXP doc_ptr, SEXP page_ptr,
   FPDF_PAGEOBJECT text_obj = FPDFPageObj_CreateTextObj(
       doc, font, static_cast<float>(font_size));
   if (text_obj == nullptr) {
-    Rcpp::stop("FPDFPageObj_CreateTextObj returned NULL.");
+    Rcpp::stop("FPDFPageObj_CreateTextObj returned NULL.");  // # nocov  // only fails on out-of-memory
   }
   if (!text_utf8.empty()) {
     std::vector<unsigned short> utf16 =
         pdfium_r::utf8_to_utf16le_nul(text_utf8);
-    if (!FPDFText_SetText(
+    if (!FPDFText_SetText(  // # nocov start  // PDFium has no documented way to fail SetText on a valid UTF-16LE buffer
             text_obj,
             reinterpret_cast<FPDF_WIDESTRING>(utf16.data()))) {
       FPDFPageObj_Destroy(text_obj);
       Rcpp::stop("FPDFText_SetText failed on the new text object.");
-    }
+    }  // # nocov end
   }
   // Identity scale + translate (same convention as cpp_text_new).
   FPDFPageObj_Transform(text_obj, 1, 0, 0, 1,

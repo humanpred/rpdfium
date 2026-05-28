@@ -37,7 +37,7 @@ int cpp_form_object_count(SEXP form_ptr) {
   FPDF_PAGEOBJECT form = form_from_ptr(form_ptr);
   int n = FPDFFormObj_CountObjects(form);
   if (n < 0) {
-    Rcpp::stop("FPDFFormObj_CountObjects returned %d "
+    Rcpp::stop("FPDFFormObj_CountObjects returned %d "  // # nocov  // R wrapper restricts to Form XObject types before reaching the shim
                "(not a Form XObject?).", n);
   }
   return n;
@@ -48,10 +48,10 @@ SEXP cpp_form_get_object(SEXP form_ptr, SEXP page_ptr,
                          int index_zero_based) {
   FPDF_PAGEOBJECT form = form_from_ptr(form_ptr);
   if (TYPEOF(page_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the parent page.");
+    Rcpp::stop("Expected an external pointer for the parent page.");  // # nocov  // R wrapper threads the parent page externalptr from a live pdfium_page
   }
   if (R_ExternalPtrAddr(page_ptr) == nullptr) {
-    Rcpp::stop("Parent page handle is closed.");
+    Rcpp::stop("Parent page handle is closed.");  // # nocov  // R wrapper checks page is open before threading the ptr
   }
   FPDF_PAGEOBJECT obj =
       FPDFFormObj_GetObject(form, static_cast<unsigned long>(index_zero_based));

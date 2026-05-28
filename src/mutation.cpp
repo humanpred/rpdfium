@@ -62,9 +62,13 @@ SEXP cpp_page_new(SEXP doc_ptr, int page_index, double width,
                   double height) {
   FPDF_DOCUMENT doc = doc_from_xptr(doc_ptr);
   FPDF_PAGE page = FPDFPage_New(doc, page_index, width, height);
+  // # nocov start — FPDFPage_New only returns NULL when the doc
+  // pointer is invalid, which the R wrapper prevents via
+  // assert_readwrite() + cpp_page_count() before calling here.
   if (page == nullptr) {
     Rcpp::stop("FPDFPage_New failed.");
   }
+  // # nocov end
   SEXP ptr = PROTECT(R_MakeExternalPtr(page, R_NilValue, doc_ptr));
   R_RegisterCFinalizerEx(ptr, finalize_new_page,
                          static_cast<Rboolean>(TRUE));
@@ -114,9 +118,13 @@ SEXP cpp_import_n_pages_to_one(SEXP src_doc_ptr,
   FPDF_DOCUMENT out = FPDF_ImportNPagesToOne(
       src, output_width, output_height,
       static_cast<size_t>(n_cols), static_cast<size_t>(n_rows));
+  // # nocov start — FPDF_ImportNPagesToOne returns NULL only for
+  // pathological inputs (zero cols/rows, NULL doc) which the R
+  // wrapper checks via checkmate::assert_count() upstream.
   if (out == nullptr) {
     Rcpp::stop("FPDF_ImportNPagesToOne failed.");
   }
+  // # nocov end
   SEXP ptr = PROTECT(R_MakeExternalPtr(out, R_NilValue, R_NilValue));
   // Reuse the document finalizer by registering one inline. Mirrors
   // init.cpp's finalize_document.

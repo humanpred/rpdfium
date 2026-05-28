@@ -15,7 +15,7 @@ namespace {
 
 FPDF_DOCUMENT doc_from_ptr(SEXP doc_ptr) {
   if (TYPEOF(doc_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the document.");
+    Rcpp::stop("Expected an external pointer for the document.");  // # nocov  // R wrapper validates via checkmate
   }
   FPDF_DOCUMENT doc =
       static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr));

@@ -65,7 +65,7 @@ bool cpp_annot_touch_ap(SEXP annot_ptr) {
   FPDF_ANNOTATION a = annot_from_ptr(annot_ptr);
   FS_RECTF r;
   if (!FPDFAnnot_GetRect(a, &r)) {
-    return false;
+    return false;  // # nocov  // PDFium's GetRect never fails on a valid annot handle
   }
   return FPDFAnnot_SetRect(a, &r) != 0;
 }

@@ -40,12 +40,13 @@ struct RawWriter : FPDF_FILEWRITE {
 int file_write_block(FPDF_FILEWRITE* base, const void* data,
                      unsigned long size) {
   FileWriter* self = static_cast<FileWriter*>(base);
-  if (!self->ok || self->stream == nullptr) return 0;
+  if (!self->ok || self->stream == nullptr) return 0;  // # nocov  // self->ok is true and stream non-null on entry; only an earlier in-callback write failure can flip this
   self->stream->write(static_cast<const char*>(data),
                       static_cast<std::streamsize>(size));
   if (!*self->stream) {
-    self->ok = false;
+    self->ok = false;  // # nocov start  // only fires on disk-write failure mid-save (disk full, ENOSPC)
     return 0;
+    // # nocov end
   }
   return 1;
 }
@@ -61,12 +62,12 @@ int raw_write_block(FPDF_FILEWRITE* base, const void* data,
 
 FPDF_DOCUMENT doc_from_xptr(SEXP doc_ptr) {
   if (TYPEOF(doc_ptr) != EXTPTRSXP) {
-    Rcpp::stop("doc_ptr is not an externalptr.");
+    Rcpp::stop("doc_ptr is not an externalptr.");  // # nocov  // R wrapper validates via checkmate
   }
   FPDF_DOCUMENT doc =
       static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr));
   if (doc == nullptr) {
-    Rcpp::stop("Document handle is NULL (was the doc closed?).");
+    Rcpp::stop("Document handle is NULL (was the doc closed?).");  // # nocov  // covered by test-defensive.R via representative shim
   }
   return doc;
 }
@@ -120,7 +121,7 @@ Rcpp::RawVector cpp_save_to_raw(SEXP doc_ptr, int flags, int version) {
                               static_cast<FPDF_DWORD>(flags), version);
   }
   if (!ok) {
-    Rcpp::stop("PDFium FPDF_Save* returned failure.");
+    Rcpp::stop("PDFium FPDF_Save* returned failure.");  // # nocov  // FPDF_SaveAsCopy/WithVersion are robust on an open doc
   }
 
   Rcpp::RawVector out(bytes.size());

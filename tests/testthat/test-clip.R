@@ -155,3 +155,27 @@ test_that("print.pdfium_clip_path emits a one-line description", {
   cp <- pdf_obj_clip_path(b$obj)
   expect_output(print(cp), "pdfium_clip_path")
 })
+
+test_that("cpp_clip_path_count_segments reports per-sub-path segment count", {
+  # The R-facing helper that drives this shim is the segments_df
+  # call, which counts internally. We exercise cpp_clip_path_count_segments
+  # directly so its (otherwise-unreachable) code path is covered.
+  doc <- pdf_doc_open(fixture_path("clip"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  b <- clip_bundle(doc)
+  on.exit(pdf_page_close(b$page), add = TRUE, after = FALSE)
+
+  cp <- pdf_obj_clip_path(b$obj)
+  # The clip in clip.pdf is a rectangle: a moveto + 4 linetos = 5
+  # segments inside its single sub-path.
+  expect_identical(
+    pdfium:::cpp_clip_path_count_segments(cp$ptr, 0L),
+    5L
+  )
+  # PDFium returns -1 for out-of-range sub-path indices; the shim
+  # normalises that to 0.
+  expect_identical(
+    pdfium:::cpp_clip_path_count_segments(cp$ptr, 99L),
+    0L
+  )
+})
