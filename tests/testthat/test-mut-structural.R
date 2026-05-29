@@ -195,9 +195,61 @@ test_that("pdf_doc_set_language() persists across save", {
   on.exit(pdf_doc_close(doc), add = TRUE)
   pdf_doc_set_language(doc, "fr-CA")
 
+  # The reader half (FPDFCatalog_GetLanguage) sees the in-memory catalog
+  # immediately, before any save.
+  expect_identical(pdf_doc_language(doc), "fr-CA")
+
   tmp <- withr::local_tempfile(fileext = ".pdf")
   pdf_save(doc, tmp)
-  expect_true(file.exists(tmp))  # smoke
+  expect_true(file.exists(tmp))  # smoke (first layer)
+
+  # Pin persistence on the saved bytes too. PDFium writes an all-ASCII
+  # tag as a plain PDF literal string; grepRaw(fixed = TRUE) on the raw
+  # vector is a binary-safe, locale-independent byte match.
+  raw <- readBin(tmp, "raw", file.info(tmp)$size)
+  expect_equal(
+    length(grepRaw(charToRaw("/Lang(fr-CA)"), raw, fixed = TRUE, all = TRUE)),
+    1L
+  )
+
+  # Reopen and read back through the public reader to close the loop.
+  doc2 <- pdf_doc_open(tmp)
+  on.exit(pdf_doc_close(doc2), add = TRUE)
+  expect_identical(pdf_doc_language(doc2), "fr-CA")
+})
+
+test_that("pdf_doc_language() returns '' when no /Lang is declared", {
+  expect_identical(pdf_doc_language(pdf_doc_open(fixture_path("minimal"))), "")
+})
+
+test_that("pdf_doc_set_language() round-trips a non-ASCII tag via UTF-16", {
+  # FPDFCatalog_SetLanguage takes an FPDF_WIDESTRING as of chromium/7857;
+  # cpp_catalog_set_language() transcodes the UTF-8 input to UTF-16LE. This
+  # tag carries a 2-byte (U+00E9) and a 3-byte (U+4E2D) UTF-8 sequence to
+  # exercise the multibyte branches of that transcode — it is an encoding
+  # path probe, not a realistic BCP-47 tag. PDFium re-serialises a string
+  # outside PDFDocEncoding as UTF-16BE with a BOM, so the saved /Lang reads
+  # (FE FF 00 E9 4E 2D); a regression in the transcode would scramble it.
+  fx <- fixture_path("shapes")
+  doc <- pdf_doc_open(fx, readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  # Built from code points (pure-ASCII source) so the input is identical
+  # regardless of the worker's locale or source-file encoding.
+  pdf_doc_set_language(doc, intToUtf8(c(0x00E9L, 0x4E2DL)))
+
+  tmp <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(doc, tmp)
+  expect_true(file.exists(tmp))  # smoke (first layer)
+
+  raw <- readBin(tmp, "raw", file.info(tmp)$size)
+  expected <- c(
+    charToRaw("/Lang("),
+    as.raw(c(0xFE, 0xFF)),  # UTF-16BE byte-order mark
+    as.raw(c(0x00, 0xE9)),  # U+00E9 from 2-byte UTF-8 input
+    as.raw(c(0x4E, 0x2D)),  # U+4E2D from 3-byte UTF-8 input
+    charToRaw(")")
+  )
+  expect_equal(length(grepRaw(expected, raw, fixed = TRUE, all = TRUE)), 1L)
 })
 
 test_that("pdf_pages_reorder() accepts a full permutation", {

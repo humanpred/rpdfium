@@ -14,7 +14,7 @@ test_that("pdf_structure_tree returns 0 rows for an untagged PDF", {
     expect_named(out, c(
       "element_index", "parent_index", "level",
       "type", "parent_type", "obj_type", "title", "lang",
-      "alt_text", "actual_text", "id",
+      "alt_text", "actual_text", "expansion", "id",
       "mcid", "mcid_count", "attributes", "child_mcids"
     ))
   }
@@ -40,6 +40,9 @@ test_that("pdf_structure_tree walks the tagged-PDF tree", {
   # parent_type: Document is at the tree root (empty parent type),
   # P's parent is the Document element above it.
   expect_identical(res$parent_type, c("", "Document"))
+  # expansion (/E) column (chromium/7857+): the tagged fixture declares
+  # no /E expansion text, so both surfaced rows are empty strings.
+  expect_identical(res$expansion, c("", ""))
   # child_mcids: the per-page walk surfaces just Document + P, but
   # the underlying CountChildren still reports the full tree —
   # Document has H1/P/Figure (all nested struct-elements, so all

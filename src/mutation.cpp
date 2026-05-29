@@ -20,6 +20,7 @@
 #include "fpdf_catalog.h"
 #include "fpdf_ppo.h"
 #include "fpdf_transformpage.h"
+#include "utf16.h"
 
 namespace {
 
@@ -159,11 +160,40 @@ void cpp_page_set_box(SEXP page_ptr, std::string box,
 
 // [[Rcpp::export(name = "cpp_catalog_set_language")]]
 bool cpp_catalog_set_language(SEXP doc_ptr, std::string lang) {
-  // FPDFCatalog_SetLanguage takes a UTF-8 BYTESTRING (per the header
-  // signature), not a UTF-16LE WIDESTRING. The R-side wrapper passes
-  // `enc2utf8(lang)` so the bytes are already canonical UTF-8.
+  // FPDFCatalog_SetLanguage takes an FPDF_WIDESTRING (UTF-16LE, NUL-
+  // terminated) as of PDFium chromium/7857; earlier releases declared
+  // it as a UTF-8 FPDF_BYTESTRING. The R-side wrapper passes
+  // `enc2utf8(lang)`, so the bytes are canonical UTF-8 going in; we
+  // transcode to UTF-16LE here.
   FPDF_DOCUMENT doc = doc_from_xptr(doc_ptr);
-  return FPDFCatalog_SetLanguage(doc, lang.c_str()) != 0;
+  std::vector<unsigned short> lang16 = pdfium_r::utf8_to_utf16le_nul(lang);
+  return FPDFCatalog_SetLanguage(
+             doc, reinterpret_cast<FPDF_WIDESTRING>(lang16.data())) != 0;
+}
+
+// [[Rcpp::export(name = "cpp_catalog_get_language")]]
+SEXP cpp_catalog_get_language(SEXP doc_ptr) {
+  // Reader half of FPDFCatalog_SetLanguage, added in PDFium
+  // chromium/7857. Same byte-counted UTF-16LE protocol as
+  // FPDF_GetMetaText: a NULL/0 sizing call returns the byte count
+  // (including the trailing NUL), then the real call fills the buffer.
+  // An absent /Lang entry returns 2 (just the NUL); an error returns 0
+  // — both decode to "".
+  FPDF_DOCUMENT doc = doc_from_xptr(doc_ptr);
+  unsigned long n_bytes = FPDFCatalog_GetLanguage(doc, nullptr, 0UL);
+  std::string lang;
+  if (n_bytes > 2) {
+    size_t n_wchars = n_bytes / 2;
+    std::vector<unsigned short> buf(n_wchars);
+    FPDFCatalog_GetLanguage(doc, buf.data(), n_bytes);
+    lang = pdfium_r::utf16le_to_utf8(buf.data(), n_wchars - 1);
+  }
+  SEXP r_chr = PROTECT(Rf_mkCharLenCE(
+      lang.data(), static_cast<int>(lang.size()), CE_UTF8));
+  SEXP r_vec = PROTECT(Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(r_vec, 0, r_chr);
+  UNPROTECT(2);
+  return r_vec;
 }
 
 // [[Rcpp::export(name = "cpp_page_generate_content")]]

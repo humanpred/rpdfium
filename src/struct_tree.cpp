@@ -11,6 +11,7 @@
 //       FPDF_StructElement_GetLang        // "/Lang"
 //       FPDF_StructElement_GetAltText     // "/Alt"
 //       FPDF_StructElement_GetActualText  // "/ActualText"
+//       FPDF_StructElement_GetExpansion   // "/E" (chromium/7857+)
 //       FPDF_StructElement_GetID          // "/ID"
 //       FPDF_StructElement_GetMarkedContentID
 //       FPDF_StructElement_CountChildren / GetChildAtIndex (recurse)
@@ -280,6 +281,7 @@ void walk_struct(FPDF_STRUCTELEMENT element,
                  std::vector<std::string>& langs,
                  std::vector<std::string>& alt_texts,
                  std::vector<std::string>& actual_texts,
+                 std::vector<std::string>& expansions,
                  std::vector<std::string>& ids,
                  std::vector<int>& mcids,
                  std::vector<int>& mcid_counts,
@@ -299,6 +301,8 @@ void walk_struct(FPDF_STRUCTELEMENT element,
       read_struct_string(element, FPDF_StructElement_GetAltText));
   actual_texts.push_back(
       read_struct_string(element, FPDF_StructElement_GetActualText));
+  expansions.push_back(
+      read_struct_string(element, FPDF_StructElement_GetExpansion));
   ids.push_back(read_struct_string(element, FPDF_StructElement_GetID));
   StructElementMCID m = resolve_element_mcid(element);
   mcids.push_back(m.mcid);
@@ -318,8 +322,8 @@ void walk_struct(FPDF_STRUCTELEMENT element,
     walk_struct(child, this_index, level + 1, string_attr_names,
                 parent_indices, levels, types, parent_types,
                 obj_types, titles, langs, alt_texts, actual_texts,
-                ids, mcids, mcid_counts, attributes, child_mcids,
-                string_attrs);
+                expansions, ids, mcids, mcid_counts, attributes,
+                child_mcids, string_attrs);
   }
 }
 
@@ -339,6 +343,7 @@ Rcpp::List cpp_struct_tree_page(SEXP page_ptr,
   std::vector<std::string> langs;
   std::vector<std::string> alt_texts;
   std::vector<std::string> actual_texts;
+  std::vector<std::string> expansions;
   std::vector<std::string> ids;
   std::vector<int> mcids;
   std::vector<int> mcid_counts;
@@ -357,8 +362,8 @@ Rcpp::List cpp_struct_tree_page(SEXP page_ptr,
                   string_attr_names,
                   parent_indices, levels, types, parent_types,
                   obj_types, titles, langs, alt_texts, actual_texts,
-                  ids, mcids, mcid_counts, attributes, child_mcids,
-                  string_attrs);
+                  expansions, ids, mcids, mcid_counts, attributes,
+                  child_mcids, string_attrs);
     }
     FPDF_StructTree_Close(tree);
   }
@@ -379,6 +384,7 @@ Rcpp::List cpp_struct_tree_page(SEXP page_ptr,
       Rcpp::_["lang"]         = langs,
       Rcpp::_["alt_text"]     = alt_texts,
       Rcpp::_["actual_text"]  = actual_texts,
+      Rcpp::_["expansion"]    = expansions,
       Rcpp::_["id"]           = ids,
       Rcpp::_["mcid"]         = mcids,
       Rcpp::_["mcid_count"]   = mcid_counts,

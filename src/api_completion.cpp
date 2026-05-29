@@ -851,7 +851,13 @@ SEXP cpp_form_obj_from_xobject(SEXP xo_ptr) {
 void cpp_page_insert_object(SEXP page_ptr, SEXP obj_ptr) {
   FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
   FPDF_PAGEOBJECT obj = acomp_obj_from_ptr(obj_ptr);
-  FPDFPage_InsertObject(page, obj);
+  // FPDFPage_InsertObject returns FPDF_BOOL as of chromium/7857; the
+  // object is caller-owned (a detached handle) until this succeeds, so
+  // on failure we leave it intact for the caller and just raise.
+  if (!FPDFPage_InsertObject(page, obj)) {  // # nocov start
+    Rcpp::stop("FPDFPage_InsertObject() failed to attach the object "
+               "to the page.");
+  }  // # nocov end
 }
 
 // Remove a child page-object from a form-xobject.

@@ -44,6 +44,13 @@ test_that("pdf_image_new inserts an image obj from a JPEG file path", {
   expect_setequal(s$doc$state$dirty_pages, 1L)
   # The page now has exactly one object (the image).
   expect_equal(length(pdf_page_objects(s$page)), 1L)
+  # `bounds` is applied as the object's matrix via the generic
+  # FPDFPageObj_SetMatrix (pdf_obj_set_matrix()); read it back to pin
+  # that the placement maps exactly to the requested rectangle.
+  expect_equal(
+    pdf_obj_bounds(obj),
+    c(left = 72, bottom = 600, right = 272, top = 700)
+  )
 })
 
 test_that("pdf_image_new inserts an image obj from raw bytes", {

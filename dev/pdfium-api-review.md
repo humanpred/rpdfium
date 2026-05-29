@@ -19,10 +19,15 @@ Survey conducted on **2026-05-15**. PDFium source cloned from
 | Scope | every file under `public/` except `public/cpp/` (C++ RAII helpers — `fpdf_deleters.h`, `fpdf_scopers.h` — not relevant to the Rcpp C-ABI binding) |
 
 The bblanchon binary pinned in `tools/pdfium-version.txt` (currently
-`chromium/7202`) corresponds to a tagged PDFium release, *not* this `main`
-HEAD. Upstream `main` typically runs days to weeks ahead of any tagged
-release; if a future bump pulls in API surface that wasn't present at this
-survey's commit, regenerate the symbol inventory and capability buckets.
+`chromium/7857`, bumped from `chromium/7202` on 2026-05-29 per PR #46)
+corresponds to a tagged PDFium release, *not* this `main` HEAD. Upstream
+`main` typically runs days to weeks ahead of any tagged release; if a
+future bump pulls in API surface that wasn't present at this survey's
+commit, regenerate the symbol inventory and capability buckets. The
+`7202 → 7857` bump has been diffed at the symbol level in
+[`dev/pdfium-7857-api-delta.md`](pdfium-7857-api-delta.md): 6 narrow
+symbols added, 0 removed, 2 semantic signature/flag changes — none
+invalidating the Tier 1/2/3 capability buckets below.
 
 To refresh this survey:
 

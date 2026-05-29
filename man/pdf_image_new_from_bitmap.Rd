@@ -12,8 +12,9 @@ pdf_image_new_from_bitmap(page, bitmap, bounds = NULL)
 
 \item{bitmap}{A \code{pdfium_image_buffer} from \code{\link[=pdf_bitmap_new]{pdf_bitmap_new()}}.}
 
-\item{bounds}{Optional length-4 numeric vector \code{c(left, bottom, right, top)} in PDF user-space points. When supplied,
-\code{FPDFImageObj_SetMatrix} positions the image at those bounds.
+\item{bounds}{Optional length-4 numeric vector \code{c(left, bottom, right, top)} in PDF user-space points. When supplied, the image
+is positioned at those bounds via \code{FPDFPageObj_SetMatrix} (the
+same generic setter \code{\link[=pdf_obj_set_matrix]{pdf_obj_set_matrix()}} exposes).
 When \code{NULL}, the image sits at the unit square (\verb{[0,1] × [0,1]}) and the caller is responsible for setting a placement
 matrix via \code{\link[=pdf_obj_set_matrix]{pdf_obj_set_matrix()}} afterwards.}
 }

@@ -1843,23 +1843,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// cpp_image_set_matrix
-bool cpp_image_set_matrix(SEXP image_ptr, double a, double b, double c, double d, double e, double f);
-RcppExport SEXP _pdfium_cpp_image_set_matrix(SEXP image_ptrSEXP, SEXP aSEXP, SEXP bSEXP, SEXP cSEXP, SEXP dSEXP, SEXP eSEXP, SEXP fSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type image_ptr(image_ptrSEXP);
-    Rcpp::traits::input_parameter< double >::type a(aSEXP);
-    Rcpp::traits::input_parameter< double >::type b(bSEXP);
-    Rcpp::traits::input_parameter< double >::type c(cSEXP);
-    Rcpp::traits::input_parameter< double >::type d(dSEXP);
-    Rcpp::traits::input_parameter< double >::type e(eSEXP);
-    Rcpp::traits::input_parameter< double >::type f(fSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_image_set_matrix(image_ptr, a, b, c, d, e, f));
-    return rcpp_result_gen;
-END_RCPP
-}
 // cpp_image_new_blank
 SEXP cpp_image_new_blank(SEXP doc_ptr, SEXP page_ptr);
 RcppExport SEXP _pdfium_cpp_image_new_blank(SEXP doc_ptrSEXP, SEXP page_ptrSEXP) {
@@ -2140,6 +2123,17 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     Rcpp::traits::input_parameter< std::string >::type lang(langSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_catalog_set_language(doc_ptr, lang));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_catalog_get_language
+SEXP cpp_catalog_get_language(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_catalog_get_language(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_catalog_get_language(doc_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3391,7 +3385,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_text_obj_font_metrics", (DL_FUNC) &_pdfium_cpp_text_obj_font_metrics, 2},
     {"_pdfium_cpp_text_char_font_info", (DL_FUNC) &_pdfium_cpp_text_char_font_info, 1},
     {"_pdfium_cpp_image_new_from_jpeg", (DL_FUNC) &_pdfium_cpp_image_new_from_jpeg, 3},
-    {"_pdfium_cpp_image_set_matrix", (DL_FUNC) &_pdfium_cpp_image_set_matrix, 7},
     {"_pdfium_cpp_image_new_blank", (DL_FUNC) &_pdfium_cpp_image_new_blank, 2},
     {"_pdfium_cpp_image_metadata", (DL_FUNC) &_pdfium_cpp_image_metadata, 2},
     {"_pdfium_cpp_image_pixel_size", (DL_FUNC) &_pdfium_cpp_image_pixel_size, 1},
@@ -3416,6 +3409,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_import_n_pages_to_one", (DL_FUNC) &_pdfium_cpp_import_n_pages_to_one, 5},
     {"_pdfium_cpp_page_set_box", (DL_FUNC) &_pdfium_cpp_page_set_box, 6},
     {"_pdfium_cpp_catalog_set_language", (DL_FUNC) &_pdfium_cpp_catalog_set_language, 2},
+    {"_pdfium_cpp_catalog_get_language", (DL_FUNC) &_pdfium_cpp_catalog_get_language, 1},
     {"_pdfium_cpp_page_generate_content", (DL_FUNC) &_pdfium_cpp_page_generate_content, 1},
     {"_pdfium_cpp_named_dest_by_name", (DL_FUNC) &_pdfium_cpp_named_dest_by_name, 2},
     {"_pdfium_cpp_bookmark_find_handle", (DL_FUNC) &_pdfium_cpp_bookmark_find_handle, 2},

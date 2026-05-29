@@ -251,6 +251,23 @@ pdf_page_set_box <- function(page, box, rect, page_num = 1L) {
   invisible(ph$doc)
 }
 
+#' Get the document's declared language
+#'
+#' Reads the PDF catalog's `/Lang` entry — the document's declared
+#' natural language as a BCP-47 tag (e.g. `"en"`, `"en-US"`). Wraps
+#' `FPDFCatalog_GetLanguage` (PDFium chromium/7857+), the reader
+#' counterpart to [pdf_doc_set_language()].
+#'
+#' @inheritParams pdf_doc_is_tagged
+#' @return Character scalar — the BCP-47 language tag, or `""` when the
+#'   document declares no `/Lang`.
+#' @seealso [pdf_doc_set_language()] to write it.
+#' @export
+pdf_doc_language <- function(doc, password = NULL) {
+  doc <- as_open_doc(doc, password = password)
+  cpp_catalog_get_language(doc$ptr)
+}
+
 #' Set the document's declared language
 #'
 #' Wraps `FPDFCatalog_SetLanguage`. The language tag follows BCP-47
@@ -259,13 +276,15 @@ pdf_page_set_box <- function(page, box, rect, page_num = 1L) {
 #' @inheritParams pdf_page_delete
 #' @param lang Character scalar — the BCP-47 language tag.
 #' @return Invisibly returns `doc`.
+#' @seealso [pdf_doc_language()] to read it back.
 #' @export
 pdf_doc_set_language <- function(doc, lang) {
   assert_readwrite(doc)
   checkmate::assert_string(lang, min.chars = 1L)
-  # nocov start — FPDFCatalog_SetLanguage accepts any UTF-8 string;
-  # the only documented failure path is a NULL doc handle which we
-  # guard against above. Defensive against PDFium changes.
+  # nocov start — the C++ shim transcodes our UTF-8 to the UTF-16LE
+  # FPDFCatalog_SetLanguage expects (chromium/7857+); the only
+  # documented failure path is a NULL doc handle, guarded above.
+  # Defensive against PDFium changes.
   if (!cpp_catalog_set_language(doc$ptr, enc2utf8(lang))) {
     stop("FPDFCatalog_SetLanguage returned failure.", call. = FALSE)
   }

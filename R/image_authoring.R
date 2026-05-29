@@ -22,6 +22,23 @@
 #' right, top)`; the wrapper computes the transformation matrix
 #' that scales + translates the image into that rectangle.
 #'
+#' @details
+#' An image object's natural coordinate space is the unit square
+#' `[0, 1] x [0, 1]`, and `bounds` is applied as the affine matrix that
+#' scales and translates that square into the requested rectangle. To
+#' set or change that matrix directly — instead of, or after, passing
+#' `bounds` — call [pdf_obj_set_matrix()] on the returned object. For
+#' example,
+#'
+#' ```r
+#' img <- pdf_image_new(page, jpeg)                       # placed at origin
+#' pdf_obj_set_matrix(img, c(width, 0, 0, height, left, bottom))
+#' ```
+#'
+#' reproduces `bounds = c(left, bottom, left + width, bottom + height)`.
+#' Both the `bounds` path and [pdf_obj_set_matrix()] use PDFium's
+#' generic `FPDFPageObj_SetMatrix`.
+#'
 #' @param page A `pdfium_page` from [pdf_page_load()] (or a
 #'   `pdfium_doc` with `page_num`). Parent doc must be readwrite.
 #' @param jpeg Either a raw vector containing JPEG-encoded bytes or
@@ -65,12 +82,15 @@ pdf_image_new <- function(page, jpeg, bounds = NULL) {
     # PDFium's image unit-square gets mapped by this matrix: scale to
     # (width, height) and translate by (left, bottom). The PDF spec
     # convention is that an image object's natural coordinate space
-    # is [0, 1] × [0, 1] before its CTM applies.
-    ok <- cpp_image_set_matrix(
-      ptr, width, 0, 0, height, bounds[[1L]], bounds[[2L]]
+    # is [0, 1] × [0, 1] before its CTM applies. We route through the
+    # generic FPDFPageObj_SetMatrix (the same setter pdf_obj_set_matrix()
+    # exposes), not the image-specific FPDFImageObj_SetMatrix that
+    # upstream plans to deprecate.
+    ok <- cpp_obj_set_matrix(
+      ptr, c(width, 0, 0, height, bounds[[1L]], bounds[[2L]])
     )
     if (!isTRUE(ok)) {
-      stop("FPDFImageObj_SetMatrix failed.", call. = FALSE)  # nocov
+      stop("Failed to set the image placement matrix.", call. = FALSE)  # nocov
     }
   }
   idx <- cpp_page_object_count(ph$page$ptr)
@@ -96,8 +116,9 @@ pdf_image_new <- function(page, jpeg, bounds = NULL) {
 #'   `readwrite = TRUE`.
 #' @param bitmap A `pdfium_image_buffer` from [pdf_bitmap_new()].
 #' @param bounds Optional length-4 numeric vector `c(left, bottom,
-#'   right, top)` in PDF user-space points. When supplied,
-#'   `FPDFImageObj_SetMatrix` positions the image at those bounds.
+#'   right, top)` in PDF user-space points. When supplied, the image
+#'   is positioned at those bounds via `FPDFPageObj_SetMatrix` (the
+#'   same generic setter [pdf_obj_set_matrix()] exposes).
 #'   When `NULL`, the image sits at the unit square (`[0,1] ×
 #'   [0,1]`) and the caller is responsible for setting a placement
 #'   matrix via [pdf_obj_set_matrix()] afterwards.
@@ -135,11 +156,11 @@ pdf_image_new_from_bitmap <- function(page, bitmap, bounds = NULL) {
   if (!is.null(bounds)) {
     width <- bounds[[3L]] - bounds[[1L]]
     height <- bounds[[4L]] - bounds[[2L]]
-    ok <- cpp_image_set_matrix(
-      ptr, width, 0, 0, height, bounds[[1L]], bounds[[2L]]
+    ok <- cpp_obj_set_matrix(
+      ptr, c(width, 0, 0, height, bounds[[1L]], bounds[[2L]])
     )
     if (!isTRUE(ok)) {
-      stop("FPDFImageObj_SetMatrix failed.", call. = FALSE)  # nocov
+      stop("Failed to set the image placement matrix.", call. = FALSE)  # nocov
     }
   }
   idx <- cpp_page_object_count(ph$page$ptr)
