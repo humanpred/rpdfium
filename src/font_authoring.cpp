@@ -134,6 +134,10 @@ SEXP cpp_text_new_with_font(SEXP doc_ptr, SEXP page_ptr,
   FPDFPageObj_Transform(text_obj, 1, 0, 0, 1,
                          static_cast<float>(x),
                          static_cast<float>(y));
-  FPDFPage_InsertObject(page, text_obj);
+  if (!FPDFPage_InsertObject(page, text_obj)) {  // # nocov start
+    FPDFPageObj_Destroy(text_obj);
+    Rcpp::stop("FPDFPage_InsertObject() failed to attach the new text "
+               "object to the page.");
+  }  // # nocov end
   return R_MakeExternalPtr(text_obj, R_NilValue, page_ptr);
 }

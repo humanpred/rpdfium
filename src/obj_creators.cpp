@@ -68,7 +68,11 @@ SEXP cpp_path_new(SEXP page_ptr, double x, double y) {
   if (path == nullptr) {
     Rcpp::stop("FPDFPageObj_CreateNewPath returned NULL.");
   }
-  FPDFPage_InsertObject(page, path);
+  if (!FPDFPage_InsertObject(page, path)) {  // # nocov start
+    FPDFPageObj_Destroy(path);
+    Rcpp::stop("FPDFPage_InsertObject() failed to attach the new path "
+               "object to the page.");
+  }  // # nocov end
   return wrap_attached_obj(path, page_ptr);
 }
 
@@ -82,7 +86,11 @@ SEXP cpp_rect_new(SEXP page_ptr, double x, double y,
   if (rect == nullptr) {
     Rcpp::stop("FPDFPageObj_CreateNewRect returned NULL.");
   }
-  FPDFPage_InsertObject(page, rect);
+  if (!FPDFPage_InsertObject(page, rect)) {  // # nocov start
+    FPDFPageObj_Destroy(rect);
+    Rcpp::stop("FPDFPage_InsertObject() failed to attach the new "
+               "rectangle object to the page.");
+  }  // # nocov end
   return wrap_attached_obj(rect, page_ptr);
 }
 
@@ -114,7 +122,11 @@ SEXP cpp_text_new(SEXP doc_ptr, SEXP page_ptr,
   FPDFPageObj_Transform(text_obj, 1, 0, 0, 1,
                          static_cast<float>(x),
                          static_cast<float>(y));
-  FPDFPage_InsertObject(page, text_obj);
+  if (!FPDFPage_InsertObject(page, text_obj)) {  // # nocov start
+    FPDFPageObj_Destroy(text_obj);
+    Rcpp::stop("FPDFPage_InsertObject() failed to attach the new text "
+               "object to the page.");
+  }  // # nocov end
   return wrap_attached_obj(text_obj, page_ptr);
 }
 

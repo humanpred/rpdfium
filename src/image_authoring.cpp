@@ -86,7 +86,11 @@ SEXP cpp_image_new_from_jpeg(SEXP doc_ptr, SEXP page_ptr,
                "may not be valid JPEG.");
   }
 
-  FPDFPage_InsertObject(page, image_obj);
+  if (!FPDFPage_InsertObject(page, image_obj)) {  // # nocov start
+    FPDFPageObj_Destroy(image_obj);
+    Rcpp::stop("FPDFPage_InsertObject() failed to attach the new image "
+               "object to the page.");
+  }  // # nocov end
 
   // No finalizer: the page owns the object now (PDFium will destroy
   // it when the page closes). The externalptr's prot slot pins the

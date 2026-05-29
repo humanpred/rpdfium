@@ -47,6 +47,9 @@ structure-tree root.
 text for assistive technology; empty when none is set.
 \item \code{actual_text} character - the element's \verb{/ActualText}
 replacement text; empty when none is set.
+\item \code{expansion} character - the element's \verb{/E} expansion text
+(the expanded form of an abbreviation or acronym); empty
+when none is set. (PDFium chromium/7857+.)
 \item \code{id} character - the element's \verb{/ID} string (often empty).
 \item \code{mcid} integer - the first marked-content ID associated
 with the element (whether direct \verb{/K N} or via the first

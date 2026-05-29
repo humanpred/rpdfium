@@ -95,8 +95,9 @@ release on scope grounds (see `CLAUDE.md` §"Scope"):
 * `pdf_structure_tree()` — tagged-PDF / accessibility structure tree
   walk. Surfaces every PDFium `FPDF_StructElement_*` reader symbol:
   `parent_type` (via `_GetParent` + `_GetType`), the standard
-  per-key fields (`type`, `lang`, `alt_text`, `actual_text`, `id`,
-  `title`, `mcid`, `mcid_count`), an `attributes` list-column with
+  per-key fields (`type`, `lang`, `alt_text`, `actual_text`,
+  `expansion`, `id`, `title`, `mcid`, `mcid_count`), an `attributes`
+  list-column with
   full nested-array recursion (`_GetAttributeCount` / `_AtIndex` /
   `Attr_*`), `child_mcids` for per-slot marked-content IDs (via
   `_GetChildMarkedContentID`), plus an optional `string_attrs =`
@@ -390,14 +391,12 @@ network-at-configure-time policy permits this; the offline
 fallback is documented in `configure`.
 
 The pin is `chromium/7857`. It was advanced from `chromium/7202` to
-pick up upstream PDFium commit `ee83ca8e` ("Avoid mismatch between
-k8bppMask and 3 byte constant.", PDFium bug 488585504), a
-memory-safety fix in `CFX_Face::RenderGlyph`. The earlier binary
-wrote three bytes per pixel into a one-byte-per-pixel glyph mask
-whenever LCD-subpixel text anti-aliasing was active and FreeType
-returned a monochrome bitmap (an embedded bitmap strike), overrunning
-the glyph allocation. `pdf_render_page()` renders to a 32-bit ARGB
-target, for which PDFium auto-selects LCD anti-aliasing, so the
-defect was reachable from ordinary rendering; it manifested as a
-heap-corruption crash on macOS arm64. See
-`dev/macos-segfault-root-cause.md`.
+pick up upstream memory-safety and glyph-rendering fixes. The newer
+binary also exposes two public readers now wrapped here:
+`pdf_doc_language()` (the catalog `/Lang` getter, pairing with
+`pdf_doc_set_language()`) and an `expansion` column in
+`pdf_structure_tree()` (a structure element's `/E` acronym-expansion
+text). `FPDFCatalog_SetLanguage` additionally changed from a UTF-8
+byte string to a UTF-16LE wide string in this bump; the `pdf_save()`
+`remove_security` / `subset_new_fonts` flags also align with the
+binary's values only from `chromium/7857` onward.

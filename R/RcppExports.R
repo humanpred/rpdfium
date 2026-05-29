@@ -697,6 +697,10 @@ cpp_catalog_set_language <- function(doc_ptr, lang) {
     .Call(`_pdfium_cpp_catalog_set_language`, doc_ptr, lang)
 }
 
+cpp_catalog_get_language <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_catalog_get_language`, doc_ptr)
+}
+
 cpp_page_generate_content <- function(page_ptr) {
     .Call(`_pdfium_cpp_page_generate_content`, page_ptr)
 }

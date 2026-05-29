@@ -128,19 +128,31 @@ test_that("pdf_doc_set_language() persists across save", {
   on.exit(pdf_doc_close(doc), add = TRUE)
   pdf_doc_set_language(doc, "fr-CA")
 
+  # The reader half (FPDFCatalog_GetLanguage) sees the in-memory catalog
+  # immediately, before any save.
+  expect_identical(pdf_doc_language(doc), "fr-CA")
+
   tmp <- withr::local_tempfile(fileext = ".pdf")
   pdf_save(doc, tmp)
   expect_true(file.exists(tmp))  # smoke (first layer)
 
-  # No R-level reader exists for the catalog /Lang, so pin the behaviour
-  # on the saved bytes. PDFium writes an all-ASCII tag as a plain PDF
-  # literal string; grepRaw(fixed = TRUE) on the raw vector is a
-  # binary-safe, locale-independent byte match.
+  # Pin persistence on the saved bytes too. PDFium writes an all-ASCII
+  # tag as a plain PDF literal string; grepRaw(fixed = TRUE) on the raw
+  # vector is a binary-safe, locale-independent byte match.
   raw <- readBin(tmp, "raw", file.info(tmp)$size)
   expect_equal(
     length(grepRaw(charToRaw("/Lang(fr-CA)"), raw, fixed = TRUE, all = TRUE)),
     1L
   )
+
+  # Reopen and read back through the public reader to close the loop.
+  doc2 <- pdf_doc_open(tmp)
+  on.exit(pdf_doc_close(doc2), add = TRUE)
+  expect_identical(pdf_doc_language(doc2), "fr-CA")
+})
+
+test_that("pdf_doc_language() returns '' when no /Lang is declared", {
+  expect_identical(pdf_doc_language(pdf_doc_open(fixture_path("minimal"))), "")
 })
 
 test_that("pdf_doc_set_language() round-trips a non-ASCII tag via UTF-16", {

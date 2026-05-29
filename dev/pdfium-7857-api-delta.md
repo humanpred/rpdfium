@@ -50,17 +50,23 @@ it.
   1. `FPDFCatalog_SetLanguage` `FPDF_BYTESTRING → FPDF_WIDESTRING` —
      **already fixed** in `src/mutation.cpp` during the bump; verified
      correct here.
-  2. `FPDFPage_InsertObject` return type `void → FPDF_BOOL` — we call it
-     in **8 places and ignore the new success/failure return**. Compiles
-     fine; silently drops a failure signal. No regression vs. prior
-     behaviour, so report-only (recommended follow-up, not an inline
-     fix).
+  2. `FPDFPage_InsertObject` return type `void → FPDF_BOOL` — was called
+     at 6 sites that ignored the new success/failure return. **Fixed in
+     this PR**: each site now checks it (destroy-on-failure for the
+     creators, raise for the standalone insert).
 - **Save-flag values changed** (`FPDF_REMOVE_SECURITY 3 → 4`,
   new `FPDF_SUBSET_NEW_FONTS = 8`). `R/save.R` *already* uses `4`/`8`,
   so it is **correct under the new pin** — but it was inconsistent with
   the *old* pin, meaning `remove_security=`/`subset_new_fonts=` were
-  silently ineffective before this bump. Now correct; needs a stricter
-  regression test (current test only checks "flag accepted").
+  silently ineffective before this bump. **A stricter value-pinning test
+  is folded into this PR** (the prior test only checked "flag accepted").
+- **`pdf_doc_language()` and a tagged-tree `expansion` column added**
+  this PR, wrapping the two new in-scope readers
+  (`FPDFCatalog_GetLanguage`, `FPDF_StructElement_GetExpansion`).
+- **No deprecated symbol needs removal:** the package already avoids
+  every soft-deprecated PDFium API (uses the `*F` page-size getters,
+  `FPDF_InitLibraryWithConfig`, the richer marked-content-ID accessors).
+  See Bucket 2(c).
 - **`FPDF_LIBRARY_CONFIG` grew a v5 field** (`m_FontLibraryType`).
   `src/init.cpp` is **safe** (zero-init + `version = 2`). No action.
 
@@ -169,17 +175,19 @@ invent helpers" and the Tier 1/2/3 split. All six wrap a single PDFium
 symbol and read/set an attribute of an existing object, so none are
 "glue over base R". Priority is about release urgency, not scope.
 
-| Symbol | Proposed `pdf_*` name (ADR-019) | Rationale | Priority |
+| Symbol | `pdf_*` surface (ADR-019) | Rationale | Status |
 |---|---|---|---|
-| `FPDFCatalog_GetLanguage` | `pdf_doc_language(doc)` (reader; pairs with existing `pdf_doc_set_language()`) | We ship the **setter with no getter** — an asymmetry users will hit. New 7857 symbol, perfectly in scope, trivial UTF-16LE read identical to other string accessors. | **Should-have for 0.1.0** |
-| `FPDFPageObjMark_GetParamFloatValue` + `FPDFPageObjMark_SetFloatParam` | extend the `pdf_obj_marks()` reader's param decode + add `pdf_obj_mark_set_float()` (sibling of `pdf_obj_mark_set_blob()`) | Completes the int/string/blob param matrix. Today a fractional numeric content-mark param can't be read accurately (only `GetParamIntValue`) or written. Advanced feature. | Tier-2 |
-| `FPDF_StructElement_GetExpansion` | `pdf_struct_element_expansion()` (matches existing `pdf_struct_element_*` accessors) | One more tagged-PDF accessor in a family of ~18 already wrapped; near-zero marginal cost and surface consistency. | Tier-2 |
-| `FPDFPage_InsertObjectAtIndex` | index arg on existing creators, or `pdf_page_insert_object(page, obj, index)` | Adds z-order control; today the package only appends (`cpp_page_insert_object`). Useful but not essential, and needs an ADR note on how it interacts with the auto-insert creators. | Tier-2/3 |
-| `FPDFText_SetPositions` | defer | Manual per-glyph kerning on authored text objects — niche even within text authoring. | Tier-3 |
+| `FPDFCatalog_GetLanguage` | `pdf_doc_language(doc)` (reader; pairs with `pdf_doc_set_language()`) | We shipped the **setter with no getter** — an asymmetry users hit. New 7857 symbol, in scope, trivial UTF-16LE read identical to other string accessors. | **DONE this PR** (`cpp_catalog_get_language` in `src/mutation.cpp`; `pdf_doc_language()` in `R/mutation.R`) |
+| `FPDF_StructElement_GetExpansion` | new `expansion` column in `pdf_structure_tree()` (the API surfaces struct elements as tibble rows, not per-element accessors — so a column, not `pdf_struct_element_expansion()` as first proposed) | One more tagged-PDF attribute in a family of ~18 already surfaced; near-zero marginal cost, mirrors `read_struct_string`. | **DONE this PR** (`src/struct_tree.cpp`, `R/struct_tree.R`) |
+| `FPDFPageObjMark_GetParamFloatValue` + `FPDFPageObjMark_SetFloatParam` | extend `pdf_obj_marks()` decode + add `pdf_obj_mark_set_float()` | Completes the int/string/blob param matrix. **Deferred:** PDFium's `GetParamValueType` returns `FPDF_OBJECT_NUMBER` for *both* int and float with no discriminator (`src/obj_marks.cpp:83`), so a coherent reader+setter needs an int-vs-float representation decision (ADR-level) — adding only the setter would let you write a float you read back truncated. | Deferred (Tier-2; needs ADR) |
+| `FPDFPage_InsertObjectAtIndex` | index arg on creators, or `pdf_page_insert_object(page, obj, index)` | Adds z-order control; today the package only appends. **Deferred:** there is no user-facing standalone-insert entry point today (creators auto-append), so exposing index-insert needs an ADR on how it composes with them. | Deferred (Tier-2/3; needs ADR) |
+| `FPDFText_SetPositions` | `pdf_text_obj_set_positions()` | Manual per-glyph positioning on authored text objects — niche even within text authoring; constrained API (`count == N-1`). | Deferred (Tier-3) |
 
-> Per the task scope, **none of these are implemented in this PR** — new
-> exports are follow-up work. They are listed for a subsequent
-> feature branch.
+> **Implemented in this PR:** the should-have (`pdf_doc_language()`) and
+> the cheap, consistent `expansion` column. The three deferred rows each
+> need an ADR or are Tier-3 niche; deferring them respects the CLAUDE.md
+> ADR process rather than rushing an authoring/representation API into a
+> currency PR. They remain easy follow-ups.
 
 ### Bucket 2 — Deprecated / removed
 
@@ -194,8 +202,29 @@ symbol and read/set an attribute of an existing object, so none are
   this bump. `dev/v0.1.0-api-gap-audit.md` (2026-05-22) concluded the
   surface is by-design complete after the `pdf_dir_summary` /
   `pdf_doc_open_url` retraction (the deletion-justification precedent in
-  `NEWS.md`). I re-scanned the 277 exports for new scope violations
+  `NEWS.md`). I re-scanned the exports for new scope violations
   introduced since and found none. No prune recommended.
+- **(c) Deprecated PDFium symbols the package wraps — none actionable.**
+  Scanning the 7857 headers for `deprecat` and cross-referencing the 375
+  `FPDF*` call sites: the package already avoids every soft-deprecated
+  symbol.
+  - `FPDF_GetPageWidth` / `FPDF_GetPageHeight` / `FPDF_GetPageSizeByIndex`
+    (`fpdfview.h:732/758/804`, "Prefer the `*F` variant … will be
+    deprecated") — the package calls the `*F` variants, **not** these.
+  - `FPDF_InitLibrary` (`fpdfview.h:323`, "New code should call
+    `FPDF_InitLibraryWithConfig`") — the package uses
+    `FPDF_InitLibraryWithConfig` (`src/init.cpp:41`).
+  - `FPDF_StructElement_GetMarkedContentID` (`fpdf_structtree.h:202`,
+    "may be deprecated in the future") — the package already also wraps
+    the richer `…GetMarkedContentIdAtIndex` / `…GetMarkedContentIdCount`
+    successors.
+  - **One forward-looking note (not deprecated yet):**
+    `src/image_authoring.cpp:104` calls `FPDFImageObj_SetMatrix`, which
+    upstream marks "TODO(thestig): Start deprecating once
+    `FPDFPageObj_SetMatrix()` is stable" (`fpdf_edit.h:750`). It is fully
+    supported in 7857; `FPDFPageObj_SetMatrix` (already used at
+    `src/obj_setters.cpp:66`) is the eventual replacement. Optional
+    future-proofing — nothing to remove today.
 
 ### Bucket 3 — Other currency changes (semantics / flags / behaviour)
 
@@ -207,22 +236,21 @@ FIXED, verified.**
 `reinterpret_cast<FPDF_WIDESTRING>(lang16.data())`. Correct and
 NUL-terminated. The bump also added a byte-pinning regression test
 (`tests/testthat/test-mut-structural.R`, commit `0240d8b`). No action.
-- *Nit:* the stale comment at `R/mutation.R:266`
-  ("`FPDFCatalog_SetLanguage` accepts any UTF-8 string") now describes
-  only the R-side contract, not the C symbol. Optional cleanup.
+- *Nit (FIXED this PR):* the stale comment at `R/mutation.R` ("…accepts
+  any UTF-8 string") was reworded to describe the actual UTF-8→UTF-16LE
+  transcode the C++ shim performs.
 
-**C-2. `FPDFPage_InsertObject` `void → FPDF_BOOL` — report-only.**
-The package calls it at **8 sites, all discarding the return**:
-`src/font_authoring.cpp:137`, `src/obj_creators.cpp:71`, `:85`, `:117`,
-`src/image_authoring.cpp:89`, `src/api_completion.cpp:853` (plus two
-comment mentions). Under 7857 the function now reports success/failure;
-we ignore it. This **compiles cleanly and is no worse than the prior
-`void` behaviour**, so it is not a regression and not an inline fix here.
-But it is a real robustness gap: an insert that PDFium rejects now
-returns `FALSE` and we'd proceed as if it succeeded. **Recommended
-follow-up:** check the return and `Rcpp::stop` on `FALSE` (or migrate to
-`FPDFPage_InsertObjectAtIndex`, which is `FPDF_BOOL` from birth). Touches
-multiple call sites and an error-handling decision → its own small PR.
+**C-2. `FPDFPage_InsertObject` `void → FPDF_BOOL` — FIXED this PR.**
+The package called it at 6 sites, all discarding the return
+(`src/obj_creators.cpp` ×3, `src/font_authoring.cpp`,
+`src/image_authoring.cpp`, `src/api_completion.cpp`). Under 7857 the
+function reports success/failure; ignoring it was no worse than the prior
+`void` behaviour (not a regression) but dropped a real signal. Now each
+site checks the return: the five create-then-insert sites
+`FPDFPageObj_Destroy` the object (ownership did not transfer on failure)
+and `Rcpp::stop`; the standalone `cpp_page_insert_object` raises without
+destroying (the object stays owned by the caller's handle). These guards
+are defensively unreachable for an append, so they carry `// # nocov`.
 
 **C-3. Save-flag bitmask change — already correct under 7857, but
 previously latent-wrong; needs a stricter test.**
@@ -285,19 +313,22 @@ Clean. This is the ground truth that reconciles "0 removed": every
 
 ## E. Prioritised recommendations
 
-| # | Action | Priority | Where |
+| # | Action | Priority | Status |
 |---|---|---|---|
-| 1 | Wrap `FPDFCatalog_GetLanguage` as `pdf_doc_language()` (completes the set/get pair) | **Should-have for 0.1.0** | new feature branch |
-| 2 | Stricter `remove_security` / `subset_new_fonts` behavioural test | High (locks in the now-correct flags; the smoke test can't) | `future-save-flags-tests` |
-| 3 | Check `FPDFPage_InsertObject` return (or move to `…AtIndex`) | Medium (robustness, not a regression) | own small PR |
-| 4 | Wrap float content-mark params (`Get/SetParamFloat*`) + `FPDF_StructElement_GetExpansion` | Tier-2 (completeness) | post-0.1.0 |
-| 5 | `FPDFPage_InsertObjectAtIndex`, `FPDFText_SetPositions` | Tier-2/3 | post-0.1.0 |
-| 6 | Refresh `R/mutation.R:266` comment (stale post-fix) | Low (doc nit) | opportunistic |
+| 1 | Wrap `FPDFCatalog_GetLanguage` as `pdf_doc_language()` (completes the set/get pair) | **Should-have for 0.1.0** | **DONE this PR** |
+| 2 | `FPDF_StructElement_GetExpansion` → `expansion` column | Tier-2 (cheap completeness) | **DONE this PR** |
+| 3 | Check `FPDFPage_InsertObject` return | Medium (robustness) | **DONE this PR** (6 sites + `// # nocov`) |
+| 4 | Refresh stale `R/mutation.R` set-language comment | Low (doc nit) | **DONE this PR** |
+| 5 | Stricter `remove_security` / `subset_new_fonts` value test | High (locks in the now-correct flags; the smoke test can't) | **DONE this PR** (`test-save-flags-strict.R`) |
+| 6 | Float content-mark params (`Get/SetParamFloat*`) | Tier-2 | Deferred — needs int-vs-float representation ADR (Bucket 1) |
+| 7 | `FPDFPage_InsertObjectAtIndex` | Tier-2/3 | Deferred — needs standalone-insert entry-point ADR |
+| 8 | `FPDFText_SetPositions` | Tier-3 | Deferred — niche text authoring |
 
-No inline code change is warranted in *this* PR: nothing was removed,
-the build is clean, the one breaking encoding change was already fixed,
-and the flag-value change is already correct under the new pin. This PR
-therefore ships the report + provenance refreshes only.
+This PR (the audit follow-up) ships the report, the provenance refreshes,
+the four implemented items (#1–#4), and folds in the value test (#5). The
+three deferred items each need an ADR or are Tier-3 niche; they are not
+required for 0.1.0 and are left as clean follow-ups. No symbol the package
+calls was removed, so there was no build-breaking change to fix.
 
 ---
 
