@@ -20,6 +20,7 @@
 #include "fpdf_catalog.h"
 #include "fpdf_ppo.h"
 #include "fpdf_transformpage.h"
+#include "utf16.h"
 
 namespace {
 
@@ -151,11 +152,15 @@ void cpp_page_set_box(SEXP page_ptr, std::string box,
 
 // [[Rcpp::export(name = "cpp_catalog_set_language")]]
 bool cpp_catalog_set_language(SEXP doc_ptr, std::string lang) {
-  // FPDFCatalog_SetLanguage takes a UTF-8 BYTESTRING (per the header
-  // signature), not a UTF-16LE WIDESTRING. The R-side wrapper passes
-  // `enc2utf8(lang)` so the bytes are already canonical UTF-8.
+  // FPDFCatalog_SetLanguage takes an FPDF_WIDESTRING (UTF-16LE, NUL-
+  // terminated) as of PDFium chromium/7857; earlier releases declared
+  // it as a UTF-8 FPDF_BYTESTRING. The R-side wrapper passes
+  // `enc2utf8(lang)`, so the bytes are canonical UTF-8 going in; we
+  // transcode to UTF-16LE here.
   FPDF_DOCUMENT doc = doc_from_xptr(doc_ptr);
-  return FPDFCatalog_SetLanguage(doc, lang.c_str()) != 0;
+  std::vector<unsigned short> lang16 = pdfium_r::utf8_to_utf16le_nul(lang);
+  return FPDFCatalog_SetLanguage(
+             doc, reinterpret_cast<FPDF_WIDESTRING>(lang16.data())) != 0;
 }
 
 // [[Rcpp::export(name = "cpp_page_generate_content")]]
