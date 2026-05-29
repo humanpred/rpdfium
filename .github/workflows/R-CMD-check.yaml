@@ -266,14 +266,37 @@ jobs:
           #   2. process handle for SIGSEGV / SIGBUS / SIGABRT —
           #      stop in the debugger instead of letting R die.
           #   3. run the reprex; on stop, dump full diagnostics.
+          # Mirror EXACTLY what R CMD BATCH does inside R CMD check:
+          # cd to check/pdfium.Rcheck/tests, set LANGUAGE=C
+          # R_TESTS=startup.Rs, then run R with the same flags
+          # R CMD BATCH uses (--vanilla effectively + --no-readline)
+          # and source testthat.R (which calls test_check). The
+          # previous reprex that called test_check from interactive
+          # Rscript PASSED, so this BATCH-mode mirror is the next
+          # narrowing. If it crashes, env vars / BATCH-mode is
+          # confirmed and lldb captures the C frame.
+          TESTS_DIR="$(pwd)/check/pdfium.Rcheck/tests"
+          if [ ! -d "$TESTS_DIR" ]; then
+            echo "::warning::tests dir not found at $TESTS_DIR; falling back to reprex.R"
+            INPUT_FILE="$(pwd)/dev/reprex/macos-arm64-struct-tree.R"
+            cd "$(pwd)"
+          else
+            cd "$TESTS_DIR"
+            INPUT_FILE="testthat.R"
+            export LANGUAGE=C
+            export R_TESTS=startup.Rs
+            echo "BATCH-mode mirror: pwd=$(pwd), LANGUAGE=$LANGUAGE, R_TESTS=$R_TESTS, input=$INPUT_FILE"
+            ls -la startup.Rs testthat.R 2>&1 | head
+          fi
+
           lldb --batch \
             -o "settings set target.process.follow-fork-mode child" \
             -o "settings set target.inherit-env true" \
             -o "process handle SIGSEGV --pass true --stop true --notify true" \
             -o "process handle SIGBUS  --pass true --stop true --notify true" \
             -o "process handle SIGABRT --pass true --stop true --notify true" \
-            -o "script print('=== launching R ===')" \
-            -o "run --no-save --no-restore --vanilla -f dev/reprex/macos-arm64-struct-tree.R" \
+            -o "script print('=== launching R (BATCH-mode mirror) ===')" \
+            -o "run --no-save --no-restore --no-init-file --no-environ --no-readline -f $INPUT_FILE" \
             -o "script print('=== thread list ===')" \
             -o "thread list" \
             -o "script print('=== backtrace all threads ===')" \
