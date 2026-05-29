@@ -137,23 +137,44 @@ jobs:
       #      shebang chain stops stripping DYLD_*.
       #   3. Rewrite the R + Rscript wrapper script shebangs to
       #      use our resigned /tmp/-located sh.
-      - name: Allow DYLD_INSERT_LIBRARIES on R (codesign + entitlements)
+      - name: Allow DYLD_INSERT_LIBRARIES on R (codesign + entitlements + wrapper injection)
         if: runner.os == 'macOS' && env.DYLD_INSERT_LIBRARIES != ''
         run: |
           set -e
           R_HOME_DIR="$(R RHOME)"
           R_BIN="$R_HOME_DIR/bin/exec/R"
-          RSCRIPT_BIN="$R_HOME_DIR/bin/exec/Rscript"
+          # NOTE: on macOS R, bin/Rscript is a Mach-O BINARY, not a
+          # wrapper script (unlike bin/R). Previous attempt to sed
+          # the shebang failed with "sed: RE error: illegal byte
+          # sequence" because we tried to edit a binary as text.
+          RSCRIPT_BIN="$R_HOME_DIR/bin/Rscript"
           R_WRAPPER="$R_HOME_DIR/bin/R"
-          RSCRIPT_WRAPPER="$R_HOME_DIR/bin/Rscript"
           PRELOAD="$DYLD_INSERT_LIBRARIES"
           if [ ! -f "$R_BIN" ]; then
             echo "::warning::R binary not found at $R_BIN; skipping codesign rewrite"
             exit 0
           fi
 
-          # Entitlements plist used for adhoc resign of R, Rscript,
-          # and /bin/sh (copied to /tmp/).
+          # Findings from run 26616407181 diagnostic:
+          # - /bin/bash and /bin/sh both have flags=0x0(none) on
+          #   macOS — NO hardened runtime — BUT they ARE platform
+          #   binaries (Platform identifier=16). Platform binaries
+          #   get DYLD_* pruned by dyld regardless of hardened
+          #   runtime, because platform binaries are implicitly
+          #   restricted. SIP forbids re-signing them in-place, so
+          #   we copy /bin/sh to /tmp/ to escape SIP/platform-binary
+          #   handling, then resign with allow-dyld-environment-vars.
+          # - printenv from bash returns nothing because bash's
+          #   dyld already pruned DYLD_INSERT_LIBRARIES at bash
+          #   startup. We can NEVER get DYLD_* visible to bash
+          #   via the workflow env block.
+          # - Workaround: inject the env var INSIDE the R wrapper
+          #   script — which is executed by our resigned /tmp/.../sh
+          #   (entitled, so dyld doesn't prune), and the wrapper
+          #   sets DYLD_INSERT_LIBRARIES via `export` before
+          #   exec'ing bin/exec/R (also entitled).
+
+          # Entitlements plist for adhoc resign.
           ENT=/tmp/rpdfium-asan/entitlements.plist
           mkdir -p /tmp/rpdfium-asan
           cat > "$ENT" <<'PLIST'
@@ -173,20 +194,9 @@ jobs:
           </plist>
           PLIST
 
-          # ==== Diagnostic: identify where the strip happens ====
-          echo ""
-          echo "==== Diag: what bash itself sees ===="
-          echo "  bash binary  : $BASH"
-          echo "  codesign -dv on bash:"
-          codesign -dv "$BASH" 2>&1 | head -6 || true
-          echo "  printenv DYLD_INSERT_LIBRARIES from bash:"
-          printenv DYLD_INSERT_LIBRARIES || echo "    (not set in bash env)"
-          echo "  codesign -dv on /bin/sh:"
-          codesign -dv /bin/sh 2>&1 | head -6 || true
-
-          # ==== Resign R, Rscript binaries with entitlements ====
+          # ==== Resign R + Rscript binaries with entitlements ====
           for bin in "$R_BIN" "$RSCRIPT_BIN"; do
-            [ -f "$bin" ] || continue
+            [ -f "$bin" ] || { echo "::warning::missing $bin"; continue; }
             echo ""
             echo "==== Resigning $bin ===="
             sudo codesign --remove-signature "$bin" || true
@@ -194,51 +204,75 @@ jobs:
             codesign -dv "$bin" 2>&1 | head -5 || true
           done
 
-          # ==== Resign a copy of /bin/sh as our wrapper shell ====
-          # Since /bin/sh is SIP-protected we can't modify it in
-          # place. Copy it to /tmp/, strip the system signature,
-          # adhoc-resign with entitlements, and point R's wrapper
-          # script shebangs at the copy.
+          # ==== Resign /bin/sh copy ====
           cp /bin/sh /tmp/rpdfium-asan/sh
           chmod +x /tmp/rpdfium-asan/sh
           codesign --remove-signature /tmp/rpdfium-asan/sh || true
           codesign --force --sign - --entitlements "$ENT" /tmp/rpdfium-asan/sh
           echo ""
           echo "==== Resigned /tmp/rpdfium-asan/sh ===="
-          codesign -dv /tmp/rpdfium-asan/sh 2>&1 | head -8 || true
+          codesign -dv /tmp/rpdfium-asan/sh 2>&1 | head -5 || true
 
-          # ==== Rewrite R + Rscript wrapper shebangs ====
-          # The wrapper scripts are owned by root (the R installer)
-          # so sudo for the in-place edit. macOS sed -i needs an
-          # explicit suffix (use "" via -i'').
-          for wrapper in "$R_WRAPPER" "$RSCRIPT_WRAPPER"; do
-            [ -f "$wrapper" ] || continue
-            echo ""
-            echo "==== Patching shebang in $wrapper ===="
-            echo "Before: $(head -1 "$wrapper")"
-            sudo sed -i'.bak' '1s|^#!/bin/sh|#!/tmp/rpdfium-asan/sh|' "$wrapper"
-            echo "After : $(head -1 "$wrapper")"
-          done
+          # ==== Patch bin/R wrapper ====
+          # Two changes:
+          # (a) shebang -> our resigned sh (entitled, dyld won't
+          #     prune DYLD_*)
+          # (b) inject `export DYLD_INSERT_LIBRARIES=...` after the
+          #     shebang so the wrapper sets the preload before
+          #     exec'ing bin/exec/R.
+          # Reconstruct the file via cat'ing pieces (avoids fragile
+          # BSD-sed multiline append syntax which broke YAML parse).
+          echo ""
+          echo "==== Patching $R_WRAPPER ===="
+          echo "Before shebang: $(head -1 "$R_WRAPPER")"
+          TMP_R_WRAPPER=$(mktemp)
+          {
+            echo "#!/tmp/rpdfium-asan/sh"
+            echo "export DYLD_INSERT_LIBRARIES=\"$PRELOAD\""
+            tail -n +2 "$R_WRAPPER"
+          } > "$TMP_R_WRAPPER"
+          sudo cp "$TMP_R_WRAPPER" "$R_WRAPPER"
+          sudo chmod +x "$R_WRAPPER"
+          rm "$TMP_R_WRAPPER"
+          echo "After patch (first 5 lines):"
+          head -5 "$R_WRAPPER"
+
+          # ==== Replace bin/Rscript binary with a wrapper script ====
+          # bin/Rscript is a standalone Mach-O binary that loads R's
+          # library directly (not via the wrapper). We need DYLD_*
+          # injected before it starts. Move the original aside,
+          # write a wrapper script that exports DYLD_* and exec's
+          # the original.
+          echo ""
+          echo "==== Wrapping $RSCRIPT_BIN ===="
+          if [ ! -f "$RSCRIPT_BIN.orig" ]; then
+            sudo mv "$RSCRIPT_BIN" "$RSCRIPT_BIN.orig"
+            # The .orig must keep its entitlements (we already
+            # resigned the path before this rename — but the rename
+            # preserves the file so signature persists).
+          fi
+          sudo tee "$RSCRIPT_BIN" > /dev/null <<RSCRIPT_WRAP
+          #!/tmp/rpdfium-asan/sh
+          export DYLD_INSERT_LIBRARIES="$PRELOAD"
+          exec "$RSCRIPT_BIN.orig" "\$@"
+          RSCRIPT_WRAP
+          sudo chmod +x "$RSCRIPT_BIN"
+          echo "Wrapped Rscript content:"
+          cat "$RSCRIPT_BIN"
 
           # ==== Smoke tests ====
           echo ""
-          echo "==== Smoke test 1: direct exec of bin/exec/R ===="
-          R_HOME="$R_HOME_DIR" "$R_BIN" --no-save --no-restore --vanilla -e \
-            'cat("DYLD(direct)=", Sys.getenv("DYLD_INSERT_LIBRARIES"), "\n", sep="")' \
-            2>&1 | grep -E "DYLD\(direct\)" || \
-            echo "::warning::direct exec smoke test did not run"
-
-          echo "==== Smoke test 2: R via repatched wrapper ===="
+          echo "==== Smoke test 1: R wrapper-injected preload ===="
           R --no-save --no-restore --vanilla -e \
-            'cat("DYLD(wrap)=", Sys.getenv("DYLD_INSERT_LIBRARIES"), "\n", sep="")' \
-            2>&1 | grep -E "DYLD\(wrap\)" || \
-            echo "::warning::wrapper smoke test did not run"
+            'cat("DYLD(R-wrap)=", Sys.getenv("DYLD_INSERT_LIBRARIES"), "\n", sep="")' \
+            2>&1 | grep -E "DYLD\(R-wrap\)" || \
+            echo "::warning::R-wrap smoke test did not run"
 
-          echo "==== Smoke test 3: inline env override via wrapper ===="
-          DYLD_INSERT_LIBRARIES="$PRELOAD" R --no-save --no-restore --vanilla -e \
-            'cat("DYLD(inline)=", Sys.getenv("DYLD_INSERT_LIBRARIES"), "\n", sep="")' \
-            2>&1 | grep -E "DYLD\(inline\)" || \
-            echo "::warning::inline-env smoke test did not run"
+          echo "==== Smoke test 2: Rscript wrapper-injected preload ===="
+          Rscript --vanilla -e \
+            'cat("DYLD(Rscript-wrap)=", Sys.getenv("DYLD_INSERT_LIBRARIES"), "\n", sep="")' \
+            2>&1 | grep -E "DYLD\(Rscript-wrap\)" || \
+            echo "::warning::Rscript-wrap smoke test did not run"
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
