@@ -8,65 +8,81 @@
 #   Traceback:
 #    1: cpp_struct_tree_page(page$ptr, string_attrs)
 #
-# Apple-pre-symbolicated `.ips` shows the C frames:
-#   #4  get_package_CEntry_table  R/src/main/Rdynload.c:1738
-#   #5  R_GetCCallable            Rdynload.c:1760
-#   #6  char_get_string_elt       Rcpp routines.h:218 (inline)
-#   #7  Rcpp::internal::as_string_elt__impl<std::string>
-#   #11 _pdfium_cpp_struct_tree_page  RcppExports.cpp:3103
+# Status (from successive CI runs on this PR):
+#   * Standalone Rscript (no testthat): runs ALL 4 tests cleanly
+#   * R CMD check + testthat parallel=true:  CRASHES at test 4
+#   * R CMD check + testthat parallel=false: CRASHES at test 4
+#   * MallocGuardEdges enabled: DID NOT abort
 #
-# Confirms: the fault is at R's static `CEntryTable` SEXP being
-# corrupted to ASCII bytes. The corruption is from an earlier
-# operation in the same testthat subprocess. This reprex mirrors
-# the test sequence in tests/testthat/test-struct-tree.R so the
-# wild write happens while a debugger (or hardened allocator) is
-# attached.
+# So the corruption is NOT a heap OOB write (guard pages would
+# have caught it). And it is NOT a fork-after-GCD issue (serial
+# testthat reproduces it). The differentiator is testthat itself.
 #
-# Used by .github/workflows/R-CMD-check.yaml's "Run struct-tree
-# reprex under lldb" step. R_LIBS_USER must point at the
-# pdfium.Rcheck directory so library(pdfium) resolves.
+# This reprex wraps the test sequence in testthat::test_that()
+# blocks so it executes the same code path as test_check, but in
+# a single R process under lldb. If it crashes here, lldb captures
+# the stack at the SIGSEGV moment.
 
-cat("== loading pdfium ==\n"); flush.console()
-suppressPackageStartupMessages(library(pdfium))
+cat("== loading testthat + pdfium ==\n"); flush.console()
+suppressPackageStartupMessages({
+  library(testthat)
+  library(pdfium)
+})
 
-fixture_dir <- system.file("extdata", "fixtures", package = "pdfium")
-stopifnot(nzchar(fixture_dir))
-fixture <- function(n) file.path(fixture_dir, paste0(n, ".pdf"))
-
-# Mirror test-struct-tree.R run order so the wild write happens
-# inside this script's process. Each block matches one test_that()
-# in the test file.
-
-cat("\n== test 1: pdf_structure_tree on untagged PDFs ==\n")
-for (n in c("shapes", "minimal", "annotated")) {
-  cat("  ", n, "\n"); flush.console()
-  out <- pdf_structure_tree(pdf_doc_open(fixture(n)), 1L)
-  stopifnot(nrow(out) == 0L)
+fixture_path <- function(name) {
+  p <- system.file("extdata", "fixtures", paste0(name, ".pdf"),
+                   package = "pdfium")
+  stopifnot(nzchar(p))
+  normalizePath(p, winslash = "/", mustWork = TRUE)
 }
 
-cat("\n== test 2: pdf_structure_tree walks the tagged-PDF tree ==\n")
-doc <- pdf_doc_open(fixture("tagged"))
-res <- pdf_structure_tree(doc, page_num = 1L)
-cat("  rows:", nrow(res), "\n"); flush.console()
+cat("\n=================================================\n")
+cat("Mirror of tests/testthat/test-struct-tree.R\n")
+cat("=================================================\n")
 
-cat("\n== test 3: typed /A attribute values ==\n")
-res <- pdf_structure_tree(doc, 1L)
-attrs <- res$attributes[[2L]]
-cat("  attribute names:", paste(names(attrs), collapse = ", "), "\n")
-flush.console()
+test_that("pdf_structure_tree returns 0 rows for an untagged PDF", {
+  for (name in c("shapes", "minimal", "annotated")) {
+    out <- pdf_structure_tree(pdf_doc_open(fixture_path(name)), 1L)
+    expect_s3_class(out, "tbl_df")
+    expect_equal(nrow(out), 0L)
+  }
+})
 
-cat("\n== test 4: honours string_attrs (CRASH SITE) ==\n")
-res <- pdf_structure_tree(
-  doc,
-  page_num = 1L,
-  string_attrs = c("Placement", "O", "Headers")
-)
-cat("  Placement[2]:", res$Placement[[2L]], "\n")
-cat("  O[2]:", res$O[[2L]], "\n")
-cat("  Headers[2]:", res$Headers[[2L]], "\n")
+test_that("pdf_structure_tree walks the tagged-PDF tree", {
+  doc <- pdf_doc_open(fixture_path("tagged"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- pdf_structure_tree(doc, page_num = 1L)
+  expect_equal(nrow(res), 2L)
+  expect_identical(res$type, c("Document", "P"))
+})
 
-cat("\n== cleanup ==\n")
-pdf_doc_close(doc)
-gc()
+test_that("pdf_structure_tree surfaces typed /A attribute values", {
+  doc <- pdf_doc_open(fixture_path("tagged"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- pdf_structure_tree(doc, 1L)
+  attrs <- res$attributes[[2L]]
+  expect_setequal(
+    names(attrs),
+    c("O", "Placement", "SpaceBefore", "BBox", "BorderStyle", "Hidden")
+  )
+})
 
-cat("\nREPREX OK (all tests passed; no crash)\n")
+# CRASH SITE (in R CMD check): test 4 first calls into
+# Rcpp::as<vector<string>> from pdfium.so. The static `fun`
+# pointer in pdfium.so's char_get_string_elt initializes here.
+# R_GetCCallable then hits the corrupted CEntryTable.
+test_that("pdf_structure_tree honours string_attrs", {
+  doc <- pdf_doc_open(fixture_path("tagged"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- pdf_structure_tree(
+    doc,
+    page_num = 1L,
+    string_attrs = c("Placement", "O", "Headers")
+  )
+  expect_true(all(c("Placement", "O", "Headers") %in% colnames(res)))
+  expect_identical(res$Placement[[2L]], "Block")
+  expect_identical(res$O[[2L]], "Layout")
+  expect_identical(res$Headers[[2L]], "")
+})
+
+cat("\n=== REPREX OK (testthat-wrapped tests passed; no crash) ===\n")
