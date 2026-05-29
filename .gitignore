@@ -49,3 +49,5 @@ docs
 .claude
 /doc/
 /Meta/
+dev/reprex/struct-tree-c
+dev/reprex/struct-tree-c-valgrind
