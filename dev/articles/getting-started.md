@@ -79,7 +79,7 @@ info$file_version # PDFium reports 10 * major + minor (17 = PDF 1.7)
 info$producer
 #> [1] "cairo 1.18.0 (https://cairographics.org)"
 info$creation_date_parsed
-#> [1] "2026-05-15 19:12:28 UTC"
+#> [1] "2026-05-29 12:33:25 UTC"
 ```
 
 For a single tag use `pdf_doc_meta(doc, "Producer")`. The standard tags
