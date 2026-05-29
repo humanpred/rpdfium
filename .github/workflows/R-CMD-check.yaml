@@ -72,6 +72,55 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # When the vendored PDFium is ASan-instrumented (for
+      # humanpred/rpdfium#44 triage), libpdfium.dylib has
+      # `@rpath/libclang_rt.asan_osx_dynamic.dylib` as a load
+      # dependency. The dyld @rpath search includes
+      # @loader_path/../lib, so the runtime must sit next to
+      # libpdfium.dylib at install time. download-pdfium.R copies
+      # inst/lib/* into the installed package's lib/ dir verbatim,
+      # so dropping the runtime into inst/lib/ before R CMD INSTALL
+      # makes dyld find it from @rpath.
+      #
+      # Detected by: if libpdfium.dylib (extracted from
+      # inst/pdfium-binaries/pdfium-mac-arm64.tgz) references
+      # libclang_rt, fish the matching runtime out of Xcode and
+      # stage it. Non-ASan builds skip this step silently.
+      - name: Stage ASan runtime alongside libpdfium (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          set -e
+          if [ ! -f inst/pdfium-binaries/pdfium-mac-arm64.tgz ]; then
+            echo "No vendored macOS PDFium; nothing to do."
+            exit 0
+          fi
+          # Probe whether the binary needs the ASan runtime.
+          if ! tar -xzf inst/pdfium-binaries/pdfium-mac-arm64.tgz -O lib/libpdfium.dylib 2>/dev/null \
+                | strings 2>/dev/null | grep -q libclang_rt.asan; then
+            echo "Vendored binary doesn't need libclang_rt; skipping."
+            exit 0
+          fi
+          # Find the ASan runtime in Xcode. Path layout per Xcode:
+          #   .../XcodeDefault.xctoolchain/usr/lib/clang/<ver>/lib/darwin/
+          XCODE_PATH=$(xcode-select -p)
+          ASAN_RT=$(find "$XCODE_PATH/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang" \
+                      -name 'libclang_rt.asan_osx_dynamic.dylib' 2>/dev/null | head -1)
+          if [ -z "$ASAN_RT" ] || [ ! -f "$ASAN_RT" ]; then
+            # Fall-back: any libclang_rt.asan_osx_dynamic.dylib on the runner.
+            ASAN_RT=$(find / -name 'libclang_rt.asan_osx_dynamic.dylib' 2>/dev/null \
+                      | head -1)
+          fi
+          if [ -z "$ASAN_RT" ] || [ ! -f "$ASAN_RT" ]; then
+            echo "::error::libclang_rt.asan_osx_dynamic.dylib not found on this runner"
+            exit 1
+          fi
+          echo "ASan runtime: $ASAN_RT"
+          mkdir -p inst/lib
+          cp "$ASAN_RT" inst/lib/
+          chmod 0755 inst/lib/libclang_rt.asan_osx_dynamic.dylib
+          ls -la inst/lib/
+          file inst/lib/libclang_rt.asan_osx_dynamic.dylib
+
       - uses: r-lib/actions/setup-pandoc@v2
 
       - uses: r-lib/actions/setup-r@v2
