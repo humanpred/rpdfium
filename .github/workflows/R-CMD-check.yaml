@@ -28,6 +28,16 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
+      # macOS-only: when the vendored ASan-instrumented libpdfium.dylib
+      # is in inst/pdfium-binaries/, tune the ASan/UBSan runtime so the
+      # test suite continues past the first detected error (we want to
+      # see every bad write, not just the first), and so symbolicated
+      # backtraces are produced. detect_leaks=0 because R's own GC
+      # arena leaks intentionally; strict_init_order/detect_odr_violation=0
+      # because base R packages share C++ static state that triggers
+      # benign ODR overlap warnings drowning the real signal.
+      ASAN_OPTIONS: ${{ matrix.config.os == 'macos-latest' && 'halt_on_error=0:detect_leaks=0:symbolize=1:symbolize_inlined_frames=1:strict_init_order=0:detect_odr_violation=0:abort_on_error=0:exitcode=0' || '' }}
+      UBSAN_OPTIONS: ${{ matrix.config.os == 'macos-latest' && 'halt_on_error=0:print_stacktrace=1' || '' }}
       # macOS-only: enable libsystem_malloc's debug protections during
       # the test suite. Other matrix cells ignore these env vars. The
       # goal is to SIGSEGV at the moment a wild write happens (instead
