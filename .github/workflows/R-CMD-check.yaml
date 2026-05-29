@@ -285,16 +285,11 @@ jobs:
             INPUT_FILE="testthat.R"
             export LANGUAGE=C
             export R_TESTS=startup.Rs
-            # Append gctorture(TRUE) to startup.Rs so R does GC at
-            # every allocation. This forces deterministic GC timing,
-            # which sometimes makes heisenbugs reproduce reliably even
-            # under a debugger. R CMD check supports this via the
-            # --use-gct flag; here we set it directly.
-            if [ -f startup.Rs ]; then
-              echo "gctorture(TRUE)" >> startup.Rs
-              echo "appended gctorture(TRUE) to startup.Rs"
-              cat startup.Rs
-            fi
+            # Previously appended gctorture(TRUE) here. With ~3000
+            # tests it pushed the lldb step to multi-hour runtime
+            # without ever reproducing the bug. Removed; investigation
+            # now happens locally using an ASan-instrumented R build
+            # rather than CI's lldb step.
             echo "BATCH-mode mirror: pwd=$(pwd), LANGUAGE=$LANGUAGE, R_TESTS=$R_TESTS, input=$INPUT_FILE"
             ls -la startup.Rs testthat.R 2>&1 | head
           fi
