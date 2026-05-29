@@ -99,6 +99,18 @@ local({
     if (!any(grepl("libclang_rt.asan", deps, fixed = TRUE))) {
       return(invisible())  # production (non-ASan) binary
     }
+    # If the .tgz already shipped the matching libclang_rt
+    # (preferred path — that runtime is built from the same clang
+    # as libpdfium.dylib and avoids __asan_version_mismatch errors),
+    # nothing to do. Only fall back to Xcode's runtime when the
+    # .tgz didn't bundle one.
+    existing <- file.path(libdir, "libclang_rt.asan_osx_dynamic.dylib")
+    if (file.exists(existing)) {
+      message("[pdfium] libclang_rt.asan_osx_dynamic.dylib already ",
+              "bundled in .tgz (", file.info(existing)$size, " bytes); ",
+              "skipping Xcode fallback.")
+      return(invisible())
+    }
     if (Sys.which("xcode-select") == "") return(invisible())  # nocov
     xcode_path <- tryCatch(
       system2("xcode-select", "-p", stdout = TRUE, stderr = FALSE),
