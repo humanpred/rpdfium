@@ -237,6 +237,38 @@ jobs:
           WRAPPER_SH=/bin/sh
           echo "Wrapper shell: $WRAPPER_SH"
 
+          # ==== Add Renviron.site DYLD_INSERT_LIBRARIES unset ====
+          # Run 26617589923 showed:
+          #   dyld: terminating because inserted dylib
+          #   '/tmp/rpdfium-asan/lib/libclang_rt.asan_osx_dynamic.dylib'
+          #   could not be loaded: ... need 'arm64e'
+          # The crashing process was sed (Apple platform binary,
+          # arm64e). dyld in arm64e child processes still ATTEMPTS
+          # to load the insert dylib and TERMINATES on arch
+          # mismatch — pruning only affects env propagation, not
+          # the load attempt itself.
+          #
+          # Fix: have R unset DYLD_INSERT_LIBRARIES from its own
+          # env after startup, so subprocess (sed, etc.) don't
+          # inherit the doomed insert. R does this via Renviron.site
+          # which is read AFTER dyld has already done its job.
+          REN_SITE="$R_HOME_DIR/etc/Renviron.site"
+          echo ""
+          echo "==== Adding Renviron.site env clear for child procs ===="
+          if [ -f "$REN_SITE" ]; then
+            echo "Existing Renviron.site:"
+            head -5 "$REN_SITE"
+          fi
+          sudo bash -c "cat >> \"$REN_SITE\"" <<'RENVIRON_SITE'
+
+          # rpdfium ASan triage: unset DYLD_INSERT_LIBRARIES from R's
+          # env so subprocesses (sed, awk, etc.) don't inherit the
+          # arm64-only asan dylib path and crash at dyld load.
+          DYLD_INSERT_LIBRARIES=
+          RENVIRON_SITE
+          echo "Renviron.site tail:"
+          tail -10 "$REN_SITE"
+
           # ==== Patch bin/R wrapper ====
           # Two changes:
           # (a) shebang -> our resigned sh (entitled, dyld won't
