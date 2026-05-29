@@ -149,7 +149,21 @@ jobs:
           # sequence" because we tried to edit a binary as text.
           RSCRIPT_BIN="$R_HOME_DIR/bin/Rscript"
           R_WRAPPER="$R_HOME_DIR/bin/R"
-          PRELOAD="$DYLD_INSERT_LIBRARIES"
+          # PRELOAD must come from the Actions template, NOT from
+          # bash's own env, because bash's dyld pruned
+          # DYLD_INSERT_LIBRARIES at bash startup (bash is a
+          # platform binary). Previous run wrote `export
+          # DYLD_INSERT_LIBRARIES=""` to the wrapper because
+          # $DYLD_INSERT_LIBRARIES expanded to the empty string.
+          # ${{ env.DYLD_INSERT_LIBRARIES }} is evaluated by the
+          # Actions runner BEFORE bash starts, so it embeds the
+          # literal path.
+          PRELOAD="${{ env.DYLD_INSERT_LIBRARIES }}"
+          echo "PRELOAD resolved by Actions template: $PRELOAD"
+          if [ -z "$PRELOAD" ]; then
+            echo "::warning::PRELOAD empty; skipping codesign step"
+            exit 0
+          fi
           if [ ! -f "$R_BIN" ]; then
             echo "::warning::R binary not found at $R_BIN; skipping codesign rewrite"
             exit 0
