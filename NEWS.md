@@ -388,3 +388,16 @@ at install time (configure-time on POSIX, `configure.win` on
 Windows). The pin lives in `tools/pdfium-version.txt`. CRAN's
 network-at-configure-time policy permits this; the offline
 fallback is documented in `configure`.
+
+The pin is `chromium/7857`. It was advanced from `chromium/7202` to
+pick up upstream PDFium commit `ee83ca8e` ("Avoid mismatch between
+k8bppMask and 3 byte constant.", PDFium bug 488585504), a
+memory-safety fix in `CFX_Face::RenderGlyph`. The earlier binary
+wrote three bytes per pixel into a one-byte-per-pixel glyph mask
+whenever LCD-subpixel text anti-aliasing was active and FreeType
+returned a monochrome bitmap (an embedded bitmap strike), overrunning
+the glyph allocation. `pdf_render_page()` renders to a 32-bit ARGB
+target, for which PDFium auto-selects LCD anti-aliasing, so the
+defect was reachable from ordinary rendering; it manifested as a
+heap-corruption crash on macOS arm64. See
+`dev/macos-segfault-root-cause.md`.
