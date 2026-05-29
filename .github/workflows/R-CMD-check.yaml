@@ -218,37 +218,24 @@ jobs:
             codesign -dv "$bin" 2>&1 | head -5 || true
           done
 
-          # ==== Find an arm64 (NOT arm64e) shell for the wrapper ====
-          # /bin/sh on macOS-arm64 is universal (x86_64 + arm64e).
-          # dyld runs it as arm64e on Apple Silicon. But our ASan
-          # dylib is plain arm64 (chromium clang doesn't target
-          # arm64e — Apple-private ABI). When dyld tries to inject
-          # an arm64-only dylib into an arm64e process, the result
-          # crashes at NULL (run 26617139218 produced exactly this
-          # sh SIGSEGV).
+          # ==== Wrapper shell: keep /bin/sh ====
+          # Run 26617361512 tried to resign /tmp/rpdfium-asan/sh
+          # but crashed at NULL because /bin/sh is arm64e
+          # (pointer auth) while our chromium-built ASan dylib is
+          # plain arm64 — dyld's preload-into-sh stage failed.
           #
-          # Homebrew installs an arm64-only bash at
-          # /opt/homebrew/bin/bash on Apple Silicon runners.
-          # It's not Apple-signed (not a platform binary), so
-          # dyld doesn't prune DYLD_* by default. We use it as
-          # our wrapper shell.
-          WRAPPER_SH=""
-          for cand in /opt/homebrew/bin/bash /usr/local/bin/bash; do
-            if [ -x "$cand" ]; then
-              arches=$(file "$cand" 2>&1)
-              echo "candidate: $cand -> $arches"
-              # Accept if it does NOT mention arm64e
-              if ! printf '%s' "$arches" | grep -q "arm64e"; then
-                WRAPPER_SH="$cand"
-                break
-              fi
-            fi
-          done
-          if [ -z "$WRAPPER_SH" ]; then
-            echo "::error::no arm64-only shell found; ASan dylib would mismatch and crash"
-            exit 1
-          fi
-          echo "Using WRAPPER_SH=$WRAPPER_SH"
+          # Better approach: keep #!/bin/sh as the wrapper
+          # shebang. /bin/sh is a platform binary so dyld prunes
+          # DYLD_* at sh's own startup — sh does NOT load the
+          # asan dylib (which would crash). Then our wrapper
+          # injects `export DYLD_INSERT_LIBRARIES=...` inside the
+          # script. That sets DYLD_* in sh's env. When sh exec's
+          # bin/exec/R (which we resigned with the entitlement),
+          # dyld honors DYLD_* for the child and inserts the
+          # asan dylib into R. R is arm64 (not arm64e), matches
+          # the asan dylib, loads cleanly.
+          WRAPPER_SH=/bin/sh
+          echo "Wrapper shell: $WRAPPER_SH"
 
           # ==== Patch bin/R wrapper ====
           # Two changes:
