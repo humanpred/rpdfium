@@ -218,14 +218,37 @@ jobs:
             codesign -dv "$bin" 2>&1 | head -5 || true
           done
 
-          # ==== Resign /bin/sh copy ====
-          cp /bin/sh /tmp/rpdfium-asan/sh
-          chmod +x /tmp/rpdfium-asan/sh
-          codesign --remove-signature /tmp/rpdfium-asan/sh || true
-          codesign --force --sign - --entitlements "$ENT" /tmp/rpdfium-asan/sh
-          echo ""
-          echo "==== Resigned /tmp/rpdfium-asan/sh ===="
-          codesign -dv /tmp/rpdfium-asan/sh 2>&1 | head -5 || true
+          # ==== Find an arm64 (NOT arm64e) shell for the wrapper ====
+          # /bin/sh on macOS-arm64 is universal (x86_64 + arm64e).
+          # dyld runs it as arm64e on Apple Silicon. But our ASan
+          # dylib is plain arm64 (chromium clang doesn't target
+          # arm64e — Apple-private ABI). When dyld tries to inject
+          # an arm64-only dylib into an arm64e process, the result
+          # crashes at NULL (run 26617139218 produced exactly this
+          # sh SIGSEGV).
+          #
+          # Homebrew installs an arm64-only bash at
+          # /opt/homebrew/bin/bash on Apple Silicon runners.
+          # It's not Apple-signed (not a platform binary), so
+          # dyld doesn't prune DYLD_* by default. We use it as
+          # our wrapper shell.
+          WRAPPER_SH=""
+          for cand in /opt/homebrew/bin/bash /usr/local/bin/bash; do
+            if [ -x "$cand" ]; then
+              arches=$(file "$cand" 2>&1)
+              echo "candidate: $cand -> $arches"
+              # Accept if it does NOT mention arm64e
+              if ! printf '%s' "$arches" | grep -q "arm64e"; then
+                WRAPPER_SH="$cand"
+                break
+              fi
+            fi
+          done
+          if [ -z "$WRAPPER_SH" ]; then
+            echo "::error::no arm64-only shell found; ASan dylib would mismatch and crash"
+            exit 1
+          fi
+          echo "Using WRAPPER_SH=$WRAPPER_SH"
 
           # ==== Patch bin/R wrapper ====
           # Two changes:
@@ -241,7 +264,7 @@ jobs:
           echo "Before shebang: $(head -1 "$R_WRAPPER")"
           TMP_R_WRAPPER=$(mktemp)
           {
-            echo "#!/tmp/rpdfium-asan/sh"
+            echo "#!$WRAPPER_SH"
             echo "export DYLD_INSERT_LIBRARIES=\"$PRELOAD\""
             tail -n +2 "$R_WRAPPER"
           } > "$TMP_R_WRAPPER"
@@ -266,7 +289,7 @@ jobs:
             # preserves the file so signature persists).
           fi
           sudo tee "$RSCRIPT_BIN" > /dev/null <<RSCRIPT_WRAP
-          #!/tmp/rpdfium-asan/sh
+          #!$WRAPPER_SH
           export DYLD_INSERT_LIBRARIES="$PRELOAD"
           exec "$RSCRIPT_BIN.orig" "\$@"
           RSCRIPT_WRAP
