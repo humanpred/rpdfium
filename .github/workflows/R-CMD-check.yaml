@@ -100,10 +100,6 @@ jobs:
           ls -la "$PRELOAD"
           file "$PRELOAD"
           echo "DYLD_INSERT_LIBRARIES=$PRELOAD" >> "$GITHUB_ENV"
-          # macOS SIP blocks DYLD_* env vars on Apple-signed
-          # binaries. R's binary is at
-          # /Library/Frameworks/R.framework/...  which is NOT a
-          # protected path, so the preload should take effect.
           echo "Preload path exported via GITHUB_ENV"
 
       - uses: r-lib/actions/setup-pandoc@v2
@@ -112,6 +108,43 @@ jobs:
         with:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
+
+      # macOS-only, ASan triage only: re-codesign R's binary with an
+      # adhoc signature so DYLD_INSERT_LIBRARIES is honored. CRAN's
+      # R for macOS ships with the hardened runtime enabled but
+      # without the com.apple.security.cs.allow-dyld-environment-variables
+      # entitlement, so the dyld preload that needs to install ASan's
+      # interceptors before R does any allocation gets silently
+      # stripped. Re-signing adhoc without the --options=runtime flag
+      # drops the hardened-runtime requirement; DYLD_INSERT_LIBRARIES
+      # then propagates and ASan can intercept malloc/free at process
+      # start. Reproduces the workaround r-lib uses internally for
+      # rocker/r-devel-san.
+      - name: Allow DYLD_INSERT_LIBRARIES on R (codesign without hardened runtime)
+        if: runner.os == 'macOS' && env.DYLD_INSERT_LIBRARIES != ''
+        run: |
+          set -e
+          R_BIN="$(R RHOME)/bin/exec/R"
+          if [ ! -f "$R_BIN" ]; then
+            echo "::warning::R binary not found at $R_BIN; skipping codesign rewrite"
+            exit 0
+          fi
+          echo "Before:"
+          codesign -dv "$R_BIN" 2>&1 | head -8 || true
+          # Re-sign adhoc WITHOUT --options=runtime, dropping the
+          # hardened-runtime restriction on DYLD_* env vars.
+          sudo codesign --force --sign - --preserve-metadata=identifier "$R_BIN" || \
+            sudo codesign --force --sign - "$R_BIN"
+          echo "After:"
+          codesign -dv "$R_BIN" 2>&1 | head -8 || true
+          # Sanity check: launch R and verify DYLD_INSERT_LIBRARIES
+          # actually propagated through dyld (not stripped). If
+          # propagation worked, DYLD_INSERT_LIBRARIES shows up in
+          # the env reported by R itself. If not, we want to know
+          # before the install step burns 60s loading R packages.
+          echo "DYLD_INSERT_LIBRARIES seen by R:"
+          R --no-save --no-restore --vanilla \
+            -e 'cat(Sys.getenv("DYLD_INSERT_LIBRARIES"), "\n")' 2>&1 | tail -3
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
