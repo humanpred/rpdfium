@@ -5,23 +5,35 @@
 #   *** caught segfault ***
 #   address 0x656e6e75722f7372 (= ASCII "rs/runne"),
 #   cause 'invalid permissions'
-#   Traceback:
-#    1: cpp_struct_tree_page(page$ptr, string_attrs)
+#   Traceback:  1: cpp_struct_tree_page(page$ptr, string_attrs)
 #
 # Status (from successive CI runs on this PR):
-#   * Standalone Rscript (no testthat): runs ALL 4 tests cleanly
-#   * R CMD check + testthat parallel=true:  CRASHES at test 4
-#   * R CMD check + testthat parallel=false: CRASHES at test 4
-#   * MallocGuardEdges enabled: DID NOT abort
+#   * Standalone Rscript reprex (no testthat):              PASSES
+#   * Standalone reprex with testthat::test_that blocks:    PASSES
+#   * R CMD check + TESTTHAT_PARALLEL=true:                 CRASHES
+#   * R CMD check + TESTTHAT_PARALLEL=false (no fork):      CRASHES
+#   * MallocGuardEdges enabled:                             DID NOT abort
 #
-# So the corruption is NOT a heap OOB write (guard pages would
-# have caught it). And it is NOT a fork-after-GCD issue (serial
-# testthat reproduces it). The differentiator is testthat itself.
+# So:
+#   - The bug is NOT a heap OOB write (guard pages didn't catch)
+#   - The bug is NOT a fork-after-GCD issue (serial testthat
+#     reproduces it)
+#   - The bug is NOT testthat's wrapping itself (single-file
+#     testthat reprex passes)
 #
-# This reprex wraps the test sequence in testthat::test_that()
-# blocks so it executes the same code path as test_check, but in
-# a single R process under lldb. If it crashes here, lldb captures
-# the stack at the SIGSEGV moment.
+# The remaining differentiator: R CMD check runs ALL test files
+# in alphabetical order before test-struct-tree.R via
+# testthat::test_check. Some EARLIER test file's C++ work
+# corrupts R's static CEntryTable. When test-struct-tree.R's
+# "honours string_attrs" test then triggers Rcpp's first call to
+# char_get_string_elt from pdfium.so, R_GetCCallable hits the
+# trampled slot and SIGSEGVs.
+#
+# This reprex runs every test file up to and including
+# test-struct-tree.R in sequence via testthat::test_file in a
+# single R process under lldb. When the corrupting file's
+# operations trigger the bad write, lldb catches the SIGSEGV.
+# The faulting frame in `bt all` is the writer.
 
 cat("== loading testthat + pdfium ==\n"); flush.console()
 suppressPackageStartupMessages({
@@ -29,60 +41,45 @@ suppressPackageStartupMessages({
   library(pdfium)
 })
 
-fixture_path <- function(name) {
-  p <- system.file("extdata", "fixtures", paste0(name, ".pdf"),
-                   package = "pdfium")
-  stopifnot(nzchar(p))
-  normalizePath(p, winslash = "/", mustWork = TRUE)
+# After R CMD check, the testthat directory is at
+# check/pdfium.Rcheck/00_pkg_src/pdfium/tests/testthat (source
+# extracted by `R CMD check`). Helpers + test-*.R files live there.
+candidates <- c(
+  file.path("check", "pdfium.Rcheck", "00_pkg_src", "pdfium",
+            "tests", "testthat"),
+  file.path("check", "pdfium.Rcheck", "tests", "testthat"),
+  file.path("tests", "testthat")
+)
+test_dir <- NULL
+for (cand in candidates) {
+  if (dir.exists(cand)) { test_dir <- cand; break }
+}
+stopifnot(!is.null(test_dir))
+cat("testthat dir:", test_dir, "\n"); flush.console()
+
+# Source helpers first (test_file does NOT auto-load helpers on
+# a standalone call).
+for (h in list.files(test_dir, pattern = "^helper-",
+                      full.names = TRUE)) {
+  cat("  sourcing helper:", basename(h), "\n")
+  source(h, local = .GlobalEnv)
 }
 
-cat("\n=================================================\n")
-cat("Mirror of tests/testthat/test-struct-tree.R\n")
-cat("=================================================\n")
+# Find all test-*.R files in alphabetical order, up to and
+# including test-struct-tree.R. (Past struct-tree we don't need.)
+all_tests <- sort(list.files(test_dir, pattern = "^test-.*\\.R$",
+                              full.names = TRUE))
+keep_through <- which(grepl("struct-tree", basename(all_tests)))[[1L]]
+tests_to_run <- all_tests[seq_len(keep_through)]
+cat("running", length(tests_to_run), "test files in order:\n")
+cat(paste0("  ", basename(tests_to_run)), sep = "\n")
 
-test_that("pdf_structure_tree returns 0 rows for an untagged PDF", {
-  for (name in c("shapes", "minimal", "annotated")) {
-    out <- pdf_structure_tree(pdf_doc_open(fixture_path(name)), 1L)
-    expect_s3_class(out, "tbl_df")
-    expect_equal(nrow(out), 0L)
-  }
-})
+# Run each via test_file. The first one to corrupt CEntryTable
+# triggers the SIGSEGV under lldb when test-struct-tree.R's
+# "honours string_attrs" test runs.
+for (tf in tests_to_run) {
+  cat("\n>>> ", basename(tf), "\n"); flush.console()
+  testthat::test_file(tf, reporter = "summary", stop_on_failure = FALSE)
+}
 
-test_that("pdf_structure_tree walks the tagged-PDF tree", {
-  doc <- pdf_doc_open(fixture_path("tagged"))
-  on.exit(pdf_doc_close(doc), add = TRUE)
-  res <- pdf_structure_tree(doc, page_num = 1L)
-  expect_equal(nrow(res), 2L)
-  expect_identical(res$type, c("Document", "P"))
-})
-
-test_that("pdf_structure_tree surfaces typed /A attribute values", {
-  doc <- pdf_doc_open(fixture_path("tagged"))
-  on.exit(pdf_doc_close(doc), add = TRUE)
-  res <- pdf_structure_tree(doc, 1L)
-  attrs <- res$attributes[[2L]]
-  expect_setequal(
-    names(attrs),
-    c("O", "Placement", "SpaceBefore", "BBox", "BorderStyle", "Hidden")
-  )
-})
-
-# CRASH SITE (in R CMD check): test 4 first calls into
-# Rcpp::as<vector<string>> from pdfium.so. The static `fun`
-# pointer in pdfium.so's char_get_string_elt initializes here.
-# R_GetCCallable then hits the corrupted CEntryTable.
-test_that("pdf_structure_tree honours string_attrs", {
-  doc <- pdf_doc_open(fixture_path("tagged"))
-  on.exit(pdf_doc_close(doc), add = TRUE)
-  res <- pdf_structure_tree(
-    doc,
-    page_num = 1L,
-    string_attrs = c("Placement", "O", "Headers")
-  )
-  expect_true(all(c("Placement", "O", "Headers") %in% colnames(res)))
-  expect_identical(res$Placement[[2L]], "Block")
-  expect_identical(res$O[[2L]], "Layout")
-  expect_identical(res$Headers[[2L]], "")
-})
-
-cat("\n=== REPREX OK (testthat-wrapped tests passed; no crash) ===\n")
+cat("\n=== REPREX OK (all test files ran; no crash) ===\n")
