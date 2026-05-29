@@ -35,6 +35,21 @@ The new image is placed at the origin (0, 0) at its natural
 pixel size in PDF user-space points (one unit per pixel). For a
 specific position and size, pass \code{bounds = c(left, bottom, right, top)}; the wrapper computes the transformation matrix
 that scales + translates the image into that rectangle.
+
+An image object's natural coordinate space is the unit square
+\verb{[0, 1] x [0, 1]}, and \code{bounds} is applied as the affine matrix that
+scales and translates that square into the requested rectangle. To
+set or change that matrix directly — instead of, or after, passing
+\code{bounds} — call \code{\link[=pdf_obj_set_matrix]{pdf_obj_set_matrix()}} on the returned object. For
+example,
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{img <- pdf_image_new(page, jpeg)                       # placed at origin
+pdf_obj_set_matrix(img, c(width, 0, 0, height, left, bottom))
+}\if{html}{\out{</div>}}
+
+reproduces \code{bounds = c(left, bottom, left + width, bottom + height)}.
+Both the \code{bounds} path and \code{\link[=pdf_obj_set_matrix]{pdf_obj_set_matrix()}} use PDFium's
+generic \code{FPDFPageObj_SetMatrix}.
 }
 \examples{
 \dontrun{

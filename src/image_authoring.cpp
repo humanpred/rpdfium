@@ -97,13 +97,3 @@ SEXP cpp_image_new_from_jpeg(SEXP doc_ptr, SEXP page_ptr,
   // page so handle_validation can detect a closed parent.
   return R_MakeExternalPtr(image_obj, R_NilValue, page_ptr);
 }
-
-// [[Rcpp::export(name = "cpp_image_set_matrix")]]
-bool cpp_image_set_matrix(SEXP image_ptr,
-                           double a, double b, double c, double d,
-                           double e, double f) {
-  FPDF_PAGEOBJECT image_obj = static_cast<FPDF_PAGEOBJECT>(
-      pdfium_r::validate_handle(image_ptr, "Image object",
-                                  /*require_prot_alive=*/true));
-  return FPDFImageObj_SetMatrix(image_obj, a, b, c, d, e, f) != 0;
-}

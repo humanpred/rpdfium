@@ -601,10 +601,6 @@ cpp_image_new_from_jpeg <- function(doc_ptr, page_ptr, jpeg_bytes) {
     .Call(`_pdfium_cpp_image_new_from_jpeg`, doc_ptr, page_ptr, jpeg_bytes)
 }
 
-cpp_image_set_matrix <- function(image_ptr, a, b, c, d, e, f) {
-    .Call(`_pdfium_cpp_image_set_matrix`, image_ptr, a, b, c, d, e, f)
-}
-
 cpp_image_metadata <- function(obj_ptr, page_ptr) {
     .Call(`_pdfium_cpp_image_metadata`, obj_ptr, page_ptr)
 }

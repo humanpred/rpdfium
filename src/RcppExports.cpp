@@ -1823,23 +1823,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// cpp_image_set_matrix
-bool cpp_image_set_matrix(SEXP image_ptr, double a, double b, double c, double d, double e, double f);
-RcppExport SEXP _pdfium_cpp_image_set_matrix(SEXP image_ptrSEXP, SEXP aSEXP, SEXP bSEXP, SEXP cSEXP, SEXP dSEXP, SEXP eSEXP, SEXP fSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type image_ptr(image_ptrSEXP);
-    Rcpp::traits::input_parameter< double >::type a(aSEXP);
-    Rcpp::traits::input_parameter< double >::type b(bSEXP);
-    Rcpp::traits::input_parameter< double >::type c(cSEXP);
-    Rcpp::traits::input_parameter< double >::type d(dSEXP);
-    Rcpp::traits::input_parameter< double >::type e(eSEXP);
-    Rcpp::traits::input_parameter< double >::type f(fSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_image_set_matrix(image_ptr, a, b, c, d, e, f));
-    return rcpp_result_gen;
-END_RCPP
-}
 // cpp_image_metadata
 Rcpp::List cpp_image_metadata(SEXP obj_ptr, SEXP page_ptr);
 RcppExport SEXP _pdfium_cpp_image_metadata(SEXP obj_ptrSEXP, SEXP page_ptrSEXP) {
@@ -3355,7 +3338,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_text_obj_font_metrics", (DL_FUNC) &_pdfium_cpp_text_obj_font_metrics, 2},
     {"_pdfium_cpp_text_char_font_info", (DL_FUNC) &_pdfium_cpp_text_char_font_info, 1},
     {"_pdfium_cpp_image_new_from_jpeg", (DL_FUNC) &_pdfium_cpp_image_new_from_jpeg, 3},
-    {"_pdfium_cpp_image_set_matrix", (DL_FUNC) &_pdfium_cpp_image_set_matrix, 7},
     {"_pdfium_cpp_image_metadata", (DL_FUNC) &_pdfium_cpp_image_metadata, 2},
     {"_pdfium_cpp_image_pixel_size", (DL_FUNC) &_pdfium_cpp_image_pixel_size, 1},
     {"_pdfium_cpp_image_get_bitmap", (DL_FUNC) &_pdfium_cpp_image_get_bitmap, 1},

@@ -218,13 +218,16 @@ symbol and read/set an attribute of an existing object, so none are
     "may be deprecated in the future") — the package already also wraps
     the richer `…GetMarkedContentIdAtIndex` / `…GetMarkedContentIdCount`
     successors.
-  - **One forward-looking note (not deprecated yet):**
-    `src/image_authoring.cpp:104` calls `FPDFImageObj_SetMatrix`, which
-    upstream marks "TODO(thestig): Start deprecating once
-    `FPDFPageObj_SetMatrix()` is stable" (`fpdf_edit.h:750`). It is fully
-    supported in 7857; `FPDFPageObj_SetMatrix` (already used at
-    `src/obj_setters.cpp:66`) is the eventual replacement. Optional
-    future-proofing — nothing to remove today.
+  - **`FPDFImageObj_SetMatrix` — proactively dropped in this PR.** It was
+    marked "TODO(thestig): Start deprecating once `FPDFPageObj_SetMatrix()`
+    is stable" (`fpdf_edit.h:750`) and was used only internally by
+    `pdf_image_new(bounds=)`. That call now routes through the generic
+    `FPDFPageObj_SetMatrix` (the same setter `pdf_obj_set_matrix()` already
+    exposes — identical handle validation and a,b,c,d,e,f mapping), and the
+    redundant `cpp_image_set_matrix` shim is removed. `pdf_image_new()`
+    gains a `@details` note on setting the matrix via the R interface, and
+    a read-back assertion pins that `bounds` still maps to the exact
+    rectangle. No behaviour change.
 
 ### Bucket 3 — Other currency changes (semantics / flags / behaviour)
 
