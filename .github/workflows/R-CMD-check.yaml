@@ -99,8 +99,20 @@ jobs:
           PRELOAD=/tmp/rpdfium-asan/lib/libclang_rt.asan_osx_dynamic.dylib
           ls -la "$PRELOAD"
           file "$PRELOAD"
-          echo "DYLD_INSERT_LIBRARIES=$PRELOAD" >> "$GITHUB_ENV"
-          echo "Preload path exported via GITHUB_ENV"
+          # NOTE: do NOT export DYLD_INSERT_LIBRARIES via GITHUB_ENV.
+          # If we put it in the workflow env, every subsequent step's
+          # bash sees it, and every arm64e child process the runner
+          # itself spawns (sed for env var processing, etc.) dies at
+          # dyld load because the chromium-built asan dylib has no
+          # arm64e slice. Instead we write the path to a known file
+          # that the codesign step reads — and only inject DYLD_* into
+          # R's own wrapper script (where R is arm64 and matches).
+          echo "$PRELOAD" > /tmp/rpdfium-asan/preload-path
+          # Marker so downstream `if: env.RPDFIUM_ASAN_PRELOAD != ''`
+          # checks can gate on this without putting the actual DYLD_*
+          # value in the env.
+          echo "RPDFIUM_ASAN_PRELOAD=1" >> "$GITHUB_ENV"
+          echo "Preload path saved to /tmp/rpdfium-asan/preload-path"
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -138,7 +150,7 @@ jobs:
       #   3. Rewrite the R + Rscript wrapper script shebangs to
       #      use our resigned /tmp/-located sh.
       - name: Allow DYLD_INSERT_LIBRARIES on R (codesign + entitlements + wrapper injection)
-        if: runner.os == 'macOS' && env.DYLD_INSERT_LIBRARIES != ''
+        if: runner.os == 'macOS' && env.RPDFIUM_ASAN_PRELOAD != ''
         run: |
           set -e
           R_HOME_DIR="$(R RHOME)"
@@ -149,19 +161,19 @@ jobs:
           # sequence" because we tried to edit a binary as text.
           RSCRIPT_BIN="$R_HOME_DIR/bin/Rscript"
           R_WRAPPER="$R_HOME_DIR/bin/R"
-          # PRELOAD must come from the Actions template, NOT from
-          # bash's own env, because bash's dyld pruned
-          # DYLD_INSERT_LIBRARIES at bash startup (bash is a
-          # platform binary). Previous run wrote `export
-          # DYLD_INSERT_LIBRARIES=""` to the wrapper because
-          # $DYLD_INSERT_LIBRARIES expanded to the empty string.
-          # ${{ env.DYLD_INSERT_LIBRARIES }} is evaluated by the
-          # Actions runner BEFORE bash starts, so it embeds the
-          # literal path.
-          PRELOAD="${{ env.DYLD_INSERT_LIBRARIES }}"
-          echo "PRELOAD resolved by Actions template: $PRELOAD"
+          # PRELOAD path is written to /tmp/.../preload-path by the
+          # Preload step. We READ it instead of relying on
+          # DYLD_INSERT_LIBRARIES being in the workflow env — putting
+          # it in workflow env causes every arm64e child (sed, etc.)
+          # the runner spawns to die at dyld load.
+          if [ ! -f /tmp/rpdfium-asan/preload-path ]; then
+            echo "::warning::no preload-path file; skipping codesign step"
+            exit 0
+          fi
+          PRELOAD=$(cat /tmp/rpdfium-asan/preload-path)
+          echo "PRELOAD from file: $PRELOAD"
           if [ -z "$PRELOAD" ]; then
-            echo "::warning::PRELOAD empty; skipping codesign step"
+            echo "::warning::preload-path file empty; skipping codesign step"
             exit 0
           fi
           if [ ! -f "$R_BIN" ]; then
