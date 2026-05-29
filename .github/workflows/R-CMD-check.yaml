@@ -44,6 +44,20 @@ jobs:
       MallocCorruptionAbort: '1'
       MallocScribble: '1'
       MallocPreScribble: '1'
+      # testthat parallel mode = fork() per file. On macOS, fork()
+      # after using libdispatch / GCD is unsafe (Apple's well-known
+      # rule: "After fork(), child can only call async-signal-safe
+      # functions"). PDFium on macOS uses CoreText / CoreGraphics
+      # which use libdispatch internally — so the testthat-forked
+      # child inherits a broken GCD queue state and PDFium calls
+      # in the child may write to invalid addresses.
+      #
+      # Hypothesis being tested: setting TESTTHAT_PARALLEL=false
+      # makes R CMD check run test files serially in the master R
+      # process. If the macOS crash disappears, fork+GCD is
+      # confirmed as the cause. Affects ONLY macOS — Ubuntu uses
+      # glibc malloc + Linux fork (which doesn't have this issue).
+      TESTTHAT_PARALLEL: ${{ matrix.config.os == 'macos-latest' && 'false' || '' }}
 
     steps:
       - uses: actions/checkout@v6
