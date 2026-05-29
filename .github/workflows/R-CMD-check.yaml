@@ -64,6 +64,48 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # When the vendored mac-arm64 binary is ASan-instrumented (the
+      # #44 triage build), R must DYLD_INSERT_LIBRARIES the matching
+      # libclang_rt.asan_osx_dynamic.dylib at process startup —
+      # otherwise dlopen()ing pdfium.so emits:
+      #   ERROR: Interceptors are not working. This may be because
+      #   AddressSanitizer is loaded too late (e.g. via dlopen).
+      # The runtime lives inside the .tgz; extract it to a stable
+      # /tmp/ path here and export DYLD_INSERT_LIBRARIES via
+      # GITHUB_ENV so the check-r-package step (and everything
+      # downstream of it) sees the preload.
+      - name: Preload libclang_rt.asan for R (macOS, ASan tgz only)
+        if: runner.os == 'macOS'
+        run: |
+          set -e
+          ARCHIVE="inst/pdfium-binaries/pdfium-mac-arm64.tgz"
+          if [ ! -f "$ARCHIVE" ]; then
+            echo "no vendored macOS PDFium .tgz; nothing to preload"
+            exit 0
+          fi
+          # Probe the archive: is libpdfium.dylib ASan-instrumented?
+          if ! tar -xzf "$ARCHIVE" -O lib/libpdfium.dylib 2>/dev/null \
+                | strings 2>/dev/null | grep -q libclang_rt.asan; then
+            echo "vendored libpdfium is not ASan-instrumented; skip preload"
+            exit 0
+          fi
+          # Extract the bundled runtime to a stable path. Use /tmp/
+          # rather than RUNNER_TEMP so the path stays valid for the
+          # full job lifetime (RUNNER_TEMP may get nuked between
+          # steps on some runner versions).
+          mkdir -p /tmp/rpdfium-asan
+          tar -xzf "$ARCHIVE" -C /tmp/rpdfium-asan \
+            lib/libclang_rt.asan_osx_dynamic.dylib
+          PRELOAD=/tmp/rpdfium-asan/lib/libclang_rt.asan_osx_dynamic.dylib
+          ls -la "$PRELOAD"
+          file "$PRELOAD"
+          echo "DYLD_INSERT_LIBRARIES=$PRELOAD" >> "$GITHUB_ENV"
+          # macOS SIP blocks DYLD_* env vars on Apple-signed
+          # binaries. R's binary is at
+          # /Library/Frameworks/R.framework/...  which is NOT a
+          # protected path, so the preload should take effect.
+          echo "Preload path exported via GITHUB_ENV"
+
       - uses: r-lib/actions/setup-pandoc@v2
 
       - uses: r-lib/actions/setup-r@v2
