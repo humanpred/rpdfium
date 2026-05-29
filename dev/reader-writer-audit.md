@@ -17,7 +17,10 @@ That round-trip is the contract this audit tries to lock in *before*
 ## Provenance
 
 - Audit date: 2026-05-18.
-- pdfium pin: `tools/pdfium-version.txt` -> `chromium/7202`.
+- pdfium pin: `tools/pdfium-version.txt` -> `chromium/7857` (was
+  `chromium/7202` at audit time; bumped 2026-05-29 in PR #46 — the
+  reader/writer symmetry analysis below is unaffected, see
+  [`dev/pdfium-7857-api-delta.md`](pdfium-7857-api-delta.md)).
 - Reader inventory generated from `R/*.R` on commit `e3e8359`.
 - Source of writer surface: a walk of `inst/include/fpdf_edit.h` +
   `fpdf_annot.h` + `fpdf_save.h` + `fpdf_ppo.h` + the `Set*` / `New*` /
