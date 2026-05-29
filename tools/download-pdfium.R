@@ -79,6 +79,57 @@ local({
     }
   }
 
+  # When the macOS PDFium binary is ASan-instrumented (for
+  # humanpred/rpdfium#44 triage builds), it declares a load
+  # dependency on @rpath/libclang_rt.asan_osx_dynamic.dylib. dyld's
+  # @rpath search for libpdfium includes @loader_path/../lib, so the
+  # runtime must sit next to libpdfium.dylib in the installed
+  # package's lib/ directory. Apple ships the runtime inside Xcode
+  # but it isn't on dyld's default search path. Bundle it ourselves
+  # when (and only when) libpdfium.dylib needs it. Production
+  # bblanchon binaries are not ASan-built so this is a no-op for
+  # normal users.
+  bundle_macos_asan_runtime <- function(libdir) {
+    if (tolower(Sys.info()[["sysname"]]) != "darwin") return(invisible())
+    dylib <- file.path(libdir, "libpdfium.dylib")
+    if (!file.exists(dylib)) return(invisible())
+    if (Sys.which("otool") == "") return(invisible())  # nocov
+    deps <- suppressWarnings(system2("otool", c("-L", shQuote(dylib)),
+                                      stdout = TRUE, stderr = FALSE))
+    if (!any(grepl("libclang_rt.asan", deps, fixed = TRUE))) {
+      return(invisible())  # production (non-ASan) binary
+    }
+    if (Sys.which("xcode-select") == "") return(invisible())  # nocov
+    xcode_path <- tryCatch(
+      system2("xcode-select", "-p", stdout = TRUE, stderr = FALSE),
+      error = function(e) character(0))
+    if (length(xcode_path) == 0L || !nzchar(xcode_path[[1L]])) {
+      warning("ASan-built libpdfium.dylib but xcode-select did not return a path",
+              call. = FALSE)  # nocov
+      return(invisible())  # nocov
+    }
+    rt_glob <- file.path(xcode_path[[1L]], "Toolchains",
+                         "XcodeDefault.xctoolchain", "usr", "lib",
+                         "clang", "*", "lib", "darwin",
+                         "libclang_rt.asan_osx_dynamic.dylib")
+    rt_candidates <- Sys.glob(rt_glob)
+    if (length(rt_candidates) == 0L) {
+      warning("ASan-built libpdfium.dylib but ",
+              "libclang_rt.asan_osx_dynamic.dylib not found under ",
+              xcode_path[[1L]], call. = FALSE)  # nocov
+      return(invisible())  # nocov
+    }
+    rt <- rt_candidates[[length(rt_candidates)]]  # newest clang version
+    dest <- file.path(libdir, basename(rt))
+    if (!file.copy(rt, dest, overwrite = TRUE)) {
+      warning("Failed to copy ", rt, " -> ", dest, call. = FALSE)  # nocov
+      return(invisible())  # nocov
+    }
+    Sys.chmod(dest, "0755")
+    message("[pdfium] Bundled libclang_rt.asan_osx_dynamic.dylib (",
+            file.info(dest)$size, " bytes) alongside libpdfium.dylib")
+  }
+
   # bblanchon's Windows tarball ships:
   #   - bin/pdfium.dll       (the runtime DLL)
   #   - lib/pdfium.dll.lib   (MSVC-style import lib)
@@ -365,6 +416,7 @@ local({
   copy_into("bin")
 
   fix_macos_install_name(file.path(extract_root, "lib"))
+  bundle_macos_asan_runtime(file.path(extract_root, "lib"))
   fix_windows_dll(extract_root)
 
   cat(file.path(extract_root, "include"), "\n",
