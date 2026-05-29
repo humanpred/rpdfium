@@ -49,11 +49,18 @@ jobs:
       # so every test slowed by O(N²). Dropped that and
       # MallocCheckHeapStart entirely; relying on guard-edges to
       # catch the boundary write at the moment it happens.
-      MallocGuardEdges: '1'
-      MallocErrorAbort: '1'
-      MallocCorruptionAbort: '1'
-      MallocScribble: '1'
-      MallocPreScribble: '1'
+      # Malloc* settings are mutually exclusive with the ASan-vendored
+      # build — when libpdfium.dylib is the ASan version, ASan
+      # interceptors replace malloc/free, but the Malloc* env vars
+      # are also propagated to every child process (sed, awk, etc).
+      # That triggers MallocCorruptionAbort SIGABRT crashes in those
+      # children before any real testing happens. We bind these
+      # vars only when there is NO vendored ASan tgz.
+      MallocGuardEdges: ${{ hashFiles('inst/pdfium-binaries/pdfium-mac-arm64.tgz') == '' && '1' || '' }}
+      MallocErrorAbort: ${{ hashFiles('inst/pdfium-binaries/pdfium-mac-arm64.tgz') == '' && '1' || '' }}
+      MallocCorruptionAbort: ${{ hashFiles('inst/pdfium-binaries/pdfium-mac-arm64.tgz') == '' && '1' || '' }}
+      MallocScribble: ${{ hashFiles('inst/pdfium-binaries/pdfium-mac-arm64.tgz') == '' && '1' || '' }}
+      MallocPreScribble: ${{ hashFiles('inst/pdfium-binaries/pdfium-mac-arm64.tgz') == '' && '1' || '' }}
       # (TESTTHAT_PARALLEL conditional was tested during #44 triage
       # and ruled out — both parallel and serial modes reproduce the
       # bug. The empty-string fallback also broke testthat on
