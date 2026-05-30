@@ -251,6 +251,22 @@ pdf_image_icc_profile <- function(obj) {
 #'   inspecting the file extension on the returned string.
 #' @seealso [pdf_image_data()] to get the raw bytes directly,
 #'   [pdf_image_bitmap()] for the decoded pixel matrix.
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "image.pdf",
+#'   package = "pdfium"
+#' )
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_doc_open(fixture)
+#'   page <- pdf_page_load(doc, 1L)
+#'   imgs <- Filter(function(o) o$type == "image", pdf_page_objects(page))
+#'   if (length(imgs) > 0L) {
+#'     # The extension is chosen from the filter chain; pass a stem.
+#'     out <- pdf_image_extract(imgs[[1L]], tempfile())
+#'     basename(out)
+#'   }
+#'   pdf_page_close(page)
+#'   pdf_doc_close(doc)
+#' }
 #' @export
 pdf_image_extract <- function(obj, path) {
   check_image_obj(obj)

@@ -25,6 +25,18 @@ user-space points on the source page. Wraps \code{FPDF_DeviceToPage}
 with the render-geometry that produced the bitmap pre-populated
 from the bitmap's attributes.
 }
+\examples{
+fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+  package = "pdfium"
+)
+if (nzchar(fixture)) {
+  doc <- pdf_doc_open(fixture)
+  bmp <- pdf_render_page(doc, dpi = 72)
+  # Map two bitmap pixel positions back to PDF page-space points.
+  pdf_bitmap_to_page(bmp, x = c(0, 100), y = c(0, 100))
+  pdf_doc_close(doc)
+}
+}
 \seealso{
 \code{\link[=pdf_bitmap_from_page]{pdf_bitmap_from_page()}} for the inverse,
 \code{\link[=pdf_device_to_page]{pdf_device_to_page()}} for the underlying primitive.

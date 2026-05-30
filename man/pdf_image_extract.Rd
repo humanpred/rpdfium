@@ -37,6 +37,23 @@ alpha channel when present.
 
 Mirrors pypdfium2's \code{PdfImage.extract()} convenience.
 }
+\examples{
+fixture <- system.file("extdata", "fixtures", "image.pdf",
+  package = "pdfium"
+)
+if (nzchar(fixture)) {
+  doc <- pdf_doc_open(fixture)
+  page <- pdf_page_load(doc, 1L)
+  imgs <- Filter(function(o) o$type == "image", pdf_page_objects(page))
+  if (length(imgs) > 0L) {
+    # The extension is chosen from the filter chain; pass a stem.
+    out <- pdf_image_extract(imgs[[1L]], tempfile())
+    basename(out)
+  }
+  pdf_page_close(page)
+  pdf_doc_close(doc)
+}
+}
 \seealso{
 \code{\link[=pdf_image_data]{pdf_image_data()}} to get the raw bytes directly,
 \code{\link[=pdf_image_bitmap]{pdf_image_bitmap()}} for the decoded pixel matrix.

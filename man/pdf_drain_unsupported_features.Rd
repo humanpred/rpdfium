@@ -24,6 +24,13 @@ Returns \code{character(0)} when nothing has been flagged or when the
 handler is not installed (no events are buffered until
 installation).
 }
+\examples{
+pdf_install_unsupported_handler()
+doc <- pdf_doc_open(system.file("extdata", "fixtures", "shapes.pdf",
+                                 package = "pdfium"))
+pdf_drain_unsupported_features()  # character(0) -- nothing flagged
+pdf_doc_close(doc)
+}
 \seealso{
 \code{\link[=pdf_install_unsupported_handler]{pdf_install_unsupported_handler()}} to enable the
 handler.

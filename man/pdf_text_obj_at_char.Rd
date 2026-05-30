@@ -34,6 +34,20 @@ Functionally equivalent to chaining
 short-circuited through PDFium's direct accessor so callers
 don't have to enumerate every page-object.
 }
+\examples{
+fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+  package = "pdfium"
+)
+if (nzchar(fixture)) {
+  doc <- pdf_doc_open(fixture)
+  page <- pdf_page_load(doc, 1L)
+  # Text page-object owning the first character on the page.
+  obj <- pdf_text_obj_at_char(page, char_index = 1L)
+  if (!is.null(obj)) pdf_obj_bounds(obj)
+  pdf_page_close(page)
+  pdf_doc_close(doc)
+}
+}
 \seealso{
 \code{\link[=pdf_text_char_obj_index]{pdf_text_char_obj_index()}} for the index-only version,
 \code{\link[=pdf_text_chars]{pdf_text_chars()}} for per-character readouts.

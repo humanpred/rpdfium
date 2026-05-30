@@ -107,6 +107,19 @@ pdf_text_char_obj_index <- function(page, char_index, page_num = 1L) {
 #'   char has no associated page-object.
 #' @seealso [pdf_text_char_obj_index()] for the index-only version,
 #'   [pdf_text_chars()] for per-character readouts.
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+#'   package = "pdfium"
+#' )
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_doc_open(fixture)
+#'   page <- pdf_page_load(doc, 1L)
+#'   # Text page-object owning the first character on the page.
+#'   obj <- pdf_text_obj_at_char(page, char_index = 1L)
+#'   if (!is.null(obj)) pdf_obj_bounds(obj)
+#'   pdf_page_close(page)
+#'   pdf_doc_close(doc)
+#' }
 #' @export
 pdf_text_obj_at_char <- function(page, char_index, page_num = 1L) {
   checkmate::assert_count(char_index, positive = TRUE)

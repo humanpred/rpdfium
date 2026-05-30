@@ -536,6 +536,17 @@ pdf_render_to_png <- function(page, file, page_num = 1L, dpi = 72,
 #'   user-space points (origin at the page's bottom-left).
 #' @seealso [pdf_bitmap_from_page()] for the inverse,
 #'   [pdf_device_to_page()] for the underlying primitive.
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+#'   package = "pdfium"
+#' )
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_doc_open(fixture)
+#'   bmp <- pdf_render_page(doc, dpi = 72)
+#'   # Map two bitmap pixel positions back to PDF page-space points.
+#'   pdf_bitmap_to_page(bmp, x = c(0, 100), y = c(0, 100))
+#'   pdf_doc_close(doc)
+#' }
 #' @export
 pdf_bitmap_to_page <- function(bitmap, x, y) {
   checkmate::assert_class(bitmap, "pdfium_bitmap")
@@ -584,6 +595,17 @@ pdf_bitmap_to_page <- function(bitmap, x, y) {
 #'   bitmap pixel coordinates (origin at the bitmap's top-left).
 #' @seealso [pdf_bitmap_to_page()] for the inverse,
 #'   [pdf_page_to_device()] for the underlying primitive.
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+#'   package = "pdfium"
+#' )
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_doc_open(fixture)
+#'   bmp <- pdf_render_page(doc, dpi = 72)
+#'   # Map PDF page-space points (bottom-left origin) to bitmap pixels.
+#'   pdf_bitmap_from_page(bmp, x = c(0, 72), y = c(0, 72))
+#'   pdf_doc_close(doc)
+#' }
 #' @export
 pdf_bitmap_from_page <- function(bitmap, x, y) {
   checkmate::assert_class(bitmap, "pdfium_bitmap")

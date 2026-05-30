@@ -397,6 +397,12 @@ pdf_install_unsupported_handler <- function() {
 #'   feature was flagged multiple times.
 #' @seealso [pdf_install_unsupported_handler()] to enable the
 #'   handler.
+#' @examples
+#' pdf_install_unsupported_handler()
+#' doc <- pdf_doc_open(system.file("extdata", "fixtures", "shapes.pdf",
+#'                                  package = "pdfium"))
+#' pdf_drain_unsupported_features()  # character(0) -- nothing flagged
+#' pdf_doc_close(doc)
 #' @export
 pdf_drain_unsupported_features <- function() {
   cpp_drain_unsupported_features()

@@ -132,13 +132,13 @@ Ghostscript subprocess.
 
 ### 5. Programmatic PDF authoring (with v0.1.0 limits)
 
-[`pdf_doc_new()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_new.html)
-plus the page-object creators ([`pdf_path_new`](https://humanpred.github.io/rpdfium/reference/pdf_path_new.html),
-[`pdf_rect_new`](https://humanpred.github.io/rpdfium/reference/pdf_rect_new.html),
-[`pdf_text_new`](https://humanpred.github.io/rpdfium/reference/pdf_text_new.html),
-[`pdf_image_new`](https://humanpred.github.io/rpdfium/reference/pdf_image_new.html),
-[`pdf_font_load`](https://humanpred.github.io/rpdfium/reference/pdf_font_load.html)
-/ [`pdf_font_load_standard`](https://humanpred.github.io/rpdfium/reference/pdf_font_load_standard.html),
+`pdf_doc_new()`
+plus the page-object creators (`pdf_path_new()`,
+`pdf_rect_new()`,
+`pdf_text_new()`,
+`pdf_image_new()`,
+`pdf_font_load()`
+/ `pdf_font_load_standard()`,
 plus the path-geometry appenders) let you build PDFs from scratch
 in R — vector graphics, JPEG images, text in the 14 PDF standard
 fonts, and arbitrary TrueType / Type1 typefaces. The mutating-pdfs
