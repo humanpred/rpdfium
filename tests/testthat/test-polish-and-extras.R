@@ -413,3 +413,42 @@ test_that("pdf_doc_text returns the empty string for pages with no text", {
   txt <- pdf_doc_text(fixture_path("minimal"))
   expect_identical(txt, "")
 })
+
+test_that("pdf_text_chars encodes BMP code points as multi-byte UTF-8", {
+  # Cairo can write Latin-1 / Cyrillic / CJK / surrogate-pair text; we
+  # build a tiny PDF and let it exercise:
+  #   * cp 0x80..0x7FF  (2-byte UTF-8 branch in cpp_page_text_chars)
+  #   * cp 0x800..0xFFFF (3-byte UTF-8 branch)
+  #   * 0xD800..0xDFFF  (surrogate halves -> "")
+  # The 4-byte path (cp >= 0x10000) is unreachable through PDFium's
+  # UTF-16 unicode accessor; supplementary-plane glyphs always
+  # surface as surrogate pairs. That branch is marked # nocov in
+  # src/page_extras.cpp with an inline justification.
+  tmp <- withr::local_tempfile(fileext = ".pdf")
+  grDevices::cairo_pdf(tmp, width = 4, height = 3)
+  graphics::par(mar = c(0, 0, 0, 0))
+  graphics::plot.new()
+  graphics::plot.window(c(0, 4), c(0, 3))
+  # eacute (U+00E9, 2-byte UTF-8) + CJK middle (U+4E2D, 3-byte UTF-8)
+  # + grinning-face emoji (U+1F600, encoded as a surrogate pair).
+  graphics::text(2, 2.5, "é", cex = 1)
+  graphics::text(2, 2.0, "中", cex = 1)
+  graphics::text(2, 1.5, "\U0001F600", cex = 1)
+  grDevices::dev.off()
+
+  doc <- pdf_doc_open(tmp)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  chars <- pdf_text_chars(doc, page_num = 1L)
+
+  cps <- chars$codepoint
+  # 2-byte UTF-8 branch: cp 0x00E9 -> 0xC3 0xA9 -> "é"
+  expect_true(0x00e9L %in% cps)
+  expect_identical(chars$char[match(0x00e9L, cps)], "é")
+  # 3-byte UTF-8 branch: cp 0x4E2D -> 0xE4 0xB8 0xAD -> "中"
+  expect_true(0x4e2dL %in% cps)
+  expect_identical(chars$char[match(0x4e2dL, cps)], "中")
+  # Surrogate-half branch: 0xD800..0xDFFF -> "" (no UTF-8 produced).
+  surrogate_idx <- which(cps >= 0xD800L & cps <= 0xDFFFL)
+  expect_gt(length(surrogate_idx), 0L)
+  expect_true(all(chars$char[surrogate_idx] == ""))
+})
