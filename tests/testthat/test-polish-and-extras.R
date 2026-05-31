@@ -414,9 +414,9 @@ test_that("pdf_doc_text returns the empty string for pages with no text", {
   expect_identical(txt, "")
 })
 
-test_that("CJK reduction cut #14: cairo_pdf + dev.off only (no plot)", {
+test_that("CJK reduction cut #15: base pdf() instead of cairo_pdf()", {
   tmp <- withr::local_tempfile(fileext = ".pdf")
-  grDevices::cairo_pdf(tmp, width = 4, height = 3)
+  grDevices::pdf(tmp, width = 4, height = 3)
   grDevices::dev.off()
   expect_true(file.exists(tmp))
 })
