@@ -428,28 +428,25 @@ test_that("pdf_page_links returns a quad-points matrix for multi-line /QuadPoint
 # pdf_text_chars unicode encoding paths --------------------------
 
 test_that("pdf_text_chars encodes BMP code points as multi-byte UTF-8", {
-  # Cairo can write Latin-1 / Cyrillic / CJK / surrogate-pair text; we
-  # build a tiny PDF and let it exercise:
-  #   * cp 0x80..0x7FF  (2-byte UTF-8 branch in cpp_page_text_chars)
-  #   * cp 0x800..0xFFFF (3-byte UTF-8 branch)
-  #   * 0xD800..0xDFFF  (surrogate halves -> "")
-  # The 4-byte path (cp >= 0x10000) is unreachable through PDFium's
-  # UTF-16 unicode accessor; supplementary-plane glyphs always
-  # surface as surrogate pairs. That branch is marked # nocov in
-  # src/page_extras.cpp with an inline justification.
-  tmp <- withr::local_tempfile(fileext = ".pdf")
-  grDevices::cairo_pdf(tmp, width = 4, height = 3)
-  graphics::par(mar = c(0, 0, 0, 0))
-  graphics::plot.new()
-  graphics::plot.window(c(0, 4), c(0, 3))
-  # eacute (U+00E9, 2-byte UTF-8) + CJK middle (U+4E2D, 3-byte UTF-8)
-  # + grinning-face emoji (U+1F600, encoded as a surrogate pair).
-  graphics::text(2, 2.5, "é", cex = 1)
-  graphics::text(2, 2.0, "中", cex = 1)
-  graphics::text(2, 1.5, "\U0001F600", cex = 1)
-  grDevices::dev.off()
-
-  doc <- pdf_doc_open(tmp)
+  # Loads a pre-built Cairo PDF containing é (U+00E9, 2-byte UTF-8) +
+  # 中 (U+4E2D, 3-byte UTF-8) + 😀 (U+1F600, surrogate pair) and
+  # exercises every relevant branch of cpp_page_text_chars's UTF-16 ->
+  # UTF-8 encoder:
+  #   * cp 0x80..0x7FF       (2-byte UTF-8 branch)
+  #   * cp 0x800..0xFFFF     (3-byte UTF-8 branch)
+  #   * 0xD800..0xDFFF       (surrogate halves -> "")
+  # The 4-byte branch is unreachable through PDFium's UTF-16 unicode
+  # accessor and is marked # nocov in src/page_extras.cpp.
+  #
+  # The fixture is shipped pre-built (inst/extdata/fixtures/...) rather
+  # than generated at test time because grDevices::cairo_pdf has a
+  # transitive dlopen of /opt/X11/lib/libXrender.1.dylib that fails
+  # silently on macOS without XQuartz, and on macOS-arm64 R 4.6 that
+  # dlopen-failure path corrupts the process heap. See
+  # humanpred/rpdfium#44 and the cairo bisection branch. Loading a
+  # static fixture exercises the same pdf_text_chars C++ path without
+  # going anywhere near the buggy R+macOS interaction.
+  doc <- pdf_doc_open(fixture_path("cairo-cjk-utf8"))
   on.exit(pdf_doc_close(doc), add = TRUE)
   chars <- pdf_text_chars(doc, page_num = 1L)
 
