@@ -96,10 +96,7 @@ not yet installed.
 ## Reverse dependencies
 
 This is a first submission; there are no reverse dependencies
-yet. The internal consumer (`kmextract`, currently using
-`pypdfium2` via reticulate) will switch to `pdfium` as a backend
-after this release; its conformance suite has been run against
-the v0.1.0 candidate.
+yet.
 
 ## Examples runtime
 
