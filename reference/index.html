@@ -88,6 +88,20 @@
 
         <dt>
 
+          <code><a href="pdf_doc_summary.html">pdf_doc_summary()</a></code>
+
+        </dt>
+        <dd>One-call summary of a PDF document</dd>
+
+        <dt>
+
+          <code><a href="summary.pdfium_doc.html">summary(<i>&lt;pdfium_doc&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Document-level summary</dd>
+
+        <dt>
+
           <code><a href="pdf_parse_date.html">pdf_parse_date()</a></code>
 
         </dt>
@@ -165,10 +179,31 @@
 
         <dt>
 
+          <code><a href="pdf_doc_language.html">pdf_doc_language()</a></code>
+
+        </dt>
+        <dd>Get the document's declared language</dd>
+
+        <dt>
+
           <code><a href="pdf_doc_javascript.html">pdf_doc_javascript()</a></code>
 
         </dt>
         <dd>Enumerate document-level JavaScript actions</dd>
+
+        <dt>
+
+          <code><a href="pdf_install_unsupported_handler.html">pdf_install_unsupported_handler()</a></code>
+
+        </dt>
+        <dd>Install PDFium's unsupported-feature event handler</dd>
+
+        <dt>
+
+          <code><a href="pdf_drain_unsupported_features.html">pdf_drain_unsupported_features()</a></code>
+
+        </dt>
+        <dd>Read and clear the PDFium unsupported-feature event buffer</dd>
 
         <dt>
 
@@ -265,6 +300,13 @@
 
         <dt>
 
+          <code><a href="summary.pdfium_attachment_list.html">summary(<i>&lt;pdfium_attachment_list&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Tibble-shaped summary of an attachment list</dd>
+
+        <dt>
+
           <code><a href="pdf_attachment_name.html">pdf_attachment_name()</a></code>
 
         </dt>
@@ -330,6 +372,13 @@
 
         <dt>
 
+          <code><a href="summary.pdfium_signature_list.html">summary(<i>&lt;pdfium_signature_list&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Tibble-shaped summary of a signature list</dd>
+
+        <dt>
+
           <code><a href="pdf_signature_sub_filter.html">pdf_signature_sub_filter()</a></code>
 
         </dt>
@@ -392,6 +441,13 @@
 
         </dt>
         <dd>Tibble view of a <code>pdfium_bookmark_list</code></dd>
+
+        <dt>
+
+          <code><a href="summary.pdfium_bookmark_list.html">summary(<i>&lt;pdfium_bookmark_list&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Tibble-shaped summary of a bookmark list</dd>
 
         <dt>
 
@@ -502,6 +558,20 @@
 
         <dt>
 
+          <code><a href="pdf_pages_summary.html">pdf_pages_summary()</a></code>
+
+        </dt>
+        <dd>One-call summary of every page in a document</dd>
+
+        <dt>
+
+          <code><a href="summary.pdfium_page.html">summary(<i>&lt;pdfium_page&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Page-level summary</dd>
+
+        <dt>
+
           <code><a href="pdf_page_links.html">pdf_page_links()</a></code>
 
         </dt>
@@ -585,6 +655,13 @@
 
         </dt>
         <dd>Tibble view of a <code>pdfium_annot_list</code></dd>
+
+        <dt>
+
+          <code><a href="summary.pdfium_annot_list.html">summary(<i>&lt;pdfium_annot_list&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Tibble-shaped summary of an annotation list</dd>
 
         <dt>
 
@@ -756,6 +833,13 @@
 
         <dt>
 
+          <code><a href="summary.pdfium_form_field_list.html">summary(<i>&lt;pdfium_form_field_list&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Tibble-shaped summary of a form-field list</dd>
+
+        <dt>
+
           <code><a href="pdf_form_field_type.html">pdf_form_field_type()</a></code>
 
         </dt>
@@ -888,6 +972,13 @@
 
         </dt>
         <dd>Tibble view of a <code>pdfium_obj_list</code></dd>
+
+        <dt>
+
+          <code><a href="summary.pdfium_obj_list.html">summary(<i>&lt;pdfium_obj_list&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Tibble-shaped summary of a page-object list</dd>
 
         <dt>
 
@@ -1559,7 +1650,7 @@
       </dl></div><div class="section level2">
       <h2 id="page-object-creation">Page-object creation<a class="anchor" aria-label="anchor" href="#page-object-creation"></a></h2>
 
-      <div class="section-desc"><p>Create fresh page-objects (paths, rectangles, text) on a page that’s been opened with <code>readwrite = TRUE</code> or built via <code><a href="../reference/pdf_doc_new.html">pdf_doc_new()</a></code>. Image creation is deferred to a later release pending FPDF_BITMAP plumbing. Use <code><a href="../reference/pdf_obj_delete.html">pdf_obj_delete()</a></code> for the inverse — remove + destroy a page-object.</p></div>
+      <div class="section-desc"><p>Create fresh page-objects (paths, rectangles, text, JPEG images) on a page that’s been opened with <code>readwrite = TRUE</code> or built via <code><a href="../reference/pdf_doc_new.html">pdf_doc_new()</a></code>. Use <code><a href="../reference/pdf_obj_delete.html">pdf_obj_delete()</a></code> for the inverse — remove + destroy a page-object. PNG / TIFF / raw- bitmap embedding stays deferred to a later release pending <code>FPDF_BITMAP</code> plumbing.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -1589,10 +1680,47 @@
 
         <dt>
 
+          <code><a href="pdf_image_new.html">pdf_image_new()</a></code>
+
+        </dt>
+        <dd>Create a new image page-object from JPEG bytes</dd>
+
+        <dt>
+
           <code><a href="pdf_obj_delete.html">pdf_obj_delete()</a></code>
 
         </dt>
         <dd>Remove a page object and destroy it</dd>
+      </dl></div><div class="section level2">
+      <h2 id="font-loading">Font loading<a class="anchor" aria-label="anchor" href="#font-loading"></a></h2>
+
+      <div class="section-desc"><p>Load a font for use in <code><a href="../reference/pdf_text_new.html">pdf_text_new()</a></code>. The 14 PDF standard fonts need no embedding; arbitrary TrueType / Type1 fonts get their bytes copied into the document via <code>FPDFText_LoadFont</code>. <code><a href="../reference/pdf_font_close.html">pdf_font_close()</a></code> is idempotent and matches the explicit- release pattern of the other handle classes.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pdf_font_load_standard.html">pdf_font_load_standard()</a></code>
+
+        </dt>
+        <dd>Load one of the 14 PDF standard fonts</dd>
+
+        <dt>
+
+          <code><a href="pdf_font_load.html">pdf_font_load()</a></code>
+
+        </dt>
+        <dd>Load a TrueType or Type1 font from bytes</dd>
+
+        <dt>
+
+          <code><a href="pdf_font_close.html">pdf_font_close()</a></code>
+
+        </dt>
+        <dd>Close a font handle</dd>
       </dl></div><div class="section level2">
       <h2 id="annotation-authoring">Annotation authoring<a class="anchor" aria-label="anchor" href="#annotation-authoring"></a></h2>
 
@@ -1753,6 +1881,414 @@
 
         </dt>
         <dd>Set the raw bytes of an embedded file attachment</dd>
+      </dl></div><div class="section level2">
+      <h2 id="api-completion-additions">API-completion additions<a class="anchor" aria-label="anchor" href="#api-completion-additions"></a></h2>
+
+      <div class="section-desc"><p>The v0.1.0 “complete the relevant PDFium surface” pass picks up the last batch of single-call wrappers that pair with the existing readers + setters. Grouped by topic below; all live in <code>R/api_completion.R</code>.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="pdf_doc_form_type.html">pdf_doc_form_type()</a></code>
+
+        </dt>
+        <dd>Form-type flavour of the document</dd>
+
+        <dt>
+
+          <code><a href="pdf_bookmark_child_count.html">pdf_bookmark_child_count()</a></code>
+
+        </dt>
+        <dd>Number of children for a bookmark</dd>
+
+        <dt>
+
+          <code><a href="pdf_page_has_transparency.html">pdf_page_has_transparency()</a></code>
+
+        </dt>
+        <dd>Does the page contain transparency?</dd>
+
+        <dt>
+
+          <code><a href="pdf_page_bounding_box.html">pdf_page_bounding_box()</a></code>
+
+        </dt>
+        <dd>Page bounding box (cropbox ∩ mediabox)</dd>
+
+        <dt>
+
+          <code><a href="pdf_page_transform_annots.html">pdf_page_transform_annots()</a></code>
+
+        </dt>
+        <dd>Transform every annotation on a page in one shot</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_index.html">pdf_annot_index()</a></code>
+
+        </dt>
+        <dd>Find an annotation's page-relative index by handle</dd>
+
+        <dt>
+
+          <code><a href="pdf_device_to_page.html">pdf_device_to_page()</a></code>
+
+        </dt>
+        <dd>Convert device (screen) coordinates to PDF page coordinates</dd>
+
+        <dt>
+
+          <code><a href="pdf_page_to_device.html">pdf_page_to_device()</a></code>
+
+        </dt>
+        <dd>Convert PDF page coordinates to device (screen) coordinates</dd>
+
+        <dt>
+
+          <code><a href="pdf_text_rects.html">pdf_text_rects()</a></code>
+
+        </dt>
+        <dd>Rectangles occupied by a character range</dd>
+
+        <dt>
+
+          <code><a href="pdf_text_bounded.html">pdf_text_bounded()</a></code>
+
+        </dt>
+        <dd>Extract text inside a bounding rectangle</dd>
+
+        <dt>
+
+          <code><a href="pdf_text_char_geometry.html">pdf_text_char_geometry()</a></code>
+
+        </dt>
+        <dd>Per-character geometry: transformation matrix, rotation angle, font weight</dd>
+
+        <dt>
+
+          <code><a href="pdf_path_set_dash_phase.html">pdf_path_set_dash_phase()</a></code>
+
+        </dt>
+        <dd>Set just the dash phase of a path object</dd>
+
+        <dt>
+
+          <code><a href="pdf_obj_mark_set_blob.html">pdf_obj_mark_set_blob()</a></code>
+
+        </dt>
+        <dd>Set a binary-blob content-mark parameter</dd>
+
+        <dt>
+
+          <code><a href="pdf_obj_mark_remove_param.html">pdf_obj_mark_remove_param()</a></code>
+
+        </dt>
+        <dd>Remove a content-mark parameter</dd>
+
+        <dt>
+
+          <code><a href="pdf_font_data.html">pdf_font_data()</a></code>
+
+        </dt>
+        <dd>Extract the bytes of an embedded font</dd>
+
+        <dt>
+
+          <code><a href="pdf_font_load_cidtype2.html">pdf_font_load_cidtype2()</a></code>
+
+        </dt>
+        <dd>Load a CID Type 2 (composite TrueType) font with explicit mappings</dd>
+
+        <dt>
+
+          <code><a href="pdf_text_set_charcodes.html">pdf_text_set_charcodes()</a></code>
+
+        </dt>
+        <dd>Populate a text object with explicit glyph charcodes</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_add_ink_stroke.html">pdf_annot_add_ink_stroke()</a></code>
+
+        </dt>
+        <dd>Append an ink stroke to an ink annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_remove_ink_list.html">pdf_annot_remove_ink_list()</a></code>
+
+        </dt>
+        <dd>Remove all ink strokes from an ink annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_object_count.html">pdf_annot_object_count()</a></code>
+
+        </dt>
+        <dd>Number of embedded page-objects inside an annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_objects.html">pdf_annot_objects()</a></code>
+
+        </dt>
+        <dd>Page-objects embedded inside an annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_append_object.html">pdf_annot_append_object()</a></code>
+
+        </dt>
+        <dd>Append a page-object to an annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_remove_object.html">pdf_annot_remove_object()</a></code>
+
+        </dt>
+        <dd>Remove a page-object from an annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_update_object.html">pdf_annot_update_object()</a></code>
+
+        </dt>
+        <dd>Update an embedded page-object after mutating it</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_set_uri.html">pdf_annot_set_uri()</a></code>
+
+        </dt>
+        <dd>Set the URI of a link annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_set_appearance.html">pdf_annot_set_appearance()</a></code>
+
+        </dt>
+        <dd>Set the appearance stream content for an annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_add_file_attachment.html">pdf_annot_add_file_attachment()</a></code>
+
+        </dt>
+        <dd>Attach a file to a file-attachment annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_line.html">pdf_annot_line()</a></code>
+
+        </dt>
+        <dd>Line endpoints of a line annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_link.html">pdf_annot_link()</a></code>
+
+        </dt>
+        <dd>Link metadata for a link annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_set_border.html">pdf_annot_set_border()</a></code>
+
+        </dt>
+        <dd>Set the border of an annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_clip_path_new.html">pdf_clip_path_new()</a></code>
+
+        </dt>
+        <dd>Create a clip path covering a rectangle</dd>
+
+        <dt>
+
+          <code><a href="pdf_clip_path_close.html">pdf_clip_path_close()</a></code>
+
+        </dt>
+        <dd>Release a clip-path handle</dd>
+
+        <dt>
+
+          <code><a href="pdf_page_insert_clip_path.html">pdf_page_insert_clip_path()</a></code>
+
+        </dt>
+        <dd>Insert a clip path into a page</dd>
+
+        <dt>
+
+          <code><a href="pdf_obj_transform_clip_path.html">pdf_obj_transform_clip_path()</a></code>
+
+        </dt>
+        <dd>Transform the clip path of a page object</dd>
+
+        <dt>
+
+          <code><a href="pdf_page_transform_with_clip.html">pdf_page_transform_with_clip()</a></code>
+
+        </dt>
+        <dd>Apply a transform to a page's content stream with an optional clip</dd>
+
+        <dt>
+
+          <code><a href="pdf_xobject_from_page.html">pdf_xobject_from_page()</a></code>
+
+        </dt>
+        <dd>Create an XObject (reusable form) from a source-doc page</dd>
+
+        <dt>
+
+          <code><a href="pdf_xobject_close.html">pdf_xobject_close()</a></code>
+
+        </dt>
+        <dd>Close an XObject handle</dd>
+
+        <dt>
+
+          <code><a href="pdf_obj_form_from_xobject.html">pdf_obj_form_from_xobject()</a></code>
+
+        </dt>
+        <dd>Instantiate an XObject as a form page-object on a page</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_obj_remove_object.html">pdf_form_obj_remove_object()</a></code>
+
+        </dt>
+        <dd>Remove a child page-object from a form-xobject</dd>
+
+        <dt>
+
+          <code><a href="pdf_docs_import_pages.html">pdf_docs_import_pages()</a></code>
+
+        </dt>
+        <dd>Import page ranges from a source doc into a destination doc</dd>
+
+        <dt>
+
+          <code><a href="pdf_docs_copy_viewer_preferences.html">pdf_docs_copy_viewer_preferences()</a></code>
+
+        </dt>
+        <dd>Copy <code>/ViewerPreferences</code> from one document to another</dd>
+
+        <dt>
+
+          <code><a href="pdf_bitmap_new.html">pdf_bitmap_new()</a></code>
+
+        </dt>
+        <dd>Create a fresh in-memory bitmap</dd>
+
+        <dt>
+
+          <code><a href="pdf_bitmap_close.html">pdf_bitmap_close()</a></code>
+
+        </dt>
+        <dd>Release a bitmap handle</dd>
+
+        <dt>
+
+          <code><a href="pdf_bitmap_info.html">pdf_bitmap_info()</a></code>
+
+        </dt>
+        <dd>Bitmap dimensions and format</dd>
+
+        <dt>
+
+          <code><a href="pdf_bitmap_fill_rect.html">pdf_bitmap_fill_rect()</a></code>
+
+        </dt>
+        <dd>Fill a rectangle of the bitmap with a solid color</dd>
+
+        <dt>
+
+          <code><a href="pdf_bitmap_buffer.html">pdf_bitmap_buffer()</a></code> <code><a href="pdf_bitmap_buffer.html">pdf_bitmap_set_buffer()</a></code>
+
+        </dt>
+        <dd>Read or write the bitmap's raw pixel bytes</dd>
+
+        <dt>
+
+          <code><a href="pdf_image_set_bitmap.html">pdf_image_set_bitmap()</a></code>
+
+        </dt>
+        <dd>Set a bitmap on an image page-object</dd>
+
+        <dt>
+
+          <code><a href="pdf_image_new_from_bitmap.html">pdf_image_new_from_bitmap()</a></code>
+
+        </dt>
+        <dd>Embed a bitmap as an image page-object</dd>
+
+        <dt>
+
+          <code><a href="pdf_image_extract.html">pdf_image_extract()</a></code>
+
+        </dt>
+        <dd>Extract an embedded image to a file, picking a sensible format</dd>
+
+        <dt>
+
+          <code><a href="pdf_bitmap_to_page.html">pdf_bitmap_to_page()</a></code>
+
+        </dt>
+        <dd>Convert bitmap pixel coordinates to PDF page-space points</dd>
+
+        <dt>
+
+          <code><a href="pdf_bitmap_from_page.html">pdf_bitmap_from_page()</a></code>
+
+        </dt>
+        <dd>Convert PDF page-space points to bitmap pixel coordinates</dd>
+
+        <dt>
+
+          <code><a href="pdf_text_obj_at_char.html">pdf_text_obj_at_char()</a></code>
+
+        </dt>
+        <dd>Look up the text page-object owning a given char by direct accessor</dd>
+
+        <dt>
+
+          <code><a href="pdf_system_fonts_default_ttf_map.html">pdf_system_fonts_default_ttf_map()</a></code>
+
+        </dt>
+        <dd>PDFium's default charset → TTF substitution map</dd>
+
+        <dt>
+
+          <code><a href="pdf_system_fonts_install_default.html">pdf_system_fonts_install_default()</a></code>
+
+        </dt>
+        <dd>Install PDFium's default system-font-info provider</dd>
+
+        <dt>
+
+          <code><a href="pdf_annot_set_font_color.html">pdf_annot_set_font_color()</a></code>
+
+        </dt>
+        <dd>Set the font color of an annotation</dd>
+
+        <dt>
+
+          <code><a href="pdf_form_field_set_flags.html">pdf_form_field_set_flags()</a></code>
+
+        </dt>
+        <dd>Set the form-field flag bitmask on a form-field widget</dd>
+
+        <dt>
+
+          <code><a href="pdf_doc_set_focusable_subtypes.html">pdf_doc_set_focusable_subtypes()</a></code>
+
+        </dt>
+        <dd>Set the doc-wide list of annotation subtypes that participate in tab focus</dd>
       </dl></div><div class="section level2">
       <h2 id="enum-code-name-helpers">Enum code &lt;-&gt; name helpers<a class="anchor" aria-label="anchor" href="#enum-code-name-helpers"></a></h2>
 

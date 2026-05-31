@@ -22,3 +22,8 @@ pdf_doc_set_language(doc, lang)
 ## Value
 
 Invisibly returns `doc`.
+
+## See also
+
+[`pdf_doc_language()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_language.md)
+to read it back.

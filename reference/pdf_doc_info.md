@@ -65,5 +65,5 @@ if (nzchar(fixture)) {
   info$producer
   info$creation_date_parsed
 }
-#> [1] "2026-05-15 19:12:28 UTC"
+#> [1] "2026-05-29 12:33:25 UTC"
 ```

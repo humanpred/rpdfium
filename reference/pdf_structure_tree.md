@@ -10,7 +10,7 @@ tag, and the tree shape (parent_index + level).
 ## Usage
 
 ``` r
-pdf_structure_tree(page, page_num = 1L)
+pdf_structure_tree(page, page_num = 1L, string_attrs = character())
 ```
 
 ## Arguments
@@ -25,6 +25,17 @@ pdf_structure_tree(page, page_num = 1L)
 
   One-based page index. Only used when `page` is a `pdfium_doc`. Ignored
   otherwise.
+
+- string_attrs:
+
+  Optional character vector of attribute-object names (e.g. `"Headers"`,
+  `"Scope"`, `"RowSpan"`). For each name, the result adds a column with
+  that name populated via
+  `FPDF_StructElement_GetStringAttribute(element, name)`. Distinct from
+  the typed `attributes` list-column: this path reads the element's `/A`
+  attribute objects keyed by name, returning the value as UTF-8 bytes
+  from PDFium's standard `name`-or-`string`-typed lookup. Empty string
+  when the attribute is absent.
 
 ## Value
 
@@ -44,6 +55,10 @@ A tibble with columns:
   `"Document"`, `"Sect"`, `"P"`, `"H1"`, `"Span"`, `"Figure"`,
   `"Table"`).
 
+- `parent_type` character - the structural type of the parent element
+  (via `FPDF_StructElement_GetParent`); empty when the element is a
+  direct child of the structure-tree root.
+
 - `title` character - the element's `/T` title (often empty).
 
 - `lang` character - the element's `/Lang` IETF BCP 47 code (e.g.
@@ -54,6 +69,10 @@ A tibble with columns:
 
 - `actual_text` character - the element's `/ActualText` replacement
   text; empty when none is set.
+
+- `expansion` character - the element's `/E` expansion text (the
+  expanded form of an abbreviation or acronym); empty when none is set.
+  (PDFium chromium/7857+.)
 
 - `id` character - the element's `/ID` string (often empty).
 
@@ -78,6 +97,15 @@ A tibble with columns:
   (PDF's nested attribute-class layout is flattened to a single
   namespace).
 
+- `child_mcids` list-column - one integer vector per row, one entry per
+  child slot in the element's `/K` array. The value is the child's
+  marked-content ID via `FPDF_StructElement_GetChildMarkedContentID`, or
+  `NA` when the child is itself a nested structure element rather than a
+  direct marked-content reference. Distinct from `mcid` / `mcid_count`,
+  which only enumerate MCID-typed children.
+
+Plus one extra column per name in `string_attrs`.
+
 Returns a 0-row tibble of the same schema when the page has no
 associated structure tree (typical for untagged PDFs).
 
@@ -88,8 +116,9 @@ tibble. Tagging is required for `print_high_res`-quality accessibility,
 screen-reader support, and PDF/UA conformance.
 
 Wraps `FPDF_StructTree_GetForPage`, `FPDF_StructTree_*Children`,
-`FPDF_StructElement_GetType` / `GetTitle` / `GetLang` / `GetAltText` /
-`GetActualText` / `GetID` / `GetMarkedContentID`.
+`FPDF_StructElement_GetType` / `GetParent` / `GetTitle` / `GetLang` /
+`GetAltText` / `GetActualText` / `GetID` / `GetMarkedContentID` /
+`GetChildMarkedContentID` / `GetStringAttribute`.
 
 ## See also
 

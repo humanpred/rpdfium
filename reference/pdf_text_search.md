@@ -14,6 +14,7 @@ pdf_text_search(
   case_sensitive = FALSE,
   whole_word = FALSE,
   consecutive = FALSE,
+  direction = c("next", "prev"),
   password = NULL
 )
 ```
@@ -49,6 +50,14 @@ pdf_text_search(
   the match end; if `FALSE` (default), PDFium skips ahead by one
   character before searching again, so overlapping matches are not
   reported.
+
+- direction:
+
+  Search direction: `"next"` (default) walks from page start to end via
+  `FPDFText_FindNext`; `"prev"` walks from end to start via
+  `FPDFText_FindPrev`. Results are returned in iteration order, so
+  reverse search produces matches in right-to-left / bottom-to-top order
+  on each page.
 
 - password:
 

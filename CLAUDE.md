@@ -14,6 +14,37 @@ recording.
 - **CRAN target:** v0.1.0 ships to CRAN. Every change preserves
   CRAN-cleanliness.
 
+## Scope — wrap PDFium, don’t invent helpers
+
+The package’s job is to expose Google’s PDFium C API to R idiomatically.
+Every public function should ultimately call into PDFium (perhaps via a
+chain of internal helpers) or be unambiguously tied to PDF-format
+concepts
+([`pdf_parse_date()`](https://humanpred.github.io/rpdfium/reference/pdf_parse_date.md)
+parses the PDF date-string format).
+
+What does **not** belong:
+
+- Filesystem walking
+  ([`list.files()`](https://rdrr.io/r/base/list.files.html) loops over
+  `pdf_doc_*`).
+- Network plumbing beyond what PDFium itself does. `pdf_doc_open(path)`
+  accepting a URL is fine — the URL becomes raw bytes which go straight
+  into PDFium’s `FPDF_LoadMemDocument64`. A function whose body is
+  mostly `httr2::request(...)` is not.
+- Bulk / batch wrappers (“apply this PDFium function to every file in a
+  folder”). Users have `lapply` and `purrr` for that.
+- Cross-PDF analysis (“compare these two PDFs”). Out of scope.
+
+When in doubt, ask: *what PDFium symbol does this wrap?* If the answer
+is “none — it’s a convenience over base R”, the function belongs in user
+code or a separate utility package, not here.
+
+This is recorded as a deletion-justification in `NEWS.md` for the
+`pdf_dir_summary` / `pdf_doc_open_url` retraction. Future contributors
+shouldn’t re-add functions whose job is to glue base R primitives
+together around pdfium calls.
+
 ## Layering — never bypass
 
     R user → R API (R/) → Rcpp glue (src/*.cpp) → PDFium C ABI → libpdfium.{so|dylib|dll}
@@ -155,6 +186,53 @@ for the rationale. The short version:
 | Architectural choice | A new ADR under `dev/decisions/`, indexed in `dev/decisions/README.md` |
 | Bundled binary distribution | `LICENSE.md` “Bundled binary distribution” section |
 | Any of `dev/upstream-feature-survey.md`, `dev/r-pdf-ecosystem-survey.md`, `dev/pdfium-api-review.md` | The “Provenance” block at the top of that file — survey date, commit hashes, CRAN versions, refresh-command snippet. Drift in these blocks defeats the purpose of having them. |
+
+## Parallel sub-agents — isolate the build directory, prefer load_all
+
+When dispatching multiple sub-agents via the `Agent` tool to work on
+different files in parallel, **always pass `isolation: "worktree"`**.
+Without it, every agent shares the same `src/`, `src/*.o`, `src/*.so`,
+and any install target (`~/R/.../pdfium/` or a shared
+`/tmp/rlib_pdfium/`). When each agent’s verify step runs
+`find src -name "*.o" -delete && ... R CMD INSTALL`, the agents clobber
+one another’s intermediate builds and the install location, and
+individual runs cycle without finishing — burning CPU while making no
+net progress.
+
+`isolation: "worktree"` puts each agent in its own `git worktree`
+checkout under a temporary path. The Agent tool returns the worktree
+path + branch when the agent finishes; merge that branch back into your
+working branch at the end.
+
+Inside the agent prompt, prefer `devtools::load_all(".")` and
+`devtools::test()` over `R CMD INSTALL --library=...`. Reasons:
+
+- `load_all()` compiles in-place under the package’s `src/` and loads
+  into the running R session without writing to any system library. Much
+  faster, and there’s no shared install target to collide on.
+- `devtools::test()` implicitly calls `load_all()` first, so a single
+  command both rebuilds and runs the requested test filter.
+- `covr::package_coverage(type = "tests")` does its own coverage-
+  instrumented build under a private prefix; it does NOT need a separate
+  `R CMD INSTALL` step. Just run it directly.
+- `devtools::check()` is the right last-mile gate (it runs
+  `R CMD check --as-cran`), but reserve it for the final verification
+  pass on the main worktree — it’s slow and not what you want inside a
+  per-file coverage loop.
+
+`R CMD INSTALL` is only needed when the package’s installed copy must be
+visible to *another* process — e.g.
+[`lintr::lint_package()`](https://lintr.r-lib.org/reference/lint.html)
+reading the installed namespace from
+[`.libPaths()`](https://rdrr.io/r/base/libPaths.html), or a fresh R
+subprocess loading the package via
+[`library(pdfium)`](https://github.com/humanpred/rpdfium). Coverage,
+tests, and `load_all` do not.
+
+Bash hint: `LD_LIBRARY_PATH="$(pwd)/inst/lib"` is the prefix any
+`Rscript -e ...` invocation needs so the bundled `libpdfium.so`
+(unpacked into `inst/lib/` by the install-time
+`tools/download-pdfium.R`) resolves at dyn.load time.
 
 ## Git / GitHub workflow
 

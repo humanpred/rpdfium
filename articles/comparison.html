@@ -141,11 +141,11 @@ Java + pdftk)</td>
 </tr>
 <tr class="even">
 <td>
-<strong>Programmatically build small PDFs</strong> with paths, text,
-images, annotations</td>
+<strong>Programmatically build PDFs</strong> — any page count,
+vector paths, standard-font text, annotations</td>
 <td>
 <strong><code>pdfium</code></strong> (also <code>minipdf</code> for
-a pure-R writer with no native dependency)</td>
+a pure-R writer that additionally supports image embedding today)</td>
 </tr>
 <tr class="odd">
 <td>Edit XMP metadata or bookmarks</td>
@@ -213,19 +213,178 @@ ships entirely as native code — no Java dependency.</p>
 <p>No other CRAN package surfaces annotations at all. The full list of
 supported subtypes lives in <code><a href="../reference/pdf_annot_new.html">?pdf_annot_new</a></code>.</p>
 </div>
+<div class="section level3">
+<h3 id="structural-mutation-without-java-or-shell-outs">4. Structural mutation without Java or shell-outs<a class="anchor" aria-label="anchor" href="#structural-mutation-without-java-or-shell-outs"></a>
+</h3>
+<p>The classic R answers for page rotation / N-up imposition / delete +
+reorder / language tagging are <code>staplr</code> (Java + pdftk) and
+<code>xmpdf</code> (orchestrates <code>exiftool</code> +
+<code>ghostscript</code> + <code>pdftk</code>). <code>pdfium</code>
+covers the same surface in-process, no external binaries:</p>
+<table class="table">
+<colgroup>
+<col width="20%">
+<col width="20%">
+<col width="20%">
+<col width="20%">
+<col width="20%">
+</colgroup>
+<thead><tr class="header">
+<th>Operation</th>
+<th><code>pdfium</code></th>
+<th><code>qpdf</code></th>
+<th><code>staplr</code></th>
+<th><code>xmpdf</code></th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Rotate page</td>
+<td><code><a href="../reference/pdf_page_set_rotation.html">pdf_page_set_rotation()</a></code></td>
+<td>no</td>
+<td>
+<code>rotate_pages()</code> (Java)</td>
+<td>no</td>
+</tr>
+<tr class="even">
+<td>Delete page</td>
+<td><code><a href="../reference/pdf_page_delete.html">pdf_page_delete()</a></code></td>
+<td>
+<code>pdf_split()</code> + cherry-pick</td>
+<td>
+<code>remove_pages()</code> (Java)</td>
+<td>no</td>
+</tr>
+<tr class="odd">
+<td>Reorder pages</td>
+<td><code><a href="../reference/pdf_pages_reorder.html">pdf_pages_reorder()</a></code></td>
+<td>manual <code>pdf_split()</code> + <code>pdf_combine()</code>
+</td>
+<td>
+<code>select_pages()</code> (Java)</td>
+<td>no</td>
+</tr>
+<tr class="even">
+<td>Merge documents</td>
+<td><code><a href="../reference/pdf_docs_merge.html">pdf_docs_merge()</a></code></td>
+<td><code>pdf_combine()</code></td>
+<td>
+<code>combine_pdfs()</code> (Java)</td>
+<td>no</td>
+</tr>
+<tr class="odd">
+<td>N-up imposition</td>
+<td><code><a href="../reference/pdf_n_up.html">pdf_n_up()</a></code></td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr class="even">
+<td>Set crop / media / trim / bleed / art box</td>
+<td><code><a href="../reference/pdf_page_set_box.html">pdf_page_set_box()</a></code></td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr class="odd">
+<td>Set <code>/Lang</code> (accessibility tag)</td>
+<td><code><a href="../reference/pdf_doc_set_language.html">pdf_doc_set_language()</a></code></td>
+<td>no</td>
+<td>no</td>
+<td>partial (XMP only)</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># 4-up imposition of a long report onto US Letter sheets.</span></span>
+<span><span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_doc_open.html">pdf_doc_open</a></span><span class="op">(</span><span class="st">"long-report.pdf"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/pdf_n_up.html">pdf_n_up</a></span><span class="op">(</span><span class="va">doc</span>, <span class="st">"report-4up.pdf"</span>, cols <span class="op">=</span> <span class="fl">2L</span>, rows <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Reorder so the cover page lands first, then save in place.</span></span>
+<span><span class="va">doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_doc_open.html">pdf_doc_open</a></span><span class="op">(</span><span class="st">"draft.pdf"</span>, readwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/pdf_pages_reorder.html">pdf_pages_reorder</a></span><span class="op">(</span><span class="va">doc</span>, new_order <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3L</span>, <span class="fl">1L</span>, <span class="fl">2L</span>, <span class="fl">4</span><span class="op">:</span><span class="fu"><a href="../reference/pdf_page_count.html">pdf_page_count</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/pdf_save.html">pdf_save</a></span><span class="op">(</span><span class="va">doc</span>, <span class="st">"draft.pdf"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Tag the doc's primary language (improves screen-reader UX).</span></span>
+<span><span class="fu"><a href="../reference/pdf_doc_set_language.html">pdf_doc_set_language</a></span><span class="op">(</span><span class="va">doc</span>, <span class="st">"en-US"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/pdf_save.html">pdf_save</a></span><span class="op">(</span><span class="va">doc</span>, <span class="st">"draft.pdf"</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/pdf_docs_merge.html">pdf_docs_merge()</a></code> accepts a list of
+<code>pdfium_doc</code> handles or a list of paths, so you can
+stream-merge many files without keeping them all open at once.
+<code><a href="../reference/pdf_n_up.html">pdf_n_up()</a></code> writes directly to disk via PDFium’s
+<code>FPDF_ImportNPagesToOne</code> — no intermediate render step, no
+Ghostscript subprocess.</p>
+</div>
+<div class="section level3">
+<h3 id="programmatic-pdf-authoring-with-v0-1-0-limits">5. Programmatic PDF authoring (with v0.1.0 limits)<a class="anchor" aria-label="anchor" href="#programmatic-pdf-authoring-with-v0-1-0-limits"></a>
+</h3>
+<p><code><a href="../reference/pdf_doc_new.html">pdf_doc_new()</a></code> plus the page-object creators
+(<code><a href="../reference/pdf_path_new.html">pdf_path_new()</a></code>, <code><a href="../reference/pdf_rect_new.html">pdf_rect_new()</a></code>,
+<code><a href="../reference/pdf_text_new.html">pdf_text_new()</a></code>, <code><a href="../reference/pdf_image_new.html">pdf_image_new()</a></code>,
+<code><a href="../reference/pdf_font_load.html">pdf_font_load()</a></code> / <code><a href="../reference/pdf_font_load_standard.html">pdf_font_load_standard()</a></code>,
+plus the path-geometry appenders) let you build PDFs from scratch in R —
+vector graphics, JPEG images, text in the 14 PDF standard fonts, and
+arbitrary TrueType / Type1 typefaces. The mutating-pdfs vignette walks
+through the workflow.</p>
+<p><strong>What scales fine.</strong> Page count is unlimited (PDFium
+handles thousand-page docs efficiently); objects-per-page are unlimited;
+the full vector-graphics surface — paths, Bezier curves, dash patterns,
+transformation matrices, blend modes, opacity, clip paths — is exposed;
+annotations are richly covered. The R↔︎C boundary cost is microseconds
+per call, so 10⁶ object writes is seconds, not minutes.</p>
+<p><strong>v0.1.0 limits worth knowing about.</strong> Two authoring
+axes have real gaps in the current release — both blocked on upstream
+PDFium (the symbols don’t exist yet — we’ve proposed them but they need
+to ship through Google’s Gerrit review cycle, land in a PDFium release,
+and propagate to a <code>bblanchon</code> binary before we can wrap
+them):</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th>Gap</th>
+<th>Missing PDFium symbol(s)</th>
+<th>Workaround today</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><strong><code>/Info</code> dict writes</strong></td>
+<td>
+<code>FPDF_SetMetaText</code> — <a href="https://github.com/humanpred/rpdfium/blob/main/dev/upstream-patches/pdfium-FPDF_SetMetaText.patch" class="external-link">drafted
+patch</a> awaiting Gerrit upload</td>
+<td>Use <code>xmpdf</code> to patch the Info dict after
+<code><a href="../reference/pdf_save.html">pdf_save()</a></code>
+</td>
+</tr>
+<tr class="even">
+<td><strong>Encryption on save</strong></td>
+<td>
+<code>FPDF_SetEncryption</code> — listed as CL 5 in <a href="https://github.com/humanpred/rpdfium/blob/main/dev/upstream-api-gaps.md" class="external-link"><code>dev/upstream-api-gaps.md</code></a>;
+not yet drafted</td>
+<td>Use <code>qpdf::pdf_encrypt()</code> as a post-process step</td>
+</tr>
+</tbody>
+</table>
+<p>The full upstream-PDFium gap inventory lives in <a href="https://github.com/humanpred/rpdfium/blob/main/dev/upstream-api-gaps.md" class="external-link"><code>dev/upstream-api-gaps.md</code></a>.
+The “what scales” claims above hold today; the limits all have a known
+path to closure, with the per-table timing differences noted.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="where-pdfium-deliberately-doesnt-compete">Where <code>pdfium</code> deliberately doesn’t compete<a class="anchor" aria-label="anchor" href="#where-pdfium-deliberately-doesnt-compete"></a>
 </h2>
 <ul>
 <li>
-<strong>Structural split / merge / compress</strong> —
+<strong>Lossless compress / re-encode / linearise</strong> —
 <code>qpdf</code> is the right answer. It’s content-preserving, doesn’t
-re-encode streams, and has been the de facto choice for years. We expose
-<code><a href="../reference/pdf_pages_reorder.html">pdf_pages_reorder()</a></code> and <code><a href="../reference/pdf_docs_merge.html">pdf_docs_merge()</a></code>
-because they fall out of the mutation surface for free, but if your only
-job is “split this PDF in half”, reach for
-<code>qpdf::pdf_split()</code> first.</li>
+re-encode streams, and has been the de facto choice for years.
+<code>pdfium</code>’s structural mutation surface (see §4 above)
+overlaps on split / merge / reorder, but if your job is “compress this
+PDF” or “linearise for web view”, reach for
+<code>qpdf::pdf_compress()</code> /
+<code>qpdf::pdf_optimize()</code>.</li>
 <li>
 <strong>Table extraction</strong> — <code>tabulapdf</code> (formerly
 <code>tabulizer</code>) has a decade of Tabula’s heuristics behind it.
@@ -359,7 +518,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>no</td>
 <td>no</td>
-<td>yes</td>
+<td>yes (Java)</td>
 <td>no</td>
 </tr>
 <tr class="even">
@@ -369,10 +528,40 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>yes</td>
 <td>no</td>
 <td>no</td>
-<td>yes</td>
+<td>yes (Java)</td>
 <td>no</td>
 </tr>
 <tr class="odd">
+<td>N-up imposition</td>
+<td>yes</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr class="even">
+<td>Page boxes (crop / trim / bleed / art)</td>
+<td>yes</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr class="odd">
+<td>Document language (<code>/Lang</code>) write</td>
+<td>yes</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>no</td>
+<td>partial (XMP)</td>
+</tr>
+<tr class="even">
 <td><strong>Path segments</strong></td>
 <td><strong>yes</strong></td>
 <td>no</td>
@@ -382,7 +571,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>no</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>
 <strong>Path style</strong> (stroke / fill / dash / matrix)</td>
 <td><strong>yes</strong></td>
@@ -393,7 +582,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>no</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><strong>Bezier control points</strong></td>
 <td><strong>yes</strong></td>
 <td>no</td>
@@ -403,7 +592,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>no</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><strong>Image XObject extraction</strong></td>
 <td><strong>yes</strong></td>
 <td>no</td>
@@ -413,7 +602,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>no</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><strong>Form XObjects</strong></td>
 <td><strong>yes</strong></td>
 <td>no</td>
@@ -423,7 +612,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>no</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><strong>Clip paths</strong></td>
 <td><strong>yes</strong></td>
 <td>no</td>
@@ -433,7 +622,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>no</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><strong>Structure tree (tagged PDF)</strong></td>
 <td><strong>yes</strong></td>
 <td>no</td>
@@ -443,7 +632,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>no</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><strong>Annotations (read)</strong></td>
 <td><strong>yes</strong></td>
 <td>no</td>
@@ -453,7 +642,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>no</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><strong>Annotations (write)</strong></td>
 <td><strong>yes</strong></td>
 <td>no</td>
@@ -463,7 +652,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>no</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Form fields (read)</td>
 <td>yes</td>
 <td>no</td>
@@ -473,7 +662,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>yes (Java)</td>
 <td>no</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Form fields (fill)</td>
 <td>yes</td>
 <td>no</td>
@@ -483,7 +672,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>yes (Java)</td>
 <td>no</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Page flatten</td>
 <td>yes</td>
 <td>no</td>
@@ -493,7 +682,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>no</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Attachments (read)</td>
 <td>yes</td>
 <td>yes</td>
@@ -503,7 +692,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>no</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Attachments (author)</td>
 <td>yes</td>
 <td>no</td>
@@ -513,7 +702,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>no</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Signatures (read)</td>
 <td>yes</td>
 <td>no</td>
@@ -523,7 +712,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>no</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Bookmarks (read)</td>
 <td>yes</td>
 <td>partial (toc)</td>
@@ -533,7 +722,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>yes</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Bookmarks (write)</td>
 <td>no</td>
 <td>no</td>
@@ -543,7 +732,7 @@ Info-write remain <code>xmpdf</code>’s territory.</li>
 <td>no</td>
 <td>yes</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Encryption / password</td>
 <td>partial (open only)</td>
 <td>yes</td>
@@ -564,6 +753,10 @@ ecosystem.</p>
 <p>The two packages overlap on text + render + metadata. The signatures
 are close enough that switching is mostly a find-and-replace:</p>
 <table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
 <thead><tr class="header">
 <th><code>pdftools</code></th>
 <th><code>pdfium</code></th>
@@ -575,11 +768,15 @@ are close enough that switching is mostly a find-and-replace:</p>
 </tr>
 <tr class="even">
 <td><code>pdf_info(path)</code></td>
-<td><code>pdf_doc_info(path)</code></td>
+<td>
+<code>pdf_doc_info(path)</code> — or
+<code>pdf_doc_summary(path)</code> for a richer one-row tibble</td>
 </tr>
 <tr class="odd">
 <td><code>pdf_pagesize(path)</code></td>
-<td><code>pdf_page_size(doc, page_num)</code></td>
+<td>
+<code>pdf_pages_summary(path)</code> (one row per page; also
+includes rotation + label)</td>
 </tr>
 <tr class="even">
 <td><code>pdf_render_page(path, ...)</code></td>

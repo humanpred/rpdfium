@@ -126,7 +126,7 @@ pdf_render_to_png(doc, file = out, dpi = 96)
 file.exists(out)
 #> [1] TRUE
 file.size(out)
-#> [1] 5679
+#> [1] 5683
 ```
 
 ## Annotations

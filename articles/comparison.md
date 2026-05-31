@@ -18,7 +18,7 @@ contributor-facing inventory lives in `dev/r-pdf-ecosystem-survey.md`.
 | **Inspect path geometry** (segments, Bezier control points, stroke/fill, transform matrices) | **`pdfium`** — no other CRAN package surfaces this |
 | **Fill AcroForm fields without a JRE** | **`pdfium`** (`staplr` requires Java + pdftk) |
 | **Edit annotations** (read + write) | **`pdfium`** |
-| **Programmatically build small PDFs** with paths, text, images, annotations | **`pdfium`** (also `minipdf` for a pure-R writer with no native dependency) |
+| **Programmatically build PDFs** — any page count, vector paths, standard-font text, annotations | **`pdfium`** (also `minipdf` for a pure-R writer that additionally supports image embedding today) |
 | Edit XMP metadata or bookmarks | `xmpdf` (orchestrates `exiftool` / `ghostscript` / `pdftk`) |
 
 ## What `pdfium` adds
@@ -84,17 +84,93 @@ No other CRAN package surfaces annotations at all. The full list of
 supported subtypes lives in
 [`?pdf_annot_new`](https://humanpred.github.io/rpdfium/reference/pdf_annot_new.md).
 
+### 4. Structural mutation without Java or shell-outs
+
+The classic R answers for page rotation / N-up imposition / delete +
+reorder / language tagging are `staplr` (Java + pdftk) and `xmpdf`
+(orchestrates `exiftool` + `ghostscript` + `pdftk`). `pdfium` covers the
+same surface in-process, no external binaries:
+
+| Operation | `pdfium` | `qpdf` | `staplr` | `xmpdf` |
+|----|----|----|----|----|
+| Rotate page | [`pdf_page_set_rotation()`](https://humanpred.github.io/rpdfium/reference/pdf_page_set_rotation.md) | no | `rotate_pages()` (Java) | no |
+| Delete page | [`pdf_page_delete()`](https://humanpred.github.io/rpdfium/reference/pdf_page_delete.md) | `pdf_split()` + cherry-pick | `remove_pages()` (Java) | no |
+| Reorder pages | [`pdf_pages_reorder()`](https://humanpred.github.io/rpdfium/reference/pdf_pages_reorder.md) | manual `pdf_split()` + `pdf_combine()` | `select_pages()` (Java) | no |
+| Merge documents | [`pdf_docs_merge()`](https://humanpred.github.io/rpdfium/reference/pdf_docs_merge.md) | `pdf_combine()` | `combine_pdfs()` (Java) | no |
+| N-up imposition | [`pdf_n_up()`](https://humanpred.github.io/rpdfium/reference/pdf_n_up.md) | no | no | no |
+| Set crop / media / trim / bleed / art box | [`pdf_page_set_box()`](https://humanpred.github.io/rpdfium/reference/pdf_page_set_box.md) | no | no | no |
+| Set `/Lang` (accessibility tag) | [`pdf_doc_set_language()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_set_language.md) | no | no | partial (XMP only) |
+
+``` r
+
+# 4-up imposition of a long report onto US Letter sheets.
+doc <- pdf_doc_open("long-report.pdf")
+pdf_n_up(doc, "report-4up.pdf", cols = 2L, rows = 2L)
+
+# Reorder so the cover page lands first, then save in place.
+doc <- pdf_doc_open("draft.pdf", readwrite = TRUE)
+pdf_pages_reorder(doc, new_order = c(3L, 1L, 2L, 4:pdf_page_count(doc)))
+pdf_save(doc, "draft.pdf")
+
+# Tag the doc's primary language (improves screen-reader UX).
+pdf_doc_set_language(doc, "en-US")
+pdf_save(doc, "draft.pdf")
+```
+
+[`pdf_docs_merge()`](https://humanpred.github.io/rpdfium/reference/pdf_docs_merge.md)
+accepts a list of `pdfium_doc` handles or a list of paths, so you can
+stream-merge many files without keeping them all open at once.
+[`pdf_n_up()`](https://humanpred.github.io/rpdfium/reference/pdf_n_up.md)
+writes directly to disk via PDFium’s `FPDF_ImportNPagesToOne` — no
+intermediate render step, no Ghostscript subprocess.
+
+### 5. Programmatic PDF authoring (with v0.1.0 limits)
+
+[`pdf_doc_new()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_new.md)
+plus the page-object creators
+([`pdf_path_new()`](https://humanpred.github.io/rpdfium/reference/pdf_path_new.md),
+[`pdf_rect_new()`](https://humanpred.github.io/rpdfium/reference/pdf_rect_new.md),
+[`pdf_text_new()`](https://humanpred.github.io/rpdfium/reference/pdf_text_new.md),
+[`pdf_image_new()`](https://humanpred.github.io/rpdfium/reference/pdf_image_new.md),
+[`pdf_font_load()`](https://humanpred.github.io/rpdfium/reference/pdf_font_load.md)
+/
+[`pdf_font_load_standard()`](https://humanpred.github.io/rpdfium/reference/pdf_font_load_standard.md),
+plus the path-geometry appenders) let you build PDFs from scratch in R —
+vector graphics, JPEG images, text in the 14 PDF standard fonts, and
+arbitrary TrueType / Type1 typefaces. The mutating-pdfs vignette walks
+through the workflow.
+
+**What scales fine.** Page count is unlimited (PDFium handles
+thousand-page docs efficiently); objects-per-page are unlimited; the
+full vector-graphics surface — paths, Bezier curves, dash patterns,
+transformation matrices, blend modes, opacity, clip paths — is exposed;
+annotations are richly covered. The R↔︎C boundary cost is microseconds
+per call, so 10⁶ object writes is seconds, not minutes.
+
+**v0.1.0 limits worth knowing about.** Two authoring axes have real gaps
+in the current release — both blocked on upstream PDFium (the symbols
+don’t exist yet — we’ve proposed them but they need to ship through
+Google’s Gerrit review cycle, land in a PDFium release, and propagate to
+a `bblanchon` binary before we can wrap them):
+
+| Gap | Missing PDFium symbol(s) | Workaround today |
+|----|----|----|
+| **`/Info` dict writes** | `FPDF_SetMetaText` — [drafted patch](https://github.com/humanpred/rpdfium/blob/main/dev/upstream-patches/pdfium-FPDF_SetMetaText.patch) awaiting Gerrit upload | Use `xmpdf` to patch the Info dict after [`pdf_save()`](https://humanpred.github.io/rpdfium/reference/pdf_save.md) |
+| **Encryption on save** | `FPDF_SetEncryption` — listed as CL 5 in [`dev/upstream-api-gaps.md`](https://github.com/humanpred/rpdfium/blob/main/dev/upstream-api-gaps.md); not yet drafted | Use `qpdf::pdf_encrypt()` as a post-process step |
+
+The full upstream-PDFium gap inventory lives in
+[`dev/upstream-api-gaps.md`](https://github.com/humanpred/rpdfium/blob/main/dev/upstream-api-gaps.md).
+The “what scales” claims above hold today; the limits all have a known
+path to closure, with the per-table timing differences noted.
+
 ## Where `pdfium` deliberately doesn’t compete
 
-- **Structural split / merge / compress** — `qpdf` is the right answer.
-  It’s content-preserving, doesn’t re-encode streams, and has been the
-  de facto choice for years. We expose
-  [`pdf_pages_reorder()`](https://humanpred.github.io/rpdfium/reference/pdf_pages_reorder.md)
-  and
-  [`pdf_docs_merge()`](https://humanpred.github.io/rpdfium/reference/pdf_docs_merge.md)
-  because they fall out of the mutation surface for free, but if your
-  only job is “split this PDF in half”, reach for `qpdf::pdf_split()`
-  first.
+- **Lossless compress / re-encode / linearise** — `qpdf` is the right
+  answer. It’s content-preserving, doesn’t re-encode streams, and has
+  been the de facto choice for years. `pdfium`’s structural mutation
+  surface (see §4 above) overlaps on split / merge / reorder, but if
+  your job is “compress this PDF” or “linearise for web view”, reach for
+  `qpdf::pdf_compress()` / `qpdf::pdf_optimize()`.
 - **Table extraction** — `tabulapdf` (formerly `tabulizer`) has a decade
   of Tabula’s heuristics behind it. `pdfium` gives you text-with-bounds
   and path geometry — the primitives a future pure-R `tabulapdf`-style
@@ -121,8 +197,11 @@ supported subtypes lives in
 | Document metadata (write) | partial (lang only) | no | no | no | no | no | yes |
 | Page count / size | yes | yes | yes | yes | yes | yes | partial |
 | Page rotation (read) | yes | no | no | no | no | yes | no |
-| Page rotation (write) | yes | no | no | no | no | yes | no |
-| Page reorder / merge / split | yes | no | yes | no | no | yes | no |
+| Page rotation (write) | yes | no | no | no | no | yes (Java) | no |
+| Page reorder / merge / split | yes | no | yes | no | no | yes (Java) | no |
+| N-up imposition | yes | no | no | no | no | no | no |
+| Page boxes (crop / trim / bleed / art) | yes | no | no | no | no | no | no |
+| Document language (`/Lang`) write | yes | no | no | no | no | no | partial (XMP) |
 | **Path segments** | **yes** | no | no | no | no (internal only) | no | no |
 | **Path style** (stroke / fill / dash / matrix) | **yes** | no | no | no | no | no | no |
 | **Bezier control points** | **yes** | no | no | no | no | no | no |
@@ -149,15 +228,15 @@ Bold rows are capabilities `pdfium` adds to the R ecosystem.
 The two packages overlap on text + render + metadata. The signatures are
 close enough that switching is mostly a find-and-replace:
 
-| `pdftools`                   | `pdfium`                            |
-|------------------------------|-------------------------------------|
-| `pdf_text(path)`             | `pdf_doc_text(path)`                |
-| `pdf_info(path)`             | `pdf_doc_info(path)`                |
-| `pdf_pagesize(path)`         | `pdf_page_size(doc, page_num)`      |
+| `pdftools` | `pdfium` |
+|----|----|
+| `pdf_text(path)` | `pdf_doc_text(path)` |
+| `pdf_info(path)` | `pdf_doc_info(path)` — or `pdf_doc_summary(path)` for a richer one-row tibble |
+| `pdf_pagesize(path)` | `pdf_pages_summary(path)` (one row per page; also includes rotation + label) |
 | `pdf_render_page(path, ...)` | `pdf_render_page(doc_or_path, ...)` |
-| `pdf_data(path)`             | `pdf_text_runs(page)`               |
-| `pdf_doc_fonts(path)`        | `pdf_doc_fonts(doc)`                |
-| `pdf_attachments(path)`      | `pdf_attachments(doc)`              |
+| `pdf_data(path)` | `pdf_text_runs(page)` |
+| `pdf_doc_fonts(path)` | `pdf_doc_fonts(doc)` |
+| `pdf_attachments(path)` | `pdf_attachments(doc)` |
 
 The biggest behavioural difference: `pdftools` opens a fresh document on
 every call, while `pdfium` expects you to open once

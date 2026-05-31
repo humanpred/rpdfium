@@ -64,6 +64,7 @@ and bounding box in PDF user-space points. Wraps PDFium's
 <span>  case_sensitive <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  whole_word <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  consecutive <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  direction <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"next"</span>, <span class="st">"prev"</span><span class="op">)</span>,</span>
 <span>  password <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -100,6 +101,14 @@ Default <code>FALSE</code>.</p></dd>
 <em>immediately</em> after the match end; if <code>FALSE</code> (default), PDFium
 skips ahead by one character before searching again, so
 overlapping matches are not reported.</p></dd>
+
+
+<dt id="arg-direction">direction<a class="anchor" aria-label="anchor" href="#arg-direction"></a></dt>
+<dd><p>Search direction: <code>"next"</code> (default) walks from
+page start to end via <code>FPDFText_FindNext</code>; <code>"prev"</code> walks from
+end to start via <code>FPDFText_FindPrev</code>. Results are returned in
+iteration order, so reverse search produces matches in
+right-to-left / bottom-to-top order on each page.</p></dd>
 
 
 <dt id="arg-password">password<a class="anchor" aria-label="anchor" href="#arg-password"></a></dt>
