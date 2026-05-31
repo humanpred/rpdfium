@@ -43,6 +43,7 @@ reference:
       - pdf_doc_xref_valid
       - pdf_doc_trailer_ends
       - pdf_doc_is_tagged
+      - pdf_doc_language
       - pdf_doc_javascript
       - pdf_install_unsupported_handler
       - pdf_drain_unsupported_features

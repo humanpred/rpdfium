@@ -428,24 +428,20 @@ test_that("pdf_page_links returns a quad-points matrix for multi-line /QuadPoint
 # pdf_text_chars unicode encoding paths --------------------------
 
 test_that("pdf_text_chars encodes BMP code points as multi-byte UTF-8", {
-  # Loads a pre-built Cairo PDF containing é (U+00E9, 2-byte UTF-8) +
-  # 中 (U+4E2D, 3-byte UTF-8) + 😀 (U+1F600, surrogate pair) and
-  # exercises every relevant branch of cpp_page_text_chars's UTF-16 ->
-  # UTF-8 encoder:
-  #   * cp 0x80..0x7FF       (2-byte UTF-8 branch)
-  #   * cp 0x800..0xFFFF     (3-byte UTF-8 branch)
-  #   * 0xD800..0xDFFF       (surrogate halves -> "")
-  # The 4-byte branch is unreachable through PDFium's UTF-16 unicode
-  # accessor and is marked # nocov in src/page_extras.cpp.
+  # Loads a pre-built Cairo PDF containing eacute, a CJK glyph, and a
+  # surrogate-pair emoji to exercise every relevant branch of
+  # cpp_page_text_chars's UTF-16 to UTF-8 encoder: the 2-byte branch
+  # (U+00E9), the 3-byte branch (U+4E2D), and the surrogate-half
+  # branch (the emoji U+1F600 is encoded as the surrogate pair 0xD83D
+  # plus 0xDE00 and each half resolves to the empty string). The
+  # 4-byte UTF-8 branch is unreachable through PDFium's UTF-16
+  # accessor and is marked nocov in src/page_extras.cpp.
   #
-  # The fixture is shipped pre-built (inst/extdata/fixtures/...) rather
-  # than generated at test time because grDevices::cairo_pdf has a
-  # transitive dlopen of /opt/X11/lib/libXrender.1.dylib that fails
-  # silently on macOS without XQuartz, and on macOS-arm64 R 4.6 that
-  # dlopen-failure path corrupts the process heap. See
-  # humanpred/rpdfium#44 and the cairo bisection branch. Loading a
-  # static fixture exercises the same pdf_text_chars C++ path without
-  # going anywhere near the buggy R+macOS interaction.
+  # The fixture is shipped pre-built rather than generated at test
+  # time because grDevices cairo_pdf has a transitive dlopen of
+  # libXrender that silently fails on macOS without XQuartz, and on
+  # macOS-arm64 R 4.6 that dlopen-failure path corrupts the process
+  # heap. See dev upstream-patches for the upstream R bug report.
   doc <- pdf_doc_open(fixture_path("cairo-cjk-utf8"))
   on.exit(pdf_doc_close(doc), add = TRUE)
   chars <- pdf_text_chars(doc, page_num = 1L)
