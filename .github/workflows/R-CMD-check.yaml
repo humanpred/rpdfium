@@ -32,6 +32,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # macOS R's grDevices/libs/cairo.so has a HARD load-time
+      # dependency on /opt/X11/lib/libXrender.1.dylib (and
+      # libSM/ICE/X11/Xext). Without XQuartz the dlopen of cairo.so
+      # silently fails — and on macOS-arm64 R 4.6 the dlopen-failure
+      # warning path corrupts the heap (see humanpred/rpdfium#44 and
+      # the cairo bisection branch claude/macos-bisect). Until the
+      # underlying R-Core bug is fixed, install XQuartz so cairo.so
+      # loads cleanly and the failure path is never entered.
+      - name: Install XQuartz (macOS only)
+        if: runner.os == 'macOS'
+        run: brew install --cask xquartz
+
       - uses: r-lib/actions/setup-pandoc@v2
 
       - uses: r-lib/actions/setup-r@v2

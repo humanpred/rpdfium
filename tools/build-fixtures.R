@@ -87,6 +87,26 @@ local({
     message("[fixtures] wrote ", out)
   }
 
+  build_cairo_cjk_utf8 <- function() {
+    # Single page with é (U+00E9) + 中 (U+4E2D) + 😀 (U+1F600).
+    # Used by test-polish-and-extras.R to exercise the 2-byte, 3-byte,
+    # and surrogate-half branches of cpp_page_text_chars's UTF-16 ->
+    # UTF-8 encoder. Shipped pre-built (not generated in the test)
+    # because grDevices::cairo_pdf has a transitive dlopen of
+    # libXrender that segfaults R 4.6 on macOS-arm64 without XQuartz
+    # (humanpred/rpdfium#44).
+    out <- file.path(out_dir, "cairo-cjk-utf8.pdf")
+    grDevices::cairo_pdf(out, width = 4, height = 3)
+    on.exit(grDevices::dev.off(), add = TRUE)
+    graphics::par(mar = c(0, 0, 0, 0))
+    graphics::plot.new()
+    graphics::plot.window(c(0, 4), c(0, 3))
+    graphics::text(2, 2.5, "é", cex = 1)
+    graphics::text(2, 2.0, "中", cex = 1)
+    graphics::text(2, 1.5, "\U0001F600", cex = 1)
+    message("[fixtures] wrote ", out)
+  }
+
   build_image <- function() {
     # 16x16 RGB raster with four solid colored quadrants:
     #   top-left red, top-right green, bottom-left blue, bottom-right black.
@@ -858,6 +878,7 @@ local({
   build_minimal()
   build_shapes()
   build_unicode()
+  build_cairo_cjk_utf8()
   build_image()
   build_form_xobject()
   build_clip()
