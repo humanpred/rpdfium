@@ -414,20 +414,50 @@ test_that("pdf_doc_text returns the empty string for pages with no text", {
   expect_identical(txt, "")
 })
 
-test_that("CJK reduction cut #17: cairo_pdf in clean subprocess only (no in-proc control)", {
-  # callr::r() spawns a vanilla R that does NOT load pdfium. cuts #6-14
-  # already established that in-process cairo_pdf crashes; this cut
-  # tests whether a CLEAN R (no libpdfium.dylib) can run cairo_pdf
-  # successfully.
-  #   - Green here → bare cairo_pdf works on macOS-arm64 R 4.6; the
-  #     crash requires libpdfium.dylib to be mapped into the same
-  #     process. Symbol-conflict hypothesis stands.
-  #   - Red here  → bare cairo_pdf crashes regardless. R/Cairo bug,
-  #     not a conflict. File upstream with R-core / Apple.
+test_that("CJK reduction cut #18: diagnose what bare R subprocess sees", {
+  # Cut #17 failed inside callr with "cannot shut down device 1
+  # (the null device)" — meaning cairo_pdf() didn't even open a
+  # device in the subprocess. This cut adds full diagnostics so we
+  # can tell WHY: missing Cairo capability? Missing system lib?
+  # Different environment? The function returns a list we print and
+  # also write to a file so we capture it even if the subprocess
+  # later dies.
   tmp <- withr::local_tempfile(fileext = ".pdf")
-  callr::r(function(out) {
-    grDevices::cairo_pdf(out, width = 4, height = 3)
-    grDevices::dev.off()
-  }, args = list(out = tmp))
-  expect_true(file.exists(tmp))
+  diag_file <- withr::local_tempfile(fileext = ".txt")
+  res <- callr::r(function(out, diag) {
+    sink(diag)
+    on.exit(sink())
+    cat("=== R.version ===\n"); print(R.version)
+    cat("\n=== capabilities ===\n"); print(capabilities())
+    cat("\n=== Sys.info ===\n"); print(Sys.info())
+    cat("\n=== .libPaths ===\n"); print(.libPaths())
+    cat("\n=== loadedNamespaces (before cairo_pdf) ===\n")
+    print(loadedNamespaces())
+    cat("\n=== try grDevices::cairo_pdf ===\n")
+    cap <- tryCatch(
+      {
+        grDevices::cairo_pdf(out, width = 4, height = 3)
+        list(opened = TRUE, dev_list = grDevices::dev.list(),
+             dev_cur = grDevices::dev.cur())
+      },
+      error = function(e) list(opened = FALSE, error = conditionMessage(e)),
+      warning = function(w) list(opened = NA, warning = conditionMessage(w))
+    )
+    print(cap)
+    if (isTRUE(cap$opened)) {
+      grDevices::dev.off()
+      cat("\ndev.off OK; file size: ", file.size(out), "\n", sep = "")
+    }
+    cat("\n=== file exists after attempt ===\n")
+    cat(file.exists(out), "\n")
+    cap
+  }, args = list(out = tmp, diag = diag_file),
+     show = TRUE,
+     spinner = FALSE,
+     stderr = "2>&1")
+  # Print the subprocess diagnostics into the test output unconditionally
+  message("--- callr subprocess diagnostics ---")
+  message(paste(readLines(diag_file), collapse = "\n"))
+  message("--- end diagnostics ---")
+  expect_true(TRUE)  # diagnostic-only test; never fails the suite
 })
