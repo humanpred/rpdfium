@@ -98,5 +98,6 @@ More examples ship in the vignettes
 
 `pdfium` is MIT-licensed. The bundled `libpdfium` binary is BSD-3-Clause
 and is *not* distributed in the source tarball — see
-[`LICENSE.md`](LICENSE.md) and
-[`dev/decisions/ADR-003-binary-distribution.md`](dev/decisions/ADR-003-binary-distribution.md).
+[`LICENSE.md`](https://github.com/humanpred/rpdfium/blob/main/LICENSE.md)
+and
+[`dev/decisions/ADR-003-binary-distribution.md`](https://github.com/humanpred/rpdfium/blob/main/dev/decisions/ADR-003-binary-distribution.md).
