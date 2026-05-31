@@ -224,3 +224,95 @@ pdf_image_icc_profile <- function(obj) {
   check_image_obj(obj)
   cpp_image_icc_profile(obj$ptr, obj$page$ptr)
 }
+
+#' Extract an embedded image to a file, picking a sensible format
+#'
+#' Convenience helper over [pdf_image_filters()], [pdf_image_data()],
+#' and [pdf_image_bitmap()]. Inspects the image's filter chain and
+#' picks an on-disk format:
+#'
+#' * `DCTDecode` → write the raw embedded bytes as `.jpg`.
+#' * `JPXDecode` → write the raw embedded bytes as `.jp2`.
+#' * `CCITTFaxDecode` / `JBIG2Decode` / `RunLengthDecode` /
+#'   `FlateDecode` / `LZWDecode` / `ASCII85Decode` / `ASCIIHexDecode`
+#'   chains, or no filter → rasterize via [pdf_image_bitmap()] and
+#'   write as a PNG using `png::writePNG()`. PNG round-trips the
+#'   alpha channel when present.
+#'
+#' Mirrors pypdfium2's `PdfImage.extract()` convenience.
+#'
+#' @param obj A `pdfium_obj` of type `"image"`.
+#' @param path Output file path. If the extension is supplied it's
+#'   ignored — the function appends `.jpg`, `.jp2`, or `.png`
+#'   according to the chosen format and returns the actual path
+#'   used.
+#' @return Invisibly returns the path written, with the chosen
+#'   extension applied. The output format can be retrieved by
+#'   inspecting the file extension on the returned string.
+#' @seealso [pdf_image_data()] to get the raw bytes directly,
+#'   [pdf_image_bitmap()] for the decoded pixel matrix.
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "image.pdf",
+#'   package = "pdfium"
+#' )
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_doc_open(fixture)
+#'   page <- pdf_page_load(doc, 1L)
+#'   imgs <- Filter(function(o) o$type == "image", pdf_page_objects(page))
+#'   if (length(imgs) > 0L) {
+#'     # The extension is chosen from the filter chain; pass a stem.
+#'     out <- pdf_image_extract(imgs[[1L]], tempfile())
+#'     basename(out)
+#'   }
+#'   pdf_page_close(page)
+#'   pdf_doc_close(doc)
+#' }
+#' @export
+pdf_image_extract <- function(obj, path) {
+  check_image_obj(obj)
+  checkmate::assert_string(path, min.chars = 1L)
+  # Strip any extension the caller may have supplied; we pick our
+  # own based on the filter chain.
+  stem <- tools::file_path_sans_ext(path)
+  filters <- pdf_image_filters(obj)
+  # Last filter in the chain is the outermost encoding. PDFium
+  # returns filters in apply-order; the writer-side is reverse, so
+  # the *last* filter is what we'd recognize as the on-disk format.
+  last <- if (length(filters) > 0L) filters[[length(filters)]] else ""
+  if (identical(last, "DCTDecode")) {
+    bytes <- pdf_image_data(obj, decoded = FALSE)
+    out <- paste0(stem, ".jpg")
+    writeBin(bytes, out)
+    return(invisible(out))
+  }
+  if (identical(last, "JPXDecode")) {
+    # nocov start — JP2-encoded images aren't producible by Cairo
+    # (R's pdf() / cairo_pdf()), the only image-generating fixture
+    # path we use. Requires a hand-crafted JP2 PDF; defensive.
+    bytes <- pdf_image_data(obj, decoded = FALSE)
+    out <- paste0(stem, ".jp2")
+    writeBin(bytes, out)
+    return(invisible(out))
+    # nocov end
+  }
+  # Everything else — including no filter, generic compression
+  # (FlateDecode / LZWDecode), or bit-stream formats (CCITTFax /
+  # JBIG2 / RunLength / ASCII85 / ASCIIHex) — round-trip through
+  # the decoded bitmap and emit PNG.
+  if (!requireNamespace("png", quietly = TRUE)) {
+    # nocov start — png is a Suggests dependency that the coverage
+    # / CI environment always has installed. The branch only fires
+    # on user systems lacking the package.
+    stop("pdf_image_extract() requires the 'png' package to emit ",
+         "the non-JPEG path. Install it with install.packages('png'), ",
+         "or use pdf_image_data() to retrieve the raw bytes.",
+         call. = FALSE)
+    # nocov end
+  }
+  bm <- pdf_image_bitmap(obj)
+  out <- paste0(stem, ".png")
+  # Convert integer matrix to 0..1 array for png::writePNG.
+  arr <- bm / 255
+  png::writePNG(arr, target = out)
+  invisible(out)
+}

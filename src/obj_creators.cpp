@@ -66,9 +66,13 @@ SEXP cpp_path_new(SEXP page_ptr, double x, double y) {
   FPDF_PAGEOBJECT path = FPDFPageObj_CreateNewPath(
       static_cast<float>(x), static_cast<float>(y));
   if (path == nullptr) {
-    Rcpp::stop("FPDFPageObj_CreateNewPath returned NULL.");
+    Rcpp::stop("FPDFPageObj_CreateNewPath returned NULL.");  // # nocov  // only fails on out-of-memory
   }
-  FPDFPage_InsertObject(page, path);
+  if (!FPDFPage_InsertObject(page, path)) {  // # nocov start
+    FPDFPageObj_Destroy(path);
+    Rcpp::stop("FPDFPage_InsertObject() failed to attach the new path "
+               "object to the page.");
+  }  // # nocov end
   return wrap_attached_obj(path, page_ptr);
 }
 
@@ -80,9 +84,13 @@ SEXP cpp_rect_new(SEXP page_ptr, double x, double y,
       static_cast<float>(x), static_cast<float>(y),
       static_cast<float>(width), static_cast<float>(height));
   if (rect == nullptr) {
-    Rcpp::stop("FPDFPageObj_CreateNewRect returned NULL.");
+    Rcpp::stop("FPDFPageObj_CreateNewRect returned NULL.");  // # nocov  // only fails on out-of-memory
   }
-  FPDFPage_InsertObject(page, rect);
+  if (!FPDFPage_InsertObject(page, rect)) {  // # nocov start
+    FPDFPageObj_Destroy(rect);
+    Rcpp::stop("FPDFPage_InsertObject() failed to attach the new "
+               "rectangle object to the page.");
+  }  // # nocov end
   return wrap_attached_obj(rect, page_ptr);
 }
 
@@ -95,26 +103,36 @@ SEXP cpp_text_new(SEXP doc_ptr, SEXP page_ptr,
   FPDF_PAGE page = page_from_ptr(page_ptr);
   FPDF_PAGEOBJECT text_obj = FPDFPageObj_NewTextObj(
       doc, font_name.c_str(), static_cast<float>(font_size));
-  if (text_obj == nullptr) {
+  if (text_obj == nullptr) {  // # nocov start
+    // R wrapper rejects this via checkmate::assert_choice against
+    // .pdfium_standard_fonts before reaching the shim, so a
+    // bad-font-name call lands here only when callers reach the
+    // cpp::: shim directly with an unsupported font.
     Rcpp::stop(
         "FPDFPageObj_NewTextObj returned NULL — is `%s` a valid "
         "PDF standard font?", font_name.c_str());
-  }
+  }  // # nocov end
   if (!text_utf8.empty()) {
     std::vector<unsigned short> utf16 =
         pdfium_r::utf8_to_utf16le_nul(text_utf8);
-    if (!FPDFText_SetText(
+    if (!FPDFText_SetText(  // # nocov start
             text_obj,
             reinterpret_cast<FPDF_WIDESTRING>(utf16.data()))) {
+      // PDFium has no documented way to make SetText fail on a
+      // fresh text object with a valid UTF-16LE buffer.
       FPDFPageObj_Destroy(text_obj);
       Rcpp::stop("FPDFText_SetText failed on the new text object.");
-    }
+    }  // # nocov end
   }
   // Position via FPDFPageObj_Transform (identity scale + translate).
   FPDFPageObj_Transform(text_obj, 1, 0, 0, 1,
                          static_cast<float>(x),
                          static_cast<float>(y));
-  FPDFPage_InsertObject(page, text_obj);
+  if (!FPDFPage_InsertObject(page, text_obj)) {  // # nocov start
+    FPDFPageObj_Destroy(text_obj);
+    Rcpp::stop("FPDFPage_InsertObject() failed to attach the new text "
+               "object to the page.");
+  }  // # nocov end
   return wrap_attached_obj(text_obj, page_ptr);
 }
 
@@ -127,7 +145,7 @@ bool cpp_obj_delete(SEXP page_ptr, SEXP obj_ptr) {
   FPDF_PAGE page = page_from_ptr(page_ptr);
   FPDF_PAGEOBJECT obj = obj_from_ptr(obj_ptr);
   if (!FPDFPage_RemoveObject(page, obj)) {
-    return false;
+    return false;  // # nocov  // PDFium guarantees a page-owned obj is removable
   }
   FPDFPageObj_Destroy(obj);
   R_ClearExternalPtr(obj_ptr);

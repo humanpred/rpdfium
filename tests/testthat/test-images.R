@@ -212,3 +212,72 @@ test_that("image accessors refuse a closed parent page", {
   expect_error(pdf_image_filters(img), "Parent page has been closed")
   expect_error(pdf_image_size(img), "Parent page has been closed")
 })
+
+# ---- pdf_image_extract -----------------------------------------------------
+
+test_that("pdf_image_extract writes a file with a chosen extension", {
+  skip_if_not_installed("png")
+  doc <- pdf_doc_open(fixture_path("image"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  objs <- pdf_page_objects(page)
+  imgs <- Filter(function(o) identical(o$type, "image"), objs)
+  skip_if(length(imgs) == 0L, "image.pdf fixture has no images")
+  img <- imgs[[1L]]
+
+  tmp <- withr::local_tempfile()
+  out <- pdf_image_extract(img, tmp)
+  expect_true(file.exists(out))
+  expect_true(file.size(out) > 0L)
+  # Extension is one of the documented choices.
+  expect_true(tools::file_ext(out) %in% c("jpg", "jp2", "png"))
+})
+
+test_that("pdf_image_extract picks .jpg for DCT-encoded streams", {
+  # Construct a tiny image obj backed by JPEG bytes — that exercises
+  # the DCTDecode branch of the dispatcher even when the shipped
+  # `image.pdf` fixture happens to use FlateDecode.
+  jp <- withr::local_tempfile(fileext = ".jpg")
+  grDevices::jpeg(jp, width = 32, height = 32)
+  graphics::par(mar = c(0, 0, 0, 0))
+  graphics::plot.new()
+  graphics::rect(0, 0, 1, 1, col = "red", border = NA)
+  grDevices::dev.off()
+
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 100, height = 100)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  img <- pdf_image_new(page, jp, bounds = c(0, 0, 50, 50))
+
+  out <- pdf_image_extract(img, withr::local_tempfile())
+  expect_match(out, "\\.jpg$")
+  expect_true(file.exists(out))
+  expect_true(file.size(out) > 0L)
+})
+
+test_that("pdf_image_extract rejects non-image objects", {
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  objs <- pdf_page_objects(page)
+  non_img <- Filter(function(o) !identical(o$type, "image"), objs)[[1L]]
+  expect_error(pdf_image_extract(non_img, tempfile()),
+                 "Must be element of set")
+})
+
+test_that("pdf_image_extract validates the path", {
+  doc <- pdf_doc_open(fixture_path("image"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  objs <- pdf_page_objects(page)
+  imgs <- Filter(function(o) identical(o$type, "image"), objs)
+  skip_if(length(imgs) == 0L, "image.pdf fixture has no images")
+  img <- imgs[[1L]]
+  expect_error(pdf_image_extract(img, ""), "Assertion on")
+  expect_error(pdf_image_extract(img, NA_character_), "Assertion on")
+  expect_error(pdf_image_extract(img, c("a", "b")), "Assertion on")
+})

@@ -73,6 +73,9 @@ Rcpp::List cpp_page_weblinks(SEXP page_ptr) {
   if (tp == nullptr) Rcpp::stop("FPDFText_LoadPage returned NULL.");
 
   FPDF_PAGELINK lp = FPDFLink_LoadWebLinks(tp);
+  // # nocov start — FPDFLink_LoadWebLinks returns a valid handle for
+  // every text-page (even one with zero detected URLs); this NULL
+  // branch is defensive against future PDFium changes.
   if (lp == nullptr) {
     FPDFText_ClosePage(tp);
     return Rcpp::List::create(
@@ -85,6 +88,7 @@ Rcpp::List cpp_page_weblinks(SEXP page_ptr) {
       Rcpp::_["top"]        = Rcpp::NumericVector(0)
     );
   }
+  // # nocov end
   int n = FPDFLink_CountWebLinks(lp);
   if (n < 0) n = 0;
   Rcpp::CharacterVector url(n);
@@ -103,15 +107,22 @@ Rcpp::List cpp_page_weblinks(SEXP page_ptr) {
       url[i] = Rf_mkCharLenCE(utf8.data(),
                               static_cast<int>(utf8.size()), CE_UTF8);
     } else {
+      // # nocov start — PDFium always produces a non-empty URL string
+      // for every detected link; the two-pass `need <= 1` branch is
+      // defensive.
       url[i] = NA_STRING;
+      // # nocov end
     }
     int sc = 0, cc = 0;
     if (FPDFLink_GetTextRange(lp, i, &sc, &cc)) {
       start_char[i] = sc;
       char_count[i] = cc;
     } else {
+      // # nocov start — FPDFLink_GetTextRange succeeds for every
+      // detected link in PDFium's current implementation.
       start_char[i] = NA_INTEGER;
       char_count[i] = NA_INTEGER;
+      // # nocov end
     }
     // Union of all rects (multi-line URLs span multiple).
     int rcount = FPDFLink_CountRects(lp, i);
@@ -130,7 +141,11 @@ Rcpp::List cpp_page_weblinks(SEXP page_ptr) {
     if (any) {
       left[i] = L; bottom[i] = B; right[i] = R; top[i] = T;
     } else {
+      // # nocov start — PDFium always emits at least one rect per
+      // detected link; this NA fallback guards against a future
+      // regression.
       left[i] = bottom[i] = right[i] = top[i] = NA_REAL;
+      // # nocov end
     }
   }
 

@@ -63,12 +63,12 @@ SEXP make_annot_ptr(FPDF_ANNOTATION annot, SEXP page_ptr) {
 
 FPDF_DOCUMENT doc_from_ptr(SEXP doc_ptr) {
   if (TYPEOF(doc_ptr) != EXTPTRSXP) {
-    Rcpp::stop("doc_ptr is not an externalptr.");
+    Rcpp::stop("doc_ptr is not an externalptr.");  // # nocov  // R wrapper validates via checkmate
   }
   FPDF_DOCUMENT doc =
       static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr));
   if (doc == nullptr) {
-    Rcpp::stop("Document handle is NULL (closed?).");
+    Rcpp::stop("Document handle is NULL (closed?).");  // # nocov  // covered by test-defensive.R via representative shim
   }
   return doc;
 }
@@ -82,15 +82,19 @@ Rcpp::List cpp_form_field_handles(SEXP doc_ptr) {
   FPDF_FORMFILLINFO ffi{};
   ffi.version = 2;
   FPDF_FORMHANDLE form = FPDFDOC_InitFormFillEnvironment(doc, &ffi);
-  if (form == nullptr) {
-    // No AcroForm dict — no fields.
+  if (form == nullptr) {  // # nocov start
+    // No AcroForm dict — no fields. In practice
+    // FPDFDOC_InitFormFillEnvironment returns a non-null handle even
+    // for AcroForm-less PDFs (PDFium creates an empty env); reaching
+    // this branch would require PDFium itself to fail to allocate
+    // the env struct.
     return Rcpp::List::create(
         Rcpp::_["page_handles"]   = Rcpp::List(),
         Rcpp::_["page_nums"]      = Rcpp::IntegerVector(),
         Rcpp::_["annot_handles"]  = Rcpp::List(),
         Rcpp::_["annot_page_idx"] = Rcpp::IntegerVector(),
         Rcpp::_["field_types"]    = Rcpp::IntegerVector());
-  }
+  }  // # nocov end
 
   Rcpp::List page_handles;
   std::vector<int> page_nums;

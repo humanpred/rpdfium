@@ -1417,6 +1417,26 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_install_unsupported_handler
+bool cpp_install_unsupported_handler();
+RcppExport SEXP _pdfium_cpp_install_unsupported_handler() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(cpp_install_unsupported_handler());
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_drain_unsupported_features
+Rcpp::CharacterVector cpp_drain_unsupported_features();
+RcppExport SEXP _pdfium_cpp_drain_unsupported_features() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(cpp_drain_unsupported_features());
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_doc_security_revision
 int cpp_doc_security_revision(SEXP doc_ptr);
 RcppExport SEXP _pdfium_cpp_doc_security_revision(SEXP doc_ptrSEXP) {
@@ -1823,20 +1843,15 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// cpp_image_set_matrix
-bool cpp_image_set_matrix(SEXP image_ptr, double a, double b, double c, double d, double e, double f);
-RcppExport SEXP _pdfium_cpp_image_set_matrix(SEXP image_ptrSEXP, SEXP aSEXP, SEXP bSEXP, SEXP cSEXP, SEXP dSEXP, SEXP eSEXP, SEXP fSEXP) {
+// cpp_image_new_blank
+SEXP cpp_image_new_blank(SEXP doc_ptr, SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_image_new_blank(SEXP doc_ptrSEXP, SEXP page_ptrSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type image_ptr(image_ptrSEXP);
-    Rcpp::traits::input_parameter< double >::type a(aSEXP);
-    Rcpp::traits::input_parameter< double >::type b(bSEXP);
-    Rcpp::traits::input_parameter< double >::type c(cSEXP);
-    Rcpp::traits::input_parameter< double >::type d(dSEXP);
-    Rcpp::traits::input_parameter< double >::type e(eSEXP);
-    Rcpp::traits::input_parameter< double >::type f(fSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_image_set_matrix(image_ptr, a, b, c, d, e, f));
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_image_new_blank(doc_ptr, page_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -2108,6 +2123,17 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     Rcpp::traits::input_parameter< std::string >::type lang(langSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_catalog_set_language(doc_ptr, lang));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_catalog_get_language
+SEXP cpp_catalog_get_language(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_catalog_get_language(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_catalog_get_language(doc_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3138,9 +3164,21 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_text_obj_at_char
+Rcpp::List cpp_text_obj_at_char(SEXP page_ptr, int char_index);
+RcppExport SEXP _pdfium_cpp_text_obj_at_char(SEXP page_ptrSEXP, SEXP char_indexSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< int >::type char_index(char_indexSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_obj_at_char(page_ptr, char_index));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_text_search_page
-Rcpp::List cpp_text_search_page(SEXP page_ptr, std::string query, bool match_case, bool match_whole_word, bool consecutive);
-RcppExport SEXP _pdfium_cpp_text_search_page(SEXP page_ptrSEXP, SEXP querySEXP, SEXP match_caseSEXP, SEXP match_whole_wordSEXP, SEXP consecutiveSEXP) {
+Rcpp::List cpp_text_search_page(SEXP page_ptr, std::string query, bool match_case, bool match_whole_word, bool consecutive, bool reverse);
+RcppExport SEXP _pdfium_cpp_text_search_page(SEXP page_ptrSEXP, SEXP querySEXP, SEXP match_caseSEXP, SEXP match_whole_wordSEXP, SEXP consecutiveSEXP, SEXP reverseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -3149,7 +3187,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type match_case(match_caseSEXP);
     Rcpp::traits::input_parameter< bool >::type match_whole_word(match_whole_wordSEXP);
     Rcpp::traits::input_parameter< bool >::type consecutive(consecutiveSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_text_search_page(page_ptr, query, match_case, match_whole_word, consecutive));
+    Rcpp::traits::input_parameter< bool >::type reverse(reverseSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_search_page(page_ptr, query, match_case, match_whole_word, consecutive, reverse));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3310,6 +3349,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_viewer_ref_name", (DL_FUNC) &_pdfium_cpp_viewer_ref_name, 2},
     {"_pdfium_cpp_doc_named_dests", (DL_FUNC) &_pdfium_cpp_doc_named_dests, 1},
     {"_pdfium_cpp_doc_javascript", (DL_FUNC) &_pdfium_cpp_doc_javascript, 1},
+    {"_pdfium_cpp_install_unsupported_handler", (DL_FUNC) &_pdfium_cpp_install_unsupported_handler, 0},
+    {"_pdfium_cpp_drain_unsupported_features", (DL_FUNC) &_pdfium_cpp_drain_unsupported_features, 0},
     {"_pdfium_cpp_doc_security_revision", (DL_FUNC) &_pdfium_cpp_doc_security_revision, 1},
     {"_pdfium_cpp_doc_user_permissions", (DL_FUNC) &_pdfium_cpp_doc_user_permissions, 1},
     {"_pdfium_cpp_doc_xref_valid", (DL_FUNC) &_pdfium_cpp_doc_xref_valid, 1},
@@ -3344,7 +3385,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_text_obj_font_metrics", (DL_FUNC) &_pdfium_cpp_text_obj_font_metrics, 2},
     {"_pdfium_cpp_text_char_font_info", (DL_FUNC) &_pdfium_cpp_text_char_font_info, 1},
     {"_pdfium_cpp_image_new_from_jpeg", (DL_FUNC) &_pdfium_cpp_image_new_from_jpeg, 3},
-    {"_pdfium_cpp_image_set_matrix", (DL_FUNC) &_pdfium_cpp_image_set_matrix, 7},
+    {"_pdfium_cpp_image_new_blank", (DL_FUNC) &_pdfium_cpp_image_new_blank, 2},
     {"_pdfium_cpp_image_metadata", (DL_FUNC) &_pdfium_cpp_image_metadata, 2},
     {"_pdfium_cpp_image_pixel_size", (DL_FUNC) &_pdfium_cpp_image_pixel_size, 1},
     {"_pdfium_cpp_image_get_bitmap", (DL_FUNC) &_pdfium_cpp_image_get_bitmap, 1},
@@ -3368,6 +3409,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_import_n_pages_to_one", (DL_FUNC) &_pdfium_cpp_import_n_pages_to_one, 5},
     {"_pdfium_cpp_page_set_box", (DL_FUNC) &_pdfium_cpp_page_set_box, 6},
     {"_pdfium_cpp_catalog_set_language", (DL_FUNC) &_pdfium_cpp_catalog_set_language, 2},
+    {"_pdfium_cpp_catalog_get_language", (DL_FUNC) &_pdfium_cpp_catalog_get_language, 1},
     {"_pdfium_cpp_page_generate_content", (DL_FUNC) &_pdfium_cpp_page_generate_content, 1},
     {"_pdfium_cpp_named_dest_by_name", (DL_FUNC) &_pdfium_cpp_named_dest_by_name, 2},
     {"_pdfium_cpp_bookmark_find_handle", (DL_FUNC) &_pdfium_cpp_bookmark_find_handle, 2},
@@ -3453,7 +3495,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_page_text_runs", (DL_FUNC) &_pdfium_cpp_page_text_runs, 1},
     {"_pdfium_cpp_text_render_mode", (DL_FUNC) &_pdfium_cpp_text_render_mode, 1},
     {"_pdfium_cpp_page_text_colors", (DL_FUNC) &_pdfium_cpp_page_text_colors, 1},
-    {"_pdfium_cpp_text_search_page", (DL_FUNC) &_pdfium_cpp_text_search_page, 5},
+    {"_pdfium_cpp_text_obj_at_char", (DL_FUNC) &_pdfium_cpp_text_obj_at_char, 2},
+    {"_pdfium_cpp_text_search_page", (DL_FUNC) &_pdfium_cpp_text_search_page, 6},
     {"_pdfium_cpp_text_obj_rendered_bitmap", (DL_FUNC) &_pdfium_cpp_text_obj_rendered_bitmap, 4},
     {"_pdfium_cpp_attachment_dict_value", (DL_FUNC) &_pdfium_cpp_attachment_dict_value, 3},
     {"_pdfium_cpp_text_char_obj_index", (DL_FUNC) &_pdfium_cpp_text_char_obj_index, 2},

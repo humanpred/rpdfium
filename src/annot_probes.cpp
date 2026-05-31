@@ -212,16 +212,25 @@ Rcpp::IntegerVector cpp_doc_focusable_subtypes(SEXP doc_ptr) {
   FPDF_FORMHANDLE form = FPDFDOC_InitFormFillEnvironment(doc, &ffi);
   if (form == nullptr) return Rcpp::IntegerVector();
   int n = FPDFAnnot_GetFocusableSubtypesCount(form);
+  // # nocov start — PDFium reports FPDF_ANNOT_WIDGET as the default
+  // focusable subtype, so the count is always >= 1 unless the host
+  // explicitly clears the list via FPDFAnnot_SetFocusableSubtypes
+  // (not exposed by this package).
   if (n <= 0) {
     FPDFDOC_ExitFormFillEnvironment(form);
     return Rcpp::IntegerVector();
   }
+  // # nocov end
   std::vector<FPDF_ANNOTATION_SUBTYPE> codes(n);
+  // # nocov start — FPDFAnnot_GetFocusableSubtypes only fails on
+  // an internal inconsistency (count > 0 but no subtypes), which
+  // PDFium itself never produces.
   if (!FPDFAnnot_GetFocusableSubtypes(form, codes.data(),
                                        static_cast<size_t>(n))) {
     FPDFDOC_ExitFormFillEnvironment(form);
     return Rcpp::IntegerVector();
   }
+  // # nocov end
   Rcpp::IntegerVector out(n);
   for (int i = 0; i < n; ++i) out[i] = static_cast<int>(codes[i]);
   FPDFDOC_ExitFormFillEnvironment(form);

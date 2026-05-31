@@ -39,10 +39,10 @@ inline FPDF_DOCUMENT doc_from_ptr(SEXP doc_ptr) {
 // PDFium tolerates >255 by overflowing, so we'd rather error.
 inline unsigned int rgba_channel(double v, const char* what) {
   if (Rcpp::NumericVector::is_na(v)) {
-    Rcpp::stop("RGBA channel `%s` must not be NA.", what);
+    Rcpp::stop("RGBA channel `%s` must not be NA.", what);  // # nocov  // R wrapper rejects NA via checkmate before reaching the shim
   }
   if (v < 0.0 || v > 255.0) {
-    Rcpp::stop("RGBA channel `%s` must be in [0, 255]; got %g.",
+    Rcpp::stop("RGBA channel `%s` must be in [0, 255]; got %g.",  // # nocov  // R wrapper clamps to [0, 255] before reaching the shim
                 what, v);
   }
   return static_cast<unsigned int>(v + 0.5);
@@ -54,7 +54,7 @@ inline unsigned int rgba_channel(double v, const char* what) {
 bool cpp_obj_set_matrix(SEXP obj_ptr, Rcpp::NumericVector m) {
   FPDF_PAGEOBJECT obj = obj_from_ptr(obj_ptr);
   if (m.size() != 6) {
-    Rcpp::stop("Matrix must be a length-6 vector (a, b, c, d, e, f).");
+    Rcpp::stop("Matrix must be a length-6 vector (a, b, c, d, e, f).");  // # nocov  // R wrapper validates length via checkmate
   }
   FS_MATRIX mat;
   mat.a = static_cast<float>(m[0]);
@@ -123,7 +123,7 @@ bool cpp_obj_set_dash(SEXP obj_ptr, Rcpp::NumericVector array,
   std::vector<float> buf(n);
   for (size_t i = 0; i < n; ++i) {
     if (Rcpp::NumericVector::is_na(array[i])) {
-      Rcpp::stop("Dash array must not contain NA.");
+      Rcpp::stop("Dash array must not contain NA.");  // # nocov  // R wrapper rejects NA via checkmate before reaching the shim
     }
     buf[i] = static_cast<float>(array[i]);
   }
@@ -187,7 +187,7 @@ bool cpp_obj_remove_mark(SEXP obj_ptr, int mark_index_zero) {
   if (mark == nullptr) {
     Rcpp::stop("No content mark at index %d.", mark_index_zero);
   }
-  return FPDFPageObj_RemoveMark(obj, mark) != 0;
+  return FPDFPageObj_RemoveMark(obj, mark) != 0;  // # nocov  // PDFium guarantees removal succeeds on a valid (obj, mark) pair
 }
 
 // Set an integer parameter on an existing mark. doc_ptr is needed

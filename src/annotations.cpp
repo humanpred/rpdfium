@@ -52,8 +52,12 @@ std::string read_annot_string(FPDF_ANNOTATION annot, const char* key) {
 int cpp_annot_count(SEXP page_ptr) {
   FPDF_PAGE page = page_from_ptr(page_ptr);
   int n = FPDFPage_GetAnnotCount(page);
+  // PDFium's public contract is that FPDFPage_GetAnnotCount returns a
+  // non-negative count (the size of the page's /Annots array, or 0
+  // when /Annots is absent). The negative-return branch is purely
+  // defensive against an unannounced ABI break.
   if (n < 0) {
-    Rcpp::stop("FPDFPage_GetAnnotCount returned %d.", n);
+    Rcpp::stop("FPDFPage_GetAnnotCount returned %d.", n);  // # nocov
   }
   return n;
 }
@@ -85,7 +89,12 @@ void read_annot_color(FPDF_ANNOTATION annot,
     b = ub / 255.0;
     a = ua / 255.0;
   } else {
-    r = g = b = a = NA_REAL;
+    // Defensive: FPDFAnnot_HasKey returned true above, so PDFium's
+    // dict lookup found /C (or /IC) — yet FPDFAnnot_GetColor failed.
+    // This represents an internal PDFium inconsistency we don't
+    // expect any well-formed PDF to trigger; surface NA so the
+    // caller still gets a numeric column.
+    r = g = b = a = NA_REAL;  // # nocov
   }
 }
 
@@ -100,10 +109,15 @@ SEXP read_annot_quad_points(FPDF_ANNOTATION annot) {
   Rcpp::NumericMatrix m(static_cast<int>(n), 8);
   for (size_t i = 0; i < n; ++i) {
     FS_QUADPOINTSF q;
-    if (!FPDFAnnot_GetAttachmentPoints(annot, i, &q)) {
+    // Defensive: FPDFAnnot_CountAttachmentPoints returned `n` above
+    // and `i < n`, so PDFium should always succeed at reading
+    // attachment point `i`. The failure branch covers internal
+    // inconsistencies (e.g. PDFium freeing the underlying array
+    // mid-iteration) that no test fixture can repro.
+    if (!FPDFAnnot_GetAttachmentPoints(annot, i, &q)) {  // # nocov start
       for (int k = 0; k < 8; ++k) m(static_cast<int>(i), k) = NA_REAL;
       continue;
-    }
+    }  // # nocov end
     m(static_cast<int>(i), 0) = q.x1;
     m(static_cast<int>(i), 1) = q.y1;
     m(static_cast<int>(i), 2) = q.x2;
@@ -283,7 +297,12 @@ Rcpp::List cpp_annots_list(SEXP doc_ptr, SEXP page_ptr) {
       right[i]  = rect.right;
       top[i]    = rect.top;
     } else {
-      left[i] = bottom[i] = right[i] = top[i] = NA_REAL;
+      // Defensive: FPDFAnnot_GetRect returns true for every well-
+      // formed annot — even when the dict lacks /Rect, PDFium fills
+      // in a zero rectangle and returns success. The else branch is
+      // reachable only if PDFium can't read the underlying dict at
+      // all, which the upstream annot-loader already protects against.
+      left[i] = bottom[i] = right[i] = top[i] = NA_REAL;  // # nocov
     }
     contents[i] = read_annot_string(annot, "Contents");
     title[i]    = read_annot_string(annot, "T");

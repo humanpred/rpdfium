@@ -59,6 +59,9 @@
 #'     text for assistive technology; empty when none is set.
 #'   * `actual_text` character - the element's `/ActualText`
 #'     replacement text; empty when none is set.
+#'   * `expansion` character - the element's `/E` expansion text
+#'     (the expanded form of an abbreviation or acronym); empty
+#'     when none is set. (PDFium chromium/7857+.)
 #'   * `id` character - the element's `/ID` string (often empty).
 #'   * `mcid` integer - the first marked-content ID associated
 #'     with the element (whether direct `/K N` or via the first
@@ -117,6 +120,7 @@ pdf_structure_tree <- function(page, page_num = 1L,
     lang          = as.character(raw$lang),
     alt_text      = as.character(raw$alt_text),
     actual_text   = as.character(raw$actual_text),
+    expansion     = as.character(raw$expansion),
     id            = as.character(raw$id),
     mcid          = as.integer(raw$mcid),
     mcid_count    = as.integer(raw$mcid_count),
@@ -145,6 +149,7 @@ empty_structure_tree_tibble <- function(string_attrs = character()) {
     lang          = character(),
     alt_text      = character(),
     actual_text   = character(),
+    expansion     = character(),
     id            = character(),
     mcid          = integer(),
     mcid_count    = integer(),

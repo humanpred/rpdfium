@@ -1148,3 +1148,56 @@ test_that("pdf_annot_add_file_attachment returns a pdfium_attachment", {
   att <- pdf_annot_add_file_attachment(a, "data.bin")
   expect_s3_class(att, "pdfium_attachment")
 })
+
+# =========================================================================
+# C-side direct-shim error-path tests
+#
+# The R wrappers validate inputs via checkmate before reaching the
+# cpp_* shims. The C-side guards are the safety net for anyone who
+# bypasses the wrapper by calling pdfium:::cpp_*(...) directly. We
+# exercise each guard so PDFium's "garbage in, error out" contract
+# holds at the cpp boundary too.
+# =========================================================================
+
+test_that("cpp_text_set_charcodes rejects negative codes at the C boundary", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 100, height = 100)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  txt <- pdf_text_new(page, "")
+  # Bypass the R wrapper's checkmate guard and hit the C-side check.
+  expect_error(
+    pdfium:::cpp_text_set_charcodes(txt$ptr, c(72L, -5L)),
+    "is negative"
+  )
+})
+
+test_that("cpp_annot_add_ink_stroke rejects bad-shape matrix at C boundary", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "ink", bounds = c(0, 0, 100, 100))
+  # 3-column matrix bypasses the R wrapper's checkmate guard.
+  pts3 <- matrix(c(1, 2, 3, 4, 5, 6), ncol = 3)
+  expect_error(
+    pdfium:::cpp_annot_add_ink_stroke(a$ptr, pts3),
+    "exactly 2 columns"
+  )
+})
+
+test_that("cpp_page_transform_with_clip rejects bad-shape inputs at C boundary", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 100, height = 100)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  expect_error(
+    pdfium:::cpp_page_transform_with_clip(page$ptr,
+                                            c(1, 2, 3),  # wrong length
+                                            numeric(0)),
+    "length-6"
+  )
+  expect_error(
+    pdfium:::cpp_page_transform_with_clip(page$ptr,
+                                            c(1, 0, 0, 1, 0, 0),
+                                            c(1, 2)),  # wrong length
+    "length-4"
+  )
+})

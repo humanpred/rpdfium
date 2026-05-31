@@ -48,7 +48,7 @@ SEXP cpp_page_get_object(SEXP page_ptr, int index_zero_based) {
   FPDF_PAGE page = objs_page_from_ptr(page_ptr);
   FPDF_PAGEOBJECT obj = FPDFPage_GetObject(page, index_zero_based);
   if (obj == nullptr) {
-    Rcpp::stop("FPDFPage_GetObject returned NULL for object index %d",
+    Rcpp::stop("FPDFPage_GetObject returned NULL for object index %d",  // # nocov  // R wrapper bounds-checks index before reaching the shim
                index_zero_based);
   }
   // No finalizer: page object lifetime is tied to the parent page.
@@ -87,14 +87,14 @@ Rcpp::NumericVector pageobj_color(
     const char* getter_name) {
   unsigned int r = 0, g = 0, b = 0, a = 0;
   FPDF_BOOL ok = getter(obj, &r, &g, &b, &a);
-  if (!ok) {
+  if (!ok) {  // # nocov start  // PDFium's GetStroke/FillColor never fail on a page-owned obj; the all-NA branch only fires if PDFium itself loses the color dict
     return Rcpp::NumericVector::create(
       Rcpp::_["red"]   = NA_REAL,
       Rcpp::_["green"] = NA_REAL,
       Rcpp::_["blue"]  = NA_REAL,
       Rcpp::_["alpha"] = NA_REAL
     );
-  }
+  }  // # nocov end
   // Suppress unused-parameter warning if Rcpp::stop is optimised away.
   (void) getter_name;
   return Rcpp::NumericVector::create(

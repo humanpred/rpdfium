@@ -107,11 +107,15 @@ bool cpp_page_has_transparency(SEXP page_ptr) {
 Rcpp::NumericVector cpp_page_bounding_box(SEXP page_ptr) {
   FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
   FS_RECTF r;
-  if (!FPDF_GetPageBoundingBox(page, &r)) {  // # nocov start
+  // # nocov start — FPDF_GetPageBoundingBox returns false only when
+  // the page's /CropBox / /MediaBox dict is malformed (negative or
+  // NaN dimensions); every fixture we ship is well-formed.
+  if (!FPDF_GetPageBoundingBox(page, &r)) {
     return Rcpp::NumericVector::create(
       Rcpp::_["left"] = NA_REAL, Rcpp::_["bottom"] = NA_REAL,
       Rcpp::_["right"] = NA_REAL, Rcpp::_["top"] = NA_REAL);
-  }                                          // # nocov end
+  }
+  // # nocov end
   return Rcpp::NumericVector::create(
     Rcpp::_["left"] = r.left, Rcpp::_["bottom"] = r.bottom,
     Rcpp::_["right"] = r.right, Rcpp::_["top"] = r.top);
@@ -419,11 +423,10 @@ bool cpp_text_set_charcodes(SEXP obj_ptr,
   std::vector<std::uint32_t> codes(charcodes.size());
   for (R_xlen_t i = 0; i < charcodes.size(); ++i) {
     int v = charcodes[i];
-    if (v < 0) {                              // # nocov start
-      // R-side validation rejects negative codes; defensive only.
+    if (v < 0) {
       Rcpp::stop("charcodes[%d] is negative; charcodes are unsigned",
                  static_cast<int>(i + 1));
-    }                                          // # nocov end
+    }
     codes[i] = static_cast<std::uint32_t>(v);
   }
   return FPDFText_SetCharcodes(
@@ -472,11 +475,9 @@ struct ScopedFormHandle {
 // [[Rcpp::export(name = "cpp_annot_add_ink_stroke")]]
 int cpp_annot_add_ink_stroke(SEXP annot_ptr, Rcpp::NumericMatrix points) {
   FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
-  if (points.ncol() != 2) {                   // # nocov start
-    // R-side checkmate::assert_matrix(ncols = 2L) rejects this
-    // already; defensive only.
+  if (points.ncol() != 2) {
     Rcpp::stop("`points` must have exactly 2 columns (x, y).");
-  }                                            // # nocov end
+  }
   int n = points.nrow();
   std::vector<FS_POINTF> pts(n);
   for (int i = 0; i < n; ++i) {
@@ -850,7 +851,13 @@ SEXP cpp_form_obj_from_xobject(SEXP xo_ptr) {
 void cpp_page_insert_object(SEXP page_ptr, SEXP obj_ptr) {
   FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
   FPDF_PAGEOBJECT obj = acomp_obj_from_ptr(obj_ptr);
-  FPDFPage_InsertObject(page, obj);
+  // FPDFPage_InsertObject returns FPDF_BOOL as of chromium/7857; the
+  // object is caller-owned (a detached handle) until this succeeds, so
+  // on failure we leave it intact for the caller and just raise.
+  if (!FPDFPage_InsertObject(page, obj)) {  // # nocov start
+    Rcpp::stop("FPDFPage_InsertObject() failed to attach the object "
+               "to the page.");
+  }  // # nocov end
 }
 
 // Remove a child page-object from a form-xobject.
@@ -1078,10 +1085,10 @@ bool cpp_page_transform_with_clip(SEXP page_ptr,
                                     Rcpp::NumericVector matrix,
                                     Rcpp::NumericVector clip_rect) {
   FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
-  if (matrix.size() != 6) {  // # nocov start — R wrapper validates
+  if (matrix.size() != 6) {
     Rcpp::stop("`matrix` must be a length-6 numeric vector "
                "(a, b, c, d, e, f).");
-  }  // # nocov end
+  }
   FS_MATRIX m;
   m.a = static_cast<float>(matrix[0]); m.b = static_cast<float>(matrix[1]);
   m.c = static_cast<float>(matrix[2]); m.d = static_cast<float>(matrix[3]);
@@ -1094,9 +1101,9 @@ bool cpp_page_transform_with_clip(SEXP page_ptr,
     rect.right  = static_cast<float>(clip_rect[2]);
     rect.top    = static_cast<float>(clip_rect[3]);
     rect_arg = &rect;
-  } else if (clip_rect.size() != 0) {  // # nocov start — R wrapper validates
+  } else if (clip_rect.size() != 0) {
     Rcpp::stop("`clip_rect` must be NULL or a length-4 numeric "
                "vector (left, bottom, right, top).");
-  }  // # nocov end
+  }
   return FPDFPage_TransFormWithClip(page, &m, rect_arg) != 0;
 }

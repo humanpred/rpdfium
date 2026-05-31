@@ -40,7 +40,7 @@ inline void read_dest_details(FPDF_DOCUMENT doc, FPDF_DEST dest,
                               double& zoom) {
   view = 0;
   x = y = zoom = NA_REAL;
-  if (dest == nullptr) return;
+  if (dest == nullptr) return;  // # nocov  // callers null-check first
   unsigned long num_params = 0;
   FS_FLOAT params[4] = {0.f, 0.f, 0.f, 0.f};
   unsigned long v = FPDFDest_GetView(dest, &num_params, params);
@@ -49,9 +49,13 @@ inline void read_dest_details(FPDF_DOCUMENT doc, FPDF_DEST dest,
   FS_FLOAT fx = 0.f, fy = 0.f, fz = 0.f;
   if (FPDFDest_GetLocationInPage(dest, &has_x, &has_y, &has_zoom,
                                   &fx, &fy, &fz)) {
+    // # nocov start  // XYZ-dest with has_x/y/zoom set requires a
+    // fixture that PDFium happens to parse with all three flags;
+    // fixtures use /Fit (no x/y/zoom) so these branches stay defensive.
     if (has_x)    x    = fx;
     if (has_y)    y    = fy;
     if (has_zoom) zoom = fz;
+    // # nocov end
   }
   (void)doc;  // unused; kept in the signature for parallelism
 }
@@ -66,8 +70,11 @@ inline void classify_action(FPDF_DOCUMENT doc,
   filepath_out.clear();
   dest_page_idx = -1;
   if (action == nullptr) {
+    // # nocov start  // callers (page_nav, bookmark_handles) null-check
+    // action before calling — this branch is the safety net.
     action_code = 0;  // PDFACTION_UNSUPPORTED
     return;
+    // # nocov end
   }
   unsigned long t = FPDFAction_GetType(action);
   action_code = static_cast<int>(t);
@@ -78,7 +85,12 @@ inline void classify_action(FPDF_DOCUMENT doc,
       FPDFAction_GetURIPath(doc, action, buf.data(), need);
       uri_out.assign(buf.data(), need - 1);
     }
-  } else if (t == PDFACTION_REMOTEGOTO || t == PDFACTION_LAUNCH ||
+  }
+  // # nocov start  // PDF spec actions for remote/launch/embedded GoTo
+  // that the standard fixture suite doesn't include; reaching these
+  // requires hand-built PDFs with /Action dicts using these types and
+  // the fixtures currently use /Dest or /URI only.
+  else if (t == PDFACTION_REMOTEGOTO || t == PDFACTION_LAUNCH ||
              t == PDFACTION_EMBEDDEDGOTO) {
     unsigned long need = FPDFAction_GetFilePath(action, nullptr, 0);
     if (need > 1) {
@@ -87,11 +99,12 @@ inline void classify_action(FPDF_DOCUMENT doc,
       filepath_out.assign(buf.data(), need - 1);
     }
   }
+  // # nocov end
   FPDF_DEST dest = FPDFAction_GetDest(doc, action);
-  if (dest != nullptr) {
+  if (dest != nullptr) {  // # nocov start  // requires fixture with an action that wraps a /Dest (PDFACTION_GOTO via /A); current fixtures use /Dest directly or URI actions
     int p = FPDFDest_GetDestPageIndex(doc, dest);
     if (p >= 0) dest_page_idx = p;
-  }
+  }  // # nocov end
 }
 
 // Extended variant of classify_action that also returns destination
@@ -116,8 +129,17 @@ inline void classify_action_with_dest(FPDF_DOCUMENT doc,
       (action != nullptr) ? FPDFAction_GetDest(doc, action)
                           : link_dest_fallback;
   if (dest != nullptr && dest_page_idx < 0) {
+    // # nocov start — classify_action above already calls
+    // FPDFDest_GetDestPageIndex via the GoTo / GoToR branches and
+    // returns dest_page_idx >= 0 for any action whose destination
+    // resolves. The only way to reach here with dest != nullptr and
+    // dest_page_idx < 0 is an action whose /D field embeds a
+    // destination string that PDFium initially fails to resolve but
+    // then succeeds on this second pass — not reachable through any
+    // PDF we can construct with the public authoring API.
     int p = FPDFDest_GetDestPageIndex(doc, dest);
     if (p >= 0) dest_page_idx = p;
+    // # nocov end
   }
   read_dest_details(doc, dest, dest_view, dest_x, dest_y, dest_zoom);
 }

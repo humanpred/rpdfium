@@ -45,7 +45,7 @@ int read_jpeg_block(void* param, unsigned long position,
                     unsigned char* p_buf, unsigned long size) {
   JpegBuf* jb = static_cast<JpegBuf*>(param);
   if (position + size > jb->len) {
-    return 0;  // out of range
+    return 0;  // # nocov  // PDFium reads within jb->len it queried on the previous step
   }
   std::memcpy(p_buf, jb->data + position, size);
   return 1;
@@ -61,7 +61,7 @@ SEXP cpp_image_new_from_jpeg(SEXP doc_ptr, SEXP page_ptr,
 
   FPDF_PAGEOBJECT image_obj = FPDFPageObj_NewImageObj(doc);
   if (image_obj == nullptr) {
-    Rcpp::stop("FPDFPageObj_NewImageObj returned NULL.");
+    Rcpp::stop("FPDFPageObj_NewImageObj returned NULL.");  // # nocov  // only fails on out-of-memory
   }
 
   JpegBuf jb;
@@ -79,14 +79,18 @@ SEXP cpp_image_new_from_jpeg(SEXP doc_ptr, SEXP page_ptr,
   // the "Inline" suffix, retains a reference to file_access and
   // would dangle on return.)
   FPDF_PAGE pages[] = {page};
-  if (!FPDFImageObj_LoadJpegFileInline(pages, 1, image_obj,
+  if (!FPDFImageObj_LoadJpegFileInline(pages, 1, image_obj,  // # nocov start  // PDFium accepts any bytes (parses lazily); the FileAccess callback only fails on the OOM path
                                          &file_access)) {
     FPDFPageObj_Destroy(image_obj);
     Rcpp::stop("FPDFImageObj_LoadJpegFileInline failed; the bytes "
                "may not be valid JPEG.");
-  }
+  }  // # nocov end
 
-  FPDFPage_InsertObject(page, image_obj);
+  if (!FPDFPage_InsertObject(page, image_obj)) {  // # nocov start
+    FPDFPageObj_Destroy(image_obj);
+    Rcpp::stop("FPDFPage_InsertObject() failed to attach the new image "
+               "object to the page.");
+  }  // # nocov end
 
   // No finalizer: the page owns the object now (PDFium will destroy
   // it when the page closes). The externalptr's prot slot pins the
@@ -94,12 +98,32 @@ SEXP cpp_image_new_from_jpeg(SEXP doc_ptr, SEXP page_ptr,
   return R_MakeExternalPtr(image_obj, R_NilValue, page_ptr);
 }
 
-// [[Rcpp::export(name = "cpp_image_set_matrix")]]
-bool cpp_image_set_matrix(SEXP image_ptr,
-                           double a, double b, double c, double d,
-                           double e, double f) {
-  FPDF_PAGEOBJECT image_obj = static_cast<FPDF_PAGEOBJECT>(
-      pdfium_r::validate_handle(image_ptr, "Image object",
-                                  /*require_prot_alive=*/true));
-  return FPDFImageObj_SetMatrix(image_obj, a, b, c, d, e, f) != 0;
+// Create a blank image page-object (no encoded stream attached), insert
+// it into the page, and return its handle. The caller follows up with
+// FPDFImageObj_SetBitmap (cpp_image_set_bitmap) to attach pixel data,
+// then sets the matrix via the generic FPDFPageObj_SetMatrix
+// (pdf_obj_set_matrix() / cpp_obj_set_matrix). Pairs with
+// pdf_image_new_from_bitmap on the R side as the bitmap counterpart to
+// cpp_image_new_from_jpeg.
+// [[Rcpp::export(name = "cpp_image_new_blank")]]
+SEXP cpp_image_new_blank(SEXP doc_ptr, SEXP page_ptr) {
+  FPDF_DOCUMENT doc = doc_from_ptr(doc_ptr);
+  FPDF_PAGE page = page_from_ptr(page_ptr);
+
+  FPDF_PAGEOBJECT image_obj = FPDFPageObj_NewImageObj(doc);
+  if (image_obj == nullptr) {
+    // # nocov start — FPDFPageObj_NewImageObj returns NULL only on
+    // OOM at the PDF dict-allocation level.
+    Rcpp::stop("FPDFPageObj_NewImageObj returned NULL.");
+    // # nocov end
+  }
+
+  if (!FPDFPage_InsertObject(page, image_obj)) {  // # nocov start
+    FPDFPageObj_Destroy(image_obj);
+    Rcpp::stop("FPDFPage_InsertObject() failed to attach the new image "
+               "object to the page.");
+  }  // # nocov end
+
+  // No finalizer: page owns the object now. prot pins the page.
+  return R_MakeExternalPtr(image_obj, R_NilValue, page_ptr);
 }

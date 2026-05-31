@@ -65,8 +65,14 @@ std::string read_utf16_reason(FPDF_SIGNATURE sig) {
 int cpp_signature_count(SEXP doc_ptr) {
   FPDF_DOCUMENT doc = doc_from_ptr(doc_ptr);
   int n = FPDF_GetSignatureCount(doc);
+  // PDFium documents FPDF_GetSignatureCount as returning -1 on
+  // error, but every doc that loads cleanly through
+  // FPDF_LoadDocument64 (the only path that produces an FPDF_DOCUMENT
+  // here) has yielded a non-negative count in practice. Defensive
+  // guard kept so a future PDFium regression surfaces as a polite
+  // Rcpp::stop rather than a silently coerced negative size.
   if (n < 0) {
-    Rcpp::stop("FPDF_GetSignatureCount returned %d.", n);
+    Rcpp::stop("FPDF_GetSignatureCount returned %d.", n);  // # nocov
   }
   return n;
 }
@@ -86,7 +92,11 @@ Rcpp::List cpp_signatures_list(SEXP doc_ptr) {
 
   for (int i = 0; i < n; ++i) {
     FPDF_SIGNATURE sig = FPDF_GetSignatureObject(doc, i);
-    if (sig == nullptr) {
+    // PDFium guarantees handles 0..count-1 are valid for a doc with
+    // that many signatures; the NA-fill below covers a defensive
+    // future-proofing path that the supported FPDFium build never
+    // hits.
+    if (sig == nullptr) {  // # nocov start
       sub_filter[i] = NA_STRING;
       reason[i]     = NA_STRING;
       time_str[i]   = NA_STRING;
@@ -94,7 +104,7 @@ Rcpp::List cpp_signatures_list(SEXP doc_ptr) {
       contents_size[i] = NA_INTEGER;
       byte_range_pairs[i] = NA_INTEGER;
       continue;
-    }
+    }  // # nocov end
     sub_filter[i] = read_ascii_field(sig, FPDFSignatureObj_GetSubFilter);
     reason[i]     = read_utf16_reason(sig);
     time_str[i]   = read_ascii_field(sig, FPDFSignatureObj_GetTime);

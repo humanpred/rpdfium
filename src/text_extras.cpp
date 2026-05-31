@@ -96,3 +96,67 @@ Rcpp::List cpp_page_text_colors(SEXP page_ptr) {
     Rcpp::_["stroke_alpha"]  = sa
   );
 }
+
+// FPDFText_GetTextObject — direct accessor that returns the page
+// object owning a given char on the text-page. Returns a list of
+// (ptr externalptr, obj_index integer) so the R wrapper can build a
+// pdfium_obj. Iterates over the page-object table to discover the
+// obj_index because FPDFText_GetTextObject returns a borrowed
+// pointer without an index hint.
+//
+// Returns ptr = R_NilValue and obj_index = NA_integer_ when the
+// char has no associated text-object (e.g. PDFium-inserted
+// whitespace).
+// [[Rcpp::export(name = "cpp_text_obj_at_char")]]
+Rcpp::List cpp_text_obj_at_char(SEXP page_ptr, int char_index) {
+  FPDF_PAGE page = static_cast<FPDF_PAGE>(
+      pdfium_r::validate_handle(page_ptr, "Page",
+                                  /*require_prot_alive=*/false));
+  FPDF_TEXTPAGE tp = FPDFText_LoadPage(page);
+  if (tp == nullptr) {
+    // # nocov start — FPDFText_LoadPage returns NULL only on OOM;
+    // chromium/7202 succeeds in the test sizes we exercise.
+    Rcpp::stop("FPDFText_LoadPage returned NULL.");
+    // # nocov end
+  }
+  FPDF_PAGEOBJECT obj = FPDFText_GetTextObject(tp, char_index);
+  FPDFText_ClosePage(tp);
+
+  if (obj == nullptr) {
+    return Rcpp::List::create(
+      Rcpp::_["ptr"]       = R_NilValue,
+      Rcpp::_["obj_index"] = NA_INTEGER);
+  }
+
+  // Locate obj_index by scanning page objects for pointer equality.
+  // PDFium returns the same handle on every call for a given object
+  // until the page closes, so a pointer compare is the correct
+  // identity check.
+  int n = FPDFPage_CountObjects(page);
+  int found = -1;
+  for (int i = 0; i < n; ++i) {
+    if (FPDFPage_GetObject(page, i) == obj) {
+      found = i;
+      break;
+    }
+  }
+  if (found < 0) {
+    // # nocov start — FPDFText_GetTextObject returns an object that
+    // must exist in the page's content stream; FPDFPage_GetObject
+    // enumerates that same stream. A mismatch indicates PDFium-
+    // internal inconsistency.
+    return Rcpp::List::create(
+      Rcpp::_["ptr"]       = R_NilValue,
+      Rcpp::_["obj_index"] = NA_INTEGER);
+    // # nocov end
+  }
+
+  // No finalizer: the page owns the page-object. prot pins the page
+  // so the parent-liveness check in downstream cpp shims works.
+  SEXP ext = PROTECT(R_MakeExternalPtr(obj, R_NilValue, page_ptr));
+  Rcpp::List out = Rcpp::List::create(
+    Rcpp::_["ptr"]       = ext,
+    Rcpp::_["obj_index"] = found + 1);
+  UNPROTECT(1);
+  return out;
+}

@@ -142,3 +142,36 @@ test_that("pdf_doc_open's URL path round-trips through pdf_doc_summary", {
   expect_identical(s$path, url)
   expect_gt(s$form_field_count, 0L)
 })
+
+# init.cpp surface ----------------------------------------------------
+
+test_that("cpp_open_document errors on a non-PDF file", {
+  # FPDF_LoadDocument returns NULL when the file isn't a recognisable
+  # PDF. Hit the cpp_open_document NULL branch with a text file.
+  txt <- withr::local_tempfile(fileext = ".pdf")
+  writeLines("not a pdf", txt)
+  expect_error(pdf_doc_open(txt), "Failed to load PDF")
+})
+
+test_that("cpp_open_document_from_memory errors on garbage bytes", {
+  # FPDF_LoadMemDocument64 returns NULL for non-PDF buffers; the
+  # shim must free the heap copy and surface the PDFium error code.
+  garbage <- as.raw(c(0x00, 0x01, 0x02, 0x03, 0x04))
+  expect_error(
+    pdf_doc_open(source = garbage),
+    "Failed to load PDF from memory"
+  )
+})
+
+test_that("cpp_destroy_library + reopen survives a round-trip", {
+  # Drive the .onUnload code path mid-process by destroying and
+  # re-initialising the library, then verify a fresh document opens.
+  # All previously-open docs in this test must be closed first.
+  pdfium:::cpp_destroy_library()
+  # Idempotent: a second destroy is a no-op.
+  pdfium:::cpp_destroy_library()
+  # Open auto-reinits via the g_library_initialised flag in init.cpp.
+  doc <- pdf_doc_open(fixture_path("minimal"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  expect_identical(pdf_page_count(doc), 1L)
+})

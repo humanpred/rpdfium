@@ -67,14 +67,14 @@ Rcpp::NumericVector cpp_obj_rotated_bounds(SEXP obj_ptr) {
   FPDF_PAGEOBJECT obj = validated_pageobj(obj_ptr);
   FS_QUADPOINTSF q;
   FPDF_BOOL ok = FPDFPageObj_GetRotatedBounds(obj, &q);
-  if (!ok) {
+  if (!ok) {  // # nocov start  // GetRotatedBounds never fails on a page-owned obj
     return Rcpp::NumericVector::create(
       Rcpp::_["x1"] = NA_REAL, Rcpp::_["y1"] = NA_REAL,
       Rcpp::_["x2"] = NA_REAL, Rcpp::_["y2"] = NA_REAL,
       Rcpp::_["x3"] = NA_REAL, Rcpp::_["y3"] = NA_REAL,
       Rcpp::_["x4"] = NA_REAL, Rcpp::_["y4"] = NA_REAL
     );
-  }
+  }  // # nocov end
   return Rcpp::NumericVector::create(
     Rcpp::_["x1"] = static_cast<double>(q.x1),
     Rcpp::_["y1"] = static_cast<double>(q.y1),

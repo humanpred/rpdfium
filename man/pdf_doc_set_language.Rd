@@ -18,3 +18,6 @@ Invisibly returns \code{doc}.
 Wraps \code{FPDFCatalog_SetLanguage}. The language tag follows BCP-47
 (e.g. \code{"en"}, \code{"en-US"}, \code{"de-AT"}).
 }
+\seealso{
+\code{\link[=pdf_doc_language]{pdf_doc_language()}} to read it back.
+}

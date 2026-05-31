@@ -44,6 +44,13 @@ test_that("pdf_image_new inserts an image obj from a JPEG file path", {
   expect_setequal(s$doc$state$dirty_pages, 1L)
   # The page now has exactly one object (the image).
   expect_equal(length(pdf_page_objects(s$page)), 1L)
+  # `bounds` is applied as the object's matrix via the generic
+  # FPDFPageObj_SetMatrix (pdf_obj_set_matrix()); read it back to pin
+  # that the placement maps exactly to the requested rectangle.
+  expect_equal(
+    pdf_obj_bounds(obj),
+    c(left = 72, bottom = 600, right = 272, top = 700)
+  )
 })
 
 test_that("pdf_image_new inserts an image obj from raw bytes", {
@@ -88,6 +95,18 @@ test_that("pdf_image_new validates `bounds` shape", {
                "Assertion on")
 })
 
+test_that("cpp_image_new_from_jpeg handles an empty raw vector", {
+  # Exercises the size == 0 -> nullptr branch in the FileAccess
+  # buffer setup. PDFium accepts the empty bytes silently (the inline
+  # JPEG loader copies zero bytes and produces an empty image object).
+  s <- img_blank_page()
+  obj_ptr <- pdfium:::cpp_image_new_from_jpeg(
+    s$doc$ptr, s$page$ptr, raw(0)
+  )
+  expect_type(obj_ptr, "externalptr")
+})
+
+
 # Read-only / closed-page rejection ---------------------------------
 
 test_that("pdf_image_new refuses a read-only doc", {
@@ -124,4 +143,67 @@ test_that("pdf_image_new round-trips through pdf_save", {
   objs <- pdf_page_objects(page2)
   types <- vapply(objs, function(o) o$type, character(1L))
   expect_true("image" %in% types)
+})
+
+# ---- pdf_image_new_from_bitmap ---------------------------------------------
+
+test_that("pdf_image_new_from_bitmap inserts an image obj from a bitmap", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 612, height = 792)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  bm <- pdf_bitmap_new(16L, 16L, alpha = TRUE)
+  on.exit(pdf_bitmap_close(bm), add = TRUE)
+  pdf_bitmap_fill_rect(bm, 0L, 0L, 16L, 16L, 0xFF00FF00)
+
+  img <- pdf_image_new_from_bitmap(page, bm,
+                                    bounds = c(72, 600, 272, 700))
+  expect_s3_class(img, "pdfium_obj")
+  expect_identical(img$type, "image")
+
+  # Confirm the obj is on the page and survives a save+reload.
+  out <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(doc, out)
+  doc2 <- pdf_doc_open(out)
+  on.exit(pdf_doc_close(doc2), add = TRUE)
+  page2 <- pdf_page_load(doc2, 1L)
+  on.exit(pdf_page_close(page2), add = TRUE, after = FALSE)
+  types <- vapply(pdf_page_objects(page2),
+                   function(o) o$type, character(1L))
+  expect_true("image" %in% types)
+})
+
+test_that("pdf_image_new_from_bitmap works without explicit bounds", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 612, height = 792)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  bm <- pdf_bitmap_new(8L, 8L, alpha = FALSE)
+  on.exit(pdf_bitmap_close(bm), add = TRUE)
+  img <- pdf_image_new_from_bitmap(page, bm)
+  expect_s3_class(img, "pdfium_obj")
+})
+
+test_that("pdf_image_new_from_bitmap validates inputs", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 100, height = 100)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  expect_error(pdf_image_new_from_bitmap(page, "not a bitmap"),
+                 "Must inherit from class")
+  bm <- pdf_bitmap_new(4L, 4L, alpha = TRUE)
+  pdf_bitmap_close(bm)
+  expect_error(pdf_image_new_from_bitmap(page, bm),
+                 "Bitmap handle has been closed")
+})
+
+test_that("pdf_image_new_from_bitmap rejects bad bounds", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 100, height = 100)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  bm <- pdf_bitmap_new(4L, 4L, alpha = TRUE)
+  on.exit(pdf_bitmap_close(bm), add = TRUE)
+  expect_error(pdf_image_new_from_bitmap(page, bm, bounds = c(1, 2, 3)),
+                 "Assertion on")
 })

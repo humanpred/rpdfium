@@ -177,6 +177,53 @@ for the rationale. The short version:
 | Bundled binary distribution | `LICENSE.md` "Bundled binary distribution" section |
 | Any of `dev/upstream-feature-survey.md`, `dev/r-pdf-ecosystem-survey.md`, `dev/pdfium-api-review.md` | The "Provenance" block at the top of that file — survey date, commit hashes, CRAN versions, refresh-command snippet. Drift in these blocks defeats the purpose of having them. |
 
+## Parallel sub-agents — isolate the build directory, prefer load_all
+
+When dispatching multiple sub-agents via the `Agent` tool to work
+on different files in parallel, **always pass
+`isolation: "worktree"`**. Without it, every agent shares the same
+`src/`, `src/*.o`, `src/*.so`, and any install target
+(`~/R/.../pdfium/` or a shared `/tmp/rlib_pdfium/`). When each
+agent's verify step runs
+`find src -name "*.o" -delete && ... R CMD INSTALL`, the agents
+clobber one another's intermediate builds and the install
+location, and individual runs cycle without finishing — burning
+CPU while making no net progress.
+
+`isolation: "worktree"` puts each agent in its own
+`git worktree` checkout under a temporary path. The Agent tool
+returns the worktree path + branch when the agent finishes; merge
+that branch back into your working branch at the end.
+
+Inside the agent prompt, prefer `devtools::load_all(".")` and
+`devtools::test()` over `R CMD INSTALL --library=...`. Reasons:
+
+- `load_all()` compiles in-place under the package's `src/` and
+  loads into the running R session without writing to any system
+  library. Much faster, and there's no shared install target to
+  collide on.
+- `devtools::test()` implicitly calls `load_all()` first, so a
+  single command both rebuilds and runs the requested test
+  filter.
+- `covr::package_coverage(type = "tests")` does its own coverage-
+  instrumented build under a private prefix; it does NOT need a
+  separate `R CMD INSTALL` step. Just run it directly.
+- `devtools::check()` is the right last-mile gate (it runs
+  `R CMD check --as-cran`), but reserve it for the final
+  verification pass on the main worktree — it's slow and not
+  what you want inside a per-file coverage loop.
+
+`R CMD INSTALL` is only needed when the package's installed copy
+must be visible to *another* process — e.g.
+`lintr::lint_package()` reading the installed namespace from
+`.libPaths()`, or a fresh R subprocess loading the package via
+`library(pdfium)`. Coverage, tests, and `load_all` do not.
+
+Bash hint: `LD_LIBRARY_PATH="$(pwd)/inst/lib"` is the prefix any
+`Rscript -e ...` invocation needs so the bundled `libpdfium.so`
+(unpacked into `inst/lib/` by the install-time
+`tools/download-pdfium.R`) resolves at dyn.load time.
+
 ## Git / GitHub workflow
 
 - Never push to `main`. Open a PR from a feature branch.

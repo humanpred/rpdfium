@@ -465,6 +465,14 @@ cpp_doc_javascript <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_javascript`, doc_ptr)
 }
 
+cpp_install_unsupported_handler <- function() {
+    .Call(`_pdfium_cpp_install_unsupported_handler`)
+}
+
+cpp_drain_unsupported_features <- function() {
+    .Call(`_pdfium_cpp_drain_unsupported_features`)
+}
+
 cpp_doc_security_revision <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_security_revision`, doc_ptr)
 }
@@ -601,8 +609,8 @@ cpp_image_new_from_jpeg <- function(doc_ptr, page_ptr, jpeg_bytes) {
     .Call(`_pdfium_cpp_image_new_from_jpeg`, doc_ptr, page_ptr, jpeg_bytes)
 }
 
-cpp_image_set_matrix <- function(image_ptr, a, b, c, d, e, f) {
-    .Call(`_pdfium_cpp_image_set_matrix`, image_ptr, a, b, c, d, e, f)
+cpp_image_new_blank <- function(doc_ptr, page_ptr) {
+    .Call(`_pdfium_cpp_image_new_blank`, doc_ptr, page_ptr)
 }
 
 cpp_image_metadata <- function(obj_ptr, page_ptr) {
@@ -695,6 +703,10 @@ cpp_page_set_box <- function(page_ptr, box, left, bottom, right, top) {
 
 cpp_catalog_set_language <- function(doc_ptr, lang) {
     .Call(`_pdfium_cpp_catalog_set_language`, doc_ptr, lang)
+}
+
+cpp_catalog_get_language <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_catalog_get_language`, doc_ptr)
 }
 
 cpp_page_generate_content <- function(page_ptr) {
@@ -1037,8 +1049,12 @@ cpp_page_text_colors <- function(page_ptr) {
     .Call(`_pdfium_cpp_page_text_colors`, page_ptr)
 }
 
-cpp_text_search_page <- function(page_ptr, query, match_case, match_whole_word, consecutive) {
-    .Call(`_pdfium_cpp_text_search_page`, page_ptr, query, match_case, match_whole_word, consecutive)
+cpp_text_obj_at_char <- function(page_ptr, char_index) {
+    .Call(`_pdfium_cpp_text_obj_at_char`, page_ptr, char_index)
+}
+
+cpp_text_search_page <- function(page_ptr, query, match_case, match_whole_word, consecutive, reverse = FALSE) {
+    .Call(`_pdfium_cpp_text_search_page`, page_ptr, query, match_case, match_whole_word, consecutive, reverse)
 }
 
 cpp_text_obj_rendered_bitmap <- function(doc_ptr, page_ptr, obj_ptr, scale) {

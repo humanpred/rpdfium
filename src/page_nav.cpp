@@ -144,8 +144,15 @@ Rcpp::List cpp_page_aactions(SEXP doc_ptr, SEXP page_ptr) {
     pdfium_r::classify_action(doc, action, action_code, uri, fp, dest);
     FPDF_DEST dest_handle = FPDFAction_GetDest(doc, action);
     if (dest_handle != nullptr) {
+      // # nocov start — requires a page additional-action (AA) whose
+      // action also encodes a destination (e.g. /O = Open going to
+      // /XYZ on another page). PDFium's FPDFPage_AAction API in
+      // chromium/7202 does not expose a way to attach destinations to
+      // page AA actions via the public authoring surface, so this
+      // defensive branch is unreachable from constructed fixtures.
       pdfium_r::read_dest_details(doc, dest_handle, dview, dx, dy,
                                    dzoom);
+      // # nocov end
     }
     trigger.emplace_back(kAANames[i]);
     action_codes.push_back(action_code);

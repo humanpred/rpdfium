@@ -92,15 +92,53 @@ pdf_save(doc, "annotated.pdf")
 No other CRAN package surfaces annotations at all. The full list of
 supported subtypes lives in `?pdf_annot_new`.
 
-### 4. Programmatic PDF authoring (with v0.1.0 limits)
+### 4. Structural mutation without Java or shell-outs
 
-[`pdf_doc_new()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_new.html)
-plus the page-object creators ([`pdf_path_new`](https://humanpred.github.io/rpdfium/reference/pdf_path_new.html),
-[`pdf_rect_new`](https://humanpred.github.io/rpdfium/reference/pdf_rect_new.html),
-[`pdf_text_new`](https://humanpred.github.io/rpdfium/reference/pdf_text_new.html),
-[`pdf_image_new`](https://humanpred.github.io/rpdfium/reference/pdf_image_new.html),
-[`pdf_font_load`](https://humanpred.github.io/rpdfium/reference/pdf_font_load.html)
-/ [`pdf_font_load_standard`](https://humanpred.github.io/rpdfium/reference/pdf_font_load_standard.html),
+The classic R answers for page rotation / N-up imposition / delete +
+reorder / language tagging are `staplr` (Java + pdftk) and `xmpdf`
+(orchestrates `exiftool` + `ghostscript` + `pdftk`). `pdfium` covers
+the same surface in-process, no external binaries:
+
+| Operation | `pdfium` | `qpdf` | `staplr` | `xmpdf` |
+|---|---|---|---|---|
+| Rotate page | `pdf_page_set_rotation()` | no | `rotate_pages()` (Java) | no |
+| Delete page | `pdf_page_delete()` | `pdf_split()` + cherry-pick | `remove_pages()` (Java) | no |
+| Reorder pages | `pdf_pages_reorder()` | manual `pdf_split()` + `pdf_combine()` | `select_pages()` (Java) | no |
+| Merge documents | `pdf_docs_merge()` | `pdf_combine()` | `combine_pdfs()` (Java) | no |
+| N-up imposition | `pdf_n_up()` | no | no | no |
+| Set crop / media / trim / bleed / art box | `pdf_page_set_box()` | no | no | no |
+| Set `/Lang` (accessibility tag) | `pdf_doc_set_language()` | no | no | partial (XMP only) |
+
+```{r, eval = FALSE}
+# 4-up imposition of a long report onto US Letter sheets.
+doc <- pdf_doc_open("long-report.pdf")
+pdf_n_up(doc, "report-4up.pdf", cols = 2L, rows = 2L)
+
+# Reorder so the cover page lands first, then save in place.
+doc <- pdf_doc_open("draft.pdf", readwrite = TRUE)
+pdf_pages_reorder(doc, new_order = c(3L, 1L, 2L, 4:pdf_page_count(doc)))
+pdf_save(doc, "draft.pdf")
+
+# Tag the doc's primary language (improves screen-reader UX).
+pdf_doc_set_language(doc, "en-US")
+pdf_save(doc, "draft.pdf")
+```
+
+`pdf_docs_merge()` accepts a list of `pdfium_doc` handles or a list
+of paths, so you can stream-merge many files without keeping them
+all open at once. `pdf_n_up()` writes directly to disk via PDFium's
+`FPDF_ImportNPagesToOne` — no intermediate render step, no
+Ghostscript subprocess.
+
+### 5. Programmatic PDF authoring (with v0.1.0 limits)
+
+`pdf_doc_new()`
+plus the page-object creators (`pdf_path_new()`,
+`pdf_rect_new()`,
+`pdf_text_new()`,
+`pdf_image_new()`,
+`pdf_font_load()`
+/ `pdf_font_load_standard()`,
 plus the path-geometry appenders) let you build PDFs from scratch
 in R — vector graphics, JPEG images, text in the 14 PDF standard
 fonts, and arbitrary TrueType / Type1 typefaces. The mutating-pdfs
@@ -133,12 +171,12 @@ known path to closure, with the per-table timing differences noted.
 
 ## Where `pdfium` deliberately doesn't compete
 
-* **Structural split / merge / compress** — `qpdf` is the right
+* **Lossless compress / re-encode / linearise** — `qpdf` is the right
   answer. It's content-preserving, doesn't re-encode streams, and has
-  been the de facto choice for years. We expose `pdf_pages_reorder()`
-  and `pdf_docs_merge()` because they fall out of the mutation
-  surface for free, but if your only job is "split this PDF in half",
-  reach for `qpdf::pdf_split()` first.
+  been the de facto choice for years. `pdfium`'s structural mutation
+  surface (see §4 above) overlaps on split / merge / reorder, but if
+  your job is "compress this PDF" or "linearise for web view", reach
+  for `qpdf::pdf_compress()` / `qpdf::pdf_optimize()`.
 * **Table extraction** — `tabulapdf` (formerly `tabulizer`) has a
   decade of Tabula's heuristics behind it. `pdfium` gives you
   text-with-bounds and path geometry — the primitives a future
@@ -166,8 +204,11 @@ known path to closure, with the per-table timing differences noted.
 | Document metadata (write) | partial (lang only) | no | no | no | no | no | yes |
 | Page count / size | yes | yes | yes | yes | yes | yes | partial |
 | Page rotation (read) | yes | no | no | no | no | yes | no |
-| Page rotation (write) | yes | no | no | no | no | yes | no |
-| Page reorder / merge / split | yes | no | yes | no | no | yes | no |
+| Page rotation (write) | yes | no | no | no | no | yes (Java) | no |
+| Page reorder / merge / split | yes | no | yes | no | no | yes (Java) | no |
+| N-up imposition | yes | no | no | no | no | no | no |
+| Page boxes (crop / trim / bleed / art) | yes | no | no | no | no | no | no |
+| Document language (`/Lang`) write | yes | no | no | no | no | no | partial (XMP) |
 | **Path segments** | **yes** | no | no | no | no (internal only) | no | no |
 | **Path style** (stroke / fill / dash / matrix) | **yes** | no | no | no | no | no | no |
 | **Bezier control points** | **yes** | no | no | no | no | no | no |

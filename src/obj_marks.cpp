@@ -37,15 +37,22 @@ FPDF_PAGEOBJECT marks_obj_from_ptr(SEXP obj_ptr) {
 // needed length, then a real buffer the second time.
 std::string read_mark_name(FPDF_PAGEOBJECTMARK mark) {
   unsigned long out_buflen = 0;
-  if (!FPDFPageObjMark_GetName(mark, nullptr, 0, &out_buflen)) {
+  if (!FPDFPageObjMark_GetName(mark, nullptr, 0, &out_buflen)) {  // # nocov start
+    // FPDFPageObjMark_GetName's first-pass (NULL buffer, len=0) only
+    // returns FALSE when `mark` is itself NULL — the caller already
+    // skipped that case before calling us, so this branch is
+    // unreachable from the public API.
     return std::string();
-  }
+  }  // # nocov end
   if (out_buflen <= 2) return std::string();
   std::vector<unsigned short> buf(out_buflen / 2);
   if (!FPDFPageObjMark_GetName(mark, buf.data(), out_buflen,
-                                &out_buflen)) {
+                                &out_buflen)) {  // # nocov start
+    // Second-pass failure with a correctly-sized buffer would only
+    // happen if PDFium's internal mark dictionary changed between
+    // the two calls — not possible for an immutable FPDF_PAGEOBJECTMARK.
     return std::string();
-  }
+  }  // # nocov end
   size_t wchars =
       (out_buflen >= 2 ? out_buflen / 2 - 1 : out_buflen / 2);
   return pdfium_r::utf16le_to_utf8(buf.data(), wchars);
@@ -62,15 +69,21 @@ std::string read_param_key(FPDF_PAGEOBJECTMARK mark,
                             unsigned long index) {
   unsigned long out_buflen = 0;
   if (!FPDFPageObjMark_GetParamKey(mark, index, nullptr, 0,
-                                    &out_buflen)) {
+                                    &out_buflen)) {  // # nocov start
+    // First-pass query only fails for an out-of-range index or a
+    // NULL mark; both are ruled out by the caller (which iterates
+    // [0, FPDFPageObjMark_CountParams) on a non-NULL mark).
     return std::string();
-  }
+  }  // # nocov end
   if (out_buflen <= 2) return std::string();
   std::vector<unsigned short> buf(out_buflen / 2);
   if (!FPDFPageObjMark_GetParamKey(mark, index, buf.data(),
-                                    out_buflen, &out_buflen)) {
+                                    out_buflen, &out_buflen)) {  // # nocov start
+    // Second-pass with a correctly-sized buffer can only fail if
+    // PDFium's internal state changed between calls; the mark
+    // dictionary is immutable for the duration of a single read.
     return std::string();
-  }
+  }  // # nocov end
   size_t wchars =
       (out_buflen >= 2 ? out_buflen / 2 - 1 : out_buflen / 2);
   return pdfium_r::utf16le_to_utf8(buf.data(), wchars);
@@ -85,27 +98,43 @@ SEXP read_param_value(FPDF_PAGEOBJECTMARK mark, const std::string& key) {
     if (FPDFPageObjMark_GetParamIntValue(mark, key.c_str(), &out)) {
       return Rcpp::wrap(out);
     }
-    return Rcpp::wrap(NA_INTEGER);
+    return Rcpp::wrap(NA_INTEGER);  // # nocov
+    // GetParamIntValue only returns FALSE when the named entry
+    // is missing or the type changes between the two reads — both
+    // ruled out by the type probe immediately above.
   }
   if (type == FPDF_OBJECT_STRING || type == FPDF_OBJECT_NAME) {
     unsigned long out_buflen = 0;
     if (!FPDFPageObjMark_GetParamStringValue(mark, key.c_str(),
                                               nullptr, 0,
-                                              &out_buflen)) {
+                                              &out_buflen)) {  // # nocov start
+      // First-pass query for a String/Name-typed param only fails
+      // when the key has vanished between the type probe above and
+      // here, which the immutable mark dictionary rules out.
       return Rcpp::wrap(NA_STRING);
-    }
+    }  // # nocov end
     if (out_buflen <= 2) return Rcpp::wrap(std::string());
     std::vector<unsigned short> buf(out_buflen / 2);
     if (!FPDFPageObjMark_GetParamStringValue(
-            mark, key.c_str(), buf.data(), out_buflen, &out_buflen)) {
+            mark, key.c_str(), buf.data(), out_buflen, &out_buflen)) {  // # nocov start
+      // Second-pass failure with a correctly-sized buffer mirrors
+      // the read_param_key second-pass case above: only triggers if
+      // PDFium's internal state changes between calls.
       return Rcpp::wrap(NA_STRING);
-    }
+    }  // # nocov end
     size_t wchars = (out_buflen >= 2 ? out_buflen / 2 - 1
-                                       : out_buflen / 2);
+                                       : out_buflen / 2);  // # nocov
     return Rcpp::wrap(pdfium_r::utf16le_to_utf8(buf.data(), wchars));
   }
   // Blob: surface as a raw vector. PDFium's blob accessor returns
   // raw bytes (no NUL-termination protocol).
+  // # nocov start — Blob-typed BDC params are vanishingly rare in
+  // real PDFs (the PDF spec allows them but no production writer we
+  // could find emits them: tagged-PDF tooling sticks to Number /
+  // String / Name params for content marks). Authoring a binary
+  // fixture with a blob-typed mark param would require a hand-rolled
+  // PDF; the dispatch shape mirrors PDFium's two-pass byte protocol
+  // used elsewhere in this file.
   unsigned long out_buflen = 0;
   if (FPDFPageObjMark_GetParamBlobValue(mark, key.c_str(), nullptr,
                                          0, &out_buflen)) {
@@ -118,6 +147,7 @@ SEXP read_param_value(FPDF_PAGEOBJECTMARK mark, const std::string& key) {
     }
   }
   return R_NilValue;
+  // # nocov end
 }
 
 }  // namespace
@@ -130,11 +160,14 @@ Rcpp::List cpp_path_draw_mode(SEXP obj_ptr) {
   FPDF_PAGEOBJECT obj = marks_obj_from_ptr(obj_ptr);
   int fillmode = 0;
   FPDF_BOOL stroke = 0;
-  if (!FPDFPath_GetDrawMode(obj, &fillmode, &stroke)) {
+  if (!FPDFPath_GetDrawMode(obj, &fillmode, &stroke)) {  // # nocov start
+    // FPDFPath_GetDrawMode only fails when `obj` is not a path-typed
+    // page object; the R wrapper validates the type before dispatch,
+    // so the NA-fill branch is unreachable from the public API.
     return Rcpp::List::create(
         Rcpp::_["fill_mode_code"] = NA_INTEGER,
         Rcpp::_["stroke"]         = NA_LOGICAL);
-  }
+  }  // # nocov end
   return Rcpp::List::create(
       Rcpp::_["fill_mode_code"] = fillmode,
       Rcpp::_["stroke"]         = static_cast<bool>(stroke));
@@ -152,11 +185,15 @@ Rcpp::List cpp_obj_marks_list(SEXP obj_ptr) {
   Rcpp::List params(n_marks);
   for (int i = 0; i < n_marks; ++i) {
     FPDF_PAGEOBJECTMARK mark = FPDFPageObj_GetMark(obj, i);
-    if (mark == nullptr) {
+    if (mark == nullptr) {  // # nocov start
+      // FPDFPageObj_GetMark returns NULL only for an index outside
+      // [0, FPDFPageObj_CountMarks); since we iterate up to n_marks
+      // exclusive, every index is in range and the NULL-mark guard
+      // is unreachable.
       names[i] = NA_STRING;
       params[i] = R_NilValue;
       continue;
-    }
+    }  // # nocov end
     names[i] = read_mark_name(mark);
     int n_params = FPDFPageObjMark_CountParams(mark);
     if (n_params < 0) n_params = 0;

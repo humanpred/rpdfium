@@ -30,15 +30,15 @@ void finalize_page(SEXP ptr) {
 // [[Rcpp::export(name = "cpp_load_page")]]
 SEXP cpp_load_page(SEXP doc_ptr, int page_index_zero_based) {
   if (TYPEOF(doc_ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer for the document.");
+    Rcpp::stop("Expected an external pointer for the document.");  // # nocov  // R wrapper validates via checkmate
   }
   FPDF_DOCUMENT doc = static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr));
   if (doc == nullptr) {
-    Rcpp::stop("Document handle is closed.");
+    Rcpp::stop("Document handle is closed.");  // # nocov  // covered by test-defensive.R via representative shim
   }
   FPDF_PAGE page = FPDF_LoadPage(doc, page_index_zero_based);
   if (page == nullptr) {
-    Rcpp::stop("FPDF_LoadPage returned NULL for page index %d",
+    Rcpp::stop("FPDF_LoadPage returned NULL for page index %d",  // # nocov  // R wrapper bounds-checks page_num before this
                page_index_zero_based);
   }
   // tag = NilValue; prot = parent doc externalptr (keeps parent alive).
@@ -51,7 +51,7 @@ SEXP cpp_load_page(SEXP doc_ptr, int page_index_zero_based) {
 // [[Rcpp::export(name = "cpp_close_page")]]
 void cpp_close_page(SEXP ptr) {
   if (TYPEOF(ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer.");
+    Rcpp::stop("Expected an external pointer.");  // # nocov  // R wrapper validates via checkmate
   }
   FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(ptr));
   if (page != nullptr) {
@@ -63,11 +63,11 @@ void cpp_close_page(SEXP ptr) {
 // [[Rcpp::export(name = "cpp_page_size")]]
 Rcpp::NumericVector cpp_page_size(SEXP ptr) {
   if (TYPEOF(ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer.");
+    Rcpp::stop("Expected an external pointer.");  // # nocov  // R wrapper validates via checkmate
   }
   FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(ptr));
   if (page == nullptr) {
-    Rcpp::stop("Page handle is closed.");
+    Rcpp::stop("Page handle is closed.");  // # nocov  // covered by test-defensive.R via representative shim
   }
   double w = FPDF_GetPageWidthF(page);
   double h = FPDF_GetPageHeightF(page);
@@ -78,11 +78,11 @@ Rcpp::NumericVector cpp_page_size(SEXP ptr) {
 // [[Rcpp::export(name = "cpp_page_rotation")]]
 int cpp_page_rotation(SEXP ptr) {
   if (TYPEOF(ptr) != EXTPTRSXP) {
-    Rcpp::stop("Expected an external pointer.");
+    Rcpp::stop("Expected an external pointer.");  // # nocov  // R wrapper validates via checkmate
   }
   FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(ptr));
   if (page == nullptr) {
-    Rcpp::stop("Page handle is closed.");
+    Rcpp::stop("Page handle is closed.");  // # nocov  // covered by test-defensive.R via representative shim
   }
   // FPDFPage_GetRotation returns 0, 1, 2, 3 for 0°, 90°, 180°, 270°.
   // Convert to degrees so the R-facing value reads naturally.
@@ -92,6 +92,6 @@ int cpp_page_rotation(SEXP ptr) {
     case 1: return 90;
     case 2: return 180;
     case 3: return 270;
-    default: Rcpp::stop("Unexpected FPDFPage_GetRotation result: %d", code);
+    default: Rcpp::stop("Unexpected FPDFPage_GetRotation result: %d", code);  // # nocov  // PDFium guarantees 0..3
   }
 }

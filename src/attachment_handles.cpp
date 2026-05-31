@@ -83,7 +83,7 @@ double cpp_attachment_size_bytes(SEXP att_ptr) {
   FPDF_ATTACHMENT a = att_from_ptr(att_ptr);
   unsigned long out_buflen = 0;
   if (!FPDFAttachment_GetFile(a, nullptr, 0, &out_buflen)) {
-    return NA_REAL;
+    return NA_REAL;  // # nocov  // PDFium succeeds on size-query for any valid attachment
   }
   return static_cast<double>(out_buflen);
 }
@@ -93,7 +93,7 @@ Rcpp::RawVector cpp_attachment_data_handle(SEXP att_ptr) {
   FPDF_ATTACHMENT a = att_from_ptr(att_ptr);
   unsigned long needed = 0;
   if (!FPDFAttachment_GetFile(a, nullptr, 0, &needed)) {
-    Rcpp::stop("FPDFAttachment_GetFile reports unreadable contents.");
+    Rcpp::stop("FPDFAttachment_GetFile reports unreadable contents.");  // # nocov  // PDFium succeeds on size-query for any valid attachment
   }
   Rcpp::RawVector out(needed);
   if (needed > 0) {

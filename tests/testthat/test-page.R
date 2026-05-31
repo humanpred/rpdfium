@@ -112,6 +112,14 @@ test_that("pdf_page_size refuses closed handles and bad inputs", {
   expect_error(pdf_page_size(page), "Page has been closed")
   expect_error(pdf_page_size(42), "class .pdfium_page./.pdfium_doc.")
 
+  # cpp_doc_page_size_by_index returns all-NA when FPDF_GetPageSizeByIndexF
+  # rejects the index. The R wrapper does not bounds-check page_num for
+  # the doc-input fast path so passing too-large index lands in cpp.
+  doc_open <- pdf_doc_open(pdf)
+  on.exit(pdf_doc_close(doc_open), add = TRUE)
+  sz <- pdfium:::cpp_doc_page_size_by_index(doc_open$ptr, 99L)
+  expect_true(all(is.na(sz)))
+
   doc2 <- pdf_doc_open(pdf)
   pdf_doc_close(doc2)
   expect_error(

@@ -16,8 +16,11 @@ actual Gerrit CL.
 - Date: 2026-05-22.
 - Upstream HEAD walked: `aa0184217` (PDFium `main` after the
   `FPDFAnnot_SetNumberValue` patch landed). Bundled headers in
-  `inst/include/fpdf*.h` track `chromium/7202`; the structural gap
-  analysis below is stable across the small delta between the two.
+  `inst/include/fpdf*.h` now track `chromium/7857` (bumped from
+  `chromium/7202` on 2026-05-29, PR #46); the structural gap analysis
+  below is stable across that delta — the bump added 6 narrow public
+  symbols (see [`dev/pdfium-7857-api-delta.md`](pdfium-7857-api-delta.md))
+  but exposed none of the *missing* functionality tracked on this list.
 - Note: this document tracks gaps in PDFium *upstream* (symbols
   PDFium itself doesn't expose publicly). It is distinct from
   `dev/v0.1.0-api-gap-audit.md`, which tracks gaps in *rpdfium's

@@ -65,6 +65,18 @@ test_that("pdf_font_load_standard rejects non-standard names", {
                "Assertion on")
 })
 
+test_that("cpp_font_load_standard rejects an unknown font at the shim", {
+  # R wrapper validates against `.pdfium_standard_fonts` via
+  # checkmate; the cpp shim has its own NULL-return guard for
+  # callers that bypass the wrapper. Direct call to exercise the
+  # shim-side error.
+  s <- font_blank_page()
+  expect_error(
+    pdfium:::cpp_font_load_standard(s$doc$ptr, "Definitely-Not-A-Font"),
+    "returned NULL"
+  )
+})
+
 test_that("pdf_font_load_standard refuses a read-only doc", {
   doc <- pdf_doc_open(fixture_path("shapes"))
   on.exit(pdf_doc_close(doc), add = TRUE)

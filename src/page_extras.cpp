@@ -106,10 +106,15 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
       right.push_back(rect.right);
       top.push_back(rect.top);
     } else {
+      // # nocov start — FPDFLink_GetAnnotRect only fails if the link
+      // handle is NULL, which FPDFLink_Enumerate never returns; even
+      // a /Link annotation missing its /Rect entry returns a (0,0,0,0)
+      // success here. The branch exists as a defensive NA fallback.
       left.push_back(NA_REAL);
       bottom.push_back(NA_REAL);
       right.push_back(NA_REAL);
       top.push_back(NA_REAL);
+      // # nocov end
     }
     FPDF_ACTION action = FPDFLink_GetAction(link);
     int code = 0, dest_idx = -1, dview = 0;
@@ -160,7 +165,11 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
           m(qi, 6) = q.x4; m(qi, 7) = q.y4;
           any = true;
         } else {
+          // # nocov start — FPDFLink_GetQuadPoints only fails when
+          // qi is out of range, which can't happen inside this
+          // bounded loop. Per-quad NA fallback for safety only.
           for (int k = 0; k < 8; ++k) m(qi, k) = NA_REAL;
+          // # nocov end
         }
       }
       if (any) {
@@ -169,7 +178,12 @@ Rcpp::List cpp_page_links(SEXP doc_ptr, SEXP page_ptr) {
         Rcpp::colnames(m) = cn;
         quad_points.push_back(m);
       } else {
+        // # nocov start — only reachable if every per-quad fetch
+        // failed above (impossible when n_quads > 0). Mirrors the
+        // `n_quads <= 0` branch's NULL return so the column shape
+        // stays consistent.
         quad_points.push_back(R_NilValue);
+        // # nocov end
       }
     }
   }
@@ -194,7 +208,11 @@ Rcpp::List cpp_page_text_chars(SEXP page_ptr) {
   FPDF_PAGE page = page_from_ptr(page_ptr);
   FPDF_TEXTPAGE tp = FPDFText_LoadPage(page);
   if (tp == nullptr) {
+    // # nocov start — FPDFText_LoadPage only returns NULL on a NULL
+    // page handle, which page_from_ptr() already rejects above. The
+    // branch exists as a defensive guard for the C-side contract.
     Rcpp::stop("FPDFText_LoadPage returned NULL.");
+    // # nocov end
   }
   int n = FPDFText_CountChars(tp);
   if (n < 0) n = 0;
@@ -230,19 +248,31 @@ Rcpp::List cpp_page_text_chars(SEXP page_ptr) {
         b[0] = 0xE0 | (cp >> 12);
         b[1] = 0x80 | ((cp >> 6) & 0x3F);
         b[2] = 0x80 | (cp & 0x3F);
+      // # nocov start — FPDFText_GetUnicode returns a UTF-16 code
+      // unit (0..0xFFFF), so supplementary-plane code points come
+      // through as surrogate halves (handled above) rather than as
+      // a single >= 0x10000 value. The 4-byte UTF-8 branch is kept
+      // for forward-compatibility with any future PDFium API that
+      // emits 32-bit code points directly.
       } else if (cp < 0x110000) {
         b[0] = 0xF0 | (cp >> 18);
         b[1] = 0x80 | ((cp >> 12) & 0x3F);
         b[2] = 0x80 | ((cp >> 6) & 0x3F);
         b[3] = 0x80 | (cp & 0x3F);
       }
+      // # nocov end
       ch[i] = std::string(b);
     }
     double l, b, r, t;
     if (FPDFText_GetCharBox(tp, i, &l, &r, &b, &t)) {
       left[i] = l; right[i] = r; bottom[i] = b; top[i] = t;
     } else {
+      // # nocov start — FPDFText_GetCharBox only fails on an invalid
+      // text_page or out-of-range index, neither of which is reachable
+      // inside this `for i < FPDFText_CountChars(tp)` loop. Kept as a
+      // defensive NA fallback.
       left[i] = right[i] = bottom[i] = top[i] = NA_REAL;
+      // # nocov end
     }
     font_size[i]    = FPDFText_GetFontSize(tp, i);
     is_generated[i] = (FPDFText_IsGenerated(tp, i) != 0);
@@ -251,7 +281,11 @@ Rcpp::List cpp_page_text_chars(SEXP page_ptr) {
     if (FPDFText_GetCharOrigin(tp, i, &ox, &oy)) {
       origin_x[i] = ox; origin_y[i] = oy;
     } else {
+      // # nocov start — same shape as FPDFText_GetCharBox above;
+      // invalid handle / out-of-range index only, both impossible
+      // inside this bounded loop.
       origin_x[i] = NA_REAL; origin_y[i] = NA_REAL;
+      // # nocov end
     }
     FS_RECTF lr;
     if (FPDFText_GetLooseCharBox(tp, i, &lr)) {
@@ -260,8 +294,13 @@ Rcpp::List cpp_page_text_chars(SEXP page_ptr) {
       loose_right[i] = lr.right;
       loose_top[i] = lr.top;
     } else {
+      // # nocov start — same shape as the FPDFText_GetCharBox /
+      // FPDFText_GetCharOrigin branches above; only an invalid
+      // text_page or out-of-range index trips this path, both
+      // impossible inside this bounded loop.
       loose_left[i] = loose_bottom[i] = loose_right[i] =
           loose_top[i] = NA_REAL;
+      // # nocov end
     }
     int err = FPDFText_HasUnicodeMapError(tp, i);
     unicode_map_error[i] = (err < 0) ? NA_LOGICAL : (err != 0);

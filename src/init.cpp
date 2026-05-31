@@ -117,9 +117,13 @@ SEXP cpp_open_document_from_memory(Rcpp::RawVector bytes,
 SEXP cpp_create_new_document() {
   if (!g_library_initialised) cpp_init_library();
   FPDF_DOCUMENT doc = FPDF_CreateNewDocument();
+  // # nocov start — FPDF_CreateNewDocument allocates a fresh in-memory
+  // doc and only returns NULL on out-of-memory, which we don't
+  // recover from in pdfium's R surface.
   if (doc == nullptr) {
     Rcpp::stop("FPDF_CreateNewDocument() returned NULL.");
   }
+  // # nocov end
   SEXP ptr = PROTECT(R_MakeExternalPtr(doc, R_NilValue, R_NilValue));
   R_RegisterCFinalizerEx(ptr, finalize_document, static_cast<Rboolean>(TRUE));
   UNPROTECT(1);

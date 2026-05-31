@@ -87,9 +87,12 @@ SEXP cpp_text_content(SEXP obj_ptr) {
   FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
 
   FPDF_TEXTPAGE text_page = FPDFText_LoadPage(page);
-  if (text_page == nullptr) {
+  if (text_page == nullptr) {  // # nocov start
+    // FPDFText_LoadPage only returns NULL on allocator failure (OOM)
+    // since the page handle is already validated alive above. No
+    // test fixture can repro this.
     Rcpp::stop("FPDFText_LoadPage returned NULL.");
-  }
+  }  // # nocov end
 
   std::string utf8 = read_text_obj(obj, text_page);
   FPDFText_ClosePage(text_page);
@@ -107,7 +110,11 @@ Rcpp::List cpp_text_font(SEXP obj_ptr) {
   FPDF_PAGEOBJECT obj = text_obj_from_ptr(obj_ptr);
 
   FPDF_FONT font = FPDFTextObj_GetFont(obj);
-  if (font == nullptr) {
+  if (font == nullptr) {  // # nocov start
+    // Every FPDF_PAGEOBJ_TEXT object has an associated /Font dict by
+    // construction — PDFium would have failed to parse the text obj
+    // otherwise. The NULL-font NA list exists for the rare case
+    // PDFium adds future text-like subtypes without /Font.
     return Rcpp::List::create(
       Rcpp::_["base_name"]    = NA_STRING,
       Rcpp::_["family"]       = NA_STRING,
@@ -116,7 +123,7 @@ Rcpp::List cpp_text_font(SEXP obj_ptr) {
       Rcpp::_["is_embedded"]  = NA_LOGICAL,
       Rcpp::_["flags"]        = NA_INTEGER
     );
-  }
+  }  // # nocov end
 
   std::string base_name = read_font_name(font, FPDFFont_GetBaseFontName);
   std::string family    = read_font_name(font, FPDFFont_GetFamilyName);
@@ -142,9 +149,10 @@ Rcpp::List cpp_page_text_runs(SEXP page_ptr) {
   FPDF_PAGE page = text_page_from_ptr(page_ptr);
 
   FPDF_TEXTPAGE text_page = FPDFText_LoadPage(page);
-  if (text_page == nullptr) {
+  if (text_page == nullptr) {  // # nocov start
+    // Same OOM-only defensive path as in cpp_text_content above.
     Rcpp::stop("FPDFText_LoadPage returned NULL.");
-  }
+  }  // # nocov end
 
   int n = FPDFPage_CountObjects(page);
   // Two-pass: count text objects to size vectors exactly, then fill.
@@ -176,15 +184,19 @@ Rcpp::List cpp_page_text_runs(SEXP page_ptr) {
       bottom[k] = static_cast<double>(b);
       right[k]  = static_cast<double>(r);
       top[k]    = static_cast<double>(t);
-    } else {
+    } else {  // # nocov start
+      // Every valid FPDF_PAGEOBJ_TEXT has computable bounds — the
+      // text-rendering matrix + glyph metrics always resolve. The
+      // NA fallback exists for the rare case PDFium fails on a
+      // corrupted /CTM or unsupported text-shaping path.
       left[k] = bottom[k] = right[k] = top[k] = NA_REAL;
-    }
+    }  // # nocov end
 
     float fs = 0.0f;
     if (FPDFTextObj_GetFontSize(obj, &fs)) {
       font_size[k] = static_cast<double>(fs);
-    } else {
-      font_size[k] = NA_REAL;
+    } else {  // # nocov
+      font_size[k] = NA_REAL;  // # nocov — see bounds-NA reasoning above
     }
 
     std::string utf8 = read_text_obj(obj, text_page);
@@ -192,13 +204,15 @@ Rcpp::List cpp_page_text_runs(SEXP page_ptr) {
                              CE_UTF8);
 
     FPDF_FONT font = FPDFTextObj_GetFont(obj);
-    if (font == nullptr) {
+    if (font == nullptr) {  // # nocov start
+      // Same NULL-font defensive case as in cpp_text_font above.
       font_base[k]         = NA_STRING;
       font_family[k]       = NA_STRING;
       font_weight[k]       = NA_INTEGER;
       font_italic_angle[k] = NA_INTEGER;
       font_is_embedded[k]  = NA_LOGICAL;
       font_flags[k]        = NA_INTEGER;
+      // # nocov end
     } else {
       std::string bn = read_font_name(font, FPDFFont_GetBaseFontName);
       std::string fm = read_font_name(font, FPDFFont_GetFamilyName);

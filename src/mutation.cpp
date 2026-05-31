@@ -63,9 +63,13 @@ SEXP cpp_page_new(SEXP doc_ptr, int page_index, double width,
                   double height) {
   FPDF_DOCUMENT doc = doc_from_xptr(doc_ptr);
   FPDF_PAGE page = FPDFPage_New(doc, page_index, width, height);
+  // # nocov start — FPDFPage_New only returns NULL when the doc
+  // pointer is invalid, which the R wrapper prevents via
+  // assert_readwrite() + cpp_page_count() before calling here.
   if (page == nullptr) {
     Rcpp::stop("FPDFPage_New failed.");
   }
+  // # nocov end
   SEXP ptr = PROTECT(R_MakeExternalPtr(page, R_NilValue, doc_ptr));
   R_RegisterCFinalizerEx(ptr, finalize_new_page,
                          static_cast<Rboolean>(TRUE));
@@ -115,9 +119,13 @@ SEXP cpp_import_n_pages_to_one(SEXP src_doc_ptr,
   FPDF_DOCUMENT out = FPDF_ImportNPagesToOne(
       src, output_width, output_height,
       static_cast<size_t>(n_cols), static_cast<size_t>(n_rows));
+  // # nocov start — FPDF_ImportNPagesToOne returns NULL only for
+  // pathological inputs (zero cols/rows, NULL doc) which the R
+  // wrapper checks via checkmate::assert_count() upstream.
   if (out == nullptr) {
     Rcpp::stop("FPDF_ImportNPagesToOne failed.");
   }
+  // # nocov end
   SEXP ptr = PROTECT(R_MakeExternalPtr(out, R_NilValue, R_NilValue));
   // Reuse the document finalizer by registering one inline. Mirrors
   // init.cpp's finalize_document.
@@ -161,6 +169,31 @@ bool cpp_catalog_set_language(SEXP doc_ptr, std::string lang) {
   std::vector<unsigned short> lang16 = pdfium_r::utf8_to_utf16le_nul(lang);
   return FPDFCatalog_SetLanguage(
              doc, reinterpret_cast<FPDF_WIDESTRING>(lang16.data())) != 0;
+}
+
+// [[Rcpp::export(name = "cpp_catalog_get_language")]]
+SEXP cpp_catalog_get_language(SEXP doc_ptr) {
+  // Reader half of FPDFCatalog_SetLanguage, added in PDFium
+  // chromium/7857. Same byte-counted UTF-16LE protocol as
+  // FPDF_GetMetaText: a NULL/0 sizing call returns the byte count
+  // (including the trailing NUL), then the real call fills the buffer.
+  // An absent /Lang entry returns 2 (just the NUL); an error returns 0
+  // — both decode to "".
+  FPDF_DOCUMENT doc = doc_from_xptr(doc_ptr);
+  unsigned long n_bytes = FPDFCatalog_GetLanguage(doc, nullptr, 0UL);
+  std::string lang;
+  if (n_bytes > 2) {
+    size_t n_wchars = n_bytes / 2;
+    std::vector<unsigned short> buf(n_wchars);
+    FPDFCatalog_GetLanguage(doc, buf.data(), n_bytes);
+    lang = pdfium_r::utf16le_to_utf8(buf.data(), n_wchars - 1);
+  }
+  SEXP r_chr = PROTECT(Rf_mkCharLenCE(
+      lang.data(), static_cast<int>(lang.size()), CE_UTF8));
+  SEXP r_vec = PROTECT(Rf_allocVector(STRSXP, 1));
+  SET_STRING_ELT(r_vec, 0, r_chr);
+  UNPROTECT(2);
+  return r_vec;
 }
 
 // [[Rcpp::export(name = "cpp_page_generate_content")]]

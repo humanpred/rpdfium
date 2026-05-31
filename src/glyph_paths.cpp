@@ -74,7 +74,12 @@ Rcpp::List cpp_text_obj_glyph_path(SEXP obj_ptr,
   if (!R_finite(font_size) || font_size <= 0) {
     float obj_fs = 0.f;
     if (FPDFTextObj_GetFontSize(obj, &obj_fs)) fs = obj_fs;
+    // # nocov start — FPDFTextObj_GetFontSize never fails for a
+    // text page-object whose font we already resolved successfully;
+    // the fallback keeps the call total even if PDFium ever
+    // regresses.
     else fs = 1.f;
+    // # nocov end
   }
   FPDF_GLYPHPATH gp = FPDFFont_GetGlyphPath(
       font, static_cast<uint32_t>(glyph_code), fs);
@@ -92,18 +97,27 @@ Rcpp::List cpp_text_obj_glyph_path(SEXP obj_ptr,
   Rcpp::LogicalVector close(n);
   for (int i = 0; i < n; ++i) {
     FPDF_PATHSEGMENT seg = FPDFGlyphPath_GetGlyphPathSegment(gp, i);
+    // # nocov start — FPDFGlyphPath_GetGlyphPathSegment(gp, i) only
+    // returns NULL when i is out of range; the loop bound is the
+    // segment count PDFium just reported, so a NULL here would mean
+    // PDFium's count/get pair lied to us.
     if (seg == nullptr) {
       seg_type[i] = NA_INTEGER;
       x[i] = NA_REAL; y[i] = NA_REAL;
       close[i] = NA_LOGICAL;
       continue;
     }
+    // # nocov end
     seg_type[i] = FPDFPathSegment_GetType(seg);
     float px = 0, py = 0;
     if (FPDFPathSegment_GetPoint(seg, &px, &py)) {
       x[i] = px; y[i] = py;
     } else {
+      // # nocov start — FPDFPathSegment_GetPoint only fails when the
+      // segment handle is invalid, which the seg != nullptr branch
+      // above already excludes.
       x[i] = NA_REAL; y[i] = NA_REAL;
+      // # nocov end
     }
     close[i] = (FPDFPathSegment_GetClose(seg) != 0);
   }
@@ -126,12 +140,21 @@ double cpp_text_obj_glyph_width(SEXP obj_ptr, int glyph_code,
   if (!R_finite(font_size) || font_size <= 0) {
     float obj_fs = 0.f;
     if (FPDFTextObj_GetFontSize(obj, &obj_fs)) fs = obj_fs;
+    // # nocov start — same defensive fallback as the cpp_text_obj_
+    // glyph_path() twin above; FPDFTextObj_GetFontSize never fails
+    // on a text obj whose font we already resolved.
     else fs = 1.f;
+    // # nocov end
   }
   float w = 0.f;
   if (!FPDFFont_GetGlyphWidth(font, static_cast<uint32_t>(glyph_code),
                                fs, &w)) {
+    // # nocov start — PDFium reports success with w == 0 for unknown
+    // glyph codes (verified empirically across 0x0, 0xFFFF, 0xFFFFFF,
+    // 0x7FFFFFFF); the FALSE branch is a defensive fallback for the
+    // unlikely case PDFium changes its mind.
     return NA_REAL;
+    // # nocov end
   }
   return static_cast<double>(w);
 }

@@ -299,6 +299,214 @@ test_that("pdf_page_links reports a URI link's target correctly", {
   expect_equal(links$bounds_top, 170)
 })
 
+# Helper: hand-build a small two-page PDF with two link annotations
+# on page 1:
+#   * Link #1 carries /Dest only (no /A entry), exercising the
+#     FPDFLink_GetDest() fallback inside cpp_page_links.
+#   * Link #2 carries /A /URI + /QuadPoints, exercising the per-line
+#     quad-points matrix path.
+# We construct the bytes inline (rather than baking it into
+# inst/extdata/fixtures) because the link-edge cases are local to
+# this file's tests.
+.build_link_quad_pdf <- function(out) {
+  obj_fmt <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
+
+  obj1 <- obj_fmt(1, "<< /Type /Catalog /Pages 2 0 R >>")
+  obj2 <- obj_fmt(2, "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>")
+  obj3 <- obj_fmt(3, paste0(
+    "<< /Type /Page /Parent 2 0 R ",
+    "/MediaBox [0 0 300 300] /Resources <<>> ",
+    "/Annots [5 0 R 6 0 R] >>"
+  ))
+  obj4 <- obj_fmt(4, paste0(
+    "<< /Type /Page /Parent 2 0 R ",
+    "/MediaBox [0 0 300 300] /Resources <<>> >>"
+  ))
+  # Link carrying /Dest only (no /A); page 2 reference is indirect.
+  obj5 <- obj_fmt(5, paste0(
+    "<< /Type /Annot /Subtype /Link ",
+    "/Rect [10 10 100 50] ",
+    "/Dest [4 0 R /XYZ 50 200 1.5] >>"
+  ))
+  # Link with /A /URI + multi-line /QuadPoints (two lines).
+  obj6 <- obj_fmt(6, paste0(
+    "<< /Type /Annot /Subtype /Link ",
+    "/Rect [20 100 200 200] ",
+    "/A << /S /URI /URI (https://test.example) >> ",
+    "/QuadPoints [20 200 200 200 20 150 200 150 ",
+    "20 150 200 150 20 100 200 100] >>"
+  ))
+
+  header <- charToRaw("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+  parts <- list(
+    header,
+    charToRaw(obj1), charToRaw(obj2),
+    charToRaw(obj3), charToRaw(obj4),
+    charToRaw(obj5), charToRaw(obj6)
+  )
+  cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
+  offs <- cum[seq_len(6L) + 1L]
+  xref_offset <- cum[[length(cum)]]
+  fmt10 <- function(n) sprintf("%010d", n)
+  xref <- paste(
+    c(
+      "xref", "0 7", "0000000000 65535 f ",
+      paste0(fmt10(offs), " 00000 n ")
+    ),
+    collapse = "\n"
+  )
+  trailer <- paste0(
+    "\ntrailer\n<< /Size 7 /Root 1 0 R >>\nstartxref\n",
+    xref_offset, "\n%%EOF\n"
+  )
+  full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))
+  writeBin(full, out)
+}
+
+test_that("pdf_page_links resolves /Dest-only links via FPDFLink_GetDest fallback", {
+  # Exercises the action == nullptr branch in cpp_page_links: the
+  # link carries no /A entry so classify_action() returns a NULL
+  # action handle, and cpp_page_links falls back to FPDFLink_GetDest
+  # to recover the destination's page index, view, and (x,y,zoom).
+  tmp <- withr::local_tempfile(fileext = ".pdf")
+  .build_link_quad_pdf(tmp)
+  doc <- pdf_doc_open(tmp)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+
+  links <- pdf_page_links(doc, page_num = 1L)
+  expect_equal(nrow(links), 2L)
+  # Link 1: /Dest-only -> action_type "goto" via the fallback.
+  expect_equal(links$action_type[[1L]], "goto")
+  expect_true(is.na(links$uri[[1L]]))
+  expect_true(is.na(links$filepath[[1L]]))
+  expect_equal(links$dest_page_num[[1L]], 2L)
+  expect_equal(links$dest_view[[1L]], "xyz")
+  expect_equal(links$dest_x[[1L]], 50)
+  expect_equal(links$dest_y[[1L]], 200)
+  expect_equal(links$dest_zoom[[1L]], 1.5)
+  expect_equal(links$bounds_left[[1L]], 10)
+  expect_equal(links$bounds_bottom[[1L]], 10)
+  expect_equal(links$bounds_right[[1L]], 100)
+  expect_equal(links$bounds_top[[1L]], 50)
+})
+
+test_that("pdf_page_links returns a quad-points matrix for multi-line /QuadPoints", {
+  # Link 2 in the helper fixture carries /QuadPoints describing two
+  # lines, exercising the n_quads > 0 matrix path inside
+  # cpp_page_links. Single-line links (or links without /QuadPoints)
+  # exit through the n_quads <= 0 branch returning R NULL.
+  tmp <- withr::local_tempfile(fileext = ".pdf")
+  .build_link_quad_pdf(tmp)
+  doc <- pdf_doc_open(tmp)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+
+  links <- pdf_page_links(doc, page_num = 1L)
+  expect_equal(nrow(links), 2L)
+  # Link 1: no /QuadPoints -> NULL list-column entry.
+  expect_null(links$quad_points[[1L]])
+  # Link 2: /QuadPoints with two lines -> 2x8 numeric matrix.
+  q2 <- links$quad_points[[2L]]
+  expect_true(is.matrix(q2))
+  expect_equal(dim(q2), c(2L, 8L))
+  expect_identical(
+    colnames(q2),
+    c("x1", "y1", "x2", "y2", "x3", "y3", "x4", "y4")
+  )
+  expect_equal(q2[1L, ], c(
+    x1 = 20, y1 = 200, x2 = 200, y2 = 200,
+    x3 = 20, y3 = 150, x4 = 200, y4 = 150
+  ))
+  expect_equal(q2[2L, ], c(
+    x1 = 20, y1 = 150, x2 = 200, y2 = 150,
+    x3 = 20, y3 = 100, x4 = 200, y4 = 100
+  ))
+  # Link 2 should still classify as URI.
+  expect_equal(links$action_type[[2L]], "uri")
+  expect_equal(links$uri[[2L]], "https://test.example")
+})
+
+# pdf_text_chars unicode encoding paths --------------------------
+
+test_that("pdf_text_chars encodes BMP code points as multi-byte UTF-8", {
+  # Loads a pre-built Cairo PDF containing eacute, a CJK glyph, and a
+  # surrogate-pair emoji to exercise every relevant branch of
+  # cpp_page_text_chars's UTF-16 to UTF-8 encoder: the 2-byte branch
+  # (U+00E9), the 3-byte branch (U+4E2D), and the surrogate-half
+  # branch (the emoji U+1F600 is encoded as the surrogate pair 0xD83D
+  # plus 0xDE00 and each half resolves to the empty string). The
+  # 4-byte UTF-8 branch is unreachable through PDFium's UTF-16
+  # accessor and is marked nocov in src/page_extras.cpp.
+  #
+  # The fixture is shipped pre-built rather than generated at test
+  # time because grDevices cairo_pdf has a transitive dlopen of
+  # libXrender that silently fails on macOS without XQuartz, and on
+  # macOS-arm64 R 4.6 that dlopen-failure path corrupts the process
+  # heap. See dev upstream-patches for the upstream R bug report.
+  doc <- pdf_doc_open(fixture_path("cairo-cjk-utf8"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  chars <- pdf_text_chars(doc, page_num = 1L)
+
+  cps <- chars$codepoint
+  # 2-byte UTF-8 branch: cp 0x00E9 -> 0xC3 0xA9 -> "é"
+  expect_true(0x00e9L %in% cps)
+  expect_identical(chars$char[match(0x00e9L, cps)], "é")
+  # 3-byte UTF-8 branch: cp 0x4E2D -> 0xE4 0xB8 0xAD -> "中"
+  expect_true(0x4e2dL %in% cps)
+  expect_identical(chars$char[match(0x4e2dL, cps)], "中")
+  # Surrogate-half branch: 0xD800..0xDFFF -> "" (no UTF-8 produced).
+  surrogate_idx <- which(cps >= 0xD800L & cps <= 0xDFFFL)
+  expect_gt(length(surrogate_idx), 0L)
+  expect_true(all(chars$char[surrogate_idx] == ""))
+})
+
+# Direct-shim defensive entry-point tests ----------------------------
+
+test_that("cpp_page_box rejects non-extptr page args + unknown box names", {
+  # Three C-side defensive guards in src/page_extras.cpp:
+  #   * page_from_ptr() TYPEOF != EXTPTRSXP
+  #   * doc_from_ptr() TYPEOF != EXTPTRSXP (cpp_page_links only)
+  #   * cpp_page_box unknown-box stop()
+  # The user-facing R wrappers normally catch these earlier, but
+  # the cpp_* shims own the contract for any direct-:::-caller.
+  expect_error(
+    pdfium:::cpp_page_box(42L, "media"),
+    "external pointer for the page"
+  )
+  expect_error(
+    pdfium:::cpp_page_box("not-a-ptr", "media"),
+    "external pointer for the page"
+  )
+
+  # Build a real page handle for the unknown-box stop().
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  expect_error(
+    pdfium:::cpp_page_box(page$ptr, "nope"),
+    "Unknown box"
+  )
+})
+
+test_that("cpp_page_links rejects a non-extptr doc handle", {
+  # Direct-shim defensive entry: doc_from_ptr() trips when the doc
+  # argument isn't an externalptr. The R wrapper short-circuits
+  # this earlier via assert_multi_class(), but the C-side guard is
+  # the documented safety net.
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  expect_error(
+    pdfium:::cpp_page_links(42L, page$ptr),
+    "external pointer for the document"
+  )
+  expect_error(
+    pdfium:::cpp_page_links("not-a-ptr", page$ptr),
+    "external pointer for the document"
+  )
+})
+
 # pdf_page_objects(recursive) -----------------------------------
 
 test_that("pdf_page_objects(recursive = TRUE) is a no-op when no forms", {

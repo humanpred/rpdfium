@@ -95,6 +95,26 @@ pdf_render_page <- function(page,
     fill_background = bg$fill
   )
   attr(data, "channels") <- 4L
+  # Stash the render-geometry args on the bitmap so callers can
+  # later round-trip between bitmap pixels and PDF page-space points
+  # via pdf_bitmap_to_page() / pdf_bitmap_from_page() without
+  # having to remember them. Mirrors pypdfium2's PdfPosConv.
+  #
+  # We stash the parent doc + 1-based page index rather than the
+  # page handle itself: `pdf_render_page(doc)` calls as_open_page()
+  # which schedules pdf_page_close() on return, so any page handle
+  # we tried to stash here would be closed by the time the user
+  # calls pdf_bitmap_to_page(). Lazy-loading the page from the
+  # doc + index sidesteps that lifetime issue.
+  attr(data, "render_geometry") <- list(
+    start_x  = 0L,
+    start_y  = 0L,
+    size_x   = dims$width,
+    size_y   = dims$height,
+    rotate   = rot_code,
+    doc      = page$doc,
+    page_num = page$index
+  )
   new_pdfium_bitmap(
     data,
     dpi              = as.numeric(dpi),
@@ -487,4 +507,134 @@ pdf_render_to_png <- function(page, file, page_num = 1L, dpi = 72,
   )
   png::writePNG(as.array(bmp), target = file)
   invisible(file)
+}
+
+# --------------------------------------------------------------------
+# Bitmap <-> page-space coordinate conversion
+#
+# Mirrors pypdfium2's PdfBitmap.get_posconv(page) / PdfPosConv.to_*.
+# The render-geometry stash on the pdfium_bitmap (set by
+# pdf_render_page above) lets these converters skip the
+# (start_x, start_y, size_x, size_y, rotate) ritual that
+# FPDF_DeviceToPage / FPDF_PageToDevice require.
+# --------------------------------------------------------------------
+
+#' Convert bitmap pixel coordinates to PDF page-space points
+#'
+#' Inverse of [pdf_bitmap_from_page()]. Translates pixel positions
+#' in a `pdfium_bitmap` (returned by [pdf_render_page()]) to PDF
+#' user-space points on the source page. Wraps `FPDF_DeviceToPage`
+#' with the render-geometry that produced the bitmap pre-populated
+#' from the bitmap's attributes.
+#'
+#' @param bitmap A `pdfium_bitmap` from [pdf_render_page()]. Must
+#'   carry render-geometry metadata (older `pdf_render_page_with_matrix()`
+#'   output doesn't).
+#' @param x,y Numeric vectors of pixel positions on the bitmap.
+#'   Recycled to a common length.
+#' @return A two-column tibble with columns `x` and `y` in PDF
+#'   user-space points (origin at the page's bottom-left).
+#' @seealso [pdf_bitmap_from_page()] for the inverse,
+#'   [pdf_device_to_page()] for the underlying primitive.
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+#'   package = "pdfium"
+#' )
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_doc_open(fixture)
+#'   bmp <- pdf_render_page(doc, dpi = 72)
+#'   # Map two bitmap pixel positions back to PDF page-space points.
+#'   pdf_bitmap_to_page(bmp, x = c(0, 100), y = c(0, 100))
+#'   pdf_doc_close(doc)
+#' }
+#' @export
+pdf_bitmap_to_page <- function(bitmap, x, y) {
+  checkmate::assert_class(bitmap, "pdfium_bitmap")
+  rg <- attr(bitmap, "render_geometry")
+  if (is.null(rg)) {
+    stop("Bitmap has no render-geometry metadata. ",
+         "pdf_bitmap_to_page() needs a bitmap produced by ",
+         "pdf_render_page(); pdf_render_page_with_matrix() does not ",
+         "carry render-geometry metadata because its transform is ",
+         "arbitrary.", call. = FALSE)
+  }
+  checkmate::assert_numeric(x, any.missing = FALSE, finite = TRUE)
+  checkmate::assert_numeric(y, any.missing = FALSE, finite = TRUE)
+  if (!is_open(rg$doc)) {
+    stop("Parent document has been closed.", call. = FALSE)
+  }
+  page <- pdf_page_load(rg$doc, rg$page_num)
+  on.exit(pdf_page_close(page), add = TRUE)
+  n <- max(length(x), length(y))
+  x <- rep_len(x, n)
+  y <- rep_len(y, n)
+  out_x <- numeric(n)
+  out_y <- numeric(n)
+  for (i in seq_len(n)) {
+    pt <- pdf_device_to_page(page, rg$start_x, rg$start_y,
+                              rg$size_x, rg$size_y, rg$rotate,
+                              as.integer(x[[i]]), as.integer(y[[i]]))
+    out_x[[i]] <- pt[["x"]]
+    out_y[[i]] <- pt[["y"]]
+  }
+  tibble::tibble(x = out_x, y = out_y)
+}
+
+#' Convert PDF page-space points to bitmap pixel coordinates
+#'
+#' Inverse of [pdf_bitmap_to_page()]. Translates PDF user-space
+#' points to pixel positions on a `pdfium_bitmap` (returned by
+#' [pdf_render_page()]). Wraps `FPDF_PageToDevice` with the
+#' render-geometry that produced the bitmap pre-populated from the
+#' bitmap's attributes.
+#'
+#' @param bitmap A `pdfium_bitmap` from [pdf_render_page()].
+#' @param x,y Numeric vectors of PDF user-space coordinates.
+#'   Recycled to a common length.
+#' @return A two-column tibble with integer columns `x` and `y` in
+#'   bitmap pixel coordinates (origin at the bitmap's top-left).
+#' @seealso [pdf_bitmap_to_page()] for the inverse,
+#'   [pdf_page_to_device()] for the underlying primitive.
+#' @examples
+#' fixture <- system.file("extdata", "fixtures", "shapes.pdf",
+#'   package = "pdfium"
+#' )
+#' if (nzchar(fixture)) {
+#'   doc <- pdf_doc_open(fixture)
+#'   bmp <- pdf_render_page(doc, dpi = 72)
+#'   # Map PDF page-space points (bottom-left origin) to bitmap pixels.
+#'   pdf_bitmap_from_page(bmp, x = c(0, 72), y = c(0, 72))
+#'   pdf_doc_close(doc)
+#' }
+#' @export
+pdf_bitmap_from_page <- function(bitmap, x, y) {
+  checkmate::assert_class(bitmap, "pdfium_bitmap")
+  rg <- attr(bitmap, "render_geometry")
+  if (is.null(rg)) {
+    stop("Bitmap has no render-geometry metadata. ",
+         "pdf_bitmap_from_page() needs a bitmap produced by ",
+         "pdf_render_page(); pdf_render_page_with_matrix() does not ",
+         "carry render-geometry metadata because its transform is ",
+         "arbitrary.", call. = FALSE)
+  }
+  checkmate::assert_numeric(x, any.missing = FALSE, finite = TRUE)
+  checkmate::assert_numeric(y, any.missing = FALSE, finite = TRUE)
+  if (!is_open(rg$doc)) {
+    stop("Parent document has been closed.", call. = FALSE)
+  }
+  page <- pdf_page_load(rg$doc, rg$page_num)
+  on.exit(pdf_page_close(page), add = TRUE)
+  n <- max(length(x), length(y))
+  x <- rep_len(x, n)
+  y <- rep_len(y, n)
+  out_x <- integer(n)
+  out_y <- integer(n)
+  for (i in seq_len(n)) {
+    pt <- pdf_page_to_device(page, rg$start_x, rg$start_y,
+                              rg$size_x, rg$size_y, rg$rotate,
+                              x[[i]], y[[i]])
+    out_x[[i]] <- pt[["x"]]
+    out_y[[i]] <- pt[["y"]]
+  }
+  tibble::tibble(x = out_x, y = out_y)
 }

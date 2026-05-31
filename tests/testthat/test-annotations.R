@@ -209,3 +209,309 @@ test_that("pdf_annotations refuses a closed page handle", {
   expect_error(pdf_annotations(page), "Page has been closed")
   pdf_doc_close(doc)
 })
+
+# Helper: assemble a tiny single-page PDF from object-body strings or
+# raw vectors. Each entry of `objs` is either a character scalar (object
+# body wrapped automatically in `N 0 obj\n...\nendobj\n`) or a raw
+# vector (treated verbatim — used for stream objects that need explicit
+# `/Length` accounting).
+build_inline_pdf <- function(objs) {
+  obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
+  parts <- list(charToRaw("%PDF-1.4\n%\xe2\xe3\xcf\xd3\n"))
+  for (i in seq_along(objs)) {
+    if (is.character(objs[[i]])) {
+      parts[[i + 1L]] <- charToRaw(obj(i, objs[[i]]))
+    } else {
+      parts[[i + 1L]] <- objs[[i]]
+    }
+  }
+  cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
+  offs <- cum[seq_along(objs) + 1L]
+  xref_offset <- cum[[length(cum)]]
+  fmt10 <- function(n) sprintf("%010d", n)
+  size <- length(objs) + 1L
+  xref <- paste(
+    c("xref", paste0("0 ", size),
+      "0000000000 65535 f ",
+      paste0(fmt10(offs), " 00000 n ")),
+    collapse = "\n"
+  )
+  trailer <- paste0(
+    "\ntrailer\n<< /Size ", size,
+    " /Root 1 0 R >>\nstartxref\n",
+    xref_offset, "\n%%EOF\n"
+  )
+  c(unlist(parts), charToRaw(xref), charToRaw(trailer))
+}
+
+# Helper: write `bytes` to a tempfile and arrange cleanup via defer.
+write_temp_pdf <- function(bytes, env = parent.frame()) {
+  path <- tempfile(fileext = ".pdf")
+  writeBin(bytes, path)
+  withr::defer(unlink(path), envir = env)
+  path
+}
+
+test_that("cpp_annot_count rejects a non-extptr SEXP", {
+  # Direct cpp call: hits the EXTPTRSXP guard in page_from_ptr.
+  expect_error(
+    pdfium:::cpp_annot_count(42L),
+    "Expected an external pointer for the page"
+  )
+})
+
+test_that("pdf_annotations surfaces /Popup + /IRT linked annotation indexes", {
+  # Inline PDF with a sticky-note pointing at a /Popup neighbor plus
+  # an /IRT (in-reply-to) edge between two text annots. Covers the
+  # find_annot_index() rect-fallback path in src/annotations.cpp —
+  # PDFium hands out fresh wrapper handles per call, so pointer
+  # equality fails and the rect/subtype match wins.
+  bytes <- build_inline_pdf(list(
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    paste0("<< /Type /Page /Parent 2 0 R ",
+           "/MediaBox [0 0 300 300] /Resources <<>> ",
+           "/Annots [4 0 R 5 0 R 6 0 R] >>"),
+    paste0("<< /Type /Annot /Subtype /Text ",
+           "/Rect [20 250 40 270] ",
+           "/Contents (Reply) /T (Bob) ",
+           "/Popup 5 0 R /IRT 6 0 R >>"),
+    paste0("<< /Type /Annot /Subtype /Popup ",
+           "/Rect [50 50 200 100] >>"),
+    paste0("<< /Type /Annot /Subtype /Text ",
+           "/Rect [80 200 100 220] ",
+           "/Contents (Original) >>")
+  ))
+  path <- write_temp_pdf(bytes)
+  doc <- pdf_doc_open(path)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- tibble::as_tibble(pdf_annotations(doc, page_num = 1L))
+  expect_equal(nrow(res), 3L)
+  expect_identical(res$subtype, c("text", "popup", "text"))
+  # The Text-with-reply (row 1) points at the Popup (row 2) and at
+  # the earlier Text annot (row 3).
+  expect_equal(res$popup_index[[1L]], 2L)
+  expect_equal(res$irt_index[[1L]], 3L)
+  # The Popup itself carries no /Popup or /IRT entry.
+  expect_true(is.na(res$popup_index[[2L]]))
+  expect_true(is.na(res$irt_index[[2L]]))
+  # The Original text annot also has no /Popup or /IRT.
+  expect_true(is.na(res$popup_index[[3L]]))
+  expect_true(is.na(res$irt_index[[3L]]))
+})
+
+test_that("pdf_annotations surfaces a /Popup that fails to match any annot", {
+  # When /Popup points at an indirect object that does NOT live in
+  # the page's /Annots array, find_annot_index() scans the page and
+  # returns -1, which the wrapper turns into NA_INTEGER. This drives
+  # the no-match exit of the rect-fallback walk.
+  bytes <- build_inline_pdf(list(
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    paste0("<< /Type /Page /Parent 2 0 R ",
+           "/MediaBox [0 0 300 300] /Resources <<>> ",
+           "/Annots [4 0 R] >>"),
+    # The /Popup reference points at obj 5, which exists but is NOT
+    # in the page's /Annots array.
+    paste0("<< /Type /Annot /Subtype /Text ",
+           "/Rect [20 250 40 270] ",
+           "/Contents (Lonely) ",
+           "/Popup 5 0 R >>"),
+    paste0("<< /Type /Annot /Subtype /Popup ",
+           "/Rect [50 50 200 100] >>")
+  ))
+  path <- write_temp_pdf(bytes)
+  doc <- pdf_doc_open(path)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- tibble::as_tibble(pdf_annotations(doc, page_num = 1L))
+  expect_equal(nrow(res), 1L)
+  expect_true(is.na(res$popup_index[[1L]]))
+})
+
+test_that("pdf_annotations reads the /FileAttachment payload name", {
+  # FileAttachment annot referencing a /FS filespec. Covers the
+  # FPDFAnnot_GetFileAttachment and read_attachment_name branch in
+  # annotations dot cpp.
+  embed <- charToRaw("hello world\n")
+  obj9_head <- paste0("9 0 obj\n",
+                      "<< /Type /EmbeddedFile /Subtype /text#2Fplain ",
+                      "/Length ", length(embed),
+                      " >>\nstream\n")
+  obj9_bytes <- c(charToRaw(obj9_head), embed,
+                  charToRaw("\nendstream\nendobj\n"))
+  bytes <- build_inline_pdf(list(
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    paste0("<< /Type /Page /Parent 2 0 R ",
+           "/MediaBox [0 0 300 300] /Resources <<>> ",
+           "/Annots [4 0 R 5 0 R 6 0 R 7 0 R] >>"),
+    paste0("<< /Type /Annot /Subtype /Text ",
+           "/Rect [20 250 40 270] ",
+           "/Contents (note) >>"),
+    paste0("<< /Type /Annot /Subtype /FileAttachment ",
+           "/Rect [60 60 80 80] ",
+           "/Contents (stickyfile) ",
+           "/FS 8 0 R >>"),
+    paste0("<< /Type /Annot /Subtype /FileAttachment ",
+           "/Rect [100 100 120 120] ",
+           "/Contents (no-fs) >>"),  # missing /FS → name comes back NA
+    paste0("<< /Type /Annot /Subtype /Text ",
+           "/Rect [150 150 170 170] ",
+           "/Contents (other) >>"),
+    paste0("<< /Type /Filespec /F (hello.txt) ",
+           "/UF (hello.txt) ",
+           "/EF << /F 9 0 R >> >>"),
+    obj9_bytes
+  ))
+  path <- write_temp_pdf(bytes)
+  doc <- pdf_doc_open(path)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- tibble::as_tibble(pdf_annotations(doc, page_num = 1L))
+  expect_equal(nrow(res), 4L)
+  expect_identical(
+    res$subtype,
+    c("text", "fileattachment", "fileattachment", "text")
+  )
+  # First fileattachment has a valid /FS pointing at hello.txt.
+  expect_equal(res$file_attachment_name[[2L]], "hello.txt")
+  # Second fileattachment has no /FS — name is NA.
+  expect_true(is.na(res$file_attachment_name[[3L]]))
+  # Non-fileattachment subtypes always come back NA.
+  expect_true(is.na(res$file_attachment_name[[1L]]))
+  expect_true(is.na(res$file_attachment_name[[4L]]))
+})
+
+test_that("pdf_annotations reads /Border width and /DA font color", {
+  # A FreeText annot with /DA gives FPDFAnnot_GetFontColor a payload
+  # to parse — exercises font_color_red/green/blue. A Line annot with
+  # /Border [hr vr width] drives the FPDFAnnot_GetBorder success path.
+  bytes <- build_inline_pdf(list(
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    paste0("<< /Type /Page /Parent 2 0 R ",
+           "/MediaBox [0 0 300 300] /Resources <<>> ",
+           "/Annots [4 0 R 5 0 R] >>"),
+    paste0("<< /Type /Annot /Subtype /FreeText ",
+           "/Rect [10 10 100 30] ",
+           "/DA (/Helv 12 Tf 1 0 0 rg) ",
+           "/Contents (Hello) >>"),
+    paste0("<< /Type /Annot /Subtype /Line ",
+           "/Rect [50 50 150 100] ",
+           "/L [50 50 150 100] ",
+           "/Border [0 0 5] ",
+           "/C [1 0 0] >>")
+  ))
+  path <- write_temp_pdf(bytes)
+  doc <- pdf_doc_open(path)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- tibble::as_tibble(pdf_annotations(doc, page_num = 1L))
+  expect_equal(nrow(res), 2L)
+  # FreeText with red /DA — red == 1, green == 0, blue == 0.
+  ft <- res[res$subtype == "freetext", ]
+  expect_equal(nrow(ft), 1L)
+  expect_equal(ft$font_color_red[[1L]], 1.0)
+  expect_equal(ft$font_color_green[[1L]], 0.0)
+  expect_equal(ft$font_color_blue[[1L]], 0.0)
+  # Line annot with /Border [0 0 5] — third entry is the line width.
+  ln <- res[res$subtype == "line", ]
+  expect_equal(nrow(ln), 1L)
+  expect_equal(ln$border_width[[1L]], 5)
+})
+
+test_that("pdf_annotations handles an Ink annot with an empty stroke", {
+  # /InkList [ [] [120 180 180 180] ] — the first stroke is empty,
+  # the second has two points. Exercises the n == 0 early-return
+  # inside read_annot_ink_paths().
+  bytes <- build_inline_pdf(list(
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    paste0("<< /Type /Page /Parent 2 0 R ",
+           "/MediaBox [0 0 300 300] /Resources <<>> ",
+           "/Annots [4 0 R] >>"),
+    paste0("<< /Type /Annot /Subtype /Ink ",
+           "/Rect [100 100 200 200] ",
+           "/InkList [ ",
+           "  [] ",
+           "  [120 180 180 180] ",
+           "] >>")
+  ))
+  path <- write_temp_pdf(bytes)
+  doc <- pdf_doc_open(path)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- tibble::as_tibble(pdf_annotations(doc, page_num = 1L))
+  expect_equal(nrow(res), 1L)
+  expect_identical(res$subtype, "ink")
+  paths <- res$ink_paths[[1L]]
+  expect_type(paths, "list")
+  expect_length(paths, 2L)
+  expect_equal(dim(paths[[1L]]), c(0L, 2L))
+  expect_equal(dim(paths[[2L]]), c(2L, 2L))
+  expect_equal(paths[[2L]][1L, ], c(x = 120, y = 180))
+})
+
+test_that("cpp_annots_list returns NA font_color when no form-fill env", {
+  # Direct cpp call: passing a non-extptr as doc_ptr means owning_doc
+  # stays nullptr, FPDFDOC_InitFormFillEnvironment is skipped, and
+  # every row's font_color / font_size column reads NA. Exercises the
+  # `form == nullptr` branch of cpp_annots_list().
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  raw <- pdfium:::cpp_annots_list(42L, page$ptr)
+  expect_true(all(is.na(raw$font_color_red)))
+  expect_true(all(is.na(raw$font_color_green)))
+  expect_true(all(is.na(raw$font_color_blue)))
+  expect_true(all(is.na(raw$font_size)))
+})
+
+test_that("pdf_annotations tolerates annot-array references that miss objects", {
+  # /Annots [99 0 R 4 0 R] — the first reference points at an object
+  # that doesn't exist in the xref. FPDFPage_GetAnnot(page, 0) hands
+  # back nullptr; cpp_annots_list() fills that row with NA for every
+  # column. This drives the entire null-annot defensive branch.
+  bytes <- build_inline_pdf(list(
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    paste0("<< /Type /Page /Parent 2 0 R ",
+           "/MediaBox [0 0 300 300] /Resources <<>> ",
+           "/Annots [99 0 R 4 0 R] >>"),
+    paste0("<< /Type /Annot /Subtype /Text ",
+           "/Rect [10 10 30 30] ",
+           "/Contents (real) >>")
+  ))
+  path <- write_temp_pdf(bytes)
+  doc <- pdf_doc_open(path)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  # The annot array length is two, but only one resolves.
+  expect_equal(pdfium:::cpp_annot_count(page$ptr), 2L)
+  raw <- pdfium:::cpp_annots_list(doc$ptr, page$ptr)
+  expect_length(raw$subtype_code, 2L)
+  # Row 1 is the unresolvable reference: subtype_code NA, flags NA,
+  # bounds NA, strings NA, color/border NA, list-columns NULL, etc.
+  expect_true(is.na(raw$subtype_code[[1L]]))
+  expect_true(is.na(raw$flags[[1L]]))
+  expect_true(is.na(raw$bounds_left[[1L]]))
+  expect_true(is.na(raw$bounds_bottom[[1L]]))
+  expect_true(is.na(raw$bounds_right[[1L]]))
+  expect_true(is.na(raw$bounds_top[[1L]]))
+  expect_true(is.na(raw$contents[[1L]]))
+  expect_true(is.na(raw$title[[1L]]))
+  expect_true(is.na(raw$subject[[1L]]))
+  expect_true(is.na(raw$color_red[[1L]]))
+  expect_true(is.na(raw$interior_red[[1L]]))
+  expect_true(is.na(raw$border_width[[1L]]))
+  expect_null(raw$quad_points[[1L]])
+  expect_null(raw$vertices[[1L]])
+  expect_null(raw$ink_paths[[1L]])
+  expect_true(is.na(raw$font_color_red[[1L]]))
+  expect_true(is.na(raw$font_size[[1L]]))
+  expect_true(is.na(raw$popup_index[[1L]]))
+  expect_true(is.na(raw$irt_index[[1L]]))
+  expect_true(is.na(raw$file_attachment_name[[1L]]))
+  # Row 2 is the real Text annot.
+  expect_equal(raw$subtype_code[[2L]], 1L) # FPDF_ANNOT_TEXT
+  expect_equal(raw$bounds_left[[2L]], 10)
+})

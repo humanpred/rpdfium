@@ -87,6 +87,26 @@ local({
     message("[fixtures] wrote ", out)
   }
 
+  build_cairo_cjk_utf8 <- function() {
+    # Single page with é (U+00E9) + 中 (U+4E2D) + 😀 (U+1F600).
+    # Used by test-polish-and-extras.R to exercise the 2-byte, 3-byte,
+    # and surrogate-half branches of cpp_page_text_chars's UTF-16 ->
+    # UTF-8 encoder. Shipped pre-built (not generated in the test)
+    # because grDevices::cairo_pdf has a transitive dlopen of
+    # libXrender that segfaults R 4.6 on macOS-arm64 without XQuartz
+    # (humanpred/rpdfium#44).
+    out <- file.path(out_dir, "cairo-cjk-utf8.pdf")
+    grDevices::cairo_pdf(out, width = 4, height = 3)
+    on.exit(grDevices::dev.off(), add = TRUE)
+    graphics::par(mar = c(0, 0, 0, 0))
+    graphics::plot.new()
+    graphics::plot.window(c(0, 4), c(0, 3))
+    graphics::text(2, 2.5, "é", cex = 1)
+    graphics::text(2, 2.0, "中", cex = 1)
+    graphics::text(2, 1.5, "\U0001F600", cex = 1)
+    message("[fixtures] wrote ", out)
+  }
+
   build_image <- function() {
     # 16x16 RGB raster with four solid colored quadrants:
     #   top-left red, top-right green, bottom-left blue, bottom-right black.
@@ -668,12 +688,15 @@ local({
     obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
 
     # Page content stream: a tagged 50x50 stroked rectangle inside
-    # /P <</MCID 0>> BDC ... EMC, so PDFium sees one page object
-    # carrying marked-content ID 0. Used by pdf_obj_marks() /
-    # pdf_obj_marked_content_id() coverage tests.
+    # /P <</MCID 0 /Lang (en) /Title /Body>> BDC ... EMC, so PDFium
+    # sees one page object carrying marked-content ID 0. Used by
+    # pdf_obj_marks() / pdf_obj_marked_content_id() coverage tests.
+    # The /Lang and /Title entries exercise the String- and
+    # Name-typed parameter branches of read_param_value() in
+    # src/obj_marks.cpp; /MCID exercises the Number branch.
     page_content <- paste(
       "q",
-      "/P <</MCID 0>> BDC",
+      "/P <</MCID 0 /Lang (en) /Title /Body>> BDC",
       "0.8 0.2 0.2 RG",
       "1 w",
       "50 50 100 100 re",
@@ -855,6 +878,7 @@ local({
   build_minimal()
   build_shapes()
   build_unicode()
+  build_cairo_cjk_utf8()
   build_image()
   build_form_xobject()
   build_clip()

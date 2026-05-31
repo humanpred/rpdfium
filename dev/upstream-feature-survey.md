@@ -12,6 +12,15 @@ were cloned shallow into `/tmp/pdfium-upstream-survey/`; the findings below
 reflect the exact commits in the table. Re-running the survey against a
 more recent state may surface features or patterns added since.
 
+> **Pin note (2026-05-29).** This survey predates the PDFium pin bump
+> `chromium/7202 → chromium/7857` (PR #46). The wrapper-feature
+> comparison below was **not** re-run against the newer bindings; it
+> reflects the commits in the table. The PDFium-side symbol delta for
+> the bump is catalogued separately in
+> [`dev/pdfium-7857-api-delta.md`](pdfium-7857-api-delta.md) (6 symbols
+> added, 0 removed) and does not alter the Tier 1/2/3 prioritisation
+> this survey informed.
+
 | Repo                          | Branch   | Commit         | Commit date | Latest tag at HEAD       |
 |---|---|---|---|---|
 | `pypdfium2-team/pypdfium2`    | `main`   | `65641ce442a5` | 2026-05-15  | (untagged on main)       |
