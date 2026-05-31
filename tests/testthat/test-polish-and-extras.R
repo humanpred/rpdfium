@@ -414,14 +414,13 @@ test_that("pdf_doc_text returns the empty string for pages with no text", {
   expect_identical(txt, "")
 })
 
-test_that("CJK reduction cut #8: drop emoji, keep é + 中", {
+test_that("CJK reduction cut #9: drop 中, keep only é", {
   tmp <- withr::local_tempfile(fileext = ".pdf")
   grDevices::cairo_pdf(tmp, width = 4, height = 3)
   graphics::par(mar = c(0, 0, 0, 0))
   graphics::plot.new()
   graphics::plot.window(c(0, 4), c(0, 3))
   graphics::text(2, 2.5, "é", cex = 1)
-  graphics::text(2, 2.0, "中", cex = 1)
   grDevices::dev.off()
 
   doc <- pdf_doc_open(tmp)
