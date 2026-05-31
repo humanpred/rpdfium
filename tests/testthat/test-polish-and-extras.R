@@ -414,9 +414,26 @@ test_that("pdf_doc_text returns the empty string for pages with no text", {
   expect_identical(txt, "")
 })
 
-test_that("CJK reduction cut #15: base pdf() instead of cairo_pdf()", {
+test_that("CJK reduction cut #16: cairo_pdf in a clean R subprocess (no pdfium)", {
   tmp <- withr::local_tempfile(fileext = ".pdf")
-  grDevices::pdf(tmp, width = 4, height = 3)
+  # callr::r() spawns a vanilla R that does NOT load pdfium. If the
+  # cairo_pdf crash is a bare R/Cairo bug on Apple Silicon, this still
+  # crashes (the subprocess dies, callr surfaces as an error here).
+  # If the crash requires libpdfium.dylib to be in the same process,
+  # this succeeds.
+  callr::r(function(out) {
+    grDevices::cairo_pdf(out, width = 4, height = 3)
+    grDevices::dev.off()
+  }, args = list(out = tmp))
+  expect_true(file.exists(tmp))
+})
+
+test_that("CJK reduction cut #16b: cairo_pdf in THIS R (control)", {
+  # Control case: same call, but in the test_check process where pdfium
+  # IS loaded. Reproduces the original crash. If 16 is green and 16b is
+  # red, that's a clean disambiguation of bare-Cairo vs conflict.
+  tmp <- withr::local_tempfile(fileext = ".pdf")
+  grDevices::cairo_pdf(tmp, width = 4, height = 3)
   grDevices::dev.off()
   expect_true(file.exists(tmp))
 })
