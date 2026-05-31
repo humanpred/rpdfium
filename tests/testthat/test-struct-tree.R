@@ -149,3 +149,92 @@ test_that("pdf_structure_tree rejects bad inputs and closed pages", {
   expect_error(pdf_structure_tree(page), "closed")
   pdf_doc_close(doc)
 })
+
+test_that("pdf_structure_tree surfaces a direct /K integer marked-content reference", {
+  # The bundled tagged.pdf binds its P element to MCID 0 via an
+  # MCR child (/K << /Type /MCR ... >>). Tagged PDFs may also bind
+  # an element to a marked-content range *directly* by setting /K
+  # to an integer — that's the FPDF_StructElement_GetMarkedContentID
+  # branch of resolve_element_mcid() (src/struct_tree.cpp lines
+  # 192-195). This test constructs a minimal tagged PDF that uses
+  # the direct-integer form so the GetMarkedContentID path is
+  # exercised. We build the PDF in-test rather than as a bundled
+  # fixture because the only consumer is this single coverage check.
+  obj <- function(n, body) paste0(n, " 0 obj\n", body, "\nendobj\n")
+  page_content <- paste(
+    "q",
+    "/Span <</MCID 0>> BDC",
+    "0.8 0.2 0.2 RG",
+    "1 w",
+    "10 10 80 80 re",
+    "S",
+    "EMC",
+    "Q",
+    sep = "\n"
+  )
+  page_content_bytes <- charToRaw(paste0(page_content, "\n"))
+  obj1 <- obj(1, paste0(
+    "<< /Type /Catalog /Pages 2 0 R /StructTreeRoot 4 0 R ",
+    "/MarkInfo << /Marked true >> >>"
+  ))
+  obj2 <- obj(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+  obj3 <- obj(3, paste0(
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] ",
+    "/Resources <<>> /StructParents 0 /Contents 7 0 R >>"
+  ))
+  obj4 <- obj(4, paste0(
+    "<< /Type /StructTreeRoot /K 5 0 R /ParentTree 8 0 R ",
+    "/ParentTreeNextKey 1 >>"
+  ))
+  obj5 <- obj(5, paste0(
+    "<< /Type /StructElem /S /Document /P 4 0 R /K [6 0 R] >>"
+  ))
+  # Span element uses /K 0 (direct integer) — this is the path
+  # under test. PDFium FPDF_StructElement_GetMarkedContentID then
+  # returns 0 rather than -1.
+  obj6 <- obj(6, paste0(
+    "<< /Type /StructElem /S /Span /P 5 0 R /Pg 3 0 R /K 0 >>"
+  ))
+  obj7_head <- paste0("7 0 obj\n<< /Length ",
+                      length(page_content_bytes), " >>\nstream\n")
+  obj7_bytes <- c(charToRaw(obj7_head), page_content_bytes,
+                  charToRaw("\nendstream\nendobj\n"))
+  obj8 <- obj(8, "<< /Nums [0 [6 0 R]] >>")
+  header <- charToRaw("%PDF-1.5\n%\xe2\xe3\xcf\xd3\n")
+  parts <- list(
+    header, charToRaw(obj1), charToRaw(obj2), charToRaw(obj3),
+    charToRaw(obj4), charToRaw(obj5), charToRaw(obj6),
+    obj7_bytes, charToRaw(obj8)
+  )
+  cum <- c(0L, cumsum(vapply(parts, length, integer(1))))
+  offs <- cum[seq_len(8L) + 1L]
+  xref_offset <- cum[[length(cum)]]
+  fmt10 <- function(n) sprintf("%010d", n)
+  xref <- paste(
+    c("xref",
+      "0 9",
+      "0000000000 65535 f ",
+      paste0(fmt10(offs), " 00000 n ")),
+    collapse = "\n"
+  )
+  trailer <- paste0(
+    "\ntrailer\n<< /Size 9 /Root 1 0 R >>\nstartxref\n",
+    xref_offset, "\n%%EOF\n"
+  )
+  full <- c(unlist(parts), charToRaw(xref), charToRaw(trailer))
+  tf <- withr::local_tempfile(fileext = ".pdf")
+  writeBin(full, tf)
+
+  doc <- pdf_doc_open(tf)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- pdf_structure_tree(doc, page_num = 1L)
+  # The per-page walk surfaces Document + Span (Span has MCID 0
+  # via direct /K). Document is still mcid=NA (container element).
+  expect_equal(nrow(res), 2L)
+  expect_identical(res$type, c("Document", "Span"))
+  # Span uses direct /K integer: mcid == 0 with mcid_count == 1
+  # (the resolve_element_mcid direct-integer branch).
+  expect_true(is.na(res$mcid[[1L]]))
+  expect_equal(res$mcid[[2L]], 0L)
+  expect_equal(res$mcid_count[[2L]], 1L)
+})
