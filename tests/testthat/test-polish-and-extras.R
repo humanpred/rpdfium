@@ -414,7 +414,7 @@ test_that("pdf_doc_text returns the empty string for pages with no text", {
   expect_identical(txt, "")
 })
 
-test_that("CJK reduction cut #9: drop 中, keep only é", {
+test_that("CJK reduction cut #10: drop pdf_text_chars, just open Cairo PDF with é", {
   tmp <- withr::local_tempfile(fileext = ".pdf")
   grDevices::cairo_pdf(tmp, width = 4, height = 3)
   graphics::par(mar = c(0, 0, 0, 0))
@@ -425,6 +425,5 @@ test_that("CJK reduction cut #9: drop 中, keep only é", {
 
   doc <- pdf_doc_open(tmp)
   on.exit(pdf_doc_close(doc), add = TRUE)
-  chars <- pdf_text_chars(doc, page_num = 1L)
   expect_true(TRUE)
 })
