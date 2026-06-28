@@ -30,7 +30,7 @@ jobs:
       R_KEEP_PKG_SOURCE: yes
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # macOS R's grDevices/libs/cairo.so has a HARD load-time
       # dependency on /opt/X11/lib/libXrender.1.dylib (and
