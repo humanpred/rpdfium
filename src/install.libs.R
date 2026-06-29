@@ -44,6 +44,22 @@ local({
                  shlib_src, dest))
   }
 
+  # 1b. Copy the per-object symbol table that R CMD INSTALL writes
+  # when _R_SHLIB_BUILD_OBJECTS_SYMBOL_TABLES_=TRUE (the setting CRAN
+  # uses). Without symbols.rds in the installed libs/<arch>/, the
+  # check_compiled_code() pass on Windows can't see what was in our
+  # .o files and falls back to scanning the .dll's import table —
+  # which always contains _exit/abort/exit from the MinGW static
+  # runtime, producing a spurious NOTE. Default R install logic
+  # would copy this automatically; we replicate it here because
+  # this script replaces that default.
+  for (sym_src in c("symbols.rds", file.path(paste0("src", R_ARCH), "symbols.rds"))) {
+    if (file.exists(sym_src)) {
+      file.copy(sym_src, file.path(dest, "symbols.rds"), overwrite = TRUE)
+      break
+    }
+  }
+
   # 2. Windows: copy bblanchon's libpdfium.dll next to our DLL.
   if (.Platform$OS.type == "windows") {
     pkg_root <- R_PACKAGE_SOURCE

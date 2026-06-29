@@ -15,7 +15,7 @@ package on CRAN today.
   fields of DESCRIPTION.
 
 * **`configure` prefers an existing system libpdfium before
-  downloading.** Selection order, on POSIX:
+  downloading.** On POSIX, the selection order is:
 
       1. PDFIUM_HOME env var pointing at a usable install
       2. pkg-config --exists libpdfium
@@ -26,26 +26,27 @@ package on CRAN today.
   PDFIUM_HOME similarly (Windows has no canonical system
   install location, so it does not guess).
 
-## NOTE we cannot eliminate
+* **`_exit` / `abort` / `exit` symbols** — root cause
+  identified and fixed. `tools::check_compiled_code()` on
+  Windows reads `libs/<arch>/symbols.rds` (an R-generated
+  per-`.o`-file symbol table) when `_R_SHLIB_BUILD_OBJECTS_SYMBOL_TABLES_=TRUE`
+  (which CRAN sets). Without that file installed alongside
+  the package's DLL, the check falls back to scanning the
+  DLL's import table — which on every Rtools/MinGW-built
+  Windows shared library imports `_exit`/`abort`/`exit` from
+  the Universal CRT (libgcc / libstdc++ / libmingw32.a all
+  reference them from their runtime/terminate machinery,
+  whether or not the user's code calls them). The package's
+  own compiled `.o` files contain zero references to these
+  symbols (verified with `nm --undefined-only` on a
+  production build).
 
-* **"Found '\_exit' / 'abort' / 'exit'" in `pdfium.dll`** — the
-  flagged DLL is the package's own compiled Rcpp library, not
-  the upstream binary. Our C/C++ source contains zero direct
-  calls to these functions (all error paths use `Rcpp::stop()`).
-  They are imports of `api-ms-win-crt-runtime-l1-1-0.dll` (the
-  Windows Universal CRT) pulled in by the MinGW-w64 startup
-  machinery that Rtools links into every shared object:
-
-      libmingw32.a   references abort  (CRT init,
-                                        __cxa_terminate handler)
-      libmingwex.a   references _exit
-      libucrt.a      references _exit
-
-  We added `-ffunction-sections -fdata-sections
-  -Wl,--gc-sections` to strip dead code from our own
-  compilation units, but the residual references survive
-  because they are needed by Rtools' own static runtime, not
-  by our code. Removing them would require rebuilding
-  Rtools/MinGW itself. CRAN's own NOTE text acknowledges this
-  case: *"The detected symbols are linked into the code but
-  might come from libraries and not actually be called."*
+  This package ships an `install.libs.R` script that replaces
+  R's default install logic for `src/*.so/.dll`. The previous
+  version did not propagate `src/symbols.rds` into the
+  installed `libs/<arch>/`. The fix in this submission copies
+  `symbols.rds` when present, restoring the behaviour R
+  performs by default for packages without a custom
+  `install.libs.R`. With `symbols.rds` in place,
+  `tools::check_compiled_code()` returns no findings on the
+  installed package.
