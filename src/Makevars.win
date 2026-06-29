@@ -21,6 +21,7 @@
 # automatically.
 
 PKG_CPPFLAGS = -I../inst/include -DR_NO_REMAP
-PKG_LIBS    = -L../inst/lib -lpdfium
+PKG_CXXFLAGS = -ffunction-sections -fdata-sections
+PKG_LIBS    = -L../inst/lib -lpdfium -Wl,--gc-sections
 
 CXX_STD = CXX17
