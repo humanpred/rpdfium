@@ -1,54 +1,54 @@
+---
+output: github_document
+---
 
 <!-- README.md is generated from README.Rmd. Please edit that file. -->
+
+
 
 # pdfium
 
 <!-- badges: start -->
-
 [![R-CMD-check](https://github.com/humanpred/rpdfium/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/humanpred/rpdfium/actions/workflows/R-CMD-check.yaml)
-[![Codecov test
-coverage](https://codecov.io/gh/humanpred/rpdfium/branch/main/graph/badge.svg)](https://app.codecov.io/gh/humanpred/rpdfium)
-[![Lifecycle:
-experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![CRAN
-status](https://www.r-pkg.org/badges/version/pdfium)](https://CRAN.R-project.org/package=pdfium)
-[![Codecov test
-coverage](https://codecov.io/gh/humanpred/rpdfium/graph/badge.svg)](https://app.codecov.io/gh/humanpred/rpdfium)
+[![Codecov test coverage](https://codecov.io/gh/humanpred/rpdfium/branch/main/graph/badge.svg)](https://app.codecov.io/gh/humanpred/rpdfium)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![CRAN status](https://www.r-pkg.org/badges/version/pdfium)](https://CRAN.R-project.org/package=pdfium)
+[![Codecov test coverage](https://codecov.io/gh/humanpred/rpdfium/graph/badge.svg)](https://app.codecov.io/gh/humanpred/rpdfium)
 <!-- badges: end -->
 
-`pdfium` provides idiomatic R bindings to [Google’s PDFium
-engine](https://pdfium.googlesource.com/pdfium/) — the same library that
-powers Chrome’s PDF viewer. It has two halves:
+`pdfium` provides idiomatic R bindings to
+[Google's PDFium engine](https://pdfium.googlesource.com/pdfium/) — the
+same library that powers Chrome's PDF viewer. It has two halves:
 
-- a **read surface** that exposes vector-path geometry — stroke / fill /
-  Bezier control points / transformation matrices — alongside text,
-  fonts, images, annotations, form fields, attachments, signatures,
-  structure tree, and rendering. The path geometry, in particular, no
-  other CRAN package surfaces today.
-- a **mutation surface** (opt-in via `readwrite = TRUE`) that lets you
-  rotate / reorder / merge pages, draw fresh page objects, create and
-  edit annotations, fill form fields, and add file attachments — then
-  save the result.
+* a **read surface** that exposes vector-path geometry —
+  stroke / fill / Bezier control points / transformation matrices —
+  alongside text, fonts, images, annotations, form fields,
+  attachments, signatures, structure tree, and rendering. The path
+  geometry, in particular, no other CRAN package surfaces today.
+* a **mutation surface** (opt-in via `readwrite = TRUE`) that lets
+  you rotate / reorder / merge pages, draw fresh page objects,
+  create and edit annotations, fill form fields, and add file
+  attachments — then save the result.
 
 ## What it is for
 
-- **Auditing** PDF figures (which lines, which colors, which fonts).
-- **Extracting** curves from regulatory filings and scientific
+* **Auditing** PDF figures (which lines, which colors, which fonts).
+* **Extracting** curves from regulatory filings and scientific
   publications.
-- **Building** PDF normalization pipelines that need geometry, not just
-  text.
-- **Filling** AcroForm fields programmatically and flattening the result
-  for downstream tooling.
-- **Authoring** programmatic PDFs from vector graphics, JPEG images,
-  text in the 14 standard fonts or any TrueType / Type1 typeface, and
-  annotations (think: figure callouts, table reports, annotated source
-  documents). `/Info`-dict writes and on-save encryption are the
-  remaining v0.1.0 gaps — both need upstream PDFium changes that we’ve
-  proposed but Google hasn’t shipped yet.
-- Anything you’d otherwise drop into Python with `pypdfium2`.
+* **Building** PDF normalization pipelines that need geometry, not
+  just text.
+* **Filling** AcroForm fields programmatically and flattening the
+  result for downstream tooling.
+* **Authoring** programmatic PDFs from vector graphics, JPEG
+  images, text in the 14 standard fonts or any TrueType / Type1
+  typeface, and annotations (think: figure callouts, table
+  reports, annotated source documents). `/Info`-dict writes and
+  on-save encryption are the remaining v0.1.0 gaps — both need
+  upstream PDFium changes that we've proposed but Google hasn't
+  shipped yet.
+* Anything you'd otherwise drop into Python with `pypdfium2`.
 
-See
-[`vignette("mutating-pdfs")`](https://humanpred.github.io/rpdfium/articles/mutating-pdfs.html)
+See [`vignette("mutating-pdfs")`](https://humanpred.github.io/rpdfium/articles/mutating-pdfs.html)
 for a walkthrough of the writer surface, and
 [`vignette("comparison")`](https://humanpred.github.io/rpdfium/articles/comparison.html)
 for how `pdfium` lines up against `pdftools`, `qpdf`, `magick`,
@@ -63,14 +63,7 @@ under `dev/decisions/`.
 
 ## Installation
 
-`pdfium` downloads its `libpdfium` binary from
-[bblanchon/pdfium-binaries](https://github.com/bblanchon/pdfium-binaries)
-at install time. The pinned version lives in `tools/pdfium-version.txt`.
-If your install runs without internet access, set `PDFIUM_OFFLINE=1` and
-place the matching tarball under `inst/pdfium-binaries/` before
-installing.
-
-``` r
+```r
 # Release version (once on CRAN):
 install.packages("pdfium")
 
@@ -78,7 +71,48 @@ install.packages("pdfium")
 remotes::install_github("humanpred/rpdfium")
 ```
 
+### Where the `libpdfium` binary comes from
+
+At install time, the `configure` script picks a `libpdfium` to
+build against, in this order:
+
+1. **`PDFIUM_HOME`** — if this environment variable is set and
+   points at an existing install, that install is used. The
+   directory must contain headers and the shared library in the
+   conventional layout:
+
+    | Platform   | Required files under `$PDFIUM_HOME`                                  |
+    |------------|----------------------------------------------------------------------|
+    | Linux      | `include/fpdfview.h` and `lib/libpdfium.so` (or `lib64/`)            |
+    | macOS      | `include/fpdfview.h` and `lib/libpdfium.dylib`                       |
+    | Windows    | `include/fpdfview.h`, `lib/libpdfium.dll.a`, `bin/libpdfium.dll`     |
+
+    Useful when you have a hand-built PDFium, a vendored copy,
+    or a CI artefact you want to pin against.
+
+2. **`pkg-config --exists libpdfium`** *(POSIX only)* — if a
+   `libpdfium.pc` is on the `pkg-config` search path, the
+   reported `includedir` / `libdir` are used.
+
+3. **Standard system prefixes** *(POSIX only)* — `/usr/local`,
+   `/usr`, `/opt/homebrew`, `/opt/local`. The first one
+   containing both `include/fpdfview.h` and a `libpdfium`
+   shared library wins.
+
+4. **Download from
+   [bblanchon/pdfium-binaries](https://github.com/bblanchon/pdfium-binaries)**
+   — the pinned release lives in `tools/pdfium-version.txt`. If
+   your install runs without internet access, set
+   `PDFIUM_OFFLINE=1` and place the matching tarball under
+   `inst/pdfium-binaries/` before installing.
+
+When a system install is found, no download happens and no
+`libpdfium` is bundled into the installed package — your
+existing copy resolves at load time via the platform's normal
+shared-library search path.
+
 ## Example
+
 
 ``` r
 library(pdfium)
@@ -90,8 +124,8 @@ pdf_page_count(doc)
 pdf_doc_close(doc)
 ```
 
-More examples ship in the vignettes
-(`vignette("getting-started", package = "pdfium")`, etc.) and on the
+More examples ship in the vignettes (`vignette("getting-started",
+package = "pdfium")`, etc.) and on the
 [pkgdown site](https://humanpred.github.io/rpdfium/).
 
 ## License

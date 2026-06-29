@@ -70,13 +70,6 @@ under `dev/decisions/`.
 
 ## Installation
 
-`pdfium` downloads its `libpdfium` binary from
-[bblanchon/pdfium-binaries](https://github.com/bblanchon/pdfium-binaries)
-at install time. The pinned version lives in
-`tools/pdfium-version.txt`. If your install runs without internet
-access, set `PDFIUM_OFFLINE=1` and place the matching tarball under
-`inst/pdfium-binaries/` before installing.
-
 ```r
 # Release version (once on CRAN):
 install.packages("pdfium")
@@ -84,6 +77,46 @@ install.packages("pdfium")
 # Development version:
 remotes::install_github("humanpred/rpdfium")
 ```
+
+### Where the `libpdfium` binary comes from
+
+At install time, the `configure` script picks a `libpdfium` to
+build against, in this order:
+
+1. **`PDFIUM_HOME`** — if this environment variable is set and
+   points at an existing install, that install is used. The
+   directory must contain headers and the shared library in the
+   conventional layout:
+
+    | Platform   | Required files under `$PDFIUM_HOME`                                  |
+    |------------|----------------------------------------------------------------------|
+    | Linux      | `include/fpdfview.h` and `lib/libpdfium.so` (or `lib64/`)            |
+    | macOS      | `include/fpdfview.h` and `lib/libpdfium.dylib`                       |
+    | Windows    | `include/fpdfview.h`, `lib/libpdfium.dll.a`, `bin/libpdfium.dll`     |
+
+    Useful when you have a hand-built PDFium, a vendored copy,
+    or a CI artefact you want to pin against.
+
+2. **`pkg-config --exists libpdfium`** *(POSIX only)* — if a
+   `libpdfium.pc` is on the `pkg-config` search path, the
+   reported `includedir` / `libdir` are used.
+
+3. **Standard system prefixes** *(POSIX only)* — `/usr/local`,
+   `/usr`, `/opt/homebrew`, `/opt/local`. The first one
+   containing both `include/fpdfview.h` and a `libpdfium`
+   shared library wins.
+
+4. **Download from
+   [bblanchon/pdfium-binaries](https://github.com/bblanchon/pdfium-binaries)**
+   — the pinned release lives in `tools/pdfium-version.txt`. If
+   your install runs without internet access, set
+   `PDFIUM_OFFLINE=1` and place the matching tarball under
+   `inst/pdfium-binaries/` before installing.
+
+When a system install is found, no download happens and no
+`libpdfium` is bundled into the installed package — your
+existing copy resolves at load time via the platform's normal
+shared-library search path.
 
 ## Example
 
