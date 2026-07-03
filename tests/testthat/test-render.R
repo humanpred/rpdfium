@@ -255,7 +255,7 @@ test_that("pdf_render_to_png() writes a valid PNG", {
   expect_equal(dim(arr), c(216L, 288L, 4L))
 })
 
-test_that("pdf_render_page() is a conformant nativeRaster (writePNG(bmp) == writePNG(as.array(bmp)))", {
+test_that("pdf_render_page() nativeRaster is conformant (raw PNG == as.array PNG)", {
   # Regression guard for the historical "stride-streak" render garble.
   # A pdfium_bitmap inherits from `nativeRaster`, so png::writePNG()
   # (and grid::grid.raster(), and R's graphics engine) read its

@@ -201,7 +201,6 @@ Rcpp::RawVector cpp_image_icc_profile(SEXP obj_ptr, SEXP page_ptr) {
   return out;
   // # nocov end
 }
-// # nocov end
 
 // [[Rcpp::export(name = "cpp_image_filters")]]
 Rcpp::CharacterVector cpp_image_filters(SEXP obj_ptr) {
