@@ -83,6 +83,35 @@ test_that("pdf_image_bitmap pixel sampling matches the fixture's quadrants", {
   expect_equal(arr[, , 4L], matrix(1, nrow = 16L, ncol = 16L))
 })
 
+test_that("pdf_image_bitmap is a conformant nativeRaster (writePNG(bmp) round-trips quadrants)", {
+  # Regression guard for the historical stride-streak garble on
+  # embedded-image bitmaps. pdf_image_bitmap() inherits nativeRaster,
+  # so png::writePNG() reads its buffer row-major; a column-major
+  # buffer would shear the 4 colour quadrants. Writing the raw object
+  # and writing its as.array() decode must yield identical PNGs, and
+  # the quadrants must survive the raw round-trip in the right corners.
+  skip_if_not_installed("png")
+  doc <- pdf_doc_open(fixture_path("image"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  bundle <- image_obj(doc)
+  on.exit(pdf_page_close(bundle$page), add = TRUE, after = FALSE)
+
+  bmp <- pdf_image_bitmap(bundle$obj)
+  out_raw <- withr::local_tempfile(fileext = ".png")
+  out_arr <- withr::local_tempfile(fileext = ".png")
+  png::writePNG(bmp, out_raw)
+  png::writePNG(as.array(bmp), out_arr)
+
+  px_raw <- png::readPNG(out_raw)
+  px_arr <- png::readPNG(out_arr)
+  expect_equal(px_raw, px_arr) # identical: column-major would diverge
+  # Quadrants land in the right corners through the raw path.
+  expect_equal(px_raw[2L, 2L, 1L:3L], c(1, 0, 0), tolerance = 0.02) # TL red
+  expect_equal(px_raw[2L, 14L, 1L:3L], c(0, 1, 0), tolerance = 0.02) # TR grn
+  expect_equal(px_raw[14L, 2L, 1L:3L], c(0, 0, 1), tolerance = 0.02) # BL blu
+  expect_equal(px_raw[14L, 14L, 1L:3L], c(0, 0, 0), tolerance = 0.02) # BR blk
+})
+
 test_that("pdf_image_rendered applies the page CTM", {
   doc <- pdf_doc_open(fixture_path("image"))
   on.exit(pdf_doc_close(doc), add = TRUE)

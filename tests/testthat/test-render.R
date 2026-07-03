@@ -255,6 +255,40 @@ test_that("pdf_render_to_png() writes a valid PNG", {
   expect_equal(dim(arr), c(216L, 288L, 4L))
 })
 
+test_that("pdf_render_page() is a conformant nativeRaster (writePNG(bmp) == writePNG(as.array(bmp)))", {
+  # Regression guard for the historical "stride-streak" render garble.
+  # A pdfium_bitmap inherits from `nativeRaster`, so png::writePNG()
+  # (and grid::grid.raster(), and R's graphics engine) read its
+  # backing integer buffer ROW-MAJOR. If the C++ writer laid the
+  # buffer out column-major (the R matrix default) those consumers
+  # would shear every row sideways. The buffer must be row-major, so
+  # writing the raw object and writing its as.array() decode must
+  # yield byte-identical PNGs. This is the exact property whose
+  # absence made downstream callers (figureextract) reshape/re-decode.
+  skip_if_not_installed("png")
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  bmp <- pdf_render_page(doc, dpi = 72)
+
+  out_raw <- withr::local_tempfile(fileext = ".png")
+  out_arr <- withr::local_tempfile(fileext = ".png")
+  png::writePNG(bmp, out_raw) # raw nativeRaster path
+  png::writePNG(as.array(bmp), out_arr) # positional-array path
+
+  px_raw <- png::readPNG(out_raw)
+  px_arr <- png::readPNG(out_arr)
+  expect_equal(dim(px_raw), dim(px_arr))
+  # Byte-for-byte identical: a column-major buffer would diverge here.
+  expect_equal(px_raw, px_arr)
+
+  # And the raw path must recover the fixture geometry: the lightblue
+  # rectangle interior at [100, 100], white outside at [5, 5].
+  expect_equal(px_raw[5L, 5L, 1L:3L], c(1, 1, 1), tolerance = 0.02)
+  expect_equal(px_raw[100L, 100L, 1L], 173 / 255, tolerance = 0.05)
+  expect_equal(px_raw[100L, 100L, 2L], 216 / 255, tolerance = 0.05)
+  expect_equal(px_raw[100L, 100L, 3L], 230 / 255, tolerance = 0.05)
+})
+
 test_that("pdf_render_page_with_matrix renders at the requested size", {
   doc <- pdf_doc_open(fixture_path("shapes"))
   on.exit(pdf_doc_close(doc), add = TRUE)
@@ -444,34 +478,30 @@ test_that("pdf_render_page() output survives common downstream ops", {
 })
 
 test_that("plot.pdfium_bitmap routes through as.array + grid::grid.raster", {
-  # Regression test for our matrix's non-conformance with the
-  # documented R raster contract (see ?grDevices::as.raster:
-  # "Raster images are internally represented row-first"). Our C++
-  # writes the integer matrix column-major (R standard for
-  # `matrix(integer, ...)`), which is the *wrong* memory layout
-  # for a raster — feeding it directly to graphics::rasterImage()
-  # or grid::grid.raster() renders the bytes at the wrong positions
-  # and shows diagonal-stripe artifacts on detailed content. The
-  # plot method routes through `as.array(x)` -> `grid::grid.raster()`
-  # so the layout contract is sidestepped (the 3-D array path uses
-  # positional channels, not row-vs-column conventions).
+  # The pdfium_bitmap is a *conformant* nativeRaster: its C++ writer
+  # fills the backing integer buffer ROW-MAJOR (see the file header of
+  # src/native_raster.h and ?grDevices::as.raster, "Raster images are
+  # internally represented row-first"). So the object can be handed
+  # to grid::grid.raster()/png::writePNG() directly. plot() still
+  # routes through `as.array(x)` -> `grid::grid.raster()` to avoid
+  # rasterImage()'s 4% axis padding; this test pins that routing plus
+  # the round-trip correctness of as.array().
   #
   # We verify two invariants:
-  #   1. `as.array()` decodes the integer matrix correctly. This is
-  #      the source-of-truth path that grid.raster then consumes.
+  #   1. `as.array()` decodes the integer buffer correctly (row-major
+  #      -> [row, col, channel]). This is the source-of-truth path
+  #      that grid.raster then consumes.
   #   2. `plot.pdfium_bitmap`'s body actually uses `as.array` and
   #      `grid::grid.raster` — i.e. did not regress back to a
   #      `rasterImage` direct call.
   # End-to-end PNG byte comparison was tried first but is too
   # device-dependent (macOS Quartz vs Linux Cairo vs Windows GDI
   # disagree at the sub-pixel level even with interpolate = FALSE).
-  # The two invariants above are sufficient to catch the layout
+  # The two invariants above are sufficient to catch a layout
   # regression without coupling to any device backend.
 
   H <- 64L
   W <- 96L
-  ii <- matrix(rep(seq_len(H), times = W), nrow = H)
-  jj <- matrix(rep(seq_len(W), each = H), nrow = H)
   abgr <- function(r, g, b, a = 255L) {
     bitwOr(
       bitwOr(
@@ -484,8 +514,16 @@ test_that("plot.pdfium_bitmap routes through as.array + grid::grid.raster", {
       as.integer(r)
     )
   }
-  m <- abgr(as.integer(ii %% 256L), as.integer(jj %% 256L), 0L)
-  dim(m) <- c(H, W)
+  # Position-encode each pixel: R = row index, G = col index. Build a
+  # *conformant* nativeRaster the way the C++ writer does: the backing
+  # buffer is ROW-MAJOR, so storage index k = pixel(row = k %/% W,
+  # col = k %% W). We lay the values out in that order, then attach
+  # dim = c(H, W) without R re-interpreting the vector column-major.
+  rows <- rep(seq_len(H), each = W) # row index, row-major order
+  cols <- rep(seq_len(W), times = H) # col index, row-major order
+  flat <- abgr(as.integer(rows %% 256L), as.integer(cols %% 256L), 0L)
+  m <- as.integer(flat)
+  dim(m) <- c(H, W) # buffer stays row-major; nativeRaster convention
   class(m) <- c("pdfium_bitmap", "nativeRaster")
   attr(m, "channels") <- 4L
   attr(m, "dpi") <- 72

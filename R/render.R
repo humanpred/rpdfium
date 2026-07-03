@@ -341,29 +341,19 @@ print.pdfium_bitmap <- function(x, ...) {
 #' engine both consume cleanly) and drawn with [grid::grid.raster()]
 #' on a fresh `grid` page.
 #'
-#' We go through `as.array(x)` rather than handing the integer matrix
-#' directly to `graphics::rasterImage()` for two reasons that
-#' compound:
+#' We go through `as.array(x)` to a 3-D `c(H, W, 4)` numeric array
+#' rather than handing the bitmap to `graphics::rasterImage()`:
+#' `rasterImage` with `plot.window` uses the user-coordinate system,
+#' which defaults (`xaxs = "r", yaxs = "r"`) to padding the interval
+#' by 4% on each side — silently compressing the raster into ~92% of
+#' the device and forcing sub-pixel resampling. `grid::grid.raster()`
+#' uses npc coordinates (0..1, no padding) and isn't subject to this.
 #'
-#' 1. Per the documented raster contract (see
-#'    `?grDevices::as.raster`, "Raster images are internally
-#'    represented row-first"), `"raster"` and `nativeRaster` objects
-#'    must have row-major memory layout. R's `as.raster.matrix()`
-#'    transposes its input precisely to satisfy that. Our integer
-#'    matrix comes out of C++ as a standard R column-major matrix,
-#'    so feeding it directly is non-conformant and shows diagonal
-#'    stripe artifacts on detailed content.
-#' 2. `rasterImage` with `plot.window` uses the user-coordinate
-#'    system, which defaults (`xaxs = "r", yaxs = "r"`) to padding
-#'    the interval by 4% on each side — silently compressing the
-#'    raster into ~92% of the device and forcing sub-pixel
-#'    resampling. `grid::grid.raster()` uses npc coordinates and
-#'    isn't subject to this.
-#'
-#' Going through `as.array(x)` to a 3-D `c(H, W, 4)` numeric array
-#' and rendering with `grid::grid.raster()` sidesteps both: the
-#' array path uses positional channel storage (no row-vs-column
-#' convention), and grid coordinates are 0..1 npc without padding.
+#' (The bitmap itself is a *conformant* `nativeRaster` — its backing
+#' buffer is row-major, so it could be handed to `grid::grid.raster()`
+#' directly; the `as.array()` array path is kept because a positional
+#' `c(H, W, 4)` array carries no row-vs-column ambiguity for
+#' downstream consumers.)
 #'
 #' @param x A `pdfium_bitmap` from [pdf_render_page()] or
 #'   [pdf_image_bitmap()] / [pdf_image_rendered()].
@@ -407,15 +397,20 @@ plot.pdfium_bitmap <- function(x, interpolate = TRUE, ...) {
 as.raster.pdfium_bitmap <- function(x, ...) {
   ints <- unclass(x)
   storage.mode(ints) <- "integer"
-  # dim is (height, width); used as-is for outputs that share the
-  # bitmap's row-major shape.
+  # The bitmap's backing buffer is ROW-MAJOR (a conformant
+  # nativeRaster; see the C++ native_raster.h). dim is (height,
+  # width). Reading it as a flat vector walks pixels row-major:
+  # element k = pixel(row = k %/% width, col = k %% width). We unpack
+  # each channel in that order, then re-shape with `byrow = TRUE` so
+  # the H x W matrix indexes as [row, col].
   d <- dim(ints)
-  r <- bitwAnd(ints, 0xFFL)
-  g <- bitwAnd(bitwShiftR(ints, 8L), 0xFFL)
-  b <- bitwAnd(bitwShiftR(ints, 16L), 0xFFL)
-  a <- bitwAnd(bitwShiftR(ints, 24L), 0xFFL)
+  flat <- as.vector(ints)
+  r <- bitwAnd(flat, 0xFFL)
+  g <- bitwAnd(bitwShiftR(flat, 8L), 0xFFL)
+  b <- bitwAnd(bitwShiftR(flat, 16L), 0xFFL)
+  a <- bitwAnd(bitwShiftR(flat, 24L), 0xFFL)
   hex <- sprintf("#%02X%02X%02X%02X", r, g, b, a)
-  dim(hex) <- d
+  hex <- matrix(hex, nrow = d[1L], ncol = d[2L], byrow = TRUE)
   class(hex) <- "raster"
   hex
 }
@@ -434,18 +429,23 @@ as.raster.pdfium_bitmap <- function(x, ...) {
 as.array.pdfium_bitmap <- function(x, ...) {
   ints <- unclass(x)
   storage.mode(ints) <- "integer"
-  # dim is (height, width); used as-is for outputs that share the
-  # bitmap's row-major shape.
+  # The bitmap's backing buffer is ROW-MAJOR (a conformant
+  # nativeRaster; see the C++ native_raster.h). Reading it flat walks
+  # pixels row-major: element k = pixel(row = k %/% width, col = k %%
+  # width). Each channel plane is therefore built with `byrow = TRUE`
+  # so out[row, col, ] addresses the intended pixel.
   d <- dim(ints)
-  r <- bitwAnd(ints, 0xFFL)
-  g <- bitwAnd(bitwShiftR(ints, 8L), 0xFFL)
-  b <- bitwAnd(bitwShiftR(ints, 16L), 0xFFL)
-  a <- bitwAnd(bitwShiftR(ints, 24L), 0xFFL)
+  flat <- as.vector(ints)
+  r <- bitwAnd(flat, 0xFFL)
+  g <- bitwAnd(bitwShiftR(flat, 8L), 0xFFL)
+  b <- bitwAnd(bitwShiftR(flat, 16L), 0xFFL)
+  a <- bitwAnd(bitwShiftR(flat, 24L), 0xFFL)
+  plane <- function(v) matrix(v, nrow = d[1L], ncol = d[2L], byrow = TRUE)
   out <- array(NA_real_, dim = c(d[1L], d[2L], 4L))
-  out[, , 1L] <- r / 255
-  out[, , 2L] <- g / 255
-  out[, , 3L] <- b / 255
-  out[, , 4L] <- a / 255
+  out[, , 1L] <- plane(r) / 255
+  out[, , 2L] <- plane(g) / 255
+  out[, , 3L] <- plane(b) / 255
+  out[, , 4L] <- plane(a) / 255
   out
 }
 
