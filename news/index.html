@@ -43,10 +43,16 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="development version" id="pdfium-development-version">pdfium (development version)<a class="anchor" aria-label="anchor" href="#pdfium-development-version"></a></h2>
+<ul><li>
+<code><a href="../reference/pdf_render_page.html">pdf_render_page()</a></code>, <code><a href="../reference/pdf_image_bitmap.html">pdf_image_bitmap()</a></code>, <code><a href="../reference/pdf_image_rendered.html">pdf_image_rendered()</a></code> and <code><a href="../reference/pdf_text_obj_rendered_bitmap.html">pdf_text_obj_rendered_bitmap()</a></code> now return a <strong>conformant</strong> <code>nativeRaster</code>: the backing integer buffer is laid out row-major, so the bitmap can be passed straight to <code><a href="https://rdrr.io/pkg/png/man/writePNG.html" class="external-link">png::writePNG()</a></code>, <code><a href="https://rdrr.io/r/grid/grid.raster.html" class="external-link">grid::grid.raster()</a></code> and R’s graphics engine with no reshape. Prior versions stored the buffer column-major, which sheared every row sideways when a consumer trusted the <code>nativeRaster</code> class (“stride streak” garble). <code><a href="https://rdrr.io/r/base/array.html" class="external-link">as.array()</a></code> / <code><a href="https://rdrr.io/r/grDevices/as.raster.html" class="external-link">as.raster()</a></code> are updated to match and remain correct. Output now matches <code><a href="https://rdrr.io/pkg/png/man/readPNG.html" class="external-link">png::readPNG()</a></code> / <code>magick::image_read()</code> in dims, RGBA channel order and 0..1 range.</li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="pdfium-010">pdfium 0.1.0<a class="anchor" aria-label="anchor" href="#pdfium-010"></a></h2>
 <ul><li>Initial CRAN release.</li>
 </ul></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">
