@@ -1,22 +1,32 @@
 #!/usr/bin/env sh
 # pdfium R package — POSIX configure script.
 #
-# Run by `R CMD INSTALL`. Downloads the pinned bblanchon PDFium binary for
-# the current platform, copies headers / libraries into inst/include and
-# inst/lib, then writes src/Makevars with the resolved paths and a
-# relocatable RPATH so the installed `pdfium.so` finds `libpdfium.so` at
-# load time without LD_LIBRARY_PATH.
+# Selects a libpdfium to build against in this order:
+#   1. PDFIUM_HOME env var pointing at an existing install
+#      (with include/fpdfview.h and lib/libpdfium.{so,dylib})
+#   2. pkg-config --exists libpdfium
+#   3. Standard system prefixes: /usr/local, /usr, /opt/homebrew,
+#      /opt/local
+#   4. Fall back to downloading the pinned bblanchon binary via
+#      tools/download-pdfium.R (the existing behavior).
+#
+# When a system install is found, the generated src/Makevars points
+# directly at the system paths without an RPATH — the dynamic
+# loader's standard search path (ld.so.cache on Linux, the macOS
+# fallback paths) resolves libpdfium at load time.
+#
+# When the binary is downloaded, the existing relocatable RPATH
+# (`$ORIGIN/../lib` on Linux, `@loader_path/../lib` on macOS) lets
+# the installed pdfium.so find libpdfium inside the package's
+# inst/lib/ directory.
 #
 # Honors:
 #   R_HOME, R            picked up automatically from R CMD INSTALL
-#   PDFIUM_OFFLINE=1     skip download; require vendored archive under
-#                        inst/pdfium-binaries/
-#   PDFIUM_BINARY_URL    override download URL (mirrors, internal hosts)
+#   PDFIUM_HOME          system-install root (skip download)
+#   PDFIUM_OFFLINE=1     skip download; require vendored archive
+#                        under inst/pdfium-binaries/
+#   PDFIUM_BINARY_URL    override download URL (mirrors)
 #   PDFIUM_CACHE_DIR     cross-build archive cache directory
-#
-# CRAN-builder note: CRAN allows configure-time downloads (precedent: arrow).
-# Set PDFIUM_OFFLINE=1 and ship the archive inside the source tarball under
-# inst/pdfium-binaries/ if that ever changes.
 
 set -eu
 
@@ -31,35 +41,116 @@ if [ ! -x "$RSCRIPT" ]; then
   fi
 fi
 
-echo "[pdfium configure] Resolving binary for $(uname -sm)"
-RESOLVED="$("$RSCRIPT" --vanilla "$PKG_ROOT/tools/download-pdfium.R" "$PKG_ROOT")"
-PDFIUM_INCLUDE="$(printf '%s\n' "$RESOLVED" | sed -n '1p')"
-PDFIUM_LIB="$(printf '%s\n'    "$RESOLVED" | sed -n '2p')"
+PDFIUM_INCLUDE=""
+PDFIUM_LIB=""
+USE_SYSTEM=""
 
-if [ -z "$PDFIUM_INCLUDE" ] || [ -z "$PDFIUM_LIB" ]; then
-  echo "ERROR: tools/download-pdfium.R did not return include / lib paths" >&2
-  exit 1
+# Helper: given a candidate include dir and lib dir, accept them if
+# both libpdfium and the public header live there.
+check_pair() {
+  inc="$1"
+  lib="$2"
+  if [ ! -f "$inc/fpdfview.h" ]; then
+    return 1
+  fi
+  for ext in so dylib; do
+    if [ -f "$lib/libpdfium.$ext" ]; then
+      PDFIUM_INCLUDE="$inc"
+      PDFIUM_LIB="$lib"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# 1. PDFIUM_HOME.
+if [ -n "${PDFIUM_HOME:-}" ]; then
+  for inc in "$PDFIUM_HOME/include" "$PDFIUM_HOME/include/pdfium"; do
+    for lib in "$PDFIUM_HOME/lib" "$PDFIUM_HOME/lib64"; do
+      if check_pair "$inc" "$lib"; then
+        USE_SYSTEM=1
+        break 2
+      fi
+    done
+  done
+  if [ -z "$USE_SYSTEM" ]; then
+    echo "[pdfium configure] PDFIUM_HOME=$PDFIUM_HOME set but no usable" \
+         "install found there; trying other locations" >&2
+  fi
 fi
 
-# RPATH so the installed pdfium.so finds libpdfium relative to itself.
-# After install, libpdfium.{so,dylib} sits in <pkg>/lib/ (from inst/lib)
-# and pdfium.so sits in <pkg>/libs/<R_ARCH>/, so RPATH points one level
-# up plus into lib/.
+# 2. pkg-config.
+if [ -z "$USE_SYSTEM" ] && command -v pkg-config >/dev/null 2>&1; then
+  if pkg-config --exists libpdfium 2>/dev/null; then
+    pc_inc="$(pkg-config --variable=includedir libpdfium 2>/dev/null || true)"
+    pc_lib="$(pkg-config --variable=libdir     libpdfium 2>/dev/null || true)"
+    if [ -n "$pc_inc" ] && [ -n "$pc_lib" ]; then
+      for inc_cand in "$pc_inc" "$pc_inc/pdfium"; do
+        if check_pair "$inc_cand" "$pc_lib"; then
+          USE_SYSTEM=1
+          break
+        fi
+      done
+    fi
+  fi
+fi
+
+# 3. Standard prefixes.
+if [ -z "$USE_SYSTEM" ]; then
+  for prefix in /usr/local /usr /opt/homebrew /opt/local; do
+    for inc in "$prefix/include" "$prefix/include/pdfium"; do
+      for lib in "$prefix/lib" "$prefix/lib64" \
+                 "$prefix/lib/x86_64-linux-gnu" \
+                 "$prefix/lib/aarch64-linux-gnu"; do
+        if check_pair "$inc" "$lib"; then
+          USE_SYSTEM=1
+          break 3
+        fi
+      done
+    done
+  done
+fi
+
+# 4. Fall back to download.
+if [ -z "$USE_SYSTEM" ]; then
+  echo "[pdfium configure] No system libpdfium found; downloading binary for $(uname -sm)"
+  RESOLVED="$("$RSCRIPT" --vanilla "$PKG_ROOT/tools/download-pdfium.R" "$PKG_ROOT")"
+  PDFIUM_INCLUDE="$(printf '%s\n' "$RESOLVED" | sed -n '1p')"
+  PDFIUM_LIB="$(printf '%s\n'    "$RESOLVED" | sed -n '2p')"
+  if [ -z "$PDFIUM_INCLUDE" ] || [ -z "$PDFIUM_LIB" ]; then
+    echo "ERROR: tools/download-pdfium.R did not return include / lib paths" >&2
+    exit 1
+  fi
+else
+  echo "[pdfium configure] Using system libpdfium (include=$PDFIUM_INCLUDE, lib=$PDFIUM_LIB)"
+fi
+
+# RPATH so the installed pdfium.so finds the bundled libpdfium
+# relative to itself. After install, libpdfium.{so,dylib} sits in
+# <pkg>/lib/ (from inst/lib) and pdfium.so sits in <pkg>/libs/<R_ARCH>/,
+# so RPATH points one level up plus into lib/.
 #
-# The dollar sign survives Make (which sees $$ORIGIN and produces $ORIGIN)
-# and the recipe shell (which receives a single-quoted token from the
-# heredoc, so $ORIGIN is not parameter-expanded).
-case "$(uname -s)" in
-  Darwin)
-    RPATH_FLAG="-Wl,-rpath,'@loader_path/../lib'"
-    ;;
-  Linux)
-    RPATH_FLAG='-Wl,-rpath,'"'"'$$ORIGIN/../lib'"'"
-    ;;
-  *)
-    RPATH_FLAG=""
-    ;;
-esac
+# The dollar sign survives Make (which sees $$ORIGIN and produces
+# $ORIGIN) and the recipe shell (which receives a single-quoted token
+# from the heredoc, so $ORIGIN is not parameter-expanded).
+#
+# When using a system install, the library is on the dynamic loader's
+# standard search path and no RPATH is needed.
+if [ -n "$USE_SYSTEM" ]; then
+  RPATH_FLAG=""
+else
+  case "$(uname -s)" in
+    Darwin)
+      RPATH_FLAG="-Wl,-rpath,'@loader_path/../lib'"
+      ;;
+    Linux)
+      RPATH_FLAG='-Wl,-rpath,'"'"'$$ORIGIN/../lib'"'"
+      ;;
+    *)
+      RPATH_FLAG=""
+      ;;
+  esac
+fi
 
 cat > "$PKG_ROOT/src/Makevars" <<MAKEVARS
 # Generated by configure. Do not edit by hand; edit src/Makevars.in and the

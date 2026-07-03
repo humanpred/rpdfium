@@ -22,10 +22,23 @@ rendering) arrive in subsequent releases.
 \section{Binary distribution}{
 
 
-The underlying \code{libpdfium} shared library is downloaded from
-\href{https://github.com/bblanchon/pdfium-binaries}{bblanchon/pdfium-binaries}
-the first time the package is installed. The pinned version lives in
-\code{tools/pdfium-version.txt}.
+At install time, the \code{configure} script picks a \code{libpdfium} to
+build against, in this order:
+\enumerate{
+\item The \code{PDFIUM_HOME} environment variable, if it points at a
+directory containing \code{include/fpdfview.h} and a
+\code{libpdfium} shared library (\verb{lib/libpdfium.\{so,dylib\}} on
+POSIX, or \code{lib/libpdfium.dll.a} + \code{bin/libpdfium.dll} on
+Windows).
+\item \verb{pkg-config --exists libpdfium} (POSIX only).
+\item Standard system prefixes: \verb{/usr/local}, \verb{/usr},
+\verb{/opt/homebrew}, \verb{/opt/local} (POSIX only).
+\item Download from
+\href{https://github.com/bblanchon/pdfium-binaries}{bblanchon/pdfium-binaries}.
+The pinned release lives in \code{tools/pdfium-version.txt}.
+Set \code{PDFIUM_OFFLINE=1} and stage the tarball under
+\verb{inst/pdfium-binaries/} for offline installs.
+}
 }
 
 \seealso{

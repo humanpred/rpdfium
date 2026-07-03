@@ -1,5 +1,5 @@
 Package: pdfium
-Title: Idiomatic R Bindings to the PDFium PDF Engine
+Title: Idiomatic R Bindings to the 'PDFium' PDF Engine
 Version: 0.1.0
 Authors@R: c(
     person("Bill", "Denney", , "wdenney@humanpredictions.com",
@@ -9,7 +9,7 @@ Authors@R: c(
            comment = "Authors of bundled PDFium binaries (BSD-3-Clause)")
   )
 Description: Read PDF documents at the level of pages, page objects, and path
-    geometry using Google's PDFium engine. Surfaces path segments, stroke and
+    geometry using Google's 'PDFium' engine. Surfaces path segments, stroke and
     fill style, transformation matrices, text positions and content, font
     metadata, image metadata, and page rendering. Complements 'pdftools' and
     'qpdf' by exposing vector-path information no other R package surfaces.
