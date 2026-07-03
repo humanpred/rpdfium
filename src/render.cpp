@@ -1,5 +1,4 @@
-// pdfium R package — page rendering to a nativeRaster-compatible
-// integer matrix.
+// pdfium R package — page rendering to a nativeRaster integer matrix.
 //
 // FPDF_RenderPageBitmap renders the page into a PDFium FPDF_BITMAP
 // allocated with FPDFBitmap_BGRA: in-memory byte order per pixel is
@@ -9,13 +8,18 @@
 //     int = (A << 24) | (B << 16) | (G << 8) | R
 //
 // (little-endian byte order: R, G, B, A). The output is an
-// IntegerMatrix whose dim is c(height, width) - same shape that
-// grDevices::as.raster and grid::rasterGrob expect.
+// IntegerMatrix whose dim is c(height, width), filled ROW-MAJOR so it
+// is a *conformant* nativeRaster: png::writePNG(), grid::grid.raster()
+// and R's graphics engine all read a nativeRaster's buffer row-major.
+// Writing it column-major (as a plain R matrix would be) shears every
+// row sideways — the historical "stride-streak" render garble. See
+// native_raster.h for the full storage-order rationale.
 
 #include <Rcpp.h>
 #include <cmath>
 #include <cstdint>
 #include "fpdfview.h"
+#include "native_raster.h"
 
 // [[Rcpp::export(name = "cpp_render_page")]]
 Rcpp::IntegerMatrix cpp_render_page(SEXP page_ptr,
@@ -57,23 +61,9 @@ Rcpp::IntegerMatrix cpp_render_page(SEXP page_ptr,
   int stride = FPDFBitmap_GetStride(bitmap);
 
   Rcpp::IntegerMatrix out(pixel_height, pixel_width);
-  int* out_ptr = INTEGER(out);
-  for (int y = 0; y < pixel_height; ++y) {
-    const uint8_t* row = buf + static_cast<size_t>(y) * stride;
-    for (int x = 0; x < pixel_width; ++x) {
-      uint8_t b = row[x * 4 + 0];
-      uint8_t g = row[x * 4 + 1];
-      uint8_t r = row[x * 4 + 2];
-      uint8_t a = row[x * 4 + 3];
-      // Column-major storage: m[y, x] sits at index y + x*nrow.
-      out_ptr[y + static_cast<size_t>(x) * pixel_height] =
-          static_cast<int>(
-              (static_cast<uint32_t>(a) << 24) |
-              (static_cast<uint32_t>(b) << 16) |
-              (static_cast<uint32_t>(g) <<  8) |
-              (static_cast<uint32_t>(r)));
-    }
-  }
+  // Row-major fill -> conformant nativeRaster (see native_raster.h).
+  pdfium_r::fill_bgra_rowmajor(INTEGER(out), buf,
+                               pixel_width, pixel_height, stride);
 
   FPDFBitmap_Destroy(bitmap);
   return out;
@@ -141,22 +131,9 @@ Rcpp::IntegerMatrix cpp_render_page_with_matrix(
       static_cast<const uint8_t*>(FPDFBitmap_GetBuffer(bitmap));
   int stride = FPDFBitmap_GetStride(bitmap);
   Rcpp::IntegerMatrix out(pixel_height, pixel_width);
-  int* out_ptr = INTEGER(out);
-  for (int y = 0; y < pixel_height; ++y) {
-    const uint8_t* row = buf + static_cast<size_t>(y) * stride;
-    for (int x = 0; x < pixel_width; ++x) {
-      uint8_t b = row[x * 4 + 0];
-      uint8_t g = row[x * 4 + 1];
-      uint8_t r = row[x * 4 + 2];
-      uint8_t a = row[x * 4 + 3];
-      out_ptr[y + static_cast<size_t>(x) * pixel_height] =
-          static_cast<int>(
-              (static_cast<uint32_t>(a) << 24) |
-              (static_cast<uint32_t>(b) << 16) |
-              (static_cast<uint32_t>(g) <<  8) |
-              (static_cast<uint32_t>(r)));
-    }
-  }
+  // Row-major fill -> conformant nativeRaster (see native_raster.h).
+  pdfium_r::fill_bgra_rowmajor(INTEGER(out), buf,
+                               pixel_width, pixel_height, stride);
   FPDFBitmap_Destroy(bitmap);
   return out;
 }

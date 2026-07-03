@@ -22,6 +22,7 @@
 #include "fpdf_edit.h"
 #include "fpdf_text.h"
 #include "handle_validation.h"
+#include "native_raster.h"
 #include "utf16.h"
 
 namespace {
@@ -44,9 +45,12 @@ FPDF_PAGEOBJECT t3_obj_from_ptr(SEXP obj_ptr) {
                                   /*require_prot_alive=*/true));
 }
 
-// Convert an FPDF_BITMAP (BGRA / BGR / Gray) to R's nativeRaster
-// (ABGR packed integers, row-major). Mirrors the conversion the
-// rendering / image modules use. Closes the bitmap.
+// Convert an FPDF_BITMAP (BGRA / BGR / BGRx / Gray) to R's
+// nativeRaster (ABGR packed integers, ROW-MAJOR — see
+// native_raster.h). Mirrors the rendering / image modules. Closes the
+// bitmap. FPDFTextObj_GetRenderedBitmap allocates BGRA in the pinned
+// PDFium build, so only that branch is exercised here; the others are
+// covered by the image-bitmap converter in src/images.cpp.
 SEXP fpdf_bitmap_to_native(FPDF_BITMAP bmp) {
   if (bmp == nullptr) return R_NilValue;
   int w = FPDFBitmap_GetWidth(bmp);
@@ -56,51 +60,7 @@ SEXP fpdf_bitmap_to_native(FPDF_BITMAP bmp) {
   const uint8_t* src =
       static_cast<const uint8_t*>(FPDFBitmap_GetBuffer(bmp));
   Rcpp::IntegerMatrix m(h, w);
-  for (int y = 0; y < h; ++y) {
-    const uint8_t* row = src + y * stride;
-    for (int x = 0; x < w; ++x) {
-      uint8_t r = 0, g = 0, b = 0, a = 0xFF;
-      switch (format) {
-        case FPDFBitmap_BGRA:
-          b = row[x * 4 + 0];
-          g = row[x * 4 + 1];
-          r = row[x * 4 + 2];
-          a = row[x * 4 + 3];
-          break;
-        // # nocov start — FPDFTextObj_GetRenderedBitmap unconditionally
-        // allocates an FPDFBitmap_BGRA bitmap in PDFium chromium/7202
-        // (see CPDF_TextRenderer::DrawTextPath via the public API), so
-        // the BGRx / BGR / Gray / default branches are unreachable from
-        // this call site. The dispatch is kept structurally complete so
-        // it mirrors the broader image-bitmap converter in
-        // src/images.cpp, where each branch IS exercised.
-        case FPDFBitmap_BGRx:
-          b = row[x * 4 + 0];
-          g = row[x * 4 + 1];
-          r = row[x * 4 + 2];
-          a = 0xFF;
-          break;
-        case FPDFBitmap_BGR:
-          b = row[x * 3 + 0];
-          g = row[x * 3 + 1];
-          r = row[x * 3 + 2];
-          a = 0xFF;
-          break;
-        case FPDFBitmap_Gray:
-          b = g = r = row[x];
-          a = 0xFF;
-          break;
-        default:
-          break;
-        // # nocov end
-      }
-      uint32_t abgr = (static_cast<uint32_t>(a) << 24) |
-                      (static_cast<uint32_t>(b) << 16) |
-                      (static_cast<uint32_t>(g) << 8)  |
-                       static_cast<uint32_t>(r);
-      m(y, x) = static_cast<int>(abgr);
-    }
-  }
+  pdfium_r::fill_bitmap_rowmajor(INTEGER(m), src, w, h, stride, format);
   FPDFBitmap_Destroy(bmp);
   return m;
 }

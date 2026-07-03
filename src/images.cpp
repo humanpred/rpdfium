@@ -31,6 +31,7 @@
 #include "fpdfview.h"
 #include "fpdf_edit.h"
 #include "handle_validation.h"
+#include "native_raster.h"
 
 namespace {
 
@@ -52,10 +53,11 @@ FPDF_DOCUMENT doc_from_ptr(SEXP doc_ptr) {
                                   /*require_prot_alive=*/false));
 }
 
-// Convert a PDFium FPDF_BITMAP (any supported format) to a column-
-// major IntegerMatrix where each pixel packs as ABGR per the
-// nativeRaster convention. Caller owns destroying the source bitmap;
-// this function does not.
+// Convert a PDFium FPDF_BITMAP (any supported format) to an
+// IntegerMatrix (dim c(height, width)) filled ROW-MAJOR so it is a
+// conformant nativeRaster (each pixel packs as ABGR). See
+// native_raster.h for the storage-order rationale. Caller owns
+// destroying the source bitmap; this function does not.
 Rcpp::IntegerMatrix bitmap_to_native_raster(FPDF_BITMAP bitmap) {
   int width  = FPDFBitmap_GetWidth(bitmap);
   int height = FPDFBitmap_GetHeight(bitmap);
@@ -67,67 +69,8 @@ Rcpp::IntegerMatrix bitmap_to_native_raster(FPDF_BITMAP bitmap) {
   if (buf == nullptr) Rcpp::stop("FPDFBitmap_GetBuffer returned NULL.");
 
   Rcpp::IntegerMatrix out(height, width);
-  int* out_ptr = INTEGER(out);
-
-  for (int y = 0; y < height; ++y) {
-    const uint8_t* row = buf + static_cast<size_t>(y) * stride;
-    for (int x = 0; x < width; ++x) {
-      uint8_t r;
-      uint8_t g;
-      uint8_t b;
-      uint8_t a = 255;
-      switch (format) {
-        // # nocov start — Cairo emits BGR for image.pdf and BGRA for
-        // FPDFImageObj_GetRenderedBitmap; the Gray / BGRx branches
-        // require non-Cairo fixtures (8-bit grayscale or
-        // pre-alpha-stripped sources) we do not ship. The dispatch
-        // shape mirrors fpdf_bitmap_to_native in tier3_extras.cpp so
-        // any future fixture that hits these paths decodes
-        // identically.
-        case FPDFBitmap_Gray: {
-          uint8_t v = row[x];
-          r = g = b = v;
-          break;
-        }
-        // # nocov end
-        case FPDFBitmap_BGR: {
-          b = row[x * 3 + 0];
-          g = row[x * 3 + 1];
-          r = row[x * 3 + 2];
-          break;
-        }
-        // # nocov start — see Gray-branch note above.
-        case FPDFBitmap_BGRx: {
-          b = row[x * 4 + 0];
-          g = row[x * 4 + 1];
-          r = row[x * 4 + 2];
-          break;
-        }
-        // # nocov end
-        case FPDFBitmap_BGRA: {
-          b = row[x * 4 + 0];
-          g = row[x * 4 + 1];
-          r = row[x * 4 + 2];
-          a = row[x * 4 + 3];
-          break;
-        }
-        // # nocov start  // FPDFBitmap returns one of the four formats above
-        default:
-          // # nocov start — PDFium only ever emits the four formats
-          // above (Gray / BGR / BGRx / BGRA); the default arm exists
-          // so a future PDFium ABI change surfaces as a clear error
-          // instead of a silent out-of-bounds read.
-          Rcpp::stop("Unsupported FPDFBitmap format: %d", format);
-          // # nocov end
-      }
-      out_ptr[y + static_cast<size_t>(x) * height] =
-          static_cast<int>(
-              (static_cast<uint32_t>(a) << 24) |
-              (static_cast<uint32_t>(b) << 16) |
-              (static_cast<uint32_t>(g) <<  8) |
-              (static_cast<uint32_t>(r)));
-    }
-  }
+  pdfium_r::fill_bitmap_rowmajor(INTEGER(out), buf,
+                                 width, height, stride, format);
   return out;
 }
 
@@ -258,7 +201,6 @@ Rcpp::RawVector cpp_image_icc_profile(SEXP obj_ptr, SEXP page_ptr) {
   return out;
   // # nocov end
 }
-// # nocov end
 
 // [[Rcpp::export(name = "cpp_image_filters")]]
 Rcpp::CharacterVector cpp_image_filters(SEXP obj_ptr) {
