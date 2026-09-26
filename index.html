@@ -94,13 +94,57 @@
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p><code>pdfium</code> downloads its <code>libpdfium</code> binary from <a href="https://github.com/bblanchon/pdfium-binaries" class="external-link">bblanchon/pdfium-binaries</a> at install time. The pinned version lives in <code>tools/pdfium-version.txt</code>. If your install runs without internet access, set <code>PDFIUM_OFFLINE=1</code> and place the matching tarball under <code>inst/pdfium-binaries/</code> before installing.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Release version (once on CRAN):</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"pdfium"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Development version:</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"humanpred/rpdfium"</span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="where-the-libpdfium-binary-comes-from">Where the <code>libpdfium</code> binary comes from<a class="anchor" aria-label="anchor" href="#where-the-libpdfium-binary-comes-from"></a>
+</h3>
+<p>At install time, the <code>configure</code> script picks a <code>libpdfium</code> to build against, in this order:</p>
+<ol style="list-style-type: decimal">
+<li>
+<p><strong><code>PDFIUM_HOME</code></strong> — if this environment variable is set and points at an existing install, that install is used. The directory must contain headers and the shared library in the conventional layout:</p>
+<table class="table">
+<colgroup>
+<col width="14%">
+<col width="85%">
+</colgroup>
+<thead><tr>
+<th>Platform</th>
+<th>Required files under <code>$PDFIUM_HOME</code>
+</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Linux</td>
+<td>
+<code>include/fpdfview.h</code> and <code>lib/libpdfium.so</code> (or <code>lib64/</code>)</td>
+</tr>
+<tr>
+<td>macOS</td>
+<td>
+<code>include/fpdfview.h</code> and <code>lib/libpdfium.dylib</code>
+</td>
+</tr>
+<tr>
+<td>Windows</td>
+<td>
+<code>include/fpdfview.h</code>, <code>lib/libpdfium.dll.a</code>, <code>bin/libpdfium.dll</code>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Useful when you have a hand-built PDFium, a vendored copy, or a CI artefact you want to pin against.</p>
+</li>
+<li><p><strong><code>pkg-config --exists libpdfium</code></strong> <em>(POSIX only)</em> — if a <code>libpdfium.pc</code> is on the <code>pkg-config</code> search path, the reported <code>includedir</code> / <code>libdir</code> are used.</p></li>
+<li><p><strong>Standard system prefixes</strong> <em>(POSIX only)</em> — <code>/usr/local</code>, <code>/usr</code>, <code>/opt/homebrew</code>, <code>/opt/local</code>. The first one containing both <code>include/fpdfview.h</code> and a <code>libpdfium</code> shared library wins.</p></li>
+<li><p><strong>Download from <a href="https://github.com/bblanchon/pdfium-binaries" class="external-link">bblanchon/pdfium-binaries</a></strong> — the pinned release lives in <code>tools/pdfium-version.txt</code>. If your install runs without internet access, set <code>PDFIUM_OFFLINE=1</code> and place the matching tarball under <code>inst/pdfium-binaries/</code> before installing.</p></li>
+</ol>
+<p>When a system install is found, no download happens and no <code>libpdfium</code> is bundled into the installed package — your existing copy resolves at load time via the platform’s normal shared-library search path.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
@@ -118,7 +162,7 @@
 <div class="section level2">
 <h2 id="license">License<a class="anchor" aria-label="anchor" href="#license"></a>
 </h2>
-<p><code>pdfium</code> is MIT-licensed. The bundled <code>libpdfium</code> binary is BSD-3-Clause and is <em>not</em> distributed in the source tarball — see <a href="LICENSE.html"><code>LICENSE.md</code></a> and <a href="dev/decisions/ADR-003-binary-distribution.html"><code>dev/decisions/ADR-003-binary-distribution.md</code></a>.</p>
+<p><code>pdfium</code> is MIT-licensed. The bundled <code>libpdfium</code> binary is BSD-3-Clause and is <em>not</em> distributed in the source tarball — see <a href="https://github.com/humanpred/rpdfium/blob/main/LICENSE.md" class="external-link"><code>LICENSE.md</code></a> and <a href="https://github.com/humanpred/rpdfium/blob/main/dev/decisions/ADR-003-binary-distribution.md" class="external-link"><code>dev/decisions/ADR-003-binary-distribution.md</code></a>.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

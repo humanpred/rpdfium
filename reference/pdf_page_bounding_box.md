@@ -1,4 +1,4 @@
-# Page bounding box (cropbox ∩ mediabox)
+# Page bounding box (cropbox intersect mediabox)
 
 Wraps `FPDF_GetPageBoundingBox` — returns the rectangle that encloses
 the visible portion of `page` after intersecting the cropbox with the

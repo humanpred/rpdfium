@@ -836,7 +836,7 @@ setters. Grouped by topic below; all live in `R/api_completion.R`.
   : Does the page contain transparency?
 
 - [`pdf_page_bounding_box()`](https://humanpred.github.io/rpdfium/reference/pdf_page_bounding_box.md)
-  : Page bounding box (cropbox ∩ mediabox)
+  : Page bounding box (cropbox intersect mediabox)
 
 - [`pdf_page_transform_annots()`](https://humanpred.github.io/rpdfium/reference/pdf_page_transform_annots.md)
   : Transform every annotation on a page in one shot

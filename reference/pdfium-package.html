@@ -71,11 +71,21 @@ rendering) arrive in subsequent releases.</p>
 
 
 
-<p>The underlying <code>libpdfium</code> shared library is downloaded from
-<a href="https://github.com/bblanchon/pdfium-binaries" class="external-link">bblanchon/pdfium-binaries</a>
-the first time the package is installed. The pinned version lives in
-<code>tools/pdfium-version.txt</code>.</p>
-    </div>
+<p>At install time, the <code>configure</code> script picks a <code>libpdfium</code> to
+build against, in this order:</p><ol><li><p>The <code>PDFIUM_HOME</code> environment variable, if it points at a
+directory containing <code>include/fpdfview.h</code> and a
+<code>libpdfium</code> shared library (<code>lib/libpdfium.{so,dylib}</code> on
+POSIX, or <code>lib/libpdfium.dll.a</code> + <code>bin/libpdfium.dll</code> on
+Windows).</p></li>
+<li><p><code>pkg-config --exists libpdfium</code> (POSIX only).</p></li>
+<li><p>Standard system prefixes: <code>/usr/local</code>, <code>/usr</code>,
+<code>/opt/homebrew</code>, <code>/opt/local</code> (POSIX only).</p></li>
+<li><p>Download from
+<a href="https://github.com/bblanchon/pdfium-binaries" class="external-link">bblanchon/pdfium-binaries</a>.
+The pinned release lives in <code>tools/pdfium-version.txt</code>.
+Set <code>PDFIUM_OFFLINE=1</code> and stage the tarball under
+<code>inst/pdfium-binaries/</code> for offline installs.</p></li>
+</ol></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Useful links:</p><ul><li><p><a href="https://github.com/humanpred/rpdfium" class="external-link">https://github.com/humanpred/rpdfium</a></p></li>

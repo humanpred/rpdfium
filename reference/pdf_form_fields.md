@@ -47,7 +47,7 @@ A tibble with columns:
   type.
 
 - `control_count` integer - total number of widgets in this field's
-  control group (≥ 1; `> 1` for radio button groups with multiple
+  control group (`>= 1`; `> 1` for radio button groups with multiple
   physical widgets). `NA` if PDFium reports failure.
 
 - `control_index` integer - 0-based position of this row's widget within
