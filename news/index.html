@@ -44,9 +44,46 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="development version" id="pdfium-development-version">pdfium (development version)<a class="anchor" aria-label="anchor" href="#pdfium-development-version"></a></h2>
+<div class="section level3">
+<h3 id="pdfium-update-development-version">PDFium update<a class="anchor" aria-label="anchor" href="#pdfium-update-development-version"></a></h3>
+<ul><li>The bundled PDFium moves from <code>chromium/7857</code> to <code>chromium/8066</code> (Chromium 156). No PDFium function the package uses was removed or changed signature.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-features-development-version">New features<a class="anchor" aria-label="anchor" href="#new-features-development-version"></a></h3>
+<ul><li>
+<code><a href="../reference/pdf_path_segments.html">pdf_path_segments()</a></code> and <code><a href="../reference/pdf_extract_paths.html">pdf_extract_paths()</a></code> gain <code>cx1</code>, <code>cy1</code>, <code>cx2</code>, <code>cy2</code> columns: the two control points of each cubic Bezier curve, on the curve’s endpoint row (<code>NA</code> elsewhere). A curve still spans three <code>"bezierto"</code> rows — the two control points, then the endpoint — as it always did; the documentation wrongly said the control points were not available.</li>
+<li>
+<code><a href="../reference/pdf_text_set_font_size.html">pdf_text_set_font_size()</a></code> sets a text object’s font size, the writer for <code><a href="../reference/pdf_text_font_size.html">pdf_text_font_size()</a></code>.</li>
+<li>
+<code><a href="../reference/pdf_obj_add_existing_mark.html">pdf_obj_add_existing_mark()</a></code> shares an existing content mark with another page object, so consecutive objects can be tagged as one marked-content span.</li>
+<li>
+<code><a href="../reference/pdf_obj_rendered_fill_pattern.html">pdf_obj_rendered_fill_pattern()</a></code> and <code><a href="../reference/pdf_obj_rendered_fill_pattern.html">pdf_obj_rendered_stroke_pattern()</a></code> return one rendered tile of the tiling pattern a page object is painted with.</li>
+<li>
+<code><a href="../reference/pdf_bookmark_color.html">pdf_bookmark_color()</a></code> and <code><a href="../reference/pdf_bookmark_style.html">pdf_bookmark_style()</a></code> read an outline item’s title colour and italic / bold flags; the bookmark tibble gains <code>color_red</code>, <code>color_green</code>, <code>color_blue</code>, <code>italic</code> and <code>bold</code> columns.</li>
+<li>
+<code><a href="../reference/pdf_attachment_description.html">pdf_attachment_description()</a></code>, <code><a href="../reference/pdf_attachment_set_description.html">pdf_attachment_set_description()</a></code> and <code><a href="../reference/pdf_attachment_af_relationship.html">pdf_attachment_af_relationship()</a></code> read and write an embedded file’s description and read its PDF 2.0 associated-file relationship; the attachment tibble gains <code>description</code> and <code>af_relationship</code> columns.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="behaviour-changes-from-the-pdfium-update-development-version">Behaviour changes from the PDFium update<a class="anchor" aria-label="anchor" href="#behaviour-changes-from-the-pdfium-update-development-version"></a></h3>
+<ul><li>
+<code><a href="../reference/pdf_attachment_set_dict_value.html">pdf_attachment_set_dict_value()</a></code> now round-trips non-ASCII text; PDFium used to store the raw UTF-8 bytes, which read back garbled.</li>
+<li>
+<code><a href="../reference/pdf_page_flatten.html">pdf_page_flatten()</a></code> also removes the flattened fields from the document’s interactive form; flattening the last field removes the form, so <code><a href="../reference/pdf_doc_form_type.html">pdf_doc_form_type()</a></code> then reports <code>"none"</code>.</li>
+<li>
+<code><a href="../reference/pdf_annot_set_bounds.html">pdf_annot_set_bounds()</a></code> no longer enlarges an existing appearance stream’s bounding box, so the appearance is scaled to the new rectangle.</li>
+<li>
+<code><a href="../reference/pdf_doc_new.html">pdf_doc_new()</a></code> documents get a <code>/CreationDate</code> with a <code>+00'00'</code> offset. PDFium applies it to the local wall-clock time, so the parsed value is unchanged from before (see <code><a href="../reference/pdf_doc_new.html">?pdf_doc_new</a></code>).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-development-version">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-development-version"></a></h3>
 <ul><li>
 <code><a href="../reference/pdf_render_page.html">pdf_render_page()</a></code>, <code><a href="../reference/pdf_image_bitmap.html">pdf_image_bitmap()</a></code>, <code><a href="../reference/pdf_image_rendered.html">pdf_image_rendered()</a></code> and <code><a href="../reference/pdf_text_obj_rendered_bitmap.html">pdf_text_obj_rendered_bitmap()</a></code> now return a <strong>conformant</strong> <code>nativeRaster</code>: the backing integer buffer is laid out row-major, so the bitmap can be passed straight to <code><a href="https://rdrr.io/pkg/png/man/writePNG.html" class="external-link">png::writePNG()</a></code>, <code><a href="https://rdrr.io/r/grid/grid.raster.html" class="external-link">grid::grid.raster()</a></code> and R’s graphics engine with no reshape. Prior versions stored the buffer column-major, which sheared every row sideways when a consumer trusted the <code>nativeRaster</code> class (“stride streak” garble). <code><a href="https://rdrr.io/r/base/array.html" class="external-link">as.array()</a></code> / <code><a href="https://rdrr.io/r/grDevices/as.raster.html" class="external-link">as.raster()</a></code> are updated to match and remain correct. Output now matches <code><a href="https://rdrr.io/pkg/png/man/readPNG.html" class="external-link">png::readPNG()</a></code> / <code>magick::image_read()</code> in dims, RGBA channel order and 0..1 range.</li>
+<li>
+<code><a href="../reference/pdf_render_page.html">pdf_render_page()</a></code> and <code><a href="../reference/pdf_render_page_with_matrix.html">pdf_render_page_with_matrix()</a></code> no longer modify the document. Every render used to rewrite the bounding box of annotation appearance streams, which drew some annotations at the wrong size and carried into later <code><a href="../reference/pdf_save.html">pdf_save()</a></code> output.</li>
+<li>
+<code><a href="../reference/pdf_form_field_set_value.html">pdf_form_field_set_value()</a></code>’s documentation no longer claims that the field’s appearance is regenerated; PDFium’s API has no way to do that outside its interactive form-fill layer.</li>
 </ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="pdfium-010">pdfium 0.1.0<a class="anchor" aria-label="anchor" href="#pdfium-010"></a></h2>
 <ul><li>Initial CRAN release.</li>
@@ -60,7 +97,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

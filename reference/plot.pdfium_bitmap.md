@@ -44,33 +44,22 @@ Invisibly returns `x`. Called for the plotting side effect.
 
 ## Details
 
-We go through `as.array(x)` rather than handing the integer matrix
-directly to
-[`graphics::rasterImage()`](https://rdrr.io/r/graphics/rasterImage.html)
-for two reasons that compound:
+We go through `as.array(x)` to a 3-D `c(H, W, 4)` numeric array rather
+than handing the bitmap to
+[`graphics::rasterImage()`](https://rdrr.io/r/graphics/rasterImage.html):
+`rasterImage` with `plot.window` uses the user-coordinate system, which
+defaults (`xaxs = "r", yaxs = "r"`) to padding the interval by 4% on
+each side — silently compressing the raster into ~92% of the device and
+forcing sub-pixel resampling.
+[`grid::grid.raster()`](https://rdrr.io/r/grid/grid.raster.html) uses
+npc coordinates (0..1, no padding) and isn't subject to this.
 
-1.  Per the documented raster contract (see
-    [`?grDevices::as.raster`](https://rdrr.io/r/grDevices/as.raster.html),
-    "Raster images are internally represented row-first"), `"raster"`
-    and `nativeRaster` objects must have row-major memory layout. R's
-    `as.raster.matrix()` transposes its input precisely to satisfy that.
-    Our integer matrix comes out of C++ as a standard R column-major
-    matrix, so feeding it directly is non-conformant and shows diagonal
-    stripe artifacts on detailed content.
-
-2.  `rasterImage` with `plot.window` uses the user-coordinate system,
-    which defaults (`xaxs = "r", yaxs = "r"`) to padding the interval by
-    4% on each side — silently compressing the raster into ~92% of the
-    device and forcing sub-pixel resampling.
-    [`grid::grid.raster()`](https://rdrr.io/r/grid/grid.raster.html)
-    uses npc coordinates and isn't subject to this.
-
-Going through `as.array(x)` to a 3-D `c(H, W, 4)` numeric array and
-rendering with
+(The bitmap itself is a *conformant* `nativeRaster` — its backing buffer
+is row-major, so it could be handed to
 [`grid::grid.raster()`](https://rdrr.io/r/grid/grid.raster.html)
-sidesteps both: the array path uses positional channel storage (no
-row-vs-column convention), and grid coordinates are 0..1 npc without
-padding.
+directly; the [`as.array()`](https://rdrr.io/r/base/array.html) array
+path is kept because a positional `c(H, W, 4)` array carries no
+row-vs-column ambiguity for downstream consumers.)
 
 ## Examples
 

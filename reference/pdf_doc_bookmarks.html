@@ -6,14 +6,16 @@ depth-first. Per-attribute getters
 pdf_bookmark_action_type(), pdf_bookmark_uri(),
 pdf_bookmark_filepath(), pdf_bookmark_dest_view(),
 pdf_bookmark_dest_x(), pdf_bookmark_dest_y(),
-pdf_bookmark_dest_zoom()) operate on a single handle."><meta property="og:description" content="Returns a pdfium_bookmark_list — a list of pdfium_bookmark
+pdf_bookmark_dest_zoom(), pdf_bookmark_color(),
+pdf_bookmark_style()) operate on a single handle."><meta property="og:description" content="Returns a pdfium_bookmark_list — a list of pdfium_bookmark
 handles, one per bookmark in the document's outline tree, walked
 depth-first. Per-attribute getters
 (pdf_bookmark_title(), pdf_bookmark_page_num(),
 pdf_bookmark_action_type(), pdf_bookmark_uri(),
 pdf_bookmark_filepath(), pdf_bookmark_dest_view(),
 pdf_bookmark_dest_x(), pdf_bookmark_dest_y(),
-pdf_bookmark_dest_zoom()) operate on a single handle."></head><body>
+pdf_bookmark_dest_zoom(), pdf_bookmark_color(),
+pdf_bookmark_style()) operate on a single handle."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -65,7 +67,8 @@ depth-first. Per-attribute getters
 <code><a href="pdf_bookmark_action_type.html">pdf_bookmark_action_type()</a></code>, <code><a href="pdf_bookmark_uri.html">pdf_bookmark_uri()</a></code>,
 <code><a href="pdf_bookmark_filepath.html">pdf_bookmark_filepath()</a></code>, <code><a href="pdf_bookmark_dest_view.html">pdf_bookmark_dest_view()</a></code>,
 <code><a href="pdf_bookmark_dest_x.html">pdf_bookmark_dest_x()</a></code>, <code><a href="pdf_bookmark_dest_y.html">pdf_bookmark_dest_y()</a></code>,
-<code><a href="pdf_bookmark_dest_zoom.html">pdf_bookmark_dest_zoom()</a></code>) operate on a single handle.</p>
+<code><a href="pdf_bookmark_dest_zoom.html">pdf_bookmark_dest_zoom()</a></code>, <code><a href="pdf_bookmark_color.html">pdf_bookmark_color()</a></code>,
+<code><a href="pdf_bookmark_style.html">pdf_bookmark_style()</a></code>) operate on a single handle.</p>
     </div>
 
     <div class="section level2">
@@ -96,8 +99,9 @@ view.</p>
 <p>Wraps <code>FPDFBookmark_GetFirstChild</code>, <code>FPDFBookmark_GetNextSibling</code>,
 <code>FPDFBookmark_GetTitle</code>, <code>FPDFBookmark_GetDest</code>,
 <code>FPDFBookmark_GetAction</code>, <code>FPDFAction_GetType</code> /
-<code>FPDFAction_GetURIPath</code> / <code>FPDFAction_GetFilePath</code>, and
-<code>FPDFDest_GetDestPageIndex</code>.</p>
+<code>FPDFAction_GetURIPath</code> / <code>FPDFAction_GetFilePath</code>,
+<code>FPDFDest_GetDestPageIndex</code>, <code>FPDFBookmark_GetColor</code>, and
+<code>FPDFBookmark_GetStyle</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -127,7 +131,7 @@ view.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

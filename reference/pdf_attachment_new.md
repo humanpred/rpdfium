@@ -4,9 +4,11 @@ Creates a new `/EmbeddedFile` entry in `doc`'s name tree, with the given
 filename. The returned handle is a `pdfium_attachment` that you can pass
 to
 [`pdf_attachment_set_data()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_data.md)
-to populate the file bytes, and
+to populate the file bytes,
+[`pdf_attachment_set_description()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_description.md)
+to describe it, and
 [`pdf_attachment_set_dict_value()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_dict_value.md)
-to populate dictionary metadata (`"Subtype"`, `"Desc"`, etc.).
+to populate `/Params` metadata.
 
 ## Usage
 

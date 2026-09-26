@@ -24,7 +24,12 @@ pdf_attachment_dict_value(att, key)
 - key:
 
   The attachment-dict key as a single non-empty character string (e.g.
-  `"Subtype"`, `"AFRelationship"`).
+  `"ModDate"`, `"CreationDate"`, or a custom key). The description and
+  associated-file relationship live on the file specification rather
+  than in `/Params`; read them with
+  [`pdf_attachment_description()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_description.md)
+  and
+  [`pdf_attachment_af_relationship()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_af_relationship.md).
 
 ## Value
 

@@ -74,7 +74,10 @@ name / mime-type / size-bytes into a tibble. Adds <code>handle</code> and
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A tibble with columns <code>attachment_index</code>, <code>name</code>,
-<code>mime_type</code>, <code>size_bytes</code>, <code>handle</code>, <code>source</code>.</p>
+<code>mime_type</code>, <code>size_bytes</code>, <code>description</code>, <code>af_relationship</code>,
+<code>handle</code>, <code>source</code>. <code>description</code> and <code>af_relationship</code> are
+empty strings when the attachment doesn't declare them (see
+<code><a href="pdf_attachment_description.html">pdf_attachment_description()</a></code>, <code><a href="pdf_attachment_af_relationship.html">pdf_attachment_af_relationship()</a></code>).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -91,7 +94,7 @@ for speed.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

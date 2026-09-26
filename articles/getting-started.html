@@ -199,14 +199,14 @@ segment:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">paths</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/funprog.html" class="external-link">Filter</a></span><span class="op">(</span><span class="kw">function</span><span class="op">(</span><span class="va">o</span><span class="op">)</span> <span class="va">o</span><span class="op">$</span><span class="va">type</span> <span class="op">==</span> <span class="st">"path"</span>, <span class="va">objs</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/pdf_path_segments.html">pdf_path_segments</a></span><span class="op">(</span><span class="va">paths</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 5</span></span></span>
-<span><span class="co">#&gt;   segment_index segment_type     x     y close_figure</span></span>
-<span><span class="co">#&gt;           <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>             1 moveto           0     0 FALSE       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>             2 lineto         288     0 FALSE       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>             3 lineto         288   216 FALSE       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>             4 lineto           0   216 FALSE       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>             5 lineto           0     0 TRUE</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 9</span></span></span>
+<span><span class="co">#&gt;   segment_index segment_type     x     y close_figure   cx1   cy1   cx2   cy2</span></span>
+<span><span class="co">#&gt;           <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>             1 moveto           0     0 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>             2 lineto         288     0 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>             3 lineto         288   216 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>             4 lineto           0   216 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>             5 lineto           0     0 TRUE            <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
 <p>Stroke and fill colour, dash pattern, and miscellaneous style come
 back as separate accessors:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
@@ -228,7 +228,7 @@ consumers expect — use <code>pdf_extract_paths(path_or_doc)</code>:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">extracted</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_extract_paths.html">pdf_extract_paths</a></span><span class="op">(</span><span class="va">fixture</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">extracted</span>, max.level <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span>
-<span><span class="co">#&gt; tibble [14 × 19] (S3: tbl_df/tbl/data.frame)</span></span>
+<span><span class="co">#&gt; tibble [14 × 23] (S3: tbl_df/tbl/data.frame)</span></span>
 <span><span class="co">#&gt;  - attr(*, "page_size")= Named num [1:2] 288 216</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "names")= chr [1:2] "width" "height"</span></span>
 <span><span class="co">#&gt;  - attr(*, "page_rotation")= int 0</span></span>
@@ -236,15 +236,16 @@ consumers expect — use <code>pdf_extract_paths(path_or_doc)</code>:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">extracted</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 14</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">extracted</span>, <span class="fl">3L</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 19</span></span></span>
-<span><span class="co">#&gt;   path_index segment_index segment_type     x     y close_figure stroke_red</span></span>
-<span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>          1             1 moveto           0     0 FALSE                 0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>          1             2 lineto         288     0 FALSE                 0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>          1             3 lineto         288   216 FALSE                 0</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 12 more variables: stroke_green &lt;dbl&gt;, stroke_blue &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   stroke_alpha &lt;dbl&gt;, stroke_width &lt;dbl&gt;, fill_red &lt;dbl&gt;, fill_green &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   fill_blue &lt;dbl&gt;, fill_alpha &lt;dbl&gt;, bounds_left &lt;dbl&gt;, bounds_bottom &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3 × 23</span></span></span>
+<span><span class="co">#&gt;   path_index segment_index segment_type     x     y close_figure   cx1   cy1</span></span>
+<span><span class="co">#&gt;        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>          1             1 moveto           0     0 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>          1             2 lineto         288     0 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>          1             3 lineto         288   216 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 15 more variables: cx2 &lt;dbl&gt;, cy2 &lt;dbl&gt;, stroke_red &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   stroke_green &lt;dbl&gt;, stroke_blue &lt;dbl&gt;, stroke_alpha &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   stroke_width &lt;dbl&gt;, fill_red &lt;dbl&gt;, fill_green &lt;dbl&gt;, fill_blue &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   fill_alpha &lt;dbl&gt;, bounds_left &lt;dbl&gt;, bounds_bottom &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   bounds_right &lt;dbl&gt;, bounds_top &lt;dbl&gt;</span></span></span></code></pre></div>
 <p>The result is a tibble with one row per path segment, plus per-path
 attributes (stroke/fill color, page size, etc.) and a
@@ -371,7 +372,7 @@ model in depth.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

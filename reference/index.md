@@ -126,6 +126,12 @@
 - [`pdf_attachment_size_bytes()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_size_bytes.md)
   : Attachment decompressed size in bytes
 
+- [`pdf_attachment_description()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_description.md)
+  : Attachment description
+
+- [`pdf_attachment_af_relationship()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_af_relationship.md)
+  : Attachment relationship to the document (PDF 2.0)
+
 - [`pdf_attachment_data()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_data.md)
   : Read the raw bytes of an embedded file attachment
 
@@ -211,6 +217,12 @@
 
 - [`pdf_bookmark_dest_zoom()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_dest_zoom.md)
   : Bookmark destination zoom factor
+
+- [`pdf_bookmark_color()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_color.md)
+  : Bookmark title color
+
+- [`pdf_bookmark_style()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_style.md)
+  : Bookmark title style
 
 ## Pages
 
@@ -439,6 +451,10 @@
 - [`pdf_obj_rotated_bounds()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_rotated_bounds.md)
   : Rotated bounding quadpoints of a page object
 
+- [`pdf_obj_rendered_fill_pattern()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_rendered_fill_pattern.md)
+  [`pdf_obj_rendered_stroke_pattern()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_rendered_fill_pattern.md)
+  : Rendered tile of a page object's fill or stroke pattern
+
 - [`pdf_obj_matrix()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_matrix.md)
   : Transformation matrix of a page object
 
@@ -636,8 +652,12 @@ from
   : Replace the text content of a text page object
 - [`pdf_text_set_render_mode()`](https://humanpred.github.io/rpdfium/reference/pdf_text_set_render_mode.md)
   : Set the render mode of a text page object
+- [`pdf_text_set_font_size()`](https://humanpred.github.io/rpdfium/reference/pdf_text_set_font_size.md)
+  : Set the font size of a text page object
 - [`pdf_obj_add_mark()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_add_mark.md)
   : Add a content mark to a page object
+- [`pdf_obj_add_existing_mark()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_add_existing_mark.md)
+  : Share an existing content mark with another page object
 - [`pdf_obj_remove_mark()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_remove_mark.md)
   : Remove a content mark from a page object
 
@@ -780,12 +800,17 @@ natural sequence for a fresh attachment is
 (to populate the file bytes and materialise the `/Params` subdict) →
 [`pdf_attachment_set_dict_value()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_dict_value.md)
 (for any extra dictionary metadata).
+[`pdf_attachment_set_description()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_description.md)
+writes the file specification’s `/Desc` and can be called at any point.
 
 - [`pdf_attachment_new()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_new.md)
   : Add a new embedded file attachment to a document
 
 - [`pdf_attachment_delete()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_delete.md)
   : Delete an embedded file attachment from a document
+
+- [`pdf_attachment_set_description()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_description.md)
+  : Set the description of an embedded file attachment
 
 - [`pdf_attachment_set_dict_value()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_dict_value.md)
   :

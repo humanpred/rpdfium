@@ -50,9 +50,14 @@ Path identity & segment geometry:
 
 - `segment_type` - `"moveto"`, `"lineto"`, `"bezierto"`, or `"unknown"`
 
-- `x`, `y` - the segment's anchor / endpoint in PDF points
+- `x`, `y` - the segment's point in PDF points
 
 - `close_figure` - logical, segment closes the current subpath
+
+- `cx1`, `cy1`, `cx2`, `cy2` - control points of the cubic Bezier curve
+  ending at this row; `NA` on every other row. A curve spans three
+  `"bezierto"` rows (control point 1, control point 2, endpoint); see
+  [`pdf_path_segments()`](https://humanpred.github.io/rpdfium/reference/pdf_path_segments.md).
 
 Style (constant across all rows of one path):
 
@@ -81,12 +86,6 @@ Path bounding box (constant across rows of one path):
 - `text_runs` - tibble with one row per text object on the page, the
   output of
   [`pdf_text_runs()`](https://humanpred.github.io/rpdfium/reference/pdf_text_runs.md).
-
-### Known limitations
-
-- Bezier control points are not exposed - only segment endpoints. PDFium
-  does not expose them through its public C API; see
-  `dev/decisions/ADR-009-defer-bezier-controls.md`.
 
 ## See also
 

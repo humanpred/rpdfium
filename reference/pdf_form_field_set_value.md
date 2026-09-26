@@ -45,13 +45,14 @@ Invisibly returns the parent `pdfium_doc`.
 Any other field type (button / signature / unknown) errors — those don't
 have a settable value.
 
-Wraps `FPDFAnnot_SetStringValue(annot, "V", ...)` followed by a rect
-re-touch (`FPDFAnnot_SetRect` to the current rect) that flips the
-AP-dirty flag, so the next
-[`pdf_render_page()`](https://humanpred.github.io/rpdfium/reference/pdf_render_page.md)
-or
-[`pdf_save()`](https://humanpred.github.io/rpdfium/reference/pdf_save.md)
-rebuilds the widget's appearance stream from the new value.
+Wraps `FPDFAnnot_SetStringValue(annot, "V", ...)` (plus `"AS"` for
+checkboxes and radio buttons). The widget's existing appearance stream
+(`/AP`) is left as is: PDFium's public API offers no non-interactive way
+to regenerate it. Checkable fields switch their `/AS` appearance state,
+so their existing on / off appearances follow the value; for text and
+choice fields the saved file carries the new value alongside the old
+appearance, which viewers that honor the form's `/NeedAppearances` flag
+regenerate.
 
 ## See also
 

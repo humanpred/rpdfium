@@ -74,6 +74,14 @@ readwrite.</p></dd>
     <p>Invisibly returns the parent <code>pdfium_doc</code>.</p>
     </div>
     <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>An existing appearance stream is not resized. PDFium, like other
+viewers, draws an appearance by mapping its <code>/BBox</code> onto the
+annotation's <code>/Rect</code> (ISO 32000-1:2008 section 12.5.5), so the
+appearance is scaled to fill the new rectangle. Replace it with
+<code><a href="pdf_annot_set_appearance.html">pdf_annot_set_appearance()</a></code> if it should keep its size.</p>
+    </div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="pdf_annot_bounds.html">pdf_annot_bounds()</a></code>.</p></div>
     </div>
@@ -87,7 +95,7 @@ readwrite.</p></dd>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

@@ -78,7 +78,11 @@ entries; this function reads an arbitrary key. Wraps
 
 <dt id="arg-key">key<a class="anchor" aria-label="anchor" href="#arg-key"></a></dt>
 <dd><p>The attachment-dict key as a single non-empty
-character string (e.g. <code>"Subtype"</code>, <code>"AFRelationship"</code>).</p></dd>
+character string (e.g. <code>"ModDate"</code>, <code>"CreationDate"</code>, or a
+custom key). The description and associated-file relationship
+live on the file specification rather than in <code>/Params</code>; read
+them with <code><a href="pdf_attachment_description.html">pdf_attachment_description()</a></code> and
+<code><a href="pdf_attachment_af_relationship.html">pdf_attachment_af_relationship()</a></code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -112,7 +116,7 @@ structured size/date/checksum readouts).</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

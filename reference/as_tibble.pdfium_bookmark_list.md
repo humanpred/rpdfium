@@ -23,5 +23,12 @@ as_tibble(x, ...)
 
 ## Value
 
-A tibble with the documented bookmark columns plus `handle` and
-`source`.
+A tibble with one row per bookmark: `bookmark_index`, `parent_index`,
+`level`, `title`, `page_num`, `action_type`, `uri`, `filepath`,
+`dest_view`, `dest_x`, `dest_y`, `dest_zoom` (see the per-handle
+getters), `color_red` / `color_green` / `color_blue` (title color in
+`[0, 1]`, `NA` when unset; see
+[`pdf_bookmark_color()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_color.md))
+and `italic` / `bold` (see
+[`pdf_bookmark_style()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_style.md)),
+plus the `handle` and `source` list-columns.

@@ -7,6 +7,8 @@ per-attribute getters
 ([`pdf_attachment_name()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_name.md),
 [`pdf_attachment_mime_type()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_mime_type.md),
 [`pdf_attachment_size_bytes()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_size_bytes.md),
+[`pdf_attachment_description()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_description.md),
+[`pdf_attachment_af_relationship()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_af_relationship.md),
 [`pdf_attachment_data()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_data.md),
 [`pdf_attachment_dict_value()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_dict_value.md))
 operate on a single handle.

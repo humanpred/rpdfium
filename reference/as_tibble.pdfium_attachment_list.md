@@ -25,7 +25,11 @@ as_tibble(x, ...)
 ## Value
 
 A tibble with columns `attachment_index`, `name`, `mime_type`,
-`size_bytes`, `handle`, `source`.
+`size_bytes`, `description`, `af_relationship`, `handle`, `source`.
+`description` and `af_relationship` are empty strings when the
+attachment doesn't declare them (see
+[`pdf_attachment_description()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_description.md),
+[`pdf_attachment_af_relationship()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_af_relationship.md)).
 
 ## Details
 

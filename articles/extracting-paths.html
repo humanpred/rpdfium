@@ -94,14 +94,14 @@ is one path segment:</p>
 <span><span class="co">#&gt; [1] 4</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/pdf_path_segments.html">pdf_path_segments</a></span><span class="op">(</span><span class="va">paths</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 5</span></span></span>
-<span><span class="co">#&gt;   segment_index segment_type     x     y close_figure</span></span>
-<span><span class="co">#&gt;           <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>             1 moveto           0     0 FALSE       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>             2 lineto         288     0 FALSE       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>             3 lineto         288   216 FALSE       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>             4 lineto           0   216 FALSE       </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>             5 lineto           0     0 TRUE</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 5 × 9</span></span></span>
+<span><span class="co">#&gt;   segment_index segment_type     x     y close_figure   cx1   cy1   cx2   cy2</span></span>
+<span><span class="co">#&gt;           <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>             1 moveto           0     0 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>             2 lineto         288     0 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>             3 lineto         288   216 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>             4 lineto           0   216 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">5</span>             5 lineto           0     0 TRUE            <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span></code></pre></div>
 <p>Columns:</p>
 <ul>
 <li>
@@ -117,15 +117,45 @@ space (points, origin bottom-left).</li>
 <li>
 <code>close_figure</code> — <code>TRUE</code> on the final segment
 of a closed sub-path.</li>
+<li>
+<code>cx1</code>, <code>cy1</code>, <code>cx2</code>,
+<code>cy2</code> — the two control points of the cubic Bezier curve that
+ends on this row; <code>NA</code> on every other row.</li>
 </ul>
-<p>A note on Bezier curves: PDFium stores a cubic curve as three
-consecutive <code>"bezierto"</code> rows — the two control points
-followed by the endpoint. The v0.1.0 readout returns each of those three
-as separate rows. A companion accessor
-<code>pdf_path_bezier_controls()</code> that returns the pair of control
-points alongside the endpoint is gated on an upstream PDFium patch (<a href="https://pdfium-review.googlesource.com/c/pdfium/+/147810" class="external-link">CL
-147810</a>); see <a href="https://github.com/humanpred/rpdfium/blob/main/dev/decisions/ADR-009-defer-bezier-controls.md" class="external-link">ADR-009</a>
-for the full rationale and status.</p>
+<div class="section level3">
+<h3 id="bezier-curves">Bezier curves<a class="anchor" aria-label="anchor" href="#bezier-curves"></a>
+</h3>
+<p>PDFium stores a cubic curve as three consecutive
+<code>"bezierto"</code> rows: the first control point, the second
+control point, and the endpoint. The endpoint row also carries the
+curve’s control points in
+<code>cx1</code>/<code>cy1</code>/<code>cx2</code>/<code>cy2</code>, so
+keeping only the rows that have them gives one row per curve (its start
+point is the previous row’s <code>x</code>/<code>y</code>):</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">canvas_doc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_doc_new.html">pdf_doc_new</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">canvas</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_page_new.html">pdf_page_new</a></span><span class="op">(</span><span class="va">canvas_doc</span>, <span class="fl">1</span>, <span class="fl">200</span>, <span class="fl">200</span><span class="op">)</span></span>
+<span><span class="va">curve</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_path_new.html">pdf_path_new</a></span><span class="op">(</span><span class="va">canvas</span>, <span class="fl">10</span>, <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/pdf_path_bezier_to.html">pdf_path_bezier_to</a></span><span class="op">(</span><span class="va">curve</span>, <span class="fl">40</span>, <span class="fl">90</span>, <span class="fl">120</span>, <span class="fl">90</span>, <span class="fl">150</span>, <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="va">segs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_path_segments.html">pdf_path_segments</a></span><span class="op">(</span><span class="va">curve</span><span class="op">)</span></span>
+<span><span class="va">segs</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4 × 9</span></span></span>
+<span><span class="co">#&gt;   segment_index segment_type     x     y close_figure   cx1   cy1   cx2   cy2</span></span>
+<span><span class="co">#&gt;           <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>             1 moveto          10    10 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">2</span>             2 bezierto        40    90 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">3</span>             3 bezierto       120    90 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">4</span>             4 bezierto       150    10 FALSE           40    90   120    90</span></span>
+<span><span class="va">segs</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">segs</span><span class="op">$</span><span class="va">cx1</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="st">"y"</span>, <span class="st">"cx1"</span>, <span class="st">"cy1"</span>, <span class="st">"cx2"</span>, <span class="st">"cy2"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1 × 6</span></span></span>
+<span><span class="co">#&gt;       x     y   cx1   cy1   cx2   cy2</span></span>
+<span><span class="co">#&gt;   <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">1</span>   150    10    40    90   120    90</span></span>
+<span><span class="fu"><a href="../reference/pdf_doc_close.html">pdf_doc_close</a></span><span class="op">(</span><span class="va">canvas_doc</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/pdf_path_append.html">pdf_path_append()</a></code> reads the triplet form back, so an
+edited <code><a href="../reference/pdf_path_segments.html">pdf_path_segments()</a></code> tibble can be replayed onto
+another path.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="path-style">Path style<a class="anchor" aria-label="anchor" href="#path-style"></a>
@@ -134,7 +164,7 @@ for the full rationale and status.</p>
 <code>(red, green, blue, alpha)</code> with values in 0..255. NA’s
 indicate “no stroke” or “no fill” — paths can have either, both, or
 neither:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pdf_path_stroke.html">pdf_path_stroke</a></span><span class="op">(</span><span class="va">paths</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   red green  blue alpha width </span></span>
 <span><span class="co">#&gt;     0     0     0   255     1</span></span>
@@ -143,7 +173,7 @@ neither:</p>
 <span><span class="co">#&gt;   255   255   255   255</span></span></code></pre></div>
 <p>Dash pattern is a tibble with <code>pattern</code> (the on-off
 lengths) and <code>phase</code> (the offset into the pattern):</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pdf_path_dash.html">pdf_path_dash</a></span><span class="op">(</span><span class="va">paths</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $array</span></span>
 <span><span class="co">#&gt; numeric(0)</span></span>
@@ -152,7 +182,7 @@ lengths) and <code>phase</code> (the offset into the pattern):</p>
 <span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
 <p>The path’s transformation matrix (the CTM applied to its local
 coordinates) comes from <code><a href="../reference/pdf_obj_matrix.html">pdf_obj_matrix()</a></code>:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pdf_obj_matrix.html">pdf_obj_matrix</a></span><span class="op">(</span><span class="va">paths</span><span class="op">[[</span><span class="fl">1L</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      [,1] [,2] [,3]</span></span>
 <span><span class="co">#&gt; [1,]    1    0    0</span></span>
@@ -165,29 +195,30 @@ coordinates) comes from <code><a href="../reference/pdf_obj_matrix.html">pdf_obj
 <p>For consumers like <code>kmextract</code> that want one row per
 segment across a page with style folded in,
 <code><a href="../reference/pdf_extract_paths.html">pdf_extract_paths()</a></code> is the batched API:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">all_paths</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_extract_paths.html">pdf_extract_paths</a></span><span class="op">(</span><span class="va">fixture</span><span class="op">)</span></span>
 <span><span class="va">all_paths</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 14 × 19</span></span></span>
-<span><span class="co">#&gt;    path_index segment_index segment_type     x     y close_figure stroke_red</span></span>
-<span><span class="co">#&gt;         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span>          1             1 moveto          0    0   FALSE                 0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span>          1             2 lineto        288    0   FALSE                 0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span>          1             3 lineto        288  216   FALSE                 0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span>          1             4 lineto          0  216   FALSE                 0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span>          1             5 lineto          0    0   TRUE                  0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span>          2             1 moveto         44   41.3 FALSE               255</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span>          2             2 lineto        177.  41.3 FALSE               255</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span>          2             3 lineto        177. 175.  FALSE               255</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span>          2             4 lineto         44  175.  FALSE               255</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span>          2             5 lineto         44   41.3 TRUE                255</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">11</span>          3             1 moveto        144  175.  FALSE                 0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">12</span>          3             2 lineto        244   41.3 FALSE                 0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">13</span>          4             1 moveto         44   41.3 FALSE                 0</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">14</span>          4             2 lineto        244  175.  FALSE                 0</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 12 more variables: stroke_green &lt;dbl&gt;, stroke_blue &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   stroke_alpha &lt;dbl&gt;, stroke_width &lt;dbl&gt;, fill_red &lt;dbl&gt;, fill_green &lt;dbl&gt;,</span></span></span>
-<span><span class="co">#&gt; <span style="color: #949494;">#   fill_blue &lt;dbl&gt;, fill_alpha &lt;dbl&gt;, bounds_left &lt;dbl&gt;, bounds_bottom &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 14 × 23</span></span></span>
+<span><span class="co">#&gt;    path_index segment_index segment_type     x     y close_figure   cx1   cy1</span></span>
+<span><span class="co">#&gt;         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;lgl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span>          1             1 moveto          0    0   FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span>          1             2 lineto        288    0   FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span>          1             3 lineto        288  216   FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span>          1             4 lineto          0  216   FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span>          1             5 lineto          0    0   TRUE            <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span>          2             1 moveto         44   41.3 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span>          2             2 lineto        177.  41.3 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span>          2             3 lineto        177. 175.  FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span>          2             4 lineto         44  175.  FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span>          2             5 lineto         44   41.3 TRUE            <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">11</span>          3             1 moveto        144  175.  FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">12</span>          3             2 lineto        244   41.3 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">13</span>          4             1 moveto         44   41.3 FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">14</span>          4             2 lineto        244  175.  FALSE           <span style="color: #BB0000;">NA</span>    <span style="color: #BB0000;">NA</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 15 more variables: cx2 &lt;dbl&gt;, cy2 &lt;dbl&gt;, stroke_red &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   stroke_green &lt;dbl&gt;, stroke_blue &lt;dbl&gt;, stroke_alpha &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   stroke_width &lt;dbl&gt;, fill_red &lt;dbl&gt;, fill_green &lt;dbl&gt;, fill_blue &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   fill_alpha &lt;dbl&gt;, bounds_left &lt;dbl&gt;, bounds_bottom &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   bounds_right &lt;dbl&gt;, bounds_top &lt;dbl&gt;</span></span></span></code></pre></div>
 <p>The result is a tibble. Schema:</p>
 <ul>
@@ -210,7 +241,7 @@ as <code><a href="../reference/pdf_path_segments.html">pdf_path_segments()</a></
 PDF user space.</li>
 </ul>
 <p>Three attributes carry per-page context:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">all_paths</span>, <span class="st">"page_size"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  width height </span></span>
 <span><span class="co">#&gt;    288    216</span></span>
@@ -236,7 +267,7 @@ downstream consumers want to position labels relative to a curve.</li>
 </h2>
 <p>A common workflow: select paths by stroke colour and inspect the
 segment endpoints.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">red_paths</span> <span class="op">&lt;-</span> <span class="va">all_paths</span><span class="op">[</span></span>
 <span>  <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">all_paths</span><span class="op">$</span><span class="va">stroke_red</span><span class="op">)</span> <span class="op">&amp;</span></span>
 <span>    <span class="va">all_paths</span><span class="op">$</span><span class="va">stroke_red</span> <span class="op">&gt;</span> <span class="fl">200</span> <span class="op">&amp;</span></span>
@@ -252,7 +283,7 @@ segment endpoints.</p>
 <div class="section level2">
 <h2 id="cleanup">Cleanup<a class="anchor" aria-label="anchor" href="#cleanup"></a>
 </h2>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pdf_page_close.html">pdf_page_close</a></span><span class="op">(</span><span class="va">page</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/pdf_doc_close.html">pdf_doc_close</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -267,7 +298,7 @@ segment endpoints.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

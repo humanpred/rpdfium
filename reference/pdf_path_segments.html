@@ -83,17 +83,28 @@ returns a 0-row tibble of the same shape.</p>
     <p>Each row carries:</p><ul><li><p><code>segment_index</code> - 1-based segment index within this path</p></li>
 <li><p><code>segment_type</code> - <code>"moveto"</code>, <code>"lineto"</code>, <code>"bezierto"</code>, or
 <code>"unknown"</code></p></li>
-<li><p><code>x</code>, <code>y</code> - the segment's anchor point in PDF points</p></li>
+<li><p><code>x</code>, <code>y</code> - the segment's point in PDF points</p></li>
 <li><p><code>close_figure</code> - <code>TRUE</code> if this segment closes the current
 subpath (PDFium's <code>h</code> operator equivalent)</p></li>
-</ul><p><strong>Known limitation:</strong> PDFium's segment readout API exposes only the
-endpoint of a <code>bezierto</code> segment, not its two control points. The
-public C API offers no way to recover them; the limitation is
-shared by pypdfium2, pdfium-rs, and pdfium-render. For now,
-<code>bezierto</code> rows show the curve's endpoint; control-point
-information is lost. See
-<code>dev/decisions/ADR-009-defer-bezier-controls.md</code> for the
-decision record.</p>
+<li><p><code>cx1</code>, <code>cy1</code>, <code>cx2</code>, <code>cy2</code> - the two control points of the cubic
+Bezier curve that ends at this row; <code>NA</code> on every other row</p></li>
+</ul><div class="section">
+<h3 id="bezier-curves">Bezier curves<a class="anchor" aria-label="anchor" href="#bezier-curves"></a></h3>
+
+
+<p>PDFium stores a cubic Bezier curve (the <code>c</code>, <code>v</code>, and <code>y</code> content
+operators) as three consecutive <code>"bezierto"</code> rows: the first
+control point, the second control point, and the curve's
+endpoint, in that order. The endpoint row additionally carries the
+curve's control points in <code>cx1</code>/<code>cy1</code>/<code>cx2</code>/<code>cy2</code> (wraps
+<code>FPDFPath_GetBezierControlPoints</code>), so
+<code>subset(segs, !is.na(cx1))</code> gives one row per curve, with the
+curve's start point being the previous row's <code>x</code>/<code>y</code>. The
+control-point rows keep <code>cx1</code>..<code>cy2</code> as <code>NA</code>, which is how to tell
+them apart from endpoints. <code><a href="pdf_path_append.html">pdf_path_append()</a></code> consumes the
+triplet form, so the output round-trips.</p>
+</div>
+
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -124,7 +135,7 @@ decision record.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

@@ -3,11 +3,13 @@
 Replaces the attachment's embedded file data with the given raw bytes.
 Wraps `FPDFAttachment_SetFile`. The attachment's `CreationDate` and
 checksum dictionary entries are automatically updated; **all other
-entries** (including the MIME `Subtype` and the `Desc` you may have set
-with
+entries** of the embedded file stream and its `/Params` dictionary
+(including the MIME `Subtype` and anything set with
 [`pdf_attachment_set_dict_value()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_dict_value.md))
 are cleared by PDFium during the write — set those entries *after* this
-call.
+call. The description set with
+[`pdf_attachment_set_description()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_description.md)
+lives on the file specification and is kept.
 
 ## Usage
 

@@ -26,6 +26,8 @@ pdf_path_append(obj, segments)
   `y` (numeric), and optionally `close_figure` (logical). Matches the
   [`pdf_path_segments()`](https://humanpred.github.io/rpdfium/reference/pdf_path_segments.md)
   output exactly so a reader → edit → writer round-trip is a one-liner.
+  Other columns (such as the `cx1`..`cy2` control-point columns, which
+  repeat the triplet's first two rows) are ignored.
 
 ## Value
 

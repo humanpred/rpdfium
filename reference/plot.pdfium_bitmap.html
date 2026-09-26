@@ -91,26 +91,18 @@ effect.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>We go through <code>as.array(x)</code> rather than handing the integer matrix
-directly to <code><a href="https://rdrr.io/r/graphics/rasterImage.html" class="external-link">graphics::rasterImage()</a></code> for two reasons that
-compound:</p><ol><li><p>Per the documented raster contract (see
-<code><a href="https://rdrr.io/r/grDevices/as.raster.html" class="external-link">?grDevices::as.raster</a></code>, "Raster images are internally
-represented row-first"), <code>"raster"</code> and <code>nativeRaster</code> objects
-must have row-major memory layout. R's <code>as.raster.matrix()</code>
-transposes its input precisely to satisfy that. Our integer
-matrix comes out of C++ as a standard R column-major matrix,
-so feeding it directly is non-conformant and shows diagonal
-stripe artifacts on detailed content.</p></li>
-<li><p><code>rasterImage</code> with <code>plot.window</code> uses the user-coordinate
-system, which defaults (<code>xaxs = "r", yaxs = "r"</code>) to padding
-the interval by 4% on each side — silently compressing the
-raster into ~92% of the device and forcing sub-pixel
-resampling. <code><a href="https://rdrr.io/r/grid/grid.raster.html" class="external-link">grid::grid.raster()</a></code> uses npc coordinates and
-isn't subject to this.</p></li>
-</ol><p>Going through <code>as.array(x)</code> to a 3-D <code>c(H, W, 4)</code> numeric array
-and rendering with <code><a href="https://rdrr.io/r/grid/grid.raster.html" class="external-link">grid::grid.raster()</a></code> sidesteps both: the
-array path uses positional channel storage (no row-vs-column
-convention), and grid coordinates are 0..1 npc without padding.</p>
+    <p>We go through <code>as.array(x)</code> to a 3-D <code>c(H, W, 4)</code> numeric array
+rather than handing the bitmap to <code><a href="https://rdrr.io/r/graphics/rasterImage.html" class="external-link">graphics::rasterImage()</a></code>:
+<code>rasterImage</code> with <code>plot.window</code> uses the user-coordinate system,
+which defaults (<code>xaxs = "r", yaxs = "r"</code>) to padding the interval
+by 4% on each side — silently compressing the raster into ~92% of
+the device and forcing sub-pixel resampling. <code><a href="https://rdrr.io/r/grid/grid.raster.html" class="external-link">grid::grid.raster()</a></code>
+uses npc coordinates (0..1, no padding) and isn't subject to this.</p>
+<p>(The bitmap itself is a <em>conformant</em> <code>nativeRaster</code> — its backing
+buffer is row-major, so it could be handed to <code><a href="https://rdrr.io/r/grid/grid.raster.html" class="external-link">grid::grid.raster()</a></code>
+directly; the <code><a href="https://rdrr.io/r/base/array.html" class="external-link">as.array()</a></code> array path is kept because a positional
+<code>c(H, W, 4)</code> array carries no row-vs-column ambiguity for
+downstream consumers.)</p>
     </div>
 
     <div class="section level2">
@@ -133,7 +125,7 @@ convention), and grid coordinates are 0..1 npc without padding.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

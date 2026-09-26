@@ -27,14 +27,14 @@ length(paths)
 #> [1] 4
 
 pdf_path_segments(paths[[1L]])
-#> # A tibble: 5 × 5
-#>   segment_index segment_type     x     y close_figure
-#>           <int> <chr>        <dbl> <dbl> <lgl>       
-#> 1             1 moveto           0     0 FALSE       
-#> 2             2 lineto         288     0 FALSE       
-#> 3             3 lineto         288   216 FALSE       
-#> 4             4 lineto           0   216 FALSE       
-#> 5             5 lineto           0     0 TRUE
+#> # A tibble: 5 × 9
+#>   segment_index segment_type     x     y close_figure   cx1   cy1   cx2   cy2
+#>           <int> <chr>        <dbl> <dbl> <lgl>        <dbl> <dbl> <dbl> <dbl>
+#> 1             1 moveto           0     0 FALSE           NA    NA    NA    NA
+#> 2             2 lineto         288     0 FALSE           NA    NA    NA    NA
+#> 3             3 lineto         288   216 FALSE           NA    NA    NA    NA
+#> 4             4 lineto           0   216 FALSE           NA    NA    NA    NA
+#> 5             5 lineto           0     0 TRUE            NA    NA    NA    NA
 ```
 
 Columns:
@@ -45,16 +45,44 @@ Columns:
 - `x`, `y` — segment coordinates in PDF user space (points, origin
   bottom-left).
 - `close_figure` — `TRUE` on the final segment of a closed sub-path.
+- `cx1`, `cy1`, `cx2`, `cy2` — the two control points of the cubic
+  Bezier curve that ends on this row; `NA` on every other row.
 
-A note on Bezier curves: PDFium stores a cubic curve as three
-consecutive `"bezierto"` rows — the two control points followed by the
-endpoint. The v0.1.0 readout returns each of those three as separate
-rows. A companion accessor `pdf_path_bezier_controls()` that returns the
-pair of control points alongside the endpoint is gated on an upstream
-PDFium patch ([CL
-147810](https://pdfium-review.googlesource.com/c/pdfium/+/147810)); see
-[ADR-009](https://github.com/humanpred/rpdfium/blob/main/dev/decisions/ADR-009-defer-bezier-controls.md)
-for the full rationale and status.
+### Bezier curves
+
+PDFium stores a cubic curve as three consecutive `"bezierto"` rows: the
+first control point, the second control point, and the endpoint. The
+endpoint row also carries the curve’s control points in
+`cx1`/`cy1`/`cx2`/`cy2`, so keeping only the rows that have them gives
+one row per curve (its start point is the previous row’s `x`/`y`):
+
+``` r
+
+canvas_doc <- pdf_doc_new()
+canvas <- pdf_page_new(canvas_doc, 1, 200, 200)
+curve <- pdf_path_new(canvas, 10, 10)
+pdf_path_bezier_to(curve, 40, 90, 120, 90, 150, 10)
+segs <- pdf_path_segments(curve)
+segs
+#> # A tibble: 4 × 9
+#>   segment_index segment_type     x     y close_figure   cx1   cy1   cx2   cy2
+#>           <int> <chr>        <dbl> <dbl> <lgl>        <dbl> <dbl> <dbl> <dbl>
+#> 1             1 moveto          10    10 FALSE           NA    NA    NA    NA
+#> 2             2 bezierto        40    90 FALSE           NA    NA    NA    NA
+#> 3             3 bezierto       120    90 FALSE           NA    NA    NA    NA
+#> 4             4 bezierto       150    10 FALSE           40    90   120    90
+segs[!is.na(segs$cx1), c("x", "y", "cx1", "cy1", "cx2", "cy2")]
+#> # A tibble: 1 × 6
+#>       x     y   cx1   cy1   cx2   cy2
+#>   <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
+#> 1   150    10    40    90   120    90
+pdf_doc_close(canvas_doc)
+```
+
+[`pdf_path_append()`](https://humanpred.github.io/rpdfium/reference/pdf_path_append.md)
+reads the triplet form back, so an edited
+[`pdf_path_segments()`](https://humanpred.github.io/rpdfium/reference/pdf_path_segments.md)
+tibble can be replayed onto another path.
 
 ## Path style
 
@@ -109,26 +137,27 @@ is the batched API:
 
 all_paths <- pdf_extract_paths(fixture)
 all_paths
-#> # A tibble: 14 × 19
-#>    path_index segment_index segment_type     x     y close_figure stroke_red
-#>         <int>         <int> <chr>        <dbl> <dbl> <lgl>             <dbl>
-#>  1          1             1 moveto          0    0   FALSE                 0
-#>  2          1             2 lineto        288    0   FALSE                 0
-#>  3          1             3 lineto        288  216   FALSE                 0
-#>  4          1             4 lineto          0  216   FALSE                 0
-#>  5          1             5 lineto          0    0   TRUE                  0
-#>  6          2             1 moveto         44   41.3 FALSE               255
-#>  7          2             2 lineto        177.  41.3 FALSE               255
-#>  8          2             3 lineto        177. 175.  FALSE               255
-#>  9          2             4 lineto         44  175.  FALSE               255
-#> 10          2             5 lineto         44   41.3 TRUE                255
-#> 11          3             1 moveto        144  175.  FALSE                 0
-#> 12          3             2 lineto        244   41.3 FALSE                 0
-#> 13          4             1 moveto         44   41.3 FALSE                 0
-#> 14          4             2 lineto        244  175.  FALSE                 0
-#> # ℹ 12 more variables: stroke_green <dbl>, stroke_blue <dbl>,
-#> #   stroke_alpha <dbl>, stroke_width <dbl>, fill_red <dbl>, fill_green <dbl>,
-#> #   fill_blue <dbl>, fill_alpha <dbl>, bounds_left <dbl>, bounds_bottom <dbl>,
+#> # A tibble: 14 × 23
+#>    path_index segment_index segment_type     x     y close_figure   cx1   cy1
+#>         <int>         <int> <chr>        <dbl> <dbl> <lgl>        <dbl> <dbl>
+#>  1          1             1 moveto          0    0   FALSE           NA    NA
+#>  2          1             2 lineto        288    0   FALSE           NA    NA
+#>  3          1             3 lineto        288  216   FALSE           NA    NA
+#>  4          1             4 lineto          0  216   FALSE           NA    NA
+#>  5          1             5 lineto          0    0   TRUE            NA    NA
+#>  6          2             1 moveto         44   41.3 FALSE           NA    NA
+#>  7          2             2 lineto        177.  41.3 FALSE           NA    NA
+#>  8          2             3 lineto        177. 175.  FALSE           NA    NA
+#>  9          2             4 lineto         44  175.  FALSE           NA    NA
+#> 10          2             5 lineto         44   41.3 TRUE            NA    NA
+#> 11          3             1 moveto        144  175.  FALSE           NA    NA
+#> 12          3             2 lineto        244   41.3 FALSE           NA    NA
+#> 13          4             1 moveto         44   41.3 FALSE           NA    NA
+#> 14          4             2 lineto        244  175.  FALSE           NA    NA
+#> # ℹ 15 more variables: cx2 <dbl>, cy2 <dbl>, stroke_red <dbl>,
+#> #   stroke_green <dbl>, stroke_blue <dbl>, stroke_alpha <dbl>,
+#> #   stroke_width <dbl>, fill_red <dbl>, fill_green <dbl>, fill_blue <dbl>,
+#> #   fill_alpha <dbl>, bounds_left <dbl>, bounds_bottom <dbl>,
 #> #   bounds_right <dbl>, bounds_top <dbl>
 ```
 

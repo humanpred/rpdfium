@@ -328,6 +328,20 @@
 
         <dt>
 
+          <code><a href="pdf_attachment_description.html">pdf_attachment_description()</a></code>
+
+        </dt>
+        <dd>Attachment description</dd>
+
+        <dt>
+
+          <code><a href="pdf_attachment_af_relationship.html">pdf_attachment_af_relationship()</a></code>
+
+        </dt>
+        <dd>Attachment relationship to the document (PDF 2.0)</dd>
+
+        <dt>
+
           <code><a href="pdf_attachment_data.html">pdf_attachment_data()</a></code>
 
         </dt>
@@ -511,6 +525,20 @@
 
         </dt>
         <dd>Bookmark destination zoom factor</dd>
+
+        <dt>
+
+          <code><a href="pdf_bookmark_color.html">pdf_bookmark_color()</a></code>
+
+        </dt>
+        <dd>Bookmark title color</dd>
+
+        <dt>
+
+          <code><a href="pdf_bookmark_style.html">pdf_bookmark_style()</a></code>
+
+        </dt>
+        <dd>Bookmark title style</dd>
       </dl></div><div class="section level2">
       <h2 id="pages">Pages<a class="anchor" aria-label="anchor" href="#pages"></a></h2>
 
@@ -1000,6 +1028,13 @@
 
         </dt>
         <dd>Rotated bounding quadpoints of a page object</dd>
+
+        <dt>
+
+          <code><a href="pdf_obj_rendered_fill_pattern.html">pdf_obj_rendered_fill_pattern()</a></code> <code><a href="pdf_obj_rendered_fill_pattern.html">pdf_obj_rendered_stroke_pattern()</a></code>
+
+        </dt>
+        <dd>Rendered tile of a page object's fill or stroke pattern</dd>
 
         <dt>
 
@@ -1592,10 +1627,24 @@
 
         <dt>
 
+          <code><a href="pdf_text_set_font_size.html">pdf_text_set_font_size()</a></code>
+
+        </dt>
+        <dd>Set the font size of a text page object</dd>
+
+        <dt>
+
           <code><a href="pdf_obj_add_mark.html">pdf_obj_add_mark()</a></code>
 
         </dt>
         <dd>Add a content mark to a page object</dd>
+
+        <dt>
+
+          <code><a href="pdf_obj_add_existing_mark.html">pdf_obj_add_existing_mark()</a></code>
+
+        </dt>
+        <dd>Share an existing content mark with another page object</dd>
 
         <dt>
 
@@ -1847,7 +1896,7 @@
       </dl></div><div class="section level2">
       <h2 id="attachment-authoring">Attachment authoring<a class="anchor" aria-label="anchor" href="#attachment-authoring"></a></h2>
 
-      <div class="section-desc"><p>Add, delete, and mutate the document’s embedded-file attachments. The natural sequence for a fresh attachment is <code><a href="../reference/pdf_attachment_new.html">pdf_attachment_new()</a></code> → <code><a href="../reference/pdf_attachment_set_data.html">pdf_attachment_set_data()</a></code> (to populate the file bytes and materialise the <code>/Params</code> subdict) → <code><a href="../reference/pdf_attachment_set_dict_value.html">pdf_attachment_set_dict_value()</a></code> (for any extra dictionary metadata).</p></div>
+      <div class="section-desc"><p>Add, delete, and mutate the document’s embedded-file attachments. The natural sequence for a fresh attachment is <code><a href="../reference/pdf_attachment_new.html">pdf_attachment_new()</a></code> → <code><a href="../reference/pdf_attachment_set_data.html">pdf_attachment_set_data()</a></code> (to populate the file bytes and materialise the <code>/Params</code> subdict) → <code><a href="../reference/pdf_attachment_set_dict_value.html">pdf_attachment_set_dict_value()</a></code> (for any extra dictionary metadata). <code><a href="../reference/pdf_attachment_set_description.html">pdf_attachment_set_description()</a></code> writes the file specification’s <code>/Desc</code> and can be called at any point.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -1867,6 +1916,13 @@
 
         </dt>
         <dd>Delete an embedded file attachment from a document</dd>
+
+        <dt>
+
+          <code><a href="pdf_attachment_set_description.html">pdf_attachment_set_description()</a></code>
+
+        </dt>
+        <dd>Set the description of an embedded file attachment</dd>
 
         <dt>
 
@@ -2350,7 +2406,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

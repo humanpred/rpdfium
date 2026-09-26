@@ -105,8 +105,12 @@ page</p></li>
 <li><p><code>segment_index</code> - 1-based segment index within the path</p></li>
 <li><p><code>segment_type</code> - <code>"moveto"</code>, <code>"lineto"</code>, <code>"bezierto"</code>, or
 <code>"unknown"</code></p></li>
-<li><p><code>x</code>, <code>y</code> - the segment's anchor / endpoint in PDF points</p></li>
+<li><p><code>x</code>, <code>y</code> - the segment's point in PDF points</p></li>
 <li><p><code>close_figure</code> - logical, segment closes the current subpath</p></li>
+<li><p><code>cx1</code>, <code>cy1</code>, <code>cx2</code>, <code>cy2</code> - control points of the cubic Bezier
+curve ending at this row; <code>NA</code> on every other row. A curve spans
+three <code>"bezierto"</code> rows (control point 1, control point 2,
+endpoint); see <code><a href="pdf_path_segments.html">pdf_path_segments()</a></code>.</p></li>
 </ul><p>Style (constant across all rows of one path):</p><ul><li><p><code>stroke_red</code>, <code>stroke_green</code>, <code>stroke_blue</code>, <code>stroke_alpha</code> -
 0-255 channels; <code>NA</code> if no stroke</p></li>
 <li><p><code>stroke_width</code> - PDF points; <code>NA</code> if no stroke</p></li>
@@ -125,14 +129,6 @@ PDF points, from <code><a href="pdf_page_size.html">pdf_page_size()</a></code></
 <code><a href="pdf_page_rotation.html">pdf_page_rotation()</a></code></p></li>
 <li><p><code>text_runs</code> - tibble with one row per text object on the page,
 the output of <code><a href="pdf_text_runs.html">pdf_text_runs()</a></code>.</p></li>
-</ul></div>
-
-<div class="section">
-<h3 id="known-limitations">Known limitations<a class="anchor" aria-label="anchor" href="#known-limitations"></a></h3>
-
-<ul><li><p>Bezier control points are not exposed - only segment endpoints.
-PDFium does not expose them through its public C API; see
-<code>dev/decisions/ADR-009-defer-bezier-controls.md</code>.</p></li>
 </ul></div>
 
     </div>
@@ -171,7 +167,7 @@ PDFium does not expose them through its public C API; see
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

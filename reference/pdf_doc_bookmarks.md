@@ -11,7 +11,9 @@ Per-attribute getters
 [`pdf_bookmark_dest_view()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_dest_view.md),
 [`pdf_bookmark_dest_x()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_dest_x.md),
 [`pdf_bookmark_dest_y()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_dest_y.md),
-[`pdf_bookmark_dest_zoom()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_dest_zoom.md))
+[`pdf_bookmark_dest_zoom()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_dest_zoom.md),
+[`pdf_bookmark_color()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_color.md),
+[`pdf_bookmark_style()`](https://humanpred.github.io/rpdfium/reference/pdf_bookmark_style.md))
 operate on a single handle.
 
 ## Usage
@@ -44,7 +46,8 @@ Use `tibble::as_tibble(pdf_doc_bookmarks(doc))` for the tibble view.
 Wraps `FPDFBookmark_GetFirstChild`, `FPDFBookmark_GetNextSibling`,
 `FPDFBookmark_GetTitle`, `FPDFBookmark_GetDest`,
 `FPDFBookmark_GetAction`, `FPDFAction_GetType` / `FPDFAction_GetURIPath`
-/ `FPDFAction_GetFilePath`, and `FPDFDest_GetDestPageIndex`.
+/ `FPDFAction_GetFilePath`, `FPDFDest_GetDestPageIndex`,
+`FPDFBookmark_GetColor`, and `FPDFBookmark_GetStyle`.
 
 ## See also
 

@@ -31,18 +31,27 @@ Each row carries:
 
 - `segment_type` - `"moveto"`, `"lineto"`, `"bezierto"`, or `"unknown"`
 
-- `x`, `y` - the segment's anchor point in PDF points
+- `x`, `y` - the segment's point in PDF points
 
 - `close_figure` - `TRUE` if this segment closes the current subpath
   (PDFium's `h` operator equivalent)
 
-**Known limitation:** PDFium's segment readout API exposes only the
-endpoint of a `bezierto` segment, not its two control points. The public
-C API offers no way to recover them; the limitation is shared by
-pypdfium2, pdfium-rs, and pdfium-render. For now, `bezierto` rows show
-the curve's endpoint; control-point information is lost. See
-`dev/decisions/ADR-009-defer-bezier-controls.md` for the decision
-record.
+- `cx1`, `cy1`, `cx2`, `cy2` - the two control points of the cubic
+  Bezier curve that ends at this row; `NA` on every other row
+
+### Bezier curves
+
+PDFium stores a cubic Bezier curve (the `c`, `v`, and `y` content
+operators) as three consecutive `"bezierto"` rows: the first control
+point, the second control point, and the curve's endpoint, in that
+order. The endpoint row additionally carries the curve's control points
+in `cx1`/`cy1`/`cx2`/`cy2` (wraps `FPDFPath_GetBezierControlPoints`), so
+`subset(segs, !is.na(cx1))` gives one row per curve, with the curve's
+start point being the previous row's `x`/`y`. The control-point rows
+keep `cx1`..`cy2` as `NA`, which is how to tell them apart from
+endpoints.
+[`pdf_path_append()`](https://humanpred.github.io/rpdfium/reference/pdf_path_append.md)
+consumes the triplet form, so the output round-trips.
 
 ## See also
 

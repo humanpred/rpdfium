@@ -37,6 +37,12 @@ Two modes:
 
 - `"print"` — bake the print-time appearance instead.
 
+Flattened fields are also removed from the document's interactive form
+(`/AcroForm`). Once the last field is flattened the `/AcroForm`
+dictionary itself is dropped, so
+[`pdf_doc_form_type()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_form_type.md)
+reports `"none"`.
+
 Returns the page invisibly. The parent page's dirty mark is set so
 [`pdf_save()`](https://humanpred.github.io/rpdfium/reference/pdf_save.md)
 picks up the change.

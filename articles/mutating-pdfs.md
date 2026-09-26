@@ -218,9 +218,9 @@ To reset every field in the document, `pdf_form_reset(doc)`.
 When you’re ready to ship a non-editable PDF,
 [`pdf_page_flatten()`](https://humanpred.github.io/rpdfium/reference/pdf_page_flatten.md)
 bakes the widget appearances and any other annotations into the page’s
-content stream. **It’s irreversible** — there is no
-`pdf_page_unflatten()`. Run it as the last step before saving the
-final-state PDF.
+content stream and drops the flattened fields from the document’s form.
+**It’s irreversible** — there is no `pdf_page_unflatten()`. Run it as
+the last step before saving the final-state PDF.
 
 ## Embedded file attachments
 
@@ -230,16 +230,19 @@ final-state PDF.
 att <- pdf_attachment_new(doc, name = "data.csv")
 csv_bytes <- charToRaw("a,b,c\n1,2,3\n")
 pdf_attachment_set_data(att, csv_bytes)
-pdf_attachment_set_dict_value(att, "Desc",
-                              "Source data for the figures above")
+pdf_attachment_set_description(att, "Source data for the figures above")
+pdf_attachment_set_dict_value(att, "ModDate", "D:20260101120000Z")
 ```
 
 Note the ordering:
 [`pdf_attachment_set_data()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_data.md)
-first (it creates `/Params` on the embedded file stream as a side
-effect), then any
+comes before any
 [`pdf_attachment_set_dict_value()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_dict_value.md)
-calls.
+calls, because it (re)creates the embedded file’s `/Params` dictionary
+and clears entries written earlier. The description lives on the
+attachment’s file specification instead, so
+[`pdf_attachment_set_description()`](https://humanpred.github.io/rpdfium/reference/pdf_attachment_set_description.md)
+works at any point.
 
 ## What’s *not* in v0.1.0
 

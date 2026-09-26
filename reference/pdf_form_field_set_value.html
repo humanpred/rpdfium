@@ -88,11 +88,14 @@ scalar matching one of the field's options
 (<code><a href="pdf_form_field_options.html">pdf_form_field_options()</a></code>).</p></li>
 </ul><p>Any other field type (button / signature / unknown) errors —
 those don't have a settable value.</p>
-<p>Wraps <code>FPDFAnnot_SetStringValue(annot, "V", ...)</code> followed by a
-rect re-touch (<code>FPDFAnnot_SetRect</code> to the current rect) that
-flips the AP-dirty flag, so the next <code><a href="pdf_render_page.html">pdf_render_page()</a></code> or
-<code><a href="pdf_save.html">pdf_save()</a></code> rebuilds the widget's appearance stream from the
-new value.</p>
+<p>Wraps <code>FPDFAnnot_SetStringValue(annot, "V", ...)</code> (plus <code>"AS"</code>
+for checkboxes and radio buttons). The widget's existing
+appearance stream (<code>/AP</code>) is left as is: PDFium's public API
+offers no non-interactive way to regenerate it. Checkable fields
+switch their <code>/AS</code> appearance state, so their existing on / off
+appearances follow the value; for text and choice fields the saved
+file carries the new value alongside the old appearance, which
+viewers that honor the form's <code>/NeedAppearances</code> flag regenerate.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -109,7 +112,7 @@ new value.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

@@ -16,6 +16,15 @@ pdf_doc_new()
 
 A `pdfium_doc` with zero pages.
 
+## Details
+
+PDFium fills the new document's `/Info` dictionary with
+`/Creator (PDFium)` and a `/CreationDate` holding the current local
+wall-clock time. It labels that time with a `+00'00'` (UTC) offset
+whatever the local time zone, so on a machine not running in UTC,
+[`pdf_parse_date()`](https://humanpred.github.io/rpdfium/reference/pdf_parse_date.md)
+of the creation date is off by the local UTC offset.
+
 ## See also
 
 [`pdf_page_new()`](https://humanpred.github.io/rpdfium/reference/pdf_page_new.md)

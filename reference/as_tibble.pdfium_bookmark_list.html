@@ -70,8 +70,14 @@ tibble. Adds <code>handle</code> and <code>source</code> list-columns (ADR-017).
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A tibble with the documented bookmark columns plus
-<code>handle</code> and <code>source</code>.</p>
+    <p>A tibble with one row per bookmark: <code>bookmark_index</code>,
+<code>parent_index</code>, <code>level</code>, <code>title</code>, <code>page_num</code>, <code>action_type</code>,
+<code>uri</code>, <code>filepath</code>, <code>dest_view</code>, <code>dest_x</code>, <code>dest_y</code>, <code>dest_zoom</code>
+(see the per-handle getters), <code>color_red</code> / <code>color_green</code> /
+<code>color_blue</code> (title color in <code>[0, 1]</code>, <code>NA</code> when unset; see
+<code><a href="pdf_bookmark_color.html">pdf_bookmark_color()</a></code>) and <code>italic</code> / <code>bold</code> (see
+<code><a href="pdf_bookmark_style.html">pdf_bookmark_style()</a></code>), plus the <code>handle</code> and <code>source</code>
+list-columns.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -83,7 +89,7 @@ tibble. Adds <code>handle</code> and <code>source</code> list-columns (ADR-017).
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

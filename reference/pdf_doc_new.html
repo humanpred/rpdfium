@@ -66,6 +66,15 @@ new document.</p>
     <p>A <code>pdfium_doc</code> with zero pages.</p>
     </div>
     <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>PDFium fills the new document's <code>/Info</code> dictionary with
+<code>/Creator (PDFium)</code> and a <code>/CreationDate</code> holding the current
+local wall-clock time. It labels that time with a <code>+00'00'</code> (UTC)
+offset whatever the local time zone, so on a machine not running
+in UTC, <code><a href="pdf_parse_date.html">pdf_parse_date()</a></code> of the creation date is off by the
+local UTC offset.</p>
+    </div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="pdf_page_new.html">pdf_page_new()</a></code> to add a page;
 <code><a href="pdf_save.html">pdf_save()</a></code> to persist the result.</p></div>
@@ -90,7 +99,7 @@ new document.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

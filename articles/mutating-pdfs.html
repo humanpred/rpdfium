@@ -255,9 +255,10 @@ dispatches by the field’s type.</p>
 document, <code>pdf_form_reset(doc)</code>.</p>
 <p>When you’re ready to ship a non-editable PDF,
 <code><a href="../reference/pdf_page_flatten.html">pdf_page_flatten()</a></code> bakes the widget appearances and any
-other annotations into the page’s content stream. <strong>It’s
-irreversible</strong> — there is no <code>pdf_page_unflatten()</code>.
-Run it as the last step before saving the final-state PDF.</p>
+other annotations into the page’s content stream and drops the flattened
+fields from the document’s form. <strong>It’s irreversible</strong> —
+there is no <code>pdf_page_unflatten()</code>. Run it as the last step
+before saving the final-state PDF.</p>
 </div>
 <div class="section level2">
 <h2 id="embedded-file-attachments">Embedded file attachments<a class="anchor" aria-label="anchor" href="#embedded-file-attachments"></a>
@@ -267,12 +268,14 @@ Run it as the last step before saving the final-state PDF.</p>
 <span><span class="va">att</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pdf_attachment_new.html">pdf_attachment_new</a></span><span class="op">(</span><span class="va">doc</span>, name <span class="op">=</span> <span class="st">"data.csv"</span><span class="op">)</span></span>
 <span><span class="va">csv_bytes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rawConversion.html" class="external-link">charToRaw</a></span><span class="op">(</span><span class="st">"a,b,c\n1,2,3\n"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/pdf_attachment_set_data.html">pdf_attachment_set_data</a></span><span class="op">(</span><span class="va">att</span>, <span class="va">csv_bytes</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/pdf_attachment_set_dict_value.html">pdf_attachment_set_dict_value</a></span><span class="op">(</span><span class="va">att</span>, <span class="st">"Desc"</span>,</span>
-<span>                              <span class="st">"Source data for the figures above"</span><span class="op">)</span></span></code></pre></div>
-<p>Note the ordering: <code><a href="../reference/pdf_attachment_set_data.html">pdf_attachment_set_data()</a></code> first (it
-creates <code>/Params</code> on the embedded file stream as a side
-effect), then any <code><a href="../reference/pdf_attachment_set_dict_value.html">pdf_attachment_set_dict_value()</a></code>
-calls.</p>
+<span><span class="fu"><a href="../reference/pdf_attachment_set_description.html">pdf_attachment_set_description</a></span><span class="op">(</span><span class="va">att</span>, <span class="st">"Source data for the figures above"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/pdf_attachment_set_dict_value.html">pdf_attachment_set_dict_value</a></span><span class="op">(</span><span class="va">att</span>, <span class="st">"ModDate"</span>, <span class="st">"D:20260101120000Z"</span><span class="op">)</span></span></code></pre></div>
+<p>Note the ordering: <code><a href="../reference/pdf_attachment_set_data.html">pdf_attachment_set_data()</a></code> comes
+before any <code><a href="../reference/pdf_attachment_set_dict_value.html">pdf_attachment_set_dict_value()</a></code> calls, because
+it (re)creates the embedded file’s <code>/Params</code> dictionary and
+clears entries written earlier. The description lives on the
+attachment’s file specification instead, so
+<code><a href="../reference/pdf_attachment_set_description.html">pdf_attachment_set_description()</a></code> works at any point.</p>
 </div>
 <div class="section level2">
 <h2 id="whats-not-in-v0-1-0">What’s <em>not</em> in v0.1.0<a class="anchor" aria-label="anchor" href="#whats-not-in-v0-1-0"></a>
@@ -311,7 +314,7 @@ full set of upstream patches we maintain.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

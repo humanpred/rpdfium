@@ -170,14 +170,14 @@ each segment:
 
 paths <- Filter(function(o) o$type == "path", objs)
 pdf_path_segments(paths[[1L]])
-#> # A tibble: 5 × 5
-#>   segment_index segment_type     x     y close_figure
-#>           <int> <chr>        <dbl> <dbl> <lgl>       
-#> 1             1 moveto           0     0 FALSE       
-#> 2             2 lineto         288     0 FALSE       
-#> 3             3 lineto         288   216 FALSE       
-#> 4             4 lineto           0   216 FALSE       
-#> 5             5 lineto           0     0 TRUE
+#> # A tibble: 5 × 9
+#>   segment_index segment_type     x     y close_figure   cx1   cy1   cx2   cy2
+#>           <int> <chr>        <dbl> <dbl> <lgl>        <dbl> <dbl> <dbl> <dbl>
+#> 1             1 moveto           0     0 FALSE           NA    NA    NA    NA
+#> 2             2 lineto         288     0 FALSE           NA    NA    NA    NA
+#> 3             3 lineto         288   216 FALSE           NA    NA    NA    NA
+#> 4             4 lineto           0   216 FALSE           NA    NA    NA    NA
+#> 5             5 lineto           0     0 TRUE            NA    NA    NA    NA
 ```
 
 Stroke and fill colour, dash pattern, and miscellaneous style come back
@@ -207,7 +207,7 @@ path on every page — the shape `kmextract` and similar consumers expect
 
 extracted <- pdf_extract_paths(fixture)
 str(extracted, max.level = 1L)
-#> tibble [14 × 19] (S3: tbl_df/tbl/data.frame)
+#> tibble [14 × 23] (S3: tbl_df/tbl/data.frame)
 #>  - attr(*, "page_size")= Named num [1:2] 288 216
 #>   ..- attr(*, "names")= chr [1:2] "width" "height"
 #>  - attr(*, "page_rotation")= int 0
@@ -215,15 +215,16 @@ str(extracted, max.level = 1L)
 nrow(extracted)
 #> [1] 14
 head(extracted, 3L)
-#> # A tibble: 3 × 19
-#>   path_index segment_index segment_type     x     y close_figure stroke_red
-#>        <int>         <int> <chr>        <dbl> <dbl> <lgl>             <dbl>
-#> 1          1             1 moveto           0     0 FALSE                 0
-#> 2          1             2 lineto         288     0 FALSE                 0
-#> 3          1             3 lineto         288   216 FALSE                 0
-#> # ℹ 12 more variables: stroke_green <dbl>, stroke_blue <dbl>,
-#> #   stroke_alpha <dbl>, stroke_width <dbl>, fill_red <dbl>, fill_green <dbl>,
-#> #   fill_blue <dbl>, fill_alpha <dbl>, bounds_left <dbl>, bounds_bottom <dbl>,
+#> # A tibble: 3 × 23
+#>   path_index segment_index segment_type     x     y close_figure   cx1   cy1
+#>        <int>         <int> <chr>        <dbl> <dbl> <lgl>        <dbl> <dbl>
+#> 1          1             1 moveto           0     0 FALSE           NA    NA
+#> 2          1             2 lineto         288     0 FALSE           NA    NA
+#> 3          1             3 lineto         288   216 FALSE           NA    NA
+#> # ℹ 15 more variables: cx2 <dbl>, cy2 <dbl>, stroke_red <dbl>,
+#> #   stroke_green <dbl>, stroke_blue <dbl>, stroke_alpha <dbl>,
+#> #   stroke_width <dbl>, fill_red <dbl>, fill_green <dbl>, fill_blue <dbl>,
+#> #   fill_alpha <dbl>, bounds_left <dbl>, bounds_bottom <dbl>,
 #> #   bounds_right <dbl>, bounds_top <dbl>
 ```
 
