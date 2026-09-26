@@ -89,10 +89,6 @@ cpp_doc_focusable_subtypes <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_focusable_subtypes`, doc_ptr)
 }
 
-cpp_page_refresh_annot_aps <- function(page_ptr) {
-    .Call(`_pdfium_cpp_page_refresh_annot_aps`, page_ptr)
-}
-
 cpp_annot_set_rect <- function(annot_ptr, left, bottom, right, top) {
     .Call(`_pdfium_cpp_annot_set_rect`, annot_ptr, left, bottom, right, top)
 }
@@ -571,10 +567,6 @@ cpp_form_field_additional_actions_handle <- function(annot_ptr, doc_ptr) {
 
 cpp_page_flatten <- function(page_ptr, mode_code) {
     .Call(`_pdfium_cpp_page_flatten`, page_ptr, mode_code)
-}
-
-cpp_annot_touch_ap <- function(annot_ptr) {
-    .Call(`_pdfium_cpp_annot_touch_ap`, annot_ptr)
 }
 
 cpp_form_fields_list <- function(doc_ptr) {

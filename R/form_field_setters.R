@@ -17,11 +17,10 @@
 #                                                field's /Opt list
 #
 # All setters use FPDFAnnot_SetStringValue on the widget annot
-# dict to write /V. PDFium's appearance stream regeneration
-# happens on render / save via the existing per-annot AP-dirty
-# flag; we explicitly call cpp_annot_touch_ap after each /V change
-# so the flag flips even when PDFium's internal SetStringValue
-# doesn't do it for us.
+# dict to write /V. That leaves the widget's /AP untouched: PDFium's
+# public API has no non-interactive appearance regeneration for form
+# fields (ADR-022), so checkable fields also switch /AS to pick the
+# matching existing on/off appearance.
 #
 # `/Opt` array writing is intentionally not exposed — PDFium has
 # no public API for it. See dev/upstream-patches/ for the upstream
@@ -43,16 +42,13 @@ assert_form_field_writable <- function(field, arg = "field") {
   list(doc = doc, page_index = field$page$index)
 }
 
-# Internal: write /V on a widget annot, then flip the AP-dirty
-# flag so the next render/save regenerates the appearance.
+# Internal: write /V on a widget annot.
 write_form_value <- function(field, value_chr) {
   expect_setter_ok(
     cpp_annot_set_string_value(field$ptr, "V",
                                  enc2utf8(value_chr)),
     "FPDFAnnot_SetStringValue(V)"
   )
-  expect_setter_ok(cpp_annot_touch_ap(field$ptr),
-                    "FPDFAnnot_SetRect (AP-dirty flag)")
 }
 
 # Internal: which field-type codes count as checkable
@@ -110,11 +106,14 @@ infer_on_state_name <- function(field) {
 #' Any other field type (button / signature / unknown) errors —
 #' those don't have a settable value.
 #'
-#' Wraps `FPDFAnnot_SetStringValue(annot, "V", ...)` followed by a
-#' rect re-touch (`FPDFAnnot_SetRect` to the current rect) that
-#' flips the AP-dirty flag, so the next [pdf_render_page()] or
-#' [pdf_save()] rebuilds the widget's appearance stream from the
-#' new value.
+#' Wraps `FPDFAnnot_SetStringValue(annot, "V", ...)` (plus `"AS"`
+#' for checkboxes and radio buttons). The widget's existing
+#' appearance stream (`/AP`) is left as is: PDFium's public API
+#' offers no non-interactive way to regenerate it. Checkable fields
+#' switch their `/AS` appearance state, so their existing on / off
+#' appearances follow the value; for text and choice fields the saved
+#' file carries the new value alongside the old appearance, which
+#' viewers that honor the form's `/NeedAppearances` flag regenerate.
 #'
 #' @param field A `pdfium_form_field` from [pdf_form_fields()].
 #'   Parent doc must be readwrite.

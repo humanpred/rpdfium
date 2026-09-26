@@ -1,6 +1,6 @@
 # ADR-020 — Handle-design follow-ups
 
-- Status: Accepted
+- Status: Accepted (§7 superseded by ADR-022)
 - Date: 2026-05-21
 - Deciders: Bill Denney
 

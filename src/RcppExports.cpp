@@ -268,17 +268,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// cpp_page_refresh_annot_aps
-int cpp_page_refresh_annot_aps(SEXP page_ptr);
-RcppExport SEXP _pdfium_cpp_page_refresh_annot_aps(SEXP page_ptrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_page_refresh_annot_aps(page_ptr));
-    return rcpp_result_gen;
-END_RCPP
-}
 // cpp_annot_set_rect
 bool cpp_annot_set_rect(SEXP annot_ptr, double left, double bottom, double right, double top);
 RcppExport SEXP _pdfium_cpp_annot_set_rect(SEXP annot_ptrSEXP, SEXP leftSEXP, SEXP bottomSEXP, SEXP rightSEXP, SEXP topSEXP) {
@@ -1732,17 +1721,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
     Rcpp::traits::input_parameter< int >::type mode_code(mode_codeSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_page_flatten(page_ptr, mode_code));
-    return rcpp_result_gen;
-END_RCPP
-}
-// cpp_annot_touch_ap
-bool cpp_annot_touch_ap(SEXP annot_ptr);
-RcppExport SEXP _pdfium_cpp_annot_touch_ap(SEXP annot_ptrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type annot_ptr(annot_ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_annot_touch_ap(annot_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3255,7 +3233,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_link_annot_at_point", (DL_FUNC) &_pdfium_cpp_link_annot_at_point, 3},
     {"_pdfium_cpp_obj_marked_content_id", (DL_FUNC) &_pdfium_cpp_obj_marked_content_id, 1},
     {"_pdfium_cpp_doc_focusable_subtypes", (DL_FUNC) &_pdfium_cpp_doc_focusable_subtypes, 1},
-    {"_pdfium_cpp_page_refresh_annot_aps", (DL_FUNC) &_pdfium_cpp_page_refresh_annot_aps, 1},
     {"_pdfium_cpp_annot_set_rect", (DL_FUNC) &_pdfium_cpp_annot_set_rect, 5},
     {"_pdfium_cpp_annot_set_color", (DL_FUNC) &_pdfium_cpp_annot_set_color, 6},
     {"_pdfium_cpp_annot_set_flags", (DL_FUNC) &_pdfium_cpp_annot_set_flags, 2},
@@ -3376,7 +3353,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_form_field_is_option_selected_handle", (DL_FUNC) &_pdfium_cpp_form_field_is_option_selected_handle, 2},
     {"_pdfium_cpp_form_field_additional_actions_handle", (DL_FUNC) &_pdfium_cpp_form_field_additional_actions_handle, 2},
     {"_pdfium_cpp_page_flatten", (DL_FUNC) &_pdfium_cpp_page_flatten, 2},
-    {"_pdfium_cpp_annot_touch_ap", (DL_FUNC) &_pdfium_cpp_annot_touch_ap, 1},
     {"_pdfium_cpp_form_fields_list", (DL_FUNC) &_pdfium_cpp_form_fields_list, 1},
     {"_pdfium_cpp_form_object_count", (DL_FUNC) &_pdfium_cpp_form_object_count, 1},
     {"_pdfium_cpp_form_get_object", (DL_FUNC) &_pdfium_cpp_form_get_object, 3},

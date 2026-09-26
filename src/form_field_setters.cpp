@@ -3,15 +3,10 @@
 // The bulk of the per-field mutation is done by reusing the
 // existing cpp_annot_set_string_value shim from annot_setters.cpp
 // — PDFium's form-field value is just the /V entry on the
-// widget annot dict. This file adds the two pieces that don't fit
+// widget annot dict. This file adds the one piece that doesn't fit
 // elsewhere:
 //
 //   * cpp_page_flatten      — wraps FPDFPage_Flatten.
-//   * cpp_form_field_set_ap_dirty
-//       — manually marks the widget annot as needing AP regen
-//         after a /V change, so the next render / save shows the
-//         new value. Reuses the same SetRect-to-current-rect
-//         trick that cpp_page_refresh_annot_aps uses.
 //
 // Reading the existing /DV (for the clear-to-default path) goes
 // through the existing cpp_annot_string_value reader; setting /V
@@ -20,7 +15,6 @@
 
 #include <Rcpp.h>
 #include "fpdfview.h"
-#include "fpdf_annot.h"
 #include "fpdf_flatten.h"
 #include "handle_validation.h"
 
@@ -30,12 +24,6 @@ inline FPDF_PAGE page_from_ptr(SEXP page_ptr) {
   return static_cast<FPDF_PAGE>(
       pdfium_r::validate_handle(page_ptr, "Page",
                                   /*require_prot_alive=*/false));
-}
-
-inline FPDF_ANNOTATION annot_from_ptr(SEXP annot_ptr) {
-  return static_cast<FPDF_ANNOTATION>(
-      pdfium_r::validate_handle(annot_ptr, "Annotation",
-                                  /*require_prot_alive=*/true));
 }
 
 }  // namespace
@@ -52,20 +40,4 @@ inline FPDF_ANNOTATION annot_from_ptr(SEXP annot_ptr) {
 int cpp_page_flatten(SEXP page_ptr, int mode_code) {
   FPDF_PAGE page = page_from_ptr(page_ptr);
   return FPDFPage_Flatten(page, mode_code);
-}
-
-// Force PDFium to regenerate this single annotation's AP stream
-// on the next render / save by setting the rect to its current
-// value (FPDFAnnot_SetRect flips the AP-dirty flag even when the
-// rect is unchanged — same trick as cpp_page_refresh_annot_aps,
-// but scoped to one annot so callers don't pay the cost of
-// walking every annot on the page just to flush one /V change).
-// [[Rcpp::export(name = "cpp_annot_touch_ap")]]
-bool cpp_annot_touch_ap(SEXP annot_ptr) {
-  FPDF_ANNOTATION a = annot_from_ptr(annot_ptr);
-  FS_RECTF r;
-  if (!FPDFAnnot_GetRect(a, &r)) {
-    return false;  // # nocov  // PDFium's GetRect never fails on a valid annot handle
-  }
-  return FPDFAnnot_SetRect(a, &r) != 0;
 }

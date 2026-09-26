@@ -27,7 +27,8 @@ Markdown ADR following the
 | [017](ADR-017-handle-returning-readers.md) | Accepted | Handle-returning readers + `as_tibble()` / `as_pdfium_<class>()` round-trip; tibble carries `handle` + `source` list-columns |
 | [018](ADR-018-setter-conventions.md) | Accepted | Setter conventions: object-first naming, polymorphic page arg, composite + named-partial-update setters, 0-255 / 0-1 color auto-detection |
 | [019](ADR-019-naming-conventions.md) | Accepted | Naming conventions: accessors are object-first (`pdf_<object>_<attr>`), verbs are verb-first (`pdf_<verb>_<modifier>`); applies to constructors / destructors / accessors / setters across the package |
-| [020](ADR-020-handle-design-followups.md) | Accepted | Handle-design follow-ups: flat bookmark tree, per-column getters, handle-returning lookups, C-side defensive validation, render AP regen, CRAN timing, branch / PR strategy, API breakage policy, inverse-helper batch, continuous API gap audit |
+| [020](ADR-020-handle-design-followups.md) | Accepted (§7 superseded by ADR-022) | Handle-design follow-ups: flat bookmark tree, per-column getters, handle-returning lookups, C-side defensive validation, render AP regen, CRAN timing, branch / PR strategy, API breakage policy, inverse-helper batch, continuous API gap audit |
+| [022](ADR-022-no-annotation-refresh-on-render.md) | Supersedes ADR-020 §7 | Rendering does not touch annotations: drop the `FPDFAnnot_SetRect` "AP refresh" walk |
 
 ## Policy
 

@@ -225,29 +225,62 @@ test_that("pdf_render_page auto-flushes the page's dirty content", {
   expect_length(doc$state$dirty_pages, 0L)
 })
 
-# AP regeneration on every render (ADR-020 §7) ---------------------
+# Rendering never writes to annotation dictionaries (ADR-022) -------
 
-test_that("cpp_page_refresh_annot_aps returns one per annot", {
-  doc <- pdf_doc_open(fixture_path("annotated"))
+# One-page PDF with a square annotation whose appearance /BBox
+# (12..48) sits strictly inside its /Rect (10..50). PDFium maps the
+# /BBox onto the /Rect when drawing (ISO 32000-1:2008 section
+# 12.5.5), so the blue fill must cover the whole 40 x 40 pt rect.
+bbox_inside_rect_pdf <- function() {
+  inline_pdf_bytes(c(  # nolint: object_usage_linter.
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    paste0("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 60 60] ",
+           "/Annots [4 0 R] >>"),
+    paste0("<< /Type /Annot /Subtype /Square /Rect [10 10 50 50] ",
+           "/AP << /N 5 0 R >> >>"),
+    inline_pdf_stream(  # nolint: object_usage_linter.
+      "/Type /XObject /Subtype /Form /BBox [12 12 48 48]",
+      "0 0 1 rg 12 12 36 36 re f"
+    )
+  ))
+}
+
+# The appearance stream's /BBox as written by pdf_save_to_raw().
+saved_ap_bbox <- function(doc) {
+  raw <- pdf_save_to_raw(doc)
+  raw[raw == as.raw(0L)] <- as.raw(32L)
+  txt <- rawToChar(raw)
+  regmatches(txt, regexpr("/BBox ?\\[[^]]*\\]", txt, useBytes = TRUE))
+}
+
+test_that("pdf_render_page maps an annotation appearance onto its /Rect", {
+  doc <- pdf_doc_open(source = bbox_inside_rect_pdf())
   on.exit(pdf_doc_close(doc), add = TRUE)
-  page <- pdf_page_load(doc, 1L)
-  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
-  n_annot <- length(pdf_annotations(page))
-  expect_equal(pdfium:::cpp_page_refresh_annot_aps(page$ptr), n_annot)
+  rgba <- as.array(pdf_render_page(doc, dpi = 72, annotations = TRUE))
+  blue <- rgba[, , 3L] > 0.9 & rgba[, , 1L] < 0.1
+  # 40 x 40 = 1600 px when drawn per spec; rewriting /BBox to the
+  # /Rect before drawing (the pre-ADR-022 render behaviour) gives
+  # 36 x 36 = 1296 px.
+  expect_gt(sum(blue), 1500L)
 })
 
-test_that("cpp_page_refresh_annot_aps short-circuits on annot-free page", {
-  doc <- pdf_doc_open(fixture_path("shapes"))
+test_that("rendering leaves annotation appearance streams untouched", {
+  doc <- pdf_doc_open(source = bbox_inside_rect_pdf(), readwrite = TRUE)
   on.exit(pdf_doc_close(doc), add = TRUE)
-  page <- pdf_page_load(doc, 1L)
-  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
-  expect_equal(pdfium:::cpp_page_refresh_annot_aps(page$ptr), 0L)
+  before <- saved_ap_bbox(doc)
+  expect_match(before, "12 12 48 48", fixed = TRUE)
+  invisible(pdf_render_page(doc, dpi = 36, annotations = TRUE))
+  invisible(pdf_render_page_with_matrix(
+    doc, matrix = c(1, 0, 0, 1, 0, 0), pixel_width = 60,
+    pixel_height = 60, annotations = TRUE
+  ))
+  expect_identical(saved_ap_bbox(doc), before)
 })
 
 test_that("pdf_render_page on an annotated page produces a valid bitmap", {
   # Two consecutive renders should both succeed and produce
-  # identical bitmaps (idempotent — the AP refresh shouldn't drift
-  # the output for unmutated annots).
+  # identical bitmaps (rendering has no side effects on the page).
   doc <- pdf_doc_open(fixture_path("annotated"))
   on.exit(pdf_doc_close(doc), add = TRUE)
   page <- pdf_page_load(doc, 1L)
@@ -259,7 +292,7 @@ test_that("pdf_render_page on an annotated page produces a valid bitmap", {
   expect_identical(as.integer(bmp_a), as.integer(bmp_b))
 })
 
-test_that("pdf_render_page_with_matrix auto-regens APs too", {
+test_that("pdf_render_page_with_matrix renders annotated pages", {
   doc <- pdf_doc_open(fixture_path("annotated"))
   on.exit(pdf_doc_close(doc), add = TRUE)
   page <- pdf_page_load(doc, 1L)
@@ -273,16 +306,6 @@ test_that("pdf_render_page_with_matrix auto-regens APs too", {
     annotations = TRUE
   )
   expect_s3_class(bmp, "pdfium_bitmap")
-})
-
-test_that("cpp_page_refresh_annot_aps rejects a closed page", {
-  doc <- pdf_doc_open(fixture_path("annotated"))
-  on.exit(pdf_doc_close(doc), add = TRUE)
-  page <- pdf_page_load(doc, 1L)
-  ptr <- page$ptr
-  pdf_page_close(page)
-  expect_error(pdfium:::cpp_page_refresh_annot_aps(ptr),
-               "[Pp]age handle")
 })
 
 test_that("cpp_save_to_file errors when the destination cannot be opened", {

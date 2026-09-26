@@ -78,12 +78,10 @@ pdf_render_page <- function(page,
   )
 
   page <- as_open_page(page, page_num)
-  # Auto-flush dirty page content + force every annotation's AP
-  # stream to regenerate, so the render reflects every mutator
-  # that ran before it even when downstream consumers cache /AP
-  # (ADR-020 §7).
+  # Auto-flush dirty page content so the render reflects every
+  # page-object mutator that ran before it. Annotation dictionaries
+  # need no refresh: PDFium re-reads them on every render (ADR-022).
   flush_page_if_dirty(page)
-  cpp_page_refresh_annot_aps(page$ptr)
 
   dims <- compute_render_pixels(page$ptr, dpi, rot_code)
   bg <- parse_bitmap_background(background)
@@ -180,10 +178,8 @@ pdf_render_page_with_matrix <- function(page,
   clip_vec <- validate_clip_rect(clip_rect)
 
   page <- as_open_page(page, page_num)
-  # Auto-flush dirty page content + AP regen on every annot
-  # (ADR-020 §7).
+  # Auto-flush dirty page content (see pdf_render_page()).
   flush_page_if_dirty(page)
-  cpp_page_refresh_annot_aps(page$ptr)
   bg <- parse_bitmap_background(background)
   flags <- render_flags_bitmask(annotations)
 
