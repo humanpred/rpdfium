@@ -45,15 +45,30 @@ Columns:
 * `x`, `y` — segment coordinates in PDF user space (points, origin
   bottom-left).
 * `close_figure` — `TRUE` on the final segment of a closed sub-path.
+* `cx1`, `cy1`, `cx2`, `cy2` — the two control points of the cubic
+  Bezier curve that ends on this row; `NA` on every other row.
 
-A note on Bezier curves: PDFium stores a cubic curve as three consecutive
-`"bezierto"` rows — the two control points followed by the endpoint. The
-v0.1.0 readout returns each of those three as separate rows. A
-companion accessor `pdf_path_bezier_controls()` that returns the pair
-of control points alongside the endpoint is gated on an upstream PDFium
-patch ([CL 147810](https://pdfium-review.googlesource.com/c/pdfium/+/147810));
-see [ADR-009](https://github.com/humanpred/rpdfium/blob/main/dev/decisions/ADR-009-defer-bezier-controls.md)
-for the full rationale and status.
+### Bezier curves
+
+PDFium stores a cubic curve as three consecutive `"bezierto"` rows: the
+first control point, the second control point, and the endpoint. The
+endpoint row also carries the curve's control points in
+`cx1`/`cy1`/`cx2`/`cy2`, so keeping only the rows that have them gives
+one row per curve (its start point is the previous row's `x`/`y`):
+
+```{r}
+canvas_doc <- pdf_doc_new()
+canvas <- pdf_page_new(canvas_doc, 1, 200, 200)
+curve <- pdf_path_new(canvas, 10, 10)
+pdf_path_bezier_to(curve, 40, 90, 120, 90, 150, 10)
+segs <- pdf_path_segments(curve)
+segs
+segs[!is.na(segs$cx1), c("x", "y", "cx1", "cy1", "cx2", "cy2")]
+pdf_doc_close(canvas_doc)
+```
+
+`pdf_path_append()` reads the triplet form back, so an edited
+`pdf_path_segments()` tibble can be replayed onto another path.
 
 ## Path style
 

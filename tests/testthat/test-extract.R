@@ -6,7 +6,7 @@ test_that("pdf_extract_paths returns the documented tibble shape", {
 
   expected_cols <- c(
     "path_index", "segment_index", "segment_type", "x", "y",
-    "close_figure",
+    "close_figure", "cx1", "cy1", "cx2", "cy2",
     "stroke_red", "stroke_green", "stroke_blue", "stroke_alpha",
     "stroke_width",
     "fill_red", "fill_green", "fill_blue", "fill_alpha",
@@ -17,6 +17,18 @@ test_that("pdf_extract_paths returns the documented tibble shape", {
   expect_type(res$segment_index, "integer")
   expect_type(res$segment_type, "character")
   expect_type(res$close_figure, "logical")
+  expect_type(res$cx1, "double")
+})
+
+test_that("pdf_extract_paths carries Bezier control points", {
+  doc <- pdf_doc_open(source = inline_curves_pdf())
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  res <- pdf_extract_paths(doc)
+  segs <- pdf_path_segments(pdf_page_objects(doc)[[1L]])
+  for (col in c("segment_index", "x", "y", "cx1", "cy1", "cx2", "cy2")) {
+    expect_identical(res[[col]], segs[[col]])
+  }
+  expect_identical(sum(!is.na(res$cx1)), 3L)
 })
 
 test_that("pdf_extract_paths attaches page_size / rotation / text_runs", {
@@ -96,7 +108,7 @@ test_that("pdf_extract_paths reports zero rows for a page with no paths", {
   empty <- pdfium:::empty_paths_tibble()
   expect_s3_class(empty, "tbl_df")
   expect_equal(nrow(empty), 0L)
-  expect_equal(ncol(empty), 19L)
+  expect_equal(ncol(empty), 23L)
 
   empty_tr <- pdfium:::empty_text_runs_tibble()
   expect_s3_class(empty_tr, "tbl_df")

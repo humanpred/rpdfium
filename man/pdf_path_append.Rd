@@ -14,7 +14,8 @@ readwrite.}
 \code{segment_type} (character), \code{x}, \code{y} (numeric), and optionally
 \code{close_figure} (logical). Matches the \code{\link[=pdf_path_segments]{pdf_path_segments()}}
 output exactly so a reader → edit → writer round-trip is a
-one-liner.}
+one-liner. Other columns (such as the \code{cx1}..\code{cy2} control-point
+columns, which repeat the triplet's first two rows) are ignored.}
 }
 \value{
 Invisibly returns the parent \code{pdfium_doc}.

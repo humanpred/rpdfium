@@ -28,3 +28,19 @@ inline_pdf_stream <- function(dict, content) {
           dict, nchar(content, "bytes"), content)
 }
 
+# One page whose content stream strokes a single path built with each
+# cubic Bezier operator: `c` (both control points given), `v` (first
+# control point = current point) and `y` (second control point =
+# endpoint).
+inline_curves_pdf <- function() {
+  inline_pdf_bytes(c(
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    paste0("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] ",
+           "/Contents 4 0 R >>"),
+    inline_pdf_stream(
+      "",
+      "10 10 m 20 30 40 50 60 70 c 80 90 100 110 v 120 130 140 150 y S"
+    )
+  ))
+}

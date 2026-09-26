@@ -62,6 +62,10 @@ test_that("pdf_path_bezier_to appends three bezierto rows", {
                    rep("bezierto", 3L))
   expect_equal(tail3$x, c(1, 3, 5))
   expect_equal(tail3$y, c(2, 4, 6))
+  # Only the endpoint row carries the curve's control points.
+  expect_equal(unlist(tail3[3L, c("cx1", "cy1", "cx2", "cy2")]),
+               c(cx1 = 1, cy1 = 2, cx2 = 3, cy2 = 4))
+  expect_true(all(is.na(tail3$cx1[1:2])))
 })
 
 test_that("pdf_path_close marks the previous segment as closed", {
