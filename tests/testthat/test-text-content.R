@@ -79,6 +79,29 @@ test_that("pdf_text_content refuses objects whose parent page has closed", {
   )
 })
 
+test_that("pdf_text_content refuses text in an annotation's appearance", {
+  doc <- pdf_doc_open(source = inline_annot_objects_pdf())
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+
+  # The page draws the same Form XObject as the annotation, and its
+  # text is read there.
+  page_form <- pdf_page_objects(page)[[1L]]
+  expect_identical(pdf_text_content(pdf_form_objects(page_form)[[1L]]),
+                   "Nested")
+
+  objs <- pdf_annot_objects(pdf_annotations(page)[[1L]])
+  msg <- paste("`obj` is in an annotation's appearance stream; PDFium",
+               "only reads the text of objects in the page's own content.")
+  expect_error(pdf_text_content(objs[[2L]]), msg, fixed = TRUE)
+  expect_error(pdf_text_content(pdf_form_objects(objs[[5L]])[[1L]]), msg,
+               fixed = TRUE)
+  # PDFium looks the object up in the page's text layer, which holds no
+  # annotation content, so the shim finds no text for it.
+  expect_identical(pdfium:::cpp_text_content(objs[[2L]]$ptr, page$ptr), "")
+})
+
 test_that("pdf_extract_paths populates text_runs$text with the actual text", {
   res <- pdf_extract_paths(fixture_path("shapes"))
   tr <- attr(res, "text_runs")

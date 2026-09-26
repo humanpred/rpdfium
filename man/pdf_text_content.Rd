@@ -27,6 +27,11 @@ opens and closes that context internally on every call. When you
 need many text objects from one page, the upcoming
 \code{pdf_text_runs()} (Phase 3 slice 2) will share a single text-page
 across the entire page to avoid the per-call overhead.
+
+That context covers only the page's own content, so text objects
+from an annotation's appearance stream (\code{\link[=pdf_annot_objects]{pdf_annot_objects()}},
+directly or nested in a Form XObject there) are refused with an
+error: PDFium finds no text for them.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",

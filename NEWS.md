@@ -65,6 +65,14 @@
 * `pdf_form_field_set_value()`'s documentation no longer claims that
   the field's appearance is regenerated; PDFium's API has no way to do
   that outside its interactive form-fill layer.
+* `pdf_annot_objects()` reports each embedded object's own type
+  (`"path"`, `"text"`, `"image"`, `"shading"` or `"form"`) instead of
+  `"unknown"`, so the type-specific readers and setters such as
+  `pdf_path_fill()`, `pdf_path_set_fill()` and `pdf_text_set_content()`
+  accept objects inside an annotation; `pdf_annot_update_object()`
+  then writes a change into the appearance stream. `pdf_text_content()`
+  refuses these objects with an error, because PDFium only reads the
+  text of objects in the page's own content.
 
 # pdfium 0.1.0
 

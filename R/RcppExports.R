@@ -1053,8 +1053,8 @@ cpp_text_font_size <- function(obj_ptr) {
     .Call(`_pdfium_cpp_text_font_size`, obj_ptr)
 }
 
-cpp_text_content <- function(obj_ptr) {
-    .Call(`_pdfium_cpp_text_content`, obj_ptr)
+cpp_text_content <- function(obj_ptr, page_ptr) {
+    .Call(`_pdfium_cpp_text_content`, obj_ptr, page_ptr)
 }
 
 cpp_text_font <- function(obj_ptr) {
