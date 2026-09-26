@@ -2,24 +2,50 @@
 % Please edit documentation in R/api_completion.R
 \name{pdf_annot_append_object}
 \alias{pdf_annot_append_object}
-\title{Append a page-object to an annotation}
+\title{Move a page-object into an annotation}
 \usage{
 pdf_annot_append_object(annot, obj)
 }
 \arguments{
-\item{annot}{A \code{pdfium_annot} of subtype \code{"stamp"} or
-\code{"freetext"}.}
+\item{annot}{A \code{pdfium_annot} of subtype \code{"ink"} or \code{"stamp"}, the
+only subtypes PDFium lets hold page-objects
+(\code{FPDFAnnot_IsObjectSupportedSubtype}). Parent doc must be
+readwrite.}
 
-\item{obj}{A \code{pdfium_obj}.}
+\item{obj}{A \code{pdfium_obj} that is a top-level object of the page
+handle \code{annot} belongs to, e.g. from \code{\link[=pdf_rect_new]{pdf_rect_new()}} or
+\code{\link[=pdf_page_objects]{pdf_page_objects()}} on that page. Objects nested in a form
+XObject (\code{\link[=pdf_form_objects]{pdf_form_objects()}}), objects already inside an
+annotation (\code{\link[=pdf_annot_objects]{pdf_annot_objects()}}) and objects on another page
+are rejected.}
 }
 \value{
 Invisibly returns the parent \code{pdfium_doc}.
 }
 \description{
-Wraps \code{FPDFAnnot_AppendObject}. The page-object must be detached
-(typically created by \code{\link[=pdf_path_new]{pdf_path_new()}} / \code{\link[=pdf_rect_new]{pdf_rect_new()}} /
-\code{\link[=pdf_text_new]{pdf_text_new()}} / \code{\link[=pdf_image_new]{pdf_image_new()}} \strong{before} it is inserted into
-a page). After the call, the annotation owns the page-object —
-the R-side handle is cleared, so subsequent calls on it error
-cleanly.
+Wraps \code{FPDFAnnot_AppendObject}. The page-object becomes part of the
+annotation's appearance stream, which PDFium regenerates straight
+away.
+}
+\details{
+PDFium takes ownership of the object it is given and expects it to
+be free-standing, but every page-object creator in this package
+(\code{\link[=pdf_path_new]{pdf_path_new()}}, \code{\link[=pdf_rect_new]{pdf_rect_new()}}, \code{\link[=pdf_text_new]{pdf_text_new()}},
+\code{\link[=pdf_image_new]{pdf_image_new()}}, ...) inserts its object into a page. This
+function therefore \emph{moves} the object: it takes \code{obj} off the
+annotation's page (\code{FPDFPage_RemoveObject}) and then appends it to
+\code{annot}, so exactly one of them owns the object at any time.
+
+After the call \code{obj} is no longer on the page and its handle is
+closed; reach the object through \code{\link[=pdf_annot_objects]{pdf_annot_objects()}} instead.
+Other handles to the same object (for example from an earlier
+\code{\link[=pdf_page_objects]{pdf_page_objects()}} call) are stale and must not be used, and the
+page-scoped indices of the remaining page-objects shift down by
+one. The move only succeeds as a whole: when \code{annot} cannot hold
+page-objects, or \code{obj} is not a top-level object of the
+annotation's page, nothing changes and the function errors.
+}
+\seealso{
+\code{\link[=pdf_annot_objects]{pdf_annot_objects()}}, \code{\link[=pdf_annot_update_object]{pdf_annot_update_object()}},
+\code{\link[=pdf_annot_remove_object]{pdf_annot_remove_object()}}.
 }

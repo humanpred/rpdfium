@@ -197,8 +197,8 @@ cpp_annot_remove_ink_list <- function(annot_ptr) {
     .Call(`_pdfium_cpp_annot_remove_ink_list`, annot_ptr)
 }
 
-cpp_annot_append_object <- function(annot_ptr, obj_ptr) {
-    .Call(`_pdfium_cpp_annot_append_object`, annot_ptr, obj_ptr)
+cpp_annot_append_object <- function(annot_ptr, page_ptr, obj_ptr) {
+    .Call(`_pdfium_cpp_annot_append_object`, annot_ptr, page_ptr, obj_ptr)
 }
 
 cpp_annot_remove_object <- function(annot_ptr, index_zero) {

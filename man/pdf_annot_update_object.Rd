@@ -7,9 +7,12 @@
 pdf_annot_update_object(annot, obj)
 }
 \arguments{
-\item{annot}{A \code{pdfium_annot}.}
+\item{annot}{A \code{pdfium_annot} of subtype \code{"ink"} or \code{"stamp"}, the
+only subtypes PDFium edits embedded objects of. Parent doc must
+be readwrite.}
 
-\item{obj}{A \code{pdfium_obj} returned by \code{\link[=pdf_annot_objects]{pdf_annot_objects()}}.}
+\item{obj}{A \code{pdfium_obj} returned by \code{\link[=pdf_annot_objects]{pdf_annot_objects()}} on the
+same \code{annot} handle.}
 }
 \value{
 Invisibly returns the parent \code{pdfium_doc}.
@@ -18,4 +21,7 @@ Invisibly returns the parent \code{pdfium_doc}.
 Wraps \code{FPDFAnnot_UpdateObject}. Tells PDFium to re-serialise the
 annotation's content stream after you've mutated one of the
 embedded page-objects via the usual \verb{pdf_*_set_*} setters.
+}
+\seealso{
+\code{\link[=pdf_annot_append_object]{pdf_annot_append_object()}}, \code{\link[=pdf_annot_objects]{pdf_annot_objects()}}.
 }

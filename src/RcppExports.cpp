@@ -625,14 +625,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_annot_append_object
-bool cpp_annot_append_object(SEXP annot_ptr, SEXP obj_ptr);
-RcppExport SEXP _pdfium_cpp_annot_append_object(SEXP annot_ptrSEXP, SEXP obj_ptrSEXP) {
+int cpp_annot_append_object(SEXP annot_ptr, SEXP page_ptr, SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_annot_append_object(SEXP annot_ptrSEXP, SEXP page_ptrSEXP, SEXP obj_ptrSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type annot_ptr(annot_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
     Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_annot_append_object(annot_ptr, obj_ptr));
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_append_object(annot_ptr, page_ptr, obj_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3282,7 +3283,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_text_set_charcodes", (DL_FUNC) &_pdfium_cpp_text_set_charcodes, 2},
     {"_pdfium_cpp_annot_add_ink_stroke", (DL_FUNC) &_pdfium_cpp_annot_add_ink_stroke, 2},
     {"_pdfium_cpp_annot_remove_ink_list", (DL_FUNC) &_pdfium_cpp_annot_remove_ink_list, 1},
-    {"_pdfium_cpp_annot_append_object", (DL_FUNC) &_pdfium_cpp_annot_append_object, 2},
+    {"_pdfium_cpp_annot_append_object", (DL_FUNC) &_pdfium_cpp_annot_append_object, 3},
     {"_pdfium_cpp_annot_remove_object", (DL_FUNC) &_pdfium_cpp_annot_remove_object, 2},
     {"_pdfium_cpp_annot_update_object", (DL_FUNC) &_pdfium_cpp_annot_update_object, 2},
     {"_pdfium_cpp_annot_object_count", (DL_FUNC) &_pdfium_cpp_annot_object_count, 1},
