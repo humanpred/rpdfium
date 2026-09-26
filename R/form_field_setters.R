@@ -232,6 +232,11 @@ pdf_form_reset <- function(doc) {
 #'   annot / widget.
 #' * `"print"` — bake the print-time appearance instead.
 #'
+#' Flattened fields are also removed from the document's interactive
+#' form (`/AcroForm`). Once the last field is flattened the
+#' `/AcroForm` dictionary itself is dropped, so
+#' [pdf_doc_form_type()] reports `"none"`.
+#'
 #' Returns the page invisibly. The parent page's dirty mark is set
 #' so [pdf_save()] picks up the change.
 #'

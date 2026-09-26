@@ -54,16 +54,10 @@ has no public setter for it. Passing \code{key = "Subtype"} here writes
 \code{\link[=pdf_attachment_mime_type]{pdf_attachment_mime_type()}}. See \verb{dev/upstream-patches/} for the
 upstream gap.
 
-\strong{Encoding}: PDFium's \code{FPDFAttachment_SetStringValue} stores the
-value as a PDF byte-string interpreted in PDFDocEncoding on read.
-ASCII round-trips cleanly; non-ASCII Unicode characters are
-lossy through the read path (the bytes are written but
-\code{FPDFAttachment_GetStringValue}'s \code{GetUnicodeText} step
-misinterprets multi-byte UTF-8 sequences as PDFDocEncoding bytes).
-This is a PDFium-side inconsistency — \code{FPDFAnnot_SetStringValue}
-uses the wide-string-aware CPDF_String path and round-trips
-Unicode correctly. Until upstream is fixed, restrict
-attachment-dict values to ASCII when round-trip fidelity matters.
+\strong{Encoding}: values are written as PDF text strings, so any
+Unicode text round-trips through \code{\link[=pdf_attachment_dict_value]{pdf_attachment_dict_value()}} and
+a save / reload. (PDFium releases before chromium/8066 stored the
+raw UTF-8 bytes, which read back garbled for non-ASCII text.)
 }
 \seealso{
 \code{\link[=pdf_attachment_dict_value]{pdf_attachment_dict_value()}}.

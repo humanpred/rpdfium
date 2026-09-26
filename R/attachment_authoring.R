@@ -129,16 +129,10 @@ pdf_attachment_delete <- function(att) {
 #' [pdf_attachment_mime_type()]. See `dev/upstream-patches/` for the
 #' upstream gap.
 #'
-#' **Encoding**: PDFium's `FPDFAttachment_SetStringValue` stores the
-#' value as a PDF byte-string interpreted in PDFDocEncoding on read.
-#' ASCII round-trips cleanly; non-ASCII Unicode characters are
-#' lossy through the read path (the bytes are written but
-#' `FPDFAttachment_GetStringValue`'s `GetUnicodeText` step
-#' misinterprets multi-byte UTF-8 sequences as PDFDocEncoding bytes).
-#' This is a PDFium-side inconsistency — `FPDFAnnot_SetStringValue`
-#' uses the wide-string-aware CPDF_String path and round-trips
-#' Unicode correctly. Until upstream is fixed, restrict
-#' attachment-dict values to ASCII when round-trip fidelity matters.
+#' **Encoding**: values are written as PDF text strings, so any
+#' Unicode text round-trips through [pdf_attachment_dict_value()] and
+#' a save / reload. (PDFium releases before chromium/8066 stored the
+#' raw UTF-8 bytes, which read back garbled for non-ASCII text.)
 #'
 #' @inheritParams pdf_attachment_delete
 #' @param key The dictionary key as a non-empty character scalar.

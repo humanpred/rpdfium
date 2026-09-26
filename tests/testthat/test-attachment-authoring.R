@@ -99,17 +99,24 @@ test_that("pdf_attachment_set_dict_value writes a /Params entry", {
 })
 
 test_that("pdf_attachment_set_dict_value round-trips ASCII", {
-  # Note: PDFium's FPDFAttachment_SetStringValue stores the value
-  # as a PDF byte-string (PDFDocEncoding), not as UTF-16BE+BOM
-  # (which is what FPDFAnnot_SetStringValue does). High Unicode
-  # characters survive write-then-read but get mangled on the way
-  # back through the PDFDocEncoding-decoding GetUnicodeText() path.
-  # This is an upstream PDFium inconsistency. ASCII round-trips
-  # cleanly; non-ASCII is best-effort until upstream is fixed.
   s <- fresh_writable_attachment()
   msg <- "Quarterly revenue and gross margin summary"
   pdf_attachment_set_dict_value(s$att, "Desc", msg)
   expect_identical(pdf_attachment_dict_value(s$att, "Desc")$value, msg)
+})
+
+test_that("pdf_attachment_set_dict_value round-trips non-ASCII text", {
+  # PDFium < chromium/8066 wrote the raw UTF-8 bytes, which read back
+  # through PDFDocEncoding as mojibake ("cafÃ©"); the value is now
+  # stored as a proper PDF text string.
+  s <- fresh_writable_attachment()
+  msg <- "caf\u00e9 \u65e5\u672c\u8a9e \U0001F600"
+  pdf_attachment_set_dict_value(s$att, "Note", msg)
+  expect_identical(pdf_attachment_dict_value(s$att, "Note")$value, msg)
+  doc2 <- pdf_doc_open(source = pdf_save_to_raw(s$doc))
+  on.exit(pdf_doc_close(doc2), add = TRUE)
+  att2 <- pdf_attachments(doc2)[[1L]]
+  expect_identical(pdf_attachment_dict_value(att2, "Note")$value, msg)
 })
 
 test_that("pdf_attachment_set_dict_value rejects bad inputs", {

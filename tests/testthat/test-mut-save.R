@@ -11,6 +11,15 @@ test_that("pdf_doc_new() returns a writable empty doc", {
   expect_equal(pdf_page_count(doc), 0L)
 })
 
+test_that("pdf_doc_new() stamps a parseable, zoned /CreationDate", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  created <- pdf_doc_meta(doc, "CreationDate")
+  expect_match(created, "^D:[0-9]{14}(Z|[+-][0-9]{2}'[0-9]{2}'?)$")
+  expect_false(is.na(pdf_parse_date(created)))
+  expect_identical(pdf_doc_meta(doc, "Creator"), "PDFium")
+})
+
 test_that("pdf_doc_open(readwrite = FALSE) yields a read-only doc", {
   fx <- fixture_path("minimal")
   doc <- pdf_doc_open(fx)

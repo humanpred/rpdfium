@@ -201,7 +201,8 @@ To wipe a single field back to its default value, use
 
 When you're ready to ship a non-editable PDF, `pdf_page_flatten()`
 bakes the widget appearances and any other annotations into the
-page's content stream. **It's irreversible** — there is no
+page's content stream and drops the flattened fields from the
+document's form. **It's irreversible** — there is no
 `pdf_page_unflatten()`. Run it as the last step before saving the
 final-state PDF.
 
