@@ -20,7 +20,8 @@ Returns a \code{pdfium_attachment_list} — a list of
 document. Each handle is a thin wrapper around an
 \code{FPDF_ATTACHMENT} owned by the parent doc; the per-attribute
 getters (\code{\link[=pdf_attachment_name]{pdf_attachment_name()}}, \code{\link[=pdf_attachment_mime_type]{pdf_attachment_mime_type()}},
-\code{\link[=pdf_attachment_size_bytes]{pdf_attachment_size_bytes()}}, \code{\link[=pdf_attachment_data]{pdf_attachment_data()}},
+\code{\link[=pdf_attachment_size_bytes]{pdf_attachment_size_bytes()}}, \code{\link[=pdf_attachment_description]{pdf_attachment_description()}},
+\code{\link[=pdf_attachment_af_relationship]{pdf_attachment_af_relationship()}}, \code{\link[=pdf_attachment_data]{pdf_attachment_data()}},
 \code{\link[=pdf_attachment_dict_value]{pdf_attachment_dict_value()}}) operate on a single handle.
 }
 \details{

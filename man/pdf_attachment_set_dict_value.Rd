@@ -19,17 +19,18 @@ accepted.}
 Invisibly returns the parent \code{pdfium_doc}.
 }
 \description{
-Writes a string-valued entry in the attachment's parameter
-dictionary. Common keys:
+Writes a string-valued entry in the attachment's embedded-file
+parameter dictionary (\verb{/Params}, ISO 32000-1:2008 Table 46). The
+string-valued standard key is \code{"ModDate"} — the modification date
+as a PDF date string (see \code{\link[=pdf_parse_date]{pdf_parse_date()}} for the format);
+custom keys are allowed too.
 }
 \details{
-\itemize{
-\item \code{"Desc"} — a human-readable description.
-\item \code{"AFRelationship"} — the AF/EF relationship type
-(\code{"Source"}, \code{"Data"}, \code{"Alternative"}, etc.).
-\item \code{"ModDate"} — modification date as a PDF date string (see
-\code{\link[=pdf_parse_date]{pdf_parse_date()}} for the format).
-}
+The description (\verb{/Desc}) and the associated-file relationship
+(\verb{/AFRelationship}) are \emph{not} \verb{/Params} entries: they live on the
+attachment's file specification dictionary. Set the description
+with \code{\link[=pdf_attachment_set_description]{pdf_attachment_set_description()}} and read both with
+\code{\link[=pdf_attachment_description]{pdf_attachment_description()}} / \code{\link[=pdf_attachment_af_relationship]{pdf_attachment_af_relationship()}}.
 
 Wraps \code{FPDFAttachment_SetStringValue}, which writes into the
 attachment's \verb{/Params} subdictionary. Mirrors
@@ -53,16 +54,10 @@ has no public setter for it. Passing \code{key = "Subtype"} here writes
 \code{\link[=pdf_attachment_mime_type]{pdf_attachment_mime_type()}}. See \verb{dev/upstream-patches/} for the
 upstream gap.
 
-\strong{Encoding}: PDFium's \code{FPDFAttachment_SetStringValue} stores the
-value as a PDF byte-string interpreted in PDFDocEncoding on read.
-ASCII round-trips cleanly; non-ASCII Unicode characters are
-lossy through the read path (the bytes are written but
-\code{FPDFAttachment_GetStringValue}'s \code{GetUnicodeText} step
-misinterprets multi-byte UTF-8 sequences as PDFDocEncoding bytes).
-This is a PDFium-side inconsistency — \code{FPDFAnnot_SetStringValue}
-uses the wide-string-aware CPDF_String path and round-trips
-Unicode correctly. Until upstream is fixed, restrict
-attachment-dict values to ASCII when round-trip fidelity matters.
+\strong{Encoding}: values are written as PDF text strings, so any
+Unicode text round-trips through \code{\link[=pdf_attachment_dict_value]{pdf_attachment_dict_value()}} and
+a save / reload. (PDFium releases before chromium/8066 stored the
+raw UTF-8 bytes, which read back garbled for non-ASCII text.)
 }
 \seealso{
 \code{\link[=pdf_attachment_dict_value]{pdf_attachment_dict_value()}}.

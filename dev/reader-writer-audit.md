@@ -17,10 +17,18 @@ That round-trip is the contract this audit tries to lock in *before*
 ## Provenance
 
 - Audit date: 2026-05-18.
-- pdfium pin: `tools/pdfium-version.txt` -> `chromium/7857` (was
+- pdfium pin: `tools/pdfium-version.txt` -> `chromium/8066` (was
   `chromium/7202` at audit time; bumped 2026-05-29 in PR #46 — the
   reader/writer symmetry analysis below is unaffected, see
-  [`dev/pdfium-7857-api-delta.md`](pdfium-7857-api-delta.md)).
+  [`dev/pdfium-7857-api-delta.md`](pdfium-7857-api-delta.md) — and to
+  `chromium/8066` on 2026-09-26). The 8066 bump adds reader/writer
+  pairs not reflected in the tables below: `pdf_text_font_size()` ↔
+  `pdf_text_set_font_size()` and `pdf_attachment_description()` ↔
+  `pdf_attachment_set_description()`, plus the readers
+  `pdf_attachment_af_relationship()`, `pdf_bookmark_color()`,
+  `pdf_bookmark_style()`, `pdf_obj_rendered_{fill,stroke}_pattern()`
+  and the Bezier control-point columns of `pdf_path_segments()`; see
+  [`dev/pdfium-8066-api-delta.md`](pdfium-8066-api-delta.md).
 - Reader inventory generated from `R/*.R` on commit `e3e8359`.
 - Source of writer surface: a walk of `inst/include/fpdf_edit.h` +
   `fpdf_annot.h` + `fpdf_save.h` + `fpdf_ppo.h` + the `Set*` / `New*` /

@@ -19,8 +19,12 @@
 #' * `segment_index` - 1-based segment index within the path
 #' * `segment_type` - `"moveto"`, `"lineto"`, `"bezierto"`, or
 #'   `"unknown"`
-#' * `x`, `y` - the segment's anchor / endpoint in PDF points
+#' * `x`, `y` - the segment's point in PDF points
 #' * `close_figure` - logical, segment closes the current subpath
+#' * `cx1`, `cy1`, `cx2`, `cy2` - control points of the cubic Bezier
+#'   curve ending at this row; `NA` on every other row. A curve spans
+#'   three `"bezierto"` rows (control point 1, control point 2,
+#'   endpoint); see [pdf_path_segments()].
 #'
 #' Style (constant across all rows of one path):
 #'
@@ -43,12 +47,6 @@
 #'   [pdf_page_rotation()]
 #' * `text_runs` - tibble with one row per text object on the page,
 #'   the output of [pdf_text_runs()].
-#'
-#' ## Known limitations
-#'
-#' * Bezier control points are not exposed - only segment endpoints.
-#'   PDFium does not expose them through its public C API; see
-#'   `dev/decisions/ADR-009-defer-bezier-controls.md`.
 #'
 #' @param doc Either a character scalar path to a PDF file, or an
 #'   already-open `pdfium_doc` returned by [pdf_doc_open()]. When `doc`
@@ -119,6 +117,10 @@ empty_paths_tibble <- function() {
     x             = double(),
     y             = double(),
     close_figure  = logical(),
+    cx1           = double(),
+    cy1           = double(),
+    cx2           = double(),
+    cy2           = double(),
     stroke_red    = double(),
     stroke_green  = double(),
     stroke_blue   = double(),
@@ -165,6 +167,10 @@ one_path_rows <- function(obj, path_index) {
     x             = segs$x,
     y             = segs$y,
     close_figure  = segs$close_figure,
+    cx1           = segs$cx1,
+    cy1           = segs$cy1,
+    cx2           = segs$cx2,
+    cy2           = segs$cy2,
     stroke_red    = rep(stroke[["red"]], n),
     stroke_green  = rep(stroke[["green"]], n),
     stroke_blue   = rep(stroke[["blue"]], n),

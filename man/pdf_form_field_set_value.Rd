@@ -39,11 +39,14 @@ scalar matching one of the field's options
 Any other field type (button / signature / unknown) errors —
 those don't have a settable value.
 
-Wraps \code{FPDFAnnot_SetStringValue(annot, "V", ...)} followed by a
-rect re-touch (\code{FPDFAnnot_SetRect} to the current rect) that
-flips the AP-dirty flag, so the next \code{\link[=pdf_render_page]{pdf_render_page()}} or
-\code{\link[=pdf_save]{pdf_save()}} rebuilds the widget's appearance stream from the
-new value.
+Wraps \code{FPDFAnnot_SetStringValue(annot, "V", ...)} (plus \code{"AS"}
+for checkboxes and radio buttons). The widget's existing
+appearance stream (\verb{/AP}) is left as is: PDFium's public API
+offers no non-interactive way to regenerate it. Checkable fields
+switch their \verb{/AS} appearance state, so their existing on / off
+appearances follow the value; for text and choice fields the saved
+file carries the new value alongside the old appearance, which
+viewers that honor the form's \verb{/NeedAppearances} flag regenerate.
 }
 \seealso{
 \code{\link[=pdf_form_field_value]{pdf_form_field_value()}}, \code{\link[=pdf_form_field_clear]{pdf_form_field_clear()}},

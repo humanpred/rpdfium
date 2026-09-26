@@ -21,6 +21,14 @@ actual Gerrit CL.
   below is stable across that delta — the bump added 6 narrow public
   symbols (see [`dev/pdfium-7857-api-delta.md`](pdfium-7857-api-delta.md))
   but exposed none of the *missing* functionality tracked on this list.
+- Update 2026-09-26: bundled headers now track `chromium/8066`
+  ([`dev/pdfium-8066-api-delta.md`](pdfium-8066-api-delta.md)). The
+  bump shipped the two first in-flight items below
+  (`FPDFPath_GetBezierControlPoints`, `FPDFTextObj_SetFontSize`) and
+  fixed `FPDFAttachment_SetStringValue`'s Unicode round-trip; none of
+  the "Proposed CLs" (checked against the 8066 export table). It also
+  added `FPDFAttachment_GetDescription` / `SetDescription`, the
+  file-spec `/Desc` writer this list had not asked for.
 - Note: this document tracks gaps in PDFium *upstream* (symbols
   PDFium itself doesn't expose publicly). It is distinct from
   `dev/v0.1.0-api-gap-audit.md`, which tracks gaps in *rpdfium's
@@ -56,12 +64,15 @@ These have working drafts in
 consolidated mailing-list request should mention them as existing
 prior art rather than repeating their motivation.
 
-- `FPDFPath_GetBezierControlPoints` — CL 147810, patchset 2,
-  uploaded 2026-05-15.
-- `FPDFTextObj_SetFontSize` — CL 148170 uploaded 2026-05-20;
+- ~~`FPDFPath_GetBezierControlPoints` — CL 147810, patchset 2,
+  uploaded 2026-05-15.~~ **Shipped** in `chromium/8066` (landed
+  upstream 2026-08-20 through a separate change; CL 147810 can be
+  abandoned).
+- ~~`FPDFTextObj_SetFontSize` — CL 148170 uploaded 2026-05-20;
   patchset 2 (2026-05-22) addresses Lei Zhang's review comments
   (trim commit message, `ScopedFPDFPageObject`,
-  `OpenScopedSavedDocument`).
+  `OpenScopedSavedDocument`).~~ **Shipped** in `chromium/8066`
+  (landed 2026-05-27).
 - `FPDFAnnot_AppendOption` + `FPDFAnnot_RemoveOptions` — patch
   drafted 2026-05-20, ready to upload.
 - `FPDF_SetMetaText` — patch drafted 2026-05-21 (CL 1 below); see

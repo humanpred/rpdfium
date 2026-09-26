@@ -11,7 +11,8 @@ test_that("pdf_attachments returns 0 handles for a doc with no attachments", {
   expect_s3_class(tbl, "tbl_df")
   expect_equal(nrow(tbl), 0L)
   expect_named(tbl, c("attachment_index", "name", "mime_type",
-                      "size_bytes", "handle", "source"))
+                      "size_bytes", "description", "af_relationship",
+                      "handle", "source"))
 })
 
 test_that("pdf_attachments reports the documented attachment", {
@@ -21,6 +22,9 @@ test_that("pdf_attachments reports the documented attachment", {
   expect_identical(res$name, "hello.txt")
   expect_identical(res$mime_type, "text/plain")
   expect_identical(res$size_bytes, 12)
+  # The fixture's file specification declares neither entry.
+  expect_identical(res$description, "")
+  expect_identical(res$af_relationship, "")
 })
 
 test_that("pdf_attachment_data returns the embedded bytes verbatim", {
@@ -55,6 +59,49 @@ test_that("pdf_attachments rejects bad inputs and closed docs", {
   doc <- pdf_doc_open(fixture_path("attachments"))
   pdf_doc_close(doc)
   expect_error(pdf_attachments(doc), "Document has been closed")
+})
+
+# Two attachments whose file specifications carry the associated-file
+# entries: "a.xml" declares a /Desc string and an /AFRelationship
+# name; "b.txt" carries both with the wrong types (number / string),
+# which PDFium reads as absent.
+af_attachments_pdf <- function() {
+  inline_pdf_bytes(c(  # nolint: object_usage_linter.
+    paste0("<< /Type /Catalog /Pages 2 0 R /Names << /EmbeddedFiles ",
+           "<< /Names [(a.xml) 4 0 R (b.txt) 6 0 R] >> >> >>"),
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] >>",
+    paste0("<< /Type /Filespec /F (a.xml) /UF (a.xml) ",
+           "/Desc (Invoice data) /AFRelationship /Data ",
+           "/EF << /F 5 0 R >> >>"),
+    inline_pdf_stream(  # nolint: object_usage_linter.
+      "/Type /EmbeddedFile /Subtype /text#2Fxml", "<x/>"
+    ),
+    paste0("<< /Type /Filespec /F (b.txt) /Desc 42 ",
+           "/AFRelationship (Source) /EF << /F 5 0 R >> >>")
+  ))
+}
+
+test_that("attachment description and AF relationship read the file spec", {
+  doc <- pdf_doc_open(source = af_attachments_pdf())
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  atts <- pdf_attachments(doc)
+  expect_identical(pdf_attachment_description(atts[[1L]]), "Invoice data")
+  expect_identical(pdf_attachment_af_relationship(atts[[1L]]), "Data")
+  expect_identical(pdf_attachment_description(atts[[2L]]), "")
+  expect_identical(pdf_attachment_af_relationship(atts[[2L]]), "")
+  tbl <- tibble::as_tibble(atts)
+  expect_identical(tbl$description, c("Invoice data", ""))
+  expect_identical(tbl$af_relationship, c("Data", ""))
+})
+
+test_that("attachment description getters reject bad handles", {
+  doc <- pdf_doc_open(source = af_attachments_pdf())
+  att <- pdf_attachments(doc)[[1L]]
+  pdf_doc_close(doc)
+  expect_error(pdf_attachment_description(att), "closed")
+  expect_error(pdf_attachment_af_relationship(att), "closed")
+  expect_error(pdf_attachment_description("x"), "Assertion on 'att'")
 })
 
 # -- New handle-based tests --
@@ -190,7 +237,8 @@ test_that("cpp_attachments_list reports the documented attachment", {
   doc <- pdf_doc_open(fixture_path("attachments"))
   on.exit(pdf_doc_close(doc), add = TRUE)
   out <- pdfium:::cpp_attachments_list(doc$ptr)
-  expect_named(out, c("name", "mime_type", "size_bytes"))
+  expect_named(out, c("name", "mime_type", "size_bytes", "description",
+                      "af_relationship"))
   expect_identical(out$name, "hello.txt")
   expect_identical(out$mime_type, "text/plain")
   expect_identical(out$size_bytes, 12)

@@ -81,6 +81,20 @@ test_that("pdf_annot_set_bounds round-trips through the reader", {
   expect_equal(unname(b["bounds_top"]),    220)
 })
 
+test_that("pdf_annot_set_bounds leaves an appearance stream's /BBox alone", {
+  s <- annot_authoring_blank_page()
+  a <- pdf_annot_new(s$page, "square", bounds = c(10, 10, 50, 50))
+  pdf_annot_set_appearance(a, "normal", "0 0 1 rg 10 10 40 40 re f")
+  pdf_annot_set_bounds(a, c(5, 5, 150, 150))
+  raw <- pdf_save_to_raw(s$doc)
+  raw[raw == as.raw(0L)] <- as.raw(32L)
+  txt <- rawToChar(raw)
+  rects <- regmatches(txt, gregexpr("/(BBox|Rect) ?\\[[^]]*\\]", txt,
+                                    useBytes = TRUE))[[1L]]
+  expect_true(any(grepl("/Rect ?\\[ ?5 5 150 150\\]", rects)))
+  expect_true(any(grepl("/BBox ?\\[ ?10 10 50 50\\]", rects)))
+})
+
 test_that("pdf_annot_set_bounds validates the vector", {
   s <- annot_authoring_blank_page()
   a <- pdf_annot_new(s$page, "square")

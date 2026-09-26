@@ -161,6 +161,14 @@ bool cpp_text_set_render_mode(SEXP obj_ptr, int mode) {
       static_cast<FPDF_TEXT_RENDERMODE>(mode)) != 0;
 }
 
+// FPDFTextObj_SetFontSize (chromium/8066+) rejects negative sizes;
+// the R wrapper validates `size >= 0` before reaching here.
+// [[Rcpp::export(name = "cpp_text_set_font_size")]]
+bool cpp_text_set_font_size(SEXP obj_ptr, double size) {
+  return FPDFTextObj_SetFontSize(obj_from_ptr(obj_ptr),
+                                 static_cast<float>(size)) != 0;
+}
+
 // Marks ---------------------------------------------------------------
 
 // Add a content mark with the given name. Returns the new mark's
@@ -188,6 +196,23 @@ bool cpp_obj_remove_mark(SEXP obj_ptr, int mark_index_zero) {
     Rcpp::stop("No content mark at index %d.", mark_index_zero);
   }
   return FPDFPageObj_RemoveMark(obj, mark) != 0;  // # nocov  // PDFium guarantees removal succeeds on a valid (obj, mark) pair
+}
+
+// Attach mark `mark_index_zero` of `src_ptr` to `obj_ptr` via
+// FPDFPageObj_AddExistingMark (chromium/8066+). The mark is shared,
+// not copied. PDFium does not verify that both objects belong to the
+// same document; the R wrapper enforces that before calling in.
+// [[Rcpp::export(name = "cpp_obj_add_existing_mark")]]
+bool cpp_obj_add_existing_mark(SEXP obj_ptr, SEXP src_ptr,
+                                 int mark_index_zero) {
+  FPDF_PAGEOBJECT obj = obj_from_ptr(obj_ptr);
+  FPDF_PAGEOBJECT src = obj_from_ptr(src_ptr);
+  FPDF_PAGEOBJECTMARK mark = FPDFPageObj_GetMark(src, mark_index_zero);
+  if (mark == nullptr) {
+    Rcpp::stop("`src` has no content mark at index %d.",
+               mark_index_zero + 1);
+  }
+  return FPDFPageObj_AddExistingMark(obj, mark) != 0;
 }
 
 // Set an integer parameter on an existing mark. doc_ptr is needed

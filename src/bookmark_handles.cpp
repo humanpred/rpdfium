@@ -114,6 +114,31 @@ std::string cpp_bookmark_title_handle(SEXP bm_ptr) {
   return read_bookmark_title(bm_from_ptr(bm_ptr));
 }
 
+// /C text colour (chromium/8066+). FPDFBookmark_GetColor fails when
+// /C is absent or malformed (wrong length, components outside
+// [0, 1]); that surfaces as all-NA.
+// [[Rcpp::export(name = "cpp_bookmark_color_handle")]]
+Rcpp::NumericVector cpp_bookmark_color_handle(SEXP bm_ptr) {
+  FPDF_BOOKMARK bookmark = bm_from_ptr(bm_ptr);
+  Rcpp::NumericVector out = Rcpp::NumericVector::create(
+      Rcpp::_["red"] = NA_REAL, Rcpp::_["green"] = NA_REAL,
+      Rcpp::_["blue"] = NA_REAL);
+  float r = 0.0f, g = 0.0f, b = 0.0f;
+  if (FPDFBookmark_GetColor(bookmark, &r, &g, &b)) {
+    out[0] = static_cast<double>(r);
+    out[1] = static_cast<double>(g);
+    out[2] = static_cast<double>(b);
+  }
+  return out;
+}
+
+// /F style flags (chromium/8066+): bit 0 = italic, bit 1 = bold.
+// The raw integer is returned; the R side decodes the defined bits.
+// [[Rcpp::export(name = "cpp_bookmark_style_handle")]]
+int cpp_bookmark_style_handle(SEXP bm_ptr) {
+  return FPDFBookmark_GetStyle(bm_from_ptr(bm_ptr));
+}
+
 // [[Rcpp::export(name = "cpp_bookmark_action_handle")]]
 Rcpp::List cpp_bookmark_action_handle(SEXP bm_ptr, SEXP doc_ptr) {
   FPDF_DOCUMENT doc = doc_from_ptr(doc_ptr);

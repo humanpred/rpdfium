@@ -1,6 +1,6 @@
 # ADR-009 — Defer Bezier control points to a post-0.1.0 release
 
-- Status: Accepted
+- Status: Superseded by ADR-021
 - Date: 2026-05-15
 
 ## Context

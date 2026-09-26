@@ -28,30 +28,19 @@ engine both consume cleanly) and drawn with \code{\link[grid:grid.raster]{grid::
 on a fresh \code{grid} page.
 }
 \details{
-We go through \code{as.array(x)} rather than handing the integer matrix
-directly to \code{graphics::rasterImage()} for two reasons that
-compound:
-\enumerate{
-\item Per the documented raster contract (see
-\code{?grDevices::as.raster}, "Raster images are internally
-represented row-first"), \code{"raster"} and \code{nativeRaster} objects
-must have row-major memory layout. R's \code{as.raster.matrix()}
-transposes its input precisely to satisfy that. Our integer
-matrix comes out of C++ as a standard R column-major matrix,
-so feeding it directly is non-conformant and shows diagonal
-stripe artifacts on detailed content.
-\item \code{rasterImage} with \code{plot.window} uses the user-coordinate
-system, which defaults (\verb{xaxs = "r", yaxs = "r"}) to padding
-the interval by 4\% on each side — silently compressing the
-raster into ~92\% of the device and forcing sub-pixel
-resampling. \code{grid::grid.raster()} uses npc coordinates and
-isn't subject to this.
-}
+We go through \code{as.array(x)} to a 3-D \code{c(H, W, 4)} numeric array
+rather than handing the bitmap to \code{graphics::rasterImage()}:
+\code{rasterImage} with \code{plot.window} uses the user-coordinate system,
+which defaults (\verb{xaxs = "r", yaxs = "r"}) to padding the interval
+by 4\% on each side — silently compressing the raster into ~92\% of
+the device and forcing sub-pixel resampling. \code{grid::grid.raster()}
+uses npc coordinates (0..1, no padding) and isn't subject to this.
 
-Going through \code{as.array(x)} to a 3-D \code{c(H, W, 4)} numeric array
-and rendering with \code{grid::grid.raster()} sidesteps both: the
-array path uses positional channel storage (no row-vs-column
-convention), and grid coordinates are 0..1 npc without padding.
+(The bitmap itself is a \emph{conformant} \code{nativeRaster} — its backing
+buffer is row-major, so it could be handed to \code{grid::grid.raster()}
+directly; the \code{as.array()} array path is kept because a positional
+\code{c(H, W, 4)} array carries no row-vs-column ambiguity for
+downstream consumers.)
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",

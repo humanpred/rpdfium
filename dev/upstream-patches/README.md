@@ -78,8 +78,9 @@ so embedders can write the embedded-file MIME type that
 `FPDFAttachment_GetSubtype` reads. Closes one of the two upstream
 gaps documented on the R-side `pdf_attachment_set_dict_value()`
 wrapper (the other — `FPDFAttachment_SetStringValue`'s Unicode
-round-trip loss — needs a separate CL because it's a behaviour
-change to an existing symbol, not a new one). This was CL 6 in
+round-trip loss — was fixed upstream by "Fix
+FPDFAttachment_SetStringValue() encoding problem", 2026-07-13, and
+ships in bblanchon `chromium/8066`). This was CL 6 in
 `dev/upstream-api-gaps.md`.
 
 The implementation mirrors `FPDFAttachment_GetSubtype` exactly:
@@ -274,9 +275,15 @@ Gerrit CL.
 
 ### `pdfium-FPDFTextObj_SetFontSize.patch`
 
-**Status:** Ready to upload (2026-05-20). CLA on file; the
+**Status:** **Landed upstream** as "Add FPDFTextObj_SetFontSize()
+public API" (PDFium `main`, 2026-05-27) and shipped in bblanchon
+`chromium/8066`, with the signature below. Wrapped as
+`pdf_text_set_font_size()`; see `dev/pdfium-8066-api-delta.md`. The
+rest of this entry is kept as the historical record.
+
+~~Ready to upload (2026-05-20). CLA on file; the
 [per-patch upload commands](#submission-walk-through) below cover
-the first run.
+the first run.~~
 
 Adds the public symbol
 
@@ -340,7 +347,26 @@ identically.
 
 ### `pdfium-FPDFPath_GetBezierControlPoints.patch`
 
-**Status:** Patchset 2 uploaded to
+**Status:** **Superseded upstream.** PDFium `main` gained
+`FPDFPath_GetBezierControlPoints()` on 2026-08-20 ("Add
+FPDFPath_GetBezierControlPoints() API", a separate change by another
+contributor), shipped in bblanchon `chromium/8066`. The landed form
+keeps this patch's path-plus-endpoint-index design but takes
+`size_t index` and two `FS_POINTF*` outputs:
+
+```c
+FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
+FPDFPath_GetBezierControlPoints(FPDF_PAGEOBJECT path,
+                                size_t index,
+                                FS_POINTF* first_control_point,
+                                FS_POINTF* second_control_point);
+```
+
+The package uses it for the `cx1`/`cy1`/`cx2`/`cy2` columns of
+`pdf_path_segments()` (ADR-021). CL 147810 can be abandoned; the rest
+of this entry is kept as the historical record.
+
+Patchset 2 was uploaded to
 [pdfium-review CL 147810](https://pdfium-review.googlesource.com/c/pdfium/+/147810)
 on 2026-05-15, revising the original patchset after the first
 reviewer pass.

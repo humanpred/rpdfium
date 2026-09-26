@@ -31,6 +31,11 @@ annot / widget.
 \item \code{"print"} — bake the print-time appearance instead.
 }
 
+Flattened fields are also removed from the document's interactive
+form (\verb{/AcroForm}). Once the last field is flattened the
+\verb{/AcroForm} dictionary itself is dropped, so
+\code{\link[=pdf_doc_form_type]{pdf_doc_form_type()}} reports \code{"none"}.
+
 Returns the page invisibly. The parent page's dirty mark is set
 so \code{\link[=pdf_save]{pdf_save()}} picks up the change.
 }

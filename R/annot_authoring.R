@@ -124,6 +124,12 @@ pdf_annot_delete <- function(annot) {
 #' Wraps `FPDFAnnot_SetRect`. Replaces the `/Rect` entry with the
 #' given `(left, bottom, right, top)` in PDF user-space points.
 #'
+#' An existing appearance stream is not resized. PDFium, like other
+#' viewers, draws an appearance by mapping its `/BBox` onto the
+#' annotation's `/Rect` (ISO 32000-1:2008 section 12.5.5), so the
+#' appearance is scaled to fill the new rectangle. Replace it with
+#' [pdf_annot_set_appearance()] if it should keep its size.
+#'
 #' @param annot A `pdfium_annot` handle. Parent doc must be
 #'   readwrite.
 #' @param bounds Length-4 numeric vector
