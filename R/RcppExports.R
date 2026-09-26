@@ -353,6 +353,10 @@ cpp_attachment_set_dict_value <- function(att_ptr, key, value_utf8) {
     .Call(`_pdfium_cpp_attachment_set_dict_value`, att_ptr, key, value_utf8)
 }
 
+cpp_attachment_set_description <- function(att_ptr, value_utf8) {
+    .Call(`_pdfium_cpp_attachment_set_description`, att_ptr, value_utf8)
+}
+
 cpp_attachment_set_data <- function(att_ptr, doc_ptr, contents) {
     .Call(`_pdfium_cpp_attachment_set_data`, att_ptr, doc_ptr, contents)
 }
@@ -367,6 +371,14 @@ cpp_attachment_name <- function(att_ptr) {
 
 cpp_attachment_subtype <- function(att_ptr) {
     .Call(`_pdfium_cpp_attachment_subtype`, att_ptr)
+}
+
+cpp_attachment_description <- function(att_ptr) {
+    .Call(`_pdfium_cpp_attachment_description`, att_ptr)
+}
+
+cpp_attachment_af_relationship <- function(att_ptr) {
+    .Call(`_pdfium_cpp_attachment_af_relationship`, att_ptr)
 }
 
 cpp_attachment_size_bytes <- function(att_ptr) {
@@ -403,6 +415,14 @@ cpp_bookmark_handles <- function(doc_ptr) {
 
 cpp_bookmark_title_handle <- function(bm_ptr) {
     .Call(`_pdfium_cpp_bookmark_title_handle`, bm_ptr)
+}
+
+cpp_bookmark_color_handle <- function(bm_ptr) {
+    .Call(`_pdfium_cpp_bookmark_color_handle`, bm_ptr)
+}
+
+cpp_bookmark_style_handle <- function(bm_ptr) {
+    .Call(`_pdfium_cpp_bookmark_style_handle`, bm_ptr)
 }
 
 cpp_bookmark_action_handle <- function(bm_ptr, doc_ptr) {
@@ -733,6 +753,10 @@ cpp_obj_delete <- function(page_ptr, obj_ptr) {
     .Call(`_pdfium_cpp_obj_delete`, page_ptr, obj_ptr)
 }
 
+cpp_obj_rendered_pattern <- function(doc_ptr, obj_ptr, stroke) {
+    .Call(`_pdfium_cpp_obj_rendered_pattern`, doc_ptr, obj_ptr, stroke)
+}
+
 cpp_obj_line_cap <- function(obj_ptr) {
     .Call(`_pdfium_cpp_obj_line_cap`, obj_ptr)
 }
@@ -809,12 +833,20 @@ cpp_text_set_render_mode <- function(obj_ptr, mode) {
     .Call(`_pdfium_cpp_text_set_render_mode`, obj_ptr, mode)
 }
 
+cpp_text_set_font_size <- function(obj_ptr, size) {
+    .Call(`_pdfium_cpp_text_set_font_size`, obj_ptr, size)
+}
+
 cpp_obj_add_mark <- function(obj_ptr, name) {
     .Call(`_pdfium_cpp_obj_add_mark`, obj_ptr, name)
 }
 
 cpp_obj_remove_mark <- function(obj_ptr, mark_index_zero) {
     .Call(`_pdfium_cpp_obj_remove_mark`, obj_ptr, mark_index_zero)
+}
+
+cpp_obj_add_existing_mark <- function(obj_ptr, src_ptr, mark_index_zero) {
+    .Call(`_pdfium_cpp_obj_add_existing_mark`, obj_ptr, src_ptr, mark_index_zero)
 }
 
 cpp_obj_mark_set_int_param <- function(doc_ptr, obj_ptr, mark_index_zero, key, value) {

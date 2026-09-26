@@ -13,7 +13,10 @@
 }
 \value{
 A tibble with columns \code{attachment_index}, \code{name},
-\code{mime_type}, \code{size_bytes}, \code{handle}, \code{source}.
+\code{mime_type}, \code{size_bytes}, \code{description}, \code{af_relationship},
+\code{handle}, \code{source}. \code{description} and \code{af_relationship} are
+empty strings when the attachment doesn't declare them (see
+\code{\link[=pdf_attachment_description]{pdf_attachment_description()}}, \code{\link[=pdf_attachment_af_relationship]{pdf_attachment_af_relationship()}}).
 }
 \description{
 Walks every attachment in the list and reads its

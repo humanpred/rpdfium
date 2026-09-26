@@ -19,17 +19,18 @@ accepted.}
 Invisibly returns the parent \code{pdfium_doc}.
 }
 \description{
-Writes a string-valued entry in the attachment's parameter
-dictionary. Common keys:
+Writes a string-valued entry in the attachment's embedded-file
+parameter dictionary (\verb{/Params}, ISO 32000-1:2008 Table 46). The
+string-valued standard key is \code{"ModDate"} — the modification date
+as a PDF date string (see \code{\link[=pdf_parse_date]{pdf_parse_date()}} for the format);
+custom keys are allowed too.
 }
 \details{
-\itemize{
-\item \code{"Desc"} — a human-readable description.
-\item \code{"AFRelationship"} — the AF/EF relationship type
-(\code{"Source"}, \code{"Data"}, \code{"Alternative"}, etc.).
-\item \code{"ModDate"} — modification date as a PDF date string (see
-\code{\link[=pdf_parse_date]{pdf_parse_date()}} for the format).
-}
+The description (\verb{/Desc}) and the associated-file relationship
+(\verb{/AFRelationship}) are \emph{not} \verb{/Params} entries: they live on the
+attachment's file specification dictionary. Set the description
+with \code{\link[=pdf_attachment_set_description]{pdf_attachment_set_description()}} and read both with
+\code{\link[=pdf_attachment_description]{pdf_attachment_description()}} / \code{\link[=pdf_attachment_af_relationship]{pdf_attachment_af_relationship()}}.
 
 Wraps \code{FPDFAttachment_SetStringValue}, which writes into the
 attachment's \verb{/Params} subdictionary. Mirrors

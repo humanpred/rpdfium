@@ -179,6 +179,62 @@ test_that("pdf_attachment_set_data refuses read-only doc", {
                "readwrite")
 })
 
+# pdf_attachment_set_description ------------------------------------
+
+test_that("pdf_attachment_set_description writes the file-spec /Desc", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  att <- pdf_attachment_new(doc, "notes.txt")
+  expect_identical(pdf_attachment_description(att), "")
+  # Works before any data is set: /Desc lives on the file
+  # specification, not in /Params.
+  ret <- pdf_attachment_set_description(att, "Field notes")
+  expect_identical(ret, doc)
+  expect_identical(pdf_attachment_description(att), "Field notes")
+})
+
+test_that("pdf_attachment_set_description survives set_data and save", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  att <- pdf_attachment_new(doc, "data.csv")
+  msg <- "Donn\u00e9es \u2014 r\u00e9sum\u00e9"
+  pdf_attachment_set_description(att, msg)
+  pdf_attachment_set_data(att, charToRaw("a,b\n1,2\n"))
+  expect_identical(pdf_attachment_description(att), msg)
+  # set_data created /Params, a separate dictionary without /Desc.
+  expect_false(pdf_attachment_dict_value(att, "Desc")$has_key)
+  doc2 <- pdf_doc_open(source = pdf_save_to_raw(doc))
+  on.exit(pdf_doc_close(doc2), add = TRUE)
+  att2 <- pdf_attachments(doc2)[[1L]]
+  expect_identical(pdf_attachment_description(att2), msg)
+  expect_identical(tibble::as_tibble(pdf_attachments(doc2))$description,
+                   msg)
+})
+
+test_that("pdf_attachment_set_description stores an empty string", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  att <- pdf_attachment_new(doc, "a.txt")
+  pdf_attachment_set_description(att, "temporary")
+  pdf_attachment_set_description(att, "")
+  expect_identical(pdf_attachment_description(att), "")
+})
+
+test_that("pdf_attachment_set_description validates its inputs", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  att <- pdf_attachment_new(doc, "a.txt")
+  expect_error(pdf_attachment_set_description(att, NA_character_),
+               "Assertion on 'value' failed")
+  expect_error(pdf_attachment_set_description(att, c("a", "b")),
+               "Assertion on 'value' failed")
+  ro <- pdf_doc_open(fixture_path("attachments"))
+  on.exit(pdf_doc_close(ro), add = TRUE)
+  expect_error(pdf_attachment_set_description(pdf_attachments(ro)[[1L]],
+                                              "x"),
+               "readwrite")
+})
+
 # Round-trip via pdf_save ------------------------------------------
 
 test_that("attachment authoring round-trips through pdf_save", {

@@ -2,13 +2,16 @@
 //
 // PDFs can carry attached files (the /EmbeddedFile object stream).
 // PDFium exposes these as FPDF_ATTACHMENT handles whose lifetime
-// is owned by the parent document. Three readable facets:
+// is owned by the parent document. The readable facets:
 //
 //   FPDFDoc_GetAttachmentCount(doc)          -> int
 //   FPDFDoc_GetAttachment(doc, index)        -> FPDF_ATTACHMENT
 //   FPDFAttachment_GetName(att, buf, len)    -> UTF-16LE filename
 //   FPDFAttachment_GetSubtype(att, buf, len) -> UTF-16LE MIME type
 //   FPDFAttachment_GetFile(att, buf, len, &out) -> raw byte contents
+//   FPDFAttachment_GetDescription(att, buf, len) -> UTF-16LE /Desc
+//   FPDFAttachment_GetAFRelationship(att, buf, len)
+//                                           -> UTF-16LE /AFRelationship
 //
 // All UTF-16LE outputs are converted to UTF-8 via the shared
 // pdfium_r::utf16le_to_utf8 helper.
@@ -69,6 +72,8 @@ Rcpp::List cpp_attachments_list(SEXP doc_ptr) {
   Rcpp::CharacterVector names(n);
   Rcpp::CharacterVector mime(n);
   Rcpp::NumericVector size_bytes(n);
+  Rcpp::CharacterVector description(n);
+  Rcpp::CharacterVector af_relationship(n);
   for (int i = 0; i < n; ++i) {
     FPDF_ATTACHMENT att = FPDFDoc_GetAttachment(doc, i);
     // # nocov start — FPDFDoc_GetAttachment only returns null for
@@ -77,11 +82,17 @@ Rcpp::List cpp_attachments_list(SEXP doc_ptr) {
       names[i] = NA_STRING;
       mime[i]  = NA_STRING;
       size_bytes[i] = NA_REAL;
+      description[i] = NA_STRING;
+      af_relationship[i] = NA_STRING;
       continue;
     }
     // # nocov end
     names[i] = read_utf16_attribute(att, FPDFAttachment_GetName);
     mime[i]  = read_utf16_attribute(att, FPDFAttachment_GetSubtype);
+    description[i] =
+        read_utf16_attribute(att, FPDFAttachment_GetDescription);
+    af_relationship[i] =
+        read_utf16_attribute(att, FPDFAttachment_GetAFRelationship);
     unsigned long out_buflen = 0;
     if (FPDFAttachment_GetFile(att, nullptr, 0, &out_buflen)) {
       size_bytes[i] = static_cast<double>(out_buflen);
@@ -96,7 +107,9 @@ Rcpp::List cpp_attachments_list(SEXP doc_ptr) {
   return Rcpp::List::create(
       Rcpp::_["name"]       = names,
       Rcpp::_["mime_type"]  = mime,
-      Rcpp::_["size_bytes"] = size_bytes);
+      Rcpp::_["size_bytes"] = size_bytes,
+      Rcpp::_["description"] = description,
+      Rcpp::_["af_relationship"] = af_relationship);
 }
 
 // [[Rcpp::export(name = "cpp_attachment_data")]]

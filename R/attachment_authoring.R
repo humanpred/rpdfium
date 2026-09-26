@@ -1,10 +1,11 @@
 # Attachment authoring (Phase 8 of the v0.1.0 writer surface).
 #
-# Four exports plus a per-doc helper:
+# Five exports plus a per-doc helper:
 #
 #   pdf_attachment_new(doc, name)              create + return handle
 #   pdf_attachment_delete(att)                 remove by index
 #   pdf_attachment_set_dict_value(att, k, v)   set /Params entry
+#   pdf_attachment_set_description(att, v)     set file-spec /Desc
 #   pdf_attachment_set_data(att, data)         set the embedded file
 #                                                bytes
 #
@@ -26,8 +27,8 @@ assert_attachment_writable <- function(att, arg = "att") {
 #' Creates a new `/EmbeddedFile` entry in `doc`'s name tree, with the
 #' given filename. The returned handle is a `pdfium_attachment` that
 #' you can pass to [pdf_attachment_set_data()] to populate the file
-#' bytes, and [pdf_attachment_set_dict_value()] to populate dictionary
-#' metadata (`"Subtype"`, `"Desc"`, etc.).
+#' bytes, [pdf_attachment_set_description()] to describe it, and
+#' [pdf_attachment_set_dict_value()] to populate `/Params` metadata.
 #'
 #' Wraps `FPDFDoc_AddAttachment`. The new attachment is appended to
 #' the end of the document's existing attachment list, and its
@@ -94,14 +95,17 @@ pdf_attachment_delete <- function(att) {
 
 #' Set an entry in an attachment's `/Params` dictionary
 #'
-#' Writes a string-valued entry in the attachment's parameter
-#' dictionary. Common keys:
+#' Writes a string-valued entry in the attachment's embedded-file
+#' parameter dictionary (`/Params`, ISO 32000-1:2008 Table 46). The
+#' string-valued standard key is `"ModDate"` — the modification date
+#' as a PDF date string (see [pdf_parse_date()] for the format);
+#' custom keys are allowed too.
 #'
-#' * `"Desc"` — a human-readable description.
-#' * `"AFRelationship"` — the AF/EF relationship type
-#'   (`"Source"`, `"Data"`, `"Alternative"`, etc.).
-#' * `"ModDate"` — modification date as a PDF date string (see
-#'   [pdf_parse_date()] for the format).
+#' The description (`/Desc`) and the associated-file relationship
+#' (`/AFRelationship`) are *not* `/Params` entries: they live on the
+#' attachment's file specification dictionary. Set the description
+#' with [pdf_attachment_set_description()] and read both with
+#' [pdf_attachment_description()] / [pdf_attachment_af_relationship()].
 #'
 #' Wraps `FPDFAttachment_SetStringValue`, which writes into the
 #' attachment's `/Params` subdictionary. Mirrors
@@ -154,15 +158,43 @@ pdf_attachment_set_dict_value <- function(att, key, value) {
   invisible(att$doc)
 }
 
+#' Set the description of an embedded file attachment
+#'
+#' Writes the `/Desc` entry of the attachment's file specification
+#' dictionary (ISO 32000-1:2008 section 7.11.3) — the human-readable
+#' description PDF viewers show in their attachments panel. Wraps
+#' `FPDFAttachment_SetDescription`. Unlike the `/Params` entries
+#' written by [pdf_attachment_set_dict_value()], the description
+#' works on a fresh attachment before any data is set and survives a
+#' later [pdf_attachment_set_data()].
+#'
+#' @inheritParams pdf_attachment_delete
+#' @param value Character scalar (UTF-8); `""` stores an empty
+#'   description.
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @seealso [pdf_attachment_description()] for the read side.
+#' @export
+pdf_attachment_set_description <- function(att, value) {
+  assert_attachment_writable(att)
+  checkmate::assert_string(value, na.ok = FALSE)
+  ok <- cpp_attachment_set_description(att$ptr, enc2utf8(value))
+  if (!ok) {
+    stop("FPDFAttachment_SetDescription failed.", call. = FALSE)  # nocov
+  }
+  invisible(att$doc)
+}
+
 #' Set the raw bytes of an embedded file attachment
 #'
 #' Replaces the attachment's embedded file data with the given raw
 #' bytes. Wraps `FPDFAttachment_SetFile`. The attachment's
 #' `CreationDate` and checksum dictionary entries are automatically
-#' updated; **all other entries** (including the MIME `Subtype` and
-#' the `Desc` you may have set with
-#' [pdf_attachment_set_dict_value()]) are cleared by PDFium during
-#' the write — set those entries _after_ this call.
+#' updated; **all other entries** of the embedded file stream and its
+#' `/Params` dictionary (including the MIME `Subtype` and anything set
+#' with [pdf_attachment_set_dict_value()]) are cleared by PDFium
+#' during the write — set those entries _after_ this call. The
+#' description set with [pdf_attachment_set_description()] lives on
+#' the file specification and is kept.
 #'
 #' Use this immediately after [pdf_attachment_new()] to populate a
 #' fresh attachment, or to update the file contents of an existing

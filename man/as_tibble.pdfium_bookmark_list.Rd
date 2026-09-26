@@ -12,8 +12,14 @@
 \item{...}{Unused (S3 generic compatibility).}
 }
 \value{
-A tibble with the documented bookmark columns plus
-\code{handle} and \code{source}.
+A tibble with one row per bookmark: \code{bookmark_index},
+\code{parent_index}, \code{level}, \code{title}, \code{page_num}, \code{action_type},
+\code{uri}, \code{filepath}, \code{dest_view}, \code{dest_x}, \code{dest_y}, \code{dest_zoom}
+(see the per-handle getters), \code{color_red} / \code{color_green} /
+\code{color_blue} (title color in \verb{[0, 1]}, \code{NA} when unset; see
+\code{\link[=pdf_bookmark_color]{pdf_bookmark_color()}}) and \code{italic} / \code{bold} (see
+\code{\link[=pdf_bookmark_style]{pdf_bookmark_style()}}), plus the \code{handle} and \code{source}
+list-columns.
 }
 \description{
 Walks every bookmark in the list and reads its metadata into a
