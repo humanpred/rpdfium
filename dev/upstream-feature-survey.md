@@ -20,6 +20,14 @@ more recent state may surface features or patterns added since.
 > [`dev/pdfium-7857-api-delta.md`](pdfium-7857-api-delta.md) (6 symbols
 > added, 0 removed) and does not alter the Tier 1/2/3 prioritisation
 > this survey informed.
+>
+> **Pin note (2026-09-26).** The pin moved again, `chromium/7857 →
+> chromium/8066`; the survey was again not re-run. The symbol delta
+> (12 added, 0 removed) is in
+> [`dev/pdfium-8066-api-delta.md`](pdfium-8066-api-delta.md). Two of
+> the additions close gaps this survey recorded across every binding:
+> `FPDFPath_GetBezierControlPoints` (Bezier control points on read)
+> and `FPDFTextObj_SetFontSize` (text size writer).
 
 | Repo                          | Branch   | Commit         | Commit date | Latest tag at HEAD       |
 |---|---|---|---|---|
