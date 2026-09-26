@@ -9,8 +9,8 @@ cpp_annot_new <- function(page_ptr, subtype_code) {
     .Call(`_pdfium_cpp_annot_new`, page_ptr, subtype_code)
 }
 
-cpp_annot_delete <- function(page_ptr, annot_ptr, index_zero_based) {
-    .Call(`_pdfium_cpp_annot_delete`, page_ptr, annot_ptr, index_zero_based)
+cpp_annot_delete <- function(page_ptr, annot_ptr) {
+    .Call(`_pdfium_cpp_annot_delete`, page_ptr, annot_ptr)
 }
 
 cpp_annot_subtype_code <- function(annot_ptr) {

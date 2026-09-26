@@ -35,15 +35,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_annot_delete
-bool cpp_annot_delete(SEXP page_ptr, SEXP annot_ptr, int index_zero_based);
-RcppExport SEXP _pdfium_cpp_annot_delete(SEXP page_ptrSEXP, SEXP annot_ptrSEXP, SEXP index_zero_basedSEXP) {
+bool cpp_annot_delete(SEXP page_ptr, SEXP annot_ptr);
+RcppExport SEXP _pdfium_cpp_annot_delete(SEXP page_ptrSEXP, SEXP annot_ptrSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
     Rcpp::traits::input_parameter< SEXP >::type annot_ptr(annot_ptrSEXP);
-    Rcpp::traits::input_parameter< int >::type index_zero_based(index_zero_basedSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_annot_delete(page_ptr, annot_ptr, index_zero_based));
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_delete(page_ptr, annot_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3307,7 +3306,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_annot_get", (DL_FUNC) &_pdfium_cpp_annot_get, 2},
     {"_pdfium_cpp_annot_new", (DL_FUNC) &_pdfium_cpp_annot_new, 2},
-    {"_pdfium_cpp_annot_delete", (DL_FUNC) &_pdfium_cpp_annot_delete, 3},
+    {"_pdfium_cpp_annot_delete", (DL_FUNC) &_pdfium_cpp_annot_delete, 2},
     {"_pdfium_cpp_annot_subtype_code", (DL_FUNC) &_pdfium_cpp_annot_subtype_code, 1},
     {"_pdfium_cpp_annot_flags", (DL_FUNC) &_pdfium_cpp_annot_flags, 1},
     {"_pdfium_cpp_annot_bounds", (DL_FUNC) &_pdfium_cpp_annot_bounds, 1},

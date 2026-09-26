@@ -2,7 +2,7 @@
 # covered by the readers in test-annot-class.R or the authoring
 # tests in test-annot-authoring.R:
 #   * cpp_annot_get out-of-range error
-#   * cpp_annot_delete failure path (FPDFPage_RemoveAnnot returns FALSE)
+#   * cpp_annot_delete refusing an annotation that is not on the page
 #   * cpp_annot_border NA branch (annot with no /Border or /BS)
 #   * cpp_annot_font_color success branch (FreeText with /DA colour)
 #   * cpp_annot_has_attachment_points TRUE and FALSE branches
@@ -165,22 +165,29 @@ test_that("cpp_annot_get errors when the index exceeds the page's annots", {
   )
 })
 
-# cpp_annot_delete failure path ------------------------------------
+# cpp_annot_delete not-on-page path --------------------------------
 
-test_that("cpp_annot_delete returns FALSE when FPDFPage_RemoveAnnot fails", {
-  doc <- pdf_doc_open(fixture_path("annotated"), readwrite = TRUE)
+test_that("cpp_annot_delete returns FALSE for an annotation on another page", {
+  doc <- pdf_doc_new()
   on.exit(pdf_doc_close(doc), add = TRUE)
-  page <- pdf_page_load(doc, 1L)
-  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
-  annots <- pdf_annotations(page)
-  a <- annots[[1L]]
-  # An out-of-range index makes FPDFPage_RemoveAnnot return FALSE
-  # without touching the annot we already hold.
-  ok <- pdfium:::cpp_annot_delete(page$ptr, a$ptr, 99L)
-  expect_false(ok)
-  # The R-side handle stays open because the bad index didn't
-  # actually delete anything; the externalptr is intact.
+  page1 <- pdf_page_new(doc, page_num = 1L, width = 300, height = 300)
+  on.exit(pdf_page_close(page1), add = TRUE, after = FALSE)
+  page2 <- pdf_page_new(doc, page_num = 2L, width = 300, height = 300)
+  on.exit(pdf_page_close(page2), add = TRUE, after = FALSE)
+  a <- pdf_annot_new(page1, "square", bounds = c(10, 10, 50, 50))
+  pdf_annot_new(page2, "circle", bounds = c(10, 10, 50, 50))
+  # FPDFPage_GetAnnotIndex finds no match on page 2, so neither page
+  # loses an annotation and the handle stays open.
+  expect_false(pdfium:::cpp_annot_delete(page2$ptr, a$ptr))
   expect_true(is_open(a))
+  expect_identical(
+    vapply(pdf_annotations(page1), pdf_annot_subtype, character(1L)),
+    "square"
+  )
+  expect_identical(
+    vapply(pdf_annotations(page2), pdf_annot_subtype, character(1L)),
+    "circle"
+  )
 })
 
 # cpp_annot_border NA branch ---------------------------------------

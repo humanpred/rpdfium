@@ -65,6 +65,14 @@
 * `pdf_form_field_set_value()`'s documentation no longer claims that
   the field's appearance is regenerated; PDFium's API has no way to do
   that outside its interactive form-fill layer.
+* `pdf_annot_delete()` removes the handle's own annotation. It used the
+  position recorded when the handle was made, so after an earlier
+  delete on the same page it removed the next annotation or failed,
+  and for a form field it removed an unrelated annotation. Deleting an
+  annotation that is no longer on its page, for example through a
+  second handle to it, is now an error that changes nothing.
+* `pdf_annot_delete()` no longer leaks PDFium's annotation context, and
+  with it any page-objects of the annotation's appearance stream.
 
 # pdfium 0.1.0
 
