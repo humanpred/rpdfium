@@ -20,7 +20,8 @@ depth-first. Per-attribute getters
 \code{\link[=pdf_bookmark_action_type]{pdf_bookmark_action_type()}}, \code{\link[=pdf_bookmark_uri]{pdf_bookmark_uri()}},
 \code{\link[=pdf_bookmark_filepath]{pdf_bookmark_filepath()}}, \code{\link[=pdf_bookmark_dest_view]{pdf_bookmark_dest_view()}},
 \code{\link[=pdf_bookmark_dest_x]{pdf_bookmark_dest_x()}}, \code{\link[=pdf_bookmark_dest_y]{pdf_bookmark_dest_y()}},
-\code{\link[=pdf_bookmark_dest_zoom]{pdf_bookmark_dest_zoom()}}) operate on a single handle.
+\code{\link[=pdf_bookmark_dest_zoom]{pdf_bookmark_dest_zoom()}}, \code{\link[=pdf_bookmark_color]{pdf_bookmark_color()}},
+\code{\link[=pdf_bookmark_style]{pdf_bookmark_style()}}) operate on a single handle.
 }
 \details{
 The list is flat; the tree shape is recovered from each handle's
@@ -34,8 +35,9 @@ view.
 Wraps \code{FPDFBookmark_GetFirstChild}, \code{FPDFBookmark_GetNextSibling},
 \code{FPDFBookmark_GetTitle}, \code{FPDFBookmark_GetDest},
 \code{FPDFBookmark_GetAction}, \code{FPDFAction_GetType} /
-\code{FPDFAction_GetURIPath} / \code{FPDFAction_GetFilePath}, and
-\code{FPDFDest_GetDestPageIndex}.
+\code{FPDFAction_GetURIPath} / \code{FPDFAction_GetFilePath},
+\code{FPDFDest_GetDestPageIndex}, \code{FPDFBookmark_GetColor}, and
+\code{FPDFBookmark_GetStyle}.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "outline.pdf",

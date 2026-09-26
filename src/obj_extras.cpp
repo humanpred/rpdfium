@@ -7,9 +7,13 @@
 // future cleanup pass may fold these into objects.cpp.
 
 #include <Rcpp.h>
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include "fpdfview.h"
 #include "fpdf_edit.h"
 #include "handle_validation.h"
+#include "native_raster.h"
 
 namespace {
 
@@ -22,7 +26,53 @@ inline FPDF_PAGEOBJECT validated_pageobj(SEXP obj_ptr) {
                                   /*require_prot_alive=*/true));
 }
 
+inline FPDF_DOCUMENT validated_doc(SEXP doc_ptr) {
+  return static_cast<FPDF_DOCUMENT>(
+      pdfium_r::validate_handle(doc_ptr, "Document",
+                                  /*require_prot_alive=*/false));
+}
+
+// Convert a rendered pattern tile to a nativeRaster (row-major, see
+// native_raster.h) and destroy the FPDF_BITMAP. PDFium rasterizes
+// the tile in pattern space, so its first buffer row is the tile's
+// *bottom* edge — the reverse of every other bitmap PDFium returns.
+// Swap rows end-for-end so the result is top-down like the rest of
+// the package's pdfium_bitmap objects.
+SEXP pattern_tile_to_native(FPDF_BITMAP bmp) {
+  if (bmp == nullptr) return R_NilValue;
+  int w = FPDFBitmap_GetWidth(bmp);
+  int h = FPDFBitmap_GetHeight(bmp);
+  int stride = FPDFBitmap_GetStride(bmp);
+  int format = FPDFBitmap_GetFormat(bmp);
+  const uint8_t* src =
+      static_cast<const uint8_t*>(FPDFBitmap_GetBuffer(bmp));
+  Rcpp::IntegerMatrix m(h, w);
+  pdfium_r::fill_bitmap_rowmajor(INTEGER(m), src, w, h, stride, format);
+  FPDFBitmap_Destroy(bmp);
+  int* px = INTEGER(m);
+  for (int top = 0, bottom = h - 1; top < bottom; ++top, --bottom) {
+    int* top_row = px + static_cast<size_t>(top) * w;
+    std::swap_ranges(top_row, top_row + w,
+                     px + static_cast<size_t>(bottom) * w);
+  }
+  return m;
+}
+
 }  // namespace
+
+// One rasterized tile of the tiling pattern used as the object's
+// fill (stroke = false) or stroke (stroke = true) colour, via
+// FPDFPageObj_GetRendered{Fill,Stroke}Pattern (chromium/8066+).
+// NULL when that colour is not a tiling pattern.
+// [[Rcpp::export(name = "cpp_obj_rendered_pattern")]]
+SEXP cpp_obj_rendered_pattern(SEXP doc_ptr, SEXP obj_ptr, bool stroke) {
+  FPDF_DOCUMENT doc = validated_doc(doc_ptr);
+  FPDF_PAGEOBJECT obj = validated_pageobj(obj_ptr);
+  FPDF_BITMAP bmp = stroke
+      ? FPDFPageObj_GetRenderedStrokePattern(doc, obj)
+      : FPDFPageObj_GetRenderedFillPattern(doc, obj);
+  return pattern_tile_to_native(bmp);
+}
 
 // Path-specific: line cap. Returns FPDF_LINECAP_BUTT (0),
 // FPDF_LINECAP_ROUND (1), or FPDF_LINECAP_PROJECTING_SQUARE (2).

@@ -78,6 +78,22 @@ std::string cpp_attachment_subtype(SEXP att_ptr) {
                          FPDFAttachment_GetSubtype);
 }
 
+// File-specification /Desc (chromium/8066+). PDFium reports an
+// absent or non-string /Desc as an empty string.
+// [[Rcpp::export(name = "cpp_attachment_description")]]
+std::string cpp_attachment_description(SEXP att_ptr) {
+  return read_utf16_call(att_from_ptr(att_ptr),
+                         FPDFAttachment_GetDescription);
+}
+
+// File-specification /AFRelationship (PDF 2.0; chromium/8066+).
+// Absent or non-name values read as an empty string.
+// [[Rcpp::export(name = "cpp_attachment_af_relationship")]]
+std::string cpp_attachment_af_relationship(SEXP att_ptr) {
+  return read_utf16_call(att_from_ptr(att_ptr),
+                         FPDFAttachment_GetAFRelationship);
+}
+
 // [[Rcpp::export(name = "cpp_attachment_size_bytes")]]
 double cpp_attachment_size_bytes(SEXP att_ptr) {
   FPDF_ATTACHMENT a = att_from_ptr(att_ptr);

@@ -12,7 +12,8 @@
 #' document. Each handle is a thin wrapper around an
 #' `FPDF_ATTACHMENT` owned by the parent doc; the per-attribute
 #' getters ([pdf_attachment_name()], [pdf_attachment_mime_type()],
-#' [pdf_attachment_size_bytes()], [pdf_attachment_data()],
+#' [pdf_attachment_size_bytes()], [pdf_attachment_description()],
+#' [pdf_attachment_af_relationship()], [pdf_attachment_data()],
 #' [pdf_attachment_dict_value()]) operate on a single handle.
 #'
 #' Use `tibble::as_tibble(pdf_attachments(doc))` for the tibble
@@ -55,7 +56,10 @@ pdf_attachments <- function(doc) {
 #' @param x A `pdfium_attachment_list` from [pdf_attachments()].
 #' @param ... Unused (S3 generic compatibility).
 #' @return A tibble with columns `attachment_index`, `name`,
-#'   `mime_type`, `size_bytes`, `handle`, `source`.
+#'   `mime_type`, `size_bytes`, `description`, `af_relationship`,
+#'   `handle`, `source`. `description` and `af_relationship` are
+#'   empty strings when the attachment doesn't declare them (see
+#'   [pdf_attachment_description()], [pdf_attachment_af_relationship()]).
 #' @importFrom tibble as_tibble
 #' @method as_tibble pdfium_attachment_list
 #' @export
@@ -70,6 +74,8 @@ as_tibble.pdfium_attachment_list <- function(x, ...) {
     name             = raw$name,
     mime_type        = raw$mime_type,
     size_bytes       = raw$size_bytes,
+    description      = raw$description,
+    af_relationship  = raw$af_relationship,
     handle           = unclass(x),
     source           = rep(list(src_doc), length(x))
   )
@@ -98,6 +104,8 @@ empty_attachment_tibble <- function() {
     name             = character(),
     mime_type        = character(),
     size_bytes       = numeric(),
+    description      = character(),
+    af_relationship  = character(),
     handle           = list(),
     source           = list()
   )
@@ -170,6 +178,42 @@ pdf_attachment_mime_type <- function(att) {
   cpp_attachment_subtype(att$ptr)
 }
 
+#' Attachment description
+#'
+#' Returns the human-readable description of the embedded file: the
+#' `/Desc` entry of its file specification dictionary (ISO
+#' 32000-1:2008 section 7.11.3). Wraps `FPDFAttachment_GetDescription`.
+#'
+#' @inheritParams pdf_attachment_name
+#' @return Character scalar (UTF-8); empty when the attachment has no
+#'   `/Desc`, or its `/Desc` is not a string.
+#' @seealso [pdf_attachment_set_description()] for the write side.
+#' @export
+pdf_attachment_description <- function(att) {
+  check_attachment(att)
+  cpp_attachment_description(att$ptr)
+}
+
+#' Attachment relationship to the document (PDF 2.0)
+#'
+#' Returns the `/AFRelationship` entry of the attachment's file
+#' specification dictionary: how the embedded file relates to the
+#' PDF, one of `"Source"`, `"Data"`, `"Alternative"`, `"Supplement"`,
+#' `"EncryptedPayload"`, `"FormData"`, `"Schema"`, or `"Unspecified"`
+#' (ISO 32000-2:2020, Table 43). Associated-file relationships are
+#' how PDF/A-3 and e-invoice formats such as ZUGFeRD / Factur-X mark
+#' their machine-readable payloads. Wraps
+#' `FPDFAttachment_GetAFRelationship`.
+#'
+#' @inheritParams pdf_attachment_name
+#' @return Character scalar; empty when the entry is absent or not a
+#'   PDF name.
+#' @export
+pdf_attachment_af_relationship <- function(att) {
+  check_attachment(att)
+  cpp_attachment_af_relationship(att$ptr)
+}
+
 #' Attachment decompressed size in bytes
 #'
 #' Returns the embedded file's decompressed byte size, or `NA`
@@ -219,7 +263,11 @@ pdf_attachment_data <- function(att) {
 #'
 #' @inheritParams pdf_attachment_name
 #' @param key The attachment-dict key as a single non-empty
-#'   character string (e.g. `"Subtype"`, `"AFRelationship"`).
+#'   character string (e.g. `"ModDate"`, `"CreationDate"`, or a
+#'   custom key). The description and associated-file relationship
+#'   live on the file specification rather than in `/Params`; read
+#'   them with [pdf_attachment_description()] and
+#'   [pdf_attachment_af_relationship()].
 #' @return A list:
 #'   * `has_key` (logical) — `TRUE` when the attachment dict
 #'     contains the key.

@@ -2,7 +2,7 @@
 % Please edit documentation in R/api_completion.R
 \name{pdf_page_bounding_box}
 \alias{pdf_page_bounding_box}
-\title{Page bounding box (cropbox ∩ mediabox)}
+\title{Page bounding box (cropbox intersect mediabox)}
 \usage{
 pdf_page_bounding_box(page)
 }

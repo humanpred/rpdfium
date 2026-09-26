@@ -16,7 +16,7 @@ Markdown ADR following the
 | [006](ADR-006-pdfium-pin.md)     | Accepted | PDFium version pinning policy |
 | [007](ADR-007-ci-and-coverage.md) | Accepted | CI: GitHub Actions matrix, 100% R coverage gate, valgrind, ASan |
 | [008](ADR-008-cran-targeting.md) | Accepted | CRAN-from-v0.1.0 hardening |
-| [009](ADR-009-defer-bezier-controls.md) | Accepted | Defer Bezier control points to a post-0.1.0 release (no public PDFium API) |
+| [009](ADR-009-defer-bezier-controls.md) | Superseded by ADR-021 | Defer Bezier control points to a post-0.1.0 release (no public PDFium API) |
 | [010](ADR-010-checkmate-for-argument-validation.md) | Accepted | Use `checkmate` for argument validation throughout the package |
 | [011](ADR-011-mutation-lifecycle.md) | Accepted | Mutation lifecycle: explicit `pdf_save()` |
 | [012](ADR-012-readwrite-flag.md) | Accepted | Read-write flag on `pdfium_doc` (default read-only) |
@@ -27,7 +27,9 @@ Markdown ADR following the
 | [017](ADR-017-handle-returning-readers.md) | Accepted | Handle-returning readers + `as_tibble()` / `as_pdfium_<class>()` round-trip; tibble carries `handle` + `source` list-columns |
 | [018](ADR-018-setter-conventions.md) | Accepted | Setter conventions: object-first naming, polymorphic page arg, composite + named-partial-update setters, 0-255 / 0-1 color auto-detection |
 | [019](ADR-019-naming-conventions.md) | Accepted | Naming conventions: accessors are object-first (`pdf_<object>_<attr>`), verbs are verb-first (`pdf_<verb>_<modifier>`); applies to constructors / destructors / accessors / setters across the package |
-| [020](ADR-020-handle-design-followups.md) | Accepted | Handle-design follow-ups: flat bookmark tree, per-column getters, handle-returning lookups, C-side defensive validation, render AP regen, CRAN timing, branch / PR strategy, API breakage policy, inverse-helper batch, continuous API gap audit |
+| [020](ADR-020-handle-design-followups.md) | Accepted (§7 superseded by ADR-022) | Handle-design follow-ups: flat bookmark tree, per-column getters, handle-returning lookups, C-side defensive validation, render AP regen, CRAN timing, branch / PR strategy, API breakage policy, inverse-helper batch, continuous API gap audit |
+| [021](ADR-021-bezier-control-points.md) | Supersedes ADR-009 | Bezier control points as `cx1`/`cy1`/`cx2`/`cy2` endpoint-row columns via `FPDFPath_GetBezierControlPoints` (PDFium chromium/8066+) |
+| [022](ADR-022-no-annotation-refresh-on-render.md) | Supersedes ADR-020 §7 | Rendering does not touch annotations: drop the `FPDFAnnot_SetRect` "AP refresh" walk |
 | [023](ADR-023-annotation-object-ownership.md) | Accepted | Annotation page-objects: `pdf_annot_append_object()` moves a top-level object off the annotation's page, the annotation finalizer closes the context while the document is open, and form-XObject child removal frees the child |
 
 ## Policy

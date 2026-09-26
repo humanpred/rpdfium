@@ -236,6 +236,42 @@ test_that("pdf_text_set_render_mode round-trips", {
   }
 })
 
+# pdf_text_set_font_size ----------------------------------------------
+
+test_that("pdf_text_set_font_size changes the font size and persists", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 200, height = 200)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  obj <- pdf_text_new(page, "Hello", font_size = 12)
+  ret <- pdf_text_set_font_size(obj, 30)
+  expect_identical(ret, doc)
+  expect_equal(pdf_text_font_size(obj), 30)
+  expect_setequal(doc$state$dirty_pages, 1L)
+  # Zero is allowed, mirroring pdf_text_new(font_size = 0).
+  pdf_text_set_font_size(obj, 0)
+  expect_equal(pdf_text_font_size(obj), 0)
+  pdf_text_set_font_size(obj, 18.5)
+  doc2 <- pdf_doc_open(source = pdf_save_to_raw(doc))
+  on.exit(pdf_doc_close(doc2), add = TRUE)
+  expect_equal(pdf_text_font_size(pdf_page_objects(doc2)[[1L]]), 18.5)
+})
+
+test_that("pdf_text_set_font_size rejects bad sizes and read-only docs", {
+  s <- setters_first_text()
+  expect_error(pdf_text_set_font_size(s$obj, -1), "Assertion on 'size'")
+  expect_error(pdf_text_set_font_size(s$obj, NA_real_),
+               "Assertion on 'size'")
+  expect_error(pdf_text_set_font_size(s$obj, Inf), "Assertion on 'size'")
+  expect_error(pdf_text_set_font_size(s$obj, c(1, 2)),
+               "Assertion on 'size'")
+  ro <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(ro), add = TRUE)
+  objs <- pdf_page_objects(ro)
+  txt <- objs[vapply(objs, function(o) o$type == "text", logical(1L))]
+  expect_error(pdf_text_set_font_size(txt[[1L]], 10), "readwrite")
+})
+
 # pdf_obj_add_mark / pdf_obj_remove_mark -----------------------------
 
 test_that("pdf_obj_add_mark adds a content mark with params", {
@@ -306,6 +342,65 @@ test_that("pdf_obj_add_mark rejects bad params", {
   )
 })
 
+# pdf_obj_add_existing_mark -------------------------------------------
+
+test_that("pdf_obj_add_existing_mark shares one mark between objects", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 200, height = 200)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  a <- pdf_rect_new(page, 0, 0, 10, 10)
+  b <- pdf_rect_new(page, 20, 0, 10, 10)
+  # Painted, so the rectangles survive the save below.
+  pdf_path_set_draw_mode(a, fill_mode = "winding", stroke = FALSE)
+  pdf_path_set_draw_mode(b, fill_mode = "winding", stroke = FALSE)
+  pdf_obj_add_mark(a, "Span", params = list(MCID = 3L, Lang = "en"))
+  ret <- pdf_obj_add_existing_mark(b, a, 1L)
+  expect_identical(ret, doc)
+  marks_b <- pdf_obj_marks(b)
+  expect_identical(marks_b$name, "Span")
+  expect_identical(marks_b$params[[1L]]$MCID, 3L)
+  # Shared, not copied: a parameter removed through `b` is gone from
+  # `a` too.
+  pdf_obj_mark_remove_param(b, 1L, "Lang")
+  expect_null(pdf_obj_marks(a)$params[[1L]]$Lang)
+  # Both objects keep the mark through a save / reload.
+  doc2 <- pdf_doc_open(source = pdf_save_to_raw(doc))
+  on.exit(pdf_doc_close(doc2), add = TRUE)
+  reloaded <- lapply(pdf_page_objects(doc2), pdf_obj_marks)
+  expect_length(reloaded, 2L)
+  for (m in reloaded) {
+    expect_identical(m$name, "Span")
+    expect_identical(m$params[[1L]]$MCID, 3L)
+  }
+})
+
+test_that("pdf_obj_add_existing_mark validates its inputs", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 200, height = 200)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  a <- pdf_rect_new(page, 0, 0, 10, 10)
+  b <- pdf_rect_new(page, 20, 0, 10, 10)
+  expect_error(pdf_obj_add_existing_mark(b, a, 1L),
+               "no content mark at index 1")
+  pdf_obj_add_mark(a, "Span")
+  expect_error(pdf_obj_add_existing_mark(b, a, 0L),
+               "Assertion on 'mark_index'")
+  expect_error(pdf_obj_add_existing_mark(b, "a", 1L), "Assertion on 'src'")
+  other <- pdf_doc_new()
+  on.exit(pdf_doc_close(other), add = TRUE)
+  other_page <- pdf_page_new(other, page_num = 1L, width = 50, height = 50)
+  on.exit(pdf_page_close(other_page), add = TRUE, after = FALSE)
+  c_obj <- pdf_rect_new(other_page, 0, 0, 5, 5)
+  expect_error(pdf_obj_add_existing_mark(c_obj, a, 1L), "same document")
+  expect_length(pdf_obj_marks(c_obj)$name, 0L)
+  ro <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(ro), add = TRUE)
+  ro_obj <- pdf_page_objects(ro)[[1L]]
+  expect_error(pdf_obj_add_existing_mark(ro_obj, ro_obj, 1L), "readwrite")
+})
+
 # Read-only doc rejection --------------------------------------------
 
 test_that("setters refuse a read-only doc", {
@@ -337,6 +432,7 @@ test_that("text-only setters refuse non-text objects", {
   s <- setters_first_path()
   expect_error(pdf_text_set_content(s$obj, "x"), "Assertion on")
   expect_error(pdf_text_set_render_mode(s$obj, "fill"), "Assertion on")
+  expect_error(pdf_text_set_font_size(s$obj, 10), "Assertion on")
 })
 
 # Closed-handle protection -------------------------------------------

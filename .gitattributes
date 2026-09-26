@@ -14,3 +14,10 @@
 # Upstream patches must stay byte-identical to what `git format-patch`
 # / `git apply` expect — no autocrlf.
 *.patch binary
+
+# Shell scripts that R CMD INSTALL executes must keep LF endings even
+# on Windows checkouts, or `sh` rejects them with `\r: command not
+# found`. This includes the package's configure scripts.
+configure       text eol=lf
+configure.win   text eol=lf
+*.sh            text eol=lf

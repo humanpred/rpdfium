@@ -65,6 +65,8 @@ reference:
       - pdf_attachment_name
       - pdf_attachment_mime_type
       - pdf_attachment_size_bytes
+      - pdf_attachment_description
+      - pdf_attachment_af_relationship
       - pdf_attachment_data
       - pdf_attachment_dict_value
   - title: Signatures
@@ -93,6 +95,8 @@ reference:
       - pdf_bookmark_dest_x
       - pdf_bookmark_dest_y
       - pdf_bookmark_dest_zoom
+      - pdf_bookmark_color
+      - pdf_bookmark_style
   - title: Pages
     contents:
       - pdf_page_load
@@ -165,6 +169,8 @@ reference:
       - pdf_obj_type
       - pdf_obj_bounds
       - pdf_obj_rotated_bounds
+      - pdf_obj_rendered_fill_pattern
+      - pdf_obj_rendered_stroke_pattern
       - pdf_obj_matrix
       - pdf_obj_has_transparency
       - pdf_obj_is_active
@@ -267,7 +273,9 @@ reference:
       - pdf_path_set_draw_mode
       - pdf_text_set_content
       - pdf_text_set_render_mode
+      - pdf_text_set_font_size
       - pdf_obj_add_mark
+      - pdf_obj_add_existing_mark
       - pdf_obj_remove_mark
   - title: Path geometry
     desc: >
@@ -348,10 +356,12 @@ reference:
       `pdf_attachment_new()` → `pdf_attachment_set_data()` (to
       populate the file bytes and materialise the `/Params` subdict)
       → `pdf_attachment_set_dict_value()` (for any extra dictionary
-      metadata).
+      metadata). `pdf_attachment_set_description()` writes the
+      file specification's `/Desc` and can be called at any point.
     contents:
       - pdf_attachment_new
       - pdf_attachment_delete
+      - pdf_attachment_set_description
       - pdf_attachment_set_dict_value
       - pdf_attachment_set_data
   - title: API-completion additions

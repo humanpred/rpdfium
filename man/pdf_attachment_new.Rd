@@ -21,8 +21,8 @@ call \code{\link[=pdf_attachment_set_data]{pdf_attachment_set_data()}} to popula
 Creates a new \verb{/EmbeddedFile} entry in \code{doc}'s name tree, with the
 given filename. The returned handle is a \code{pdfium_attachment} that
 you can pass to \code{\link[=pdf_attachment_set_data]{pdf_attachment_set_data()}} to populate the file
-bytes, and \code{\link[=pdf_attachment_set_dict_value]{pdf_attachment_set_dict_value()}} to populate dictionary
-metadata (\code{"Subtype"}, \code{"Desc"}, etc.).
+bytes, \code{\link[=pdf_attachment_set_description]{pdf_attachment_set_description()}} to describe it, and
+\code{\link[=pdf_attachment_set_dict_value]{pdf_attachment_set_dict_value()}} to populate \verb{/Params} metadata.
 }
 \details{
 Wraps \code{FPDFDoc_AddAttachment}. The new attachment is appended to

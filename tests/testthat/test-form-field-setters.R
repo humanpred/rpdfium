@@ -146,6 +146,23 @@ test_that("pdf_page_flatten removes annotations from the page", {
   expect_setequal(doc$state$dirty_pages, 1L)
 })
 
+test_that("pdf_page_flatten drops flattened fields from the AcroForm", {
+  # The fixture's two fields both sit on page 1, so flattening it
+  # leaves no interactive form behind — in memory and in the saved
+  # file.
+  doc <- pdf_doc_open(fixture_path("annotated"), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  expect_identical(pdf_doc_form_type(doc), "acro_form")
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  pdf_page_flatten(page)
+  expect_identical(pdf_doc_form_type(doc), "none")
+  saved <- pdf_doc_open(source = pdf_save_to_raw(doc))
+  on.exit(pdf_doc_close(saved), add = TRUE)
+  expect_identical(pdf_doc_form_type(saved), "none")
+  expect_length(pdf_form_fields(saved), 0L)
+})
+
 test_that("pdf_page_flatten accepts both modes", {
   doc <- pdf_doc_open(fixture_path("annotated"), readwrite = TRUE)
   on.exit(pdf_doc_close(doc), add = TRUE)

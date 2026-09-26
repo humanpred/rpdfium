@@ -20,10 +20,12 @@ Invisibly returns the parent \code{pdfium_doc}.
 Replaces the attachment's embedded file data with the given raw
 bytes. Wraps \code{FPDFAttachment_SetFile}. The attachment's
 \code{CreationDate} and checksum dictionary entries are automatically
-updated; \strong{all other entries} (including the MIME \code{Subtype} and
-the \code{Desc} you may have set with
-\code{\link[=pdf_attachment_set_dict_value]{pdf_attachment_set_dict_value()}}) are cleared by PDFium during
-the write — set those entries \emph{after} this call.
+updated; \strong{all other entries} of the embedded file stream and its
+\verb{/Params} dictionary (including the MIME \code{Subtype} and anything set
+with \code{\link[=pdf_attachment_set_dict_value]{pdf_attachment_set_dict_value()}}) are cleared by PDFium
+during the write — set those entries \emph{after} this call. The
+description set with \code{\link[=pdf_attachment_set_description]{pdf_attachment_set_description()}} lives on
+the file specification and is kept.
 }
 \details{
 Use this immediately after \code{\link[=pdf_attachment_new]{pdf_attachment_new()}} to populate a
