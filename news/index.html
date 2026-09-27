@@ -89,6 +89,10 @@
 <li>
 <code><a href="../reference/pdf_form_obj_remove_object.html">pdf_form_obj_remove_object()</a></code> frees the removed child (it used to leak) and closes the child’s handle. Its documentation now says that PDFium does not save the removal: the saved file still draws the removed child.</li>
 <li>Annotation handles collected after their page was closed now release PDFium’s annotation context while the document is still open; before, the context leaked.</li>
+<li>
+<code><a href="../reference/pdf_annot_delete.html">pdf_annot_delete()</a></code> removes the handle’s own annotation. It used the position recorded when the handle was made, so after an earlier delete on the same page it removed the next annotation or failed, and for a form field it removed an unrelated annotation. Deleting an annotation that is no longer on its page, for example through a second handle to it, is now an error that changes nothing.</li>
+<li>
+<code><a href="../reference/pdf_annot_delete.html">pdf_annot_delete()</a></code> no longer leaks PDFium’s annotation context, and with it any page-objects of the annotation’s appearance stream.</li>
 </ul></div>
 </div>
     <div class="section level2">
