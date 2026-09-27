@@ -1803,15 +1803,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_form_get_object
-SEXP cpp_form_get_object(SEXP form_ptr, SEXP page_ptr, int index_zero_based);
-RcppExport SEXP _pdfium_cpp_form_get_object(SEXP form_ptrSEXP, SEXP page_ptrSEXP, SEXP index_zero_basedSEXP) {
+SEXP cpp_form_get_object(SEXP form_ptr, SEXP owner_ptr, int index_zero_based);
+RcppExport SEXP _pdfium_cpp_form_get_object(SEXP form_ptrSEXP, SEXP owner_ptrSEXP, SEXP index_zero_basedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type form_ptr(form_ptrSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type owner_ptr(owner_ptrSEXP);
     Rcpp::traits::input_parameter< int >::type index_zero_based(index_zero_basedSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_form_get_object(form_ptr, page_ptr, index_zero_based));
+    rcpp_result_gen = Rcpp::wrap(cpp_form_get_object(form_ptr, owner_ptr, index_zero_based));
     return rcpp_result_gen;
 END_RCPP
 }

@@ -161,8 +161,9 @@ print.pdfium_page <- function(x, ...) {
 #' Objects inside an annotation's appearance stream (returned by
 #' [pdf_annot_objects()]) carry a `parent_annot` field pointing at the
 #' `pdfium_annot` instead. Their externalptr's `prot` slot pins the
-#' annotation, which owns them, rather than the page, and they are not
-#' part of the page's content.
+#' annotation, which owns them, rather than the page, as does that of
+#' the children [pdf_form_objects()] returns for a form among them;
+#' none of them are part of the page's content.
 #'
 #' @param ptr An `externalptr` to a PDFium `FPDF_PAGEOBJECT`.
 #' @param page The parent `pdfium_page`.

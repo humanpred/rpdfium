@@ -201,3 +201,20 @@ test_that("cpp_form_get_object rejects an out-of-range index", {
     "returned NULL"
   )
 })
+
+test_that("objects of a form in an annotation follow the annotation", {
+  doc <- pdf_doc_open(source = inline_annot_objects_pdf(), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  a <- pdf_annotations(page)[[1L]]
+  form <- pdf_annot_objects(a)[[5L]]
+  child <- pdf_form_objects(form)[[1L]]
+  expect_identical(pdf_text_font_size(child), 10)
+  # The annotation owns the form and its children, so clearing the
+  # annotation's handle refuses the child as it does the form, before
+  # anything reaches into memory the annotation may have freed.
+  pdf_annot_delete(a)
+  expect_error(pdf_obj_bounds(form), "parent has been closed")
+  expect_error(pdf_text_font_size(child), "parent has been closed")
+})
