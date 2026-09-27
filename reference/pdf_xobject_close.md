@@ -5,6 +5,8 @@ invalidate page-objects created from it via
 [`pdf_obj_form_from_xobject()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_form_from_xobject.md)
 — those are owned by their parent page and survive the XObject's
 release.
+[`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md)
+on the destination document closes its XObjects as well.
 
 ## Usage
 

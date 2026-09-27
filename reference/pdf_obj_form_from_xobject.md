@@ -28,7 +28,7 @@ pdf_obj_form_from_xobject(page, xobject)
   A `pdfium_xobject` from
   [`pdf_xobject_from_page()`](https://humanpred.github.io/rpdfium/reference/pdf_xobject_from_page.md).
   The XObject must have been created against the same `dest_doc` that
-  owns `page`.
+  owns `page`; one from another document is an error.
 
 ## Value
 

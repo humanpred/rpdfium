@@ -29,7 +29,9 @@ pdf_xobject_from_page(dest_doc, src_doc, src_page_num = 1L)
 
 ## Value
 
-A `pdfium_xobject` handle.
+A `pdfium_xobject` handle. It belongs to `dest_doc`:
+[`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md)
+on `dest_doc` closes it.
 
 ## See also
 

@@ -36,10 +36,10 @@ pdf_text_new(page, text, font = "Helvetica", font_size = 12, x = 0, y = 0)
   for the list) — or a `pdfium_font` handle from
   [`pdf_font_load_standard()`](https://humanpred.github.io/rpdfium/reference/pdf_font_load_standard.md)
   or
-  [`pdf_font_load()`](https://humanpred.github.io/rpdfium/reference/pdf_font_load.md).
-  Default `"Helvetica"`. Pass a `pdfium_font` handle when you need a
-  custom TrueType / Type1 font; the standard-font shortcut is purely for
-  convenience.
+  [`pdf_font_load()`](https://humanpred.github.io/rpdfium/reference/pdf_font_load.md),
+  loaded into the document `page` belongs to. Default `"Helvetica"`.
+  Pass a `pdfium_font` handle when you need a custom TrueType / Type1
+  font; the standard-font shortcut is purely for convenience.
 
 - font_size:
 

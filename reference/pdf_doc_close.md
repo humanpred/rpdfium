@@ -28,9 +28,11 @@ Invisibly returns `doc` with its underlying pointer marked closed.
 
 ## Details
 
-Annotation handles still open on the document, including the form-field
-handles of
+Handles still open on the document are closed first, because PDFium
+expects them to be closed before their document: annotation handles,
+including the form-field handles of
 [`pdf_form_fields()`](https://humanpred.github.io/rpdfium/reference/pdf_form_fields.md),
-are closed first, because PDFium releases an annotation's resources only
-while its document is open. Afterwards they print as closed, and
-`pdf_annot_*()` calls on them raise an error.
+then pages, then fonts and XObjects. Afterwards they print as closed,
+and calls on them, or on page-objects read from the closed pages, raise
+an error. Close a document when you are done with everything read from
+it.

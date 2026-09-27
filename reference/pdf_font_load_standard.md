@@ -25,7 +25,8 @@ pdf_font_load_standard(doc, name)
 ## Value
 
 A `pdfium_font` handle. Pass it as the `font` argument of
-[`pdf_text_new()`](https://humanpred.github.io/rpdfium/reference/pdf_text_new.md).
+[`pdf_text_new()`](https://humanpred.github.io/rpdfium/reference/pdf_text_new.md)
+for a page of `doc`.
 
 ## Details
 

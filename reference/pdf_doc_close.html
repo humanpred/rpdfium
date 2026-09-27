@@ -78,10 +78,12 @@ subsequent operation needs to delete the source file (relevant on Windows).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Annotation handles still open on the document, including the form-field
-handles of <code><a href="pdf_form_fields.html">pdf_form_fields()</a></code>, are closed first, because PDFium releases
-an annotation's resources only while its document is open. Afterwards they
-print as closed, and <code>pdf_annot_*()</code> calls on them raise an error.</p>
+    <p>Handles still open on the document are closed first, because PDFium
+expects them to be closed before their document: annotation handles,
+including the form-field handles of <code><a href="pdf_form_fields.html">pdf_form_fields()</a></code>, then pages, then
+fonts and XObjects. Afterwards they print as closed, and calls on them, or
+on page-objects read from the closed pages, raise an error. Close a
+document when you are done with everything read from it.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

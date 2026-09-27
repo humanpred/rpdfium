@@ -5,7 +5,10 @@ garbage-collected with a finalizer that calls `FPDF_ClosePage`; call
 [`pdf_page_close()`](https://humanpred.github.io/rpdfium/reference/pdf_page_close.md)
 explicitly when you need deterministic release. The page keeps the
 parent document alive for as long as the page is reachable, so it is
-safe to drop your reference to `doc` while still holding a page.
+safe to drop your reference to `doc` while still holding a page. Closing
+`doc` with
+[`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md)
+closes the page too: later calls on it raise an error.
 
 ## Usage
 

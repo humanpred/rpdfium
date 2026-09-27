@@ -39,7 +39,8 @@ pdf_font_load(doc, font_data, type = c("truetype", "type1"), cid = TRUE)
 ## Value
 
 A `pdfium_font` handle. Pass it as the `font` argument of
-[`pdf_text_new()`](https://humanpred.github.io/rpdfium/reference/pdf_text_new.md).
+[`pdf_text_new()`](https://humanpred.github.io/rpdfium/reference/pdf_text_new.md)
+for a page of `doc`.
 
 ## See also
 

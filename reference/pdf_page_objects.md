@@ -53,7 +53,9 @@ long as the parent `pdfium_page` is open. The handle's internal parent
 reference keeps the page (and transitively the document) alive for as
 long as you hold the object, but calling
 [`pdf_page_close()`](https://humanpred.github.io/rpdfium/reference/pdf_page_close.md)
-explicitly invalidates all returned objects.
+explicitly, or closing the document with
+[`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md),
+invalidates all returned objects.
 
 ## See also
 

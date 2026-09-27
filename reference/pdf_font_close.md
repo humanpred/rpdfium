@@ -29,3 +29,6 @@ Invisibly returns `font`.
 Closing a font does **not** invalidate text objects that already used it
 — PDFium keeps an internal reference. Only the embedder's R-side handle
 is released.
+
+[`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md)
+closes the document's fonts as well.

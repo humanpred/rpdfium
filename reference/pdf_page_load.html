@@ -4,12 +4,14 @@ garbage-collected with a finalizer that calls FPDF_ClosePage; call
 pdf_page_close() explicitly when you need deterministic release.
 The page keeps the parent document alive for as long as the page
 is reachable, so it is safe to drop your reference to doc while
-still holding a page."><meta property="og:description" content="Returns a pdfium_page handle bound to its parent doc. The page is
+still holding a page. Closing doc with pdf_doc_close() closes the
+page too: later calls on it raise an error."><meta property="og:description" content="Returns a pdfium_page handle bound to its parent doc. The page is
 garbage-collected with a finalizer that calls FPDF_ClosePage; call
 pdf_page_close() explicitly when you need deterministic release.
 The page keeps the parent document alive for as long as the page
 is reachable, so it is safe to drop your reference to doc while
-still holding a page."></head><body>
+still holding a page. Closing doc with pdf_doc_close() closes the
+page too: later calls on it raise an error."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -59,7 +61,8 @@ garbage-collected with a finalizer that calls <code>FPDF_ClosePage</code>; call
 <code><a href="pdf_page_close.html">pdf_page_close()</a></code> explicitly when you need deterministic release.
 The page keeps the parent document alive for as long as the page
 is reachable, so it is safe to drop your reference to <code>doc</code> while
-still holding a page.</p>
+still holding a page. Closing <code>doc</code> with <code><a href="pdf_doc_close.html">pdf_doc_close()</a></code> closes the
+page too: later calls on it raise an error.</p>
     </div>
 
     <div class="section level2">

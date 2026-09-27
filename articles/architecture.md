@@ -61,27 +61,45 @@ is **idempotent**: calling it twice is a no-op. The finalizer notices
 the handle has already been closed and skips its own close call. You can
 safely combine explicit close with the automatic fallback.
 
-## Children outlive their parent
+## Children keep their parent alive, and close with it
 
 ``` r
 
 load_page <- function(path) {
   doc <- pdf_doc_open(path)
-  page <- pdf_page_load(doc, 1) # available in Phase 1+
-  pdf_doc_close(doc) # this is fine
-  page # still usable here
+  pdf_page_load(doc, 1)
+  # `doc` goes out of scope here; the page keeps the document open.
 }
+page <- load_page("report.pdf")
+pdf_text_runs(page) # fine
 ```
 
 When you call `pdf_page_load(doc, ...)`, the returned `pdfium_page`
-holds an internal reference to its parent `pdfium_doc`. Even if you drop
-your reference to `doc` (or explicitly close it), the page stays valid
-until the page object itself is collected. The underlying PDFium
-document is kept alive in the background until the last page (or object)
-that depends on it goes away.
-
+holds an internal reference to its parent `pdfium_doc`. If you drop your
+reference to `doc`, the page stays valid until the page object itself is
+collected: the underlying PDFium document is kept alive in the
+background until the last page (or object) that depends on it goes away.
 The order is: **child references the parent**, never the other way
 around.
+
+Closing the parent explicitly is different. PDFium expects a page to be
+closed before its document, so
+[`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md)
+first closes the pages still open on the document, which invalidates
+their page-objects, and the document’s annotation and form-field
+handles, fonts and XObjects. Calls on any of them afterwards raise an
+error instead of reading freed memory:
+
+``` r
+
+doc <- pdf_doc_open("report.pdf")
+page <- pdf_page_load(doc, 1)
+pdf_doc_close(doc)
+pdf_text_runs(page)
+#> Error: Page has been closed: its document was closed.
+```
+
+Close a document when you are done with everything read from it.
 
 ## How the binary gets loaded
 
@@ -163,11 +181,12 @@ full conventions.
 - **Using a closed handle.** Functions that take a `pdfium_doc` raise an
   error if the handle has already been closed. Re-open the file if you
   need it again.
-- **Annotation handles after
+- **Pages and other handles after
   [`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md).**
-  Closing a document also closes the annotation and form-field handles
-  still open on it, because PDFium releases an annotation only while its
-  document is open. `pdf_annot_*()` calls on them then raise an error.
+  Closing a document also closes the pages, page-objects, annotation and
+  form-field handles, fonts and XObjects still open on it, because
+  PDFium expects them to be closed before their document. Calls on them
+  then raise an error.
 - **Forgetting `readwrite = TRUE`.** Setters error with
   `"doc must be readwrite"` when called on a doc opened for inspection
   only.

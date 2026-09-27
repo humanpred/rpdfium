@@ -103,7 +103,8 @@ ADR-017).</p>
 only as long as the parent <code>pdfium_page</code> is open. The handle's
 internal parent reference keeps the page (and transitively the
 document) alive for as long as you hold the object, but calling
-<code><a href="pdf_page_close.html">pdf_page_close()</a></code> explicitly invalidates all returned objects.</p>
+<code><a href="pdf_page_close.html">pdf_page_close()</a></code> explicitly, or closing the document with
+<code><a href="pdf_doc_close.html">pdf_doc_close()</a></code>, invalidates all returned objects.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

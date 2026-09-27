@@ -167,6 +167,37 @@
   page and its document had been closed used to leak PDFium’s annotation
   context, together with the page-objects of its appearance stream
   (ADR-024).
+- [`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md),
+  and the finalizer of a collected document, now also close the
+  document’s pages, including the pages of
+  [`pdf_form_fields()`](https://humanpred.github.io/rpdfium/reference/pdf_form_fields.md).
+  Page and page-object calls on them raise an error (“Page has been
+  closed: its document was closed.”) instead of reading freed memory.
+  Rendering or extracting text from a page whose document had been
+  closed read, and for text also wrote, the freed document; the results
+  looked right, so nothing noticed. A page collected after its document
+  had been closed also closed itself after the document, the reverse of
+  the order PDFium expects (ADR-025).
+- [`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md)
+  also closes the document’s font and XObject handles.
+  [`pdf_obj_form_from_xobject()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_form_from_xobject.md)
+  with an XObject whose document had been closed built the form object
+  from the freed document; it now raises an error.
+- [`pdf_text_new()`](https://humanpred.github.io/rpdfium/reference/pdf_text_new.md)
+  and
+  [`pdf_obj_form_from_xobject()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_form_from_xobject.md)
+  refuse a font or XObject that belongs to a document other than the
+  page’s. With a font from
+  [`pdf_font_load()`](https://humanpred.github.io/rpdfium/reference/pdf_font_load.md)
+  or an XObject, the new object pointed into the other document:
+  [`pdf_save()`](https://humanpred.github.io/rpdfium/reference/pdf_save.md)
+  wrote it out wrongly, and once the other document was closed, reading
+  the page read freed memory.
+- The form object from
+  [`pdf_obj_form_from_xobject()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_form_from_xobject.md)
+  stays usable after
+  [`pdf_xobject_close()`](https://humanpred.github.io/rpdfium/reference/pdf_xobject_close.md),
+  as documented; it used to raise an error.
 - [`pdf_page_insert_clip_path()`](https://humanpred.github.io/rpdfium/reference/pdf_page_insert_clip_path.md)
   no longer closes `clip_path`. PDFium never takes ownership of an
   inserted clip path, so the path was never freed. The handle now stays
