@@ -35,6 +35,16 @@ against, in this order:
     `PDFIUM_OFFLINE=1` and stage the tarball under
     `inst/pdfium-binaries/` for offline installs.
 
+## Licences
+
+PDFium is licensed under the BSD-3-Clause licence, and `libpdfium` also
+contains third-party code under its own licences. When `libpdfium` comes
+from the download (step 4 above), the installed package carries all of
+these notices:
+`list.files(system.file("pdfium-licenses", package = "pdfium"))`. When
+it comes from an existing installation (steps 1 to 3), the licence terms
+of that installation apply.
+
 ## See also
 
 Useful links:
