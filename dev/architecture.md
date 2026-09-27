@@ -150,7 +150,8 @@ four are gates (`R-CMD-check`, `coverage`, `lint`, `pre-commit`).
 | `pdfium_doc` lifetime semantics | `dev/decisions/ADR-005-memory-model.md` |
 | When and how to bump PDFium | `dev/decisions/ADR-006-pdfium-pin.md` |
 | Why coverage is gated at 100% R | `dev/decisions/ADR-007-ci-and-coverage.md` |
-| CRAN-targeting choices | `dev/decisions/ADR-008-cran-targeting.md` |
+| CRAN-quality bar (no CRAN release) | `dev/decisions/ADR-008-cran-targeting.md` + `dev/decisions/ADR-026-no-cran-release.md` |
+| Distribution channels (r-universe, GitHub) | `dev/decisions/ADR-026-no-cran-release.md` + `dev/r-universe-evaluation.md` |
 
 Material new decisions get their own ADR. See
 `dev/decisions/README.md` for the policy.

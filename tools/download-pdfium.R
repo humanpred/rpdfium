@@ -13,7 +13,7 @@
 # Honors:
 #   - PDFIUM_OFFLINE        if set to "1", skip downloading and require
 #                           that inst/pdfium-binaries/<archive> already
-#                           exists locally (offline / CRAN-builder use).
+#                           exists locally (offline or firewalled builds).
 #   - PDFIUM_BINARY_URL     override the URL (e.g. for mirrors).
 #   - PDFIUM_CACHE_DIR      directory to cache downloaded archives across
 #                           rebuilds. Defaults to tools::R_user_dir("pdfium",

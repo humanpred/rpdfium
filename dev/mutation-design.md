@@ -2,7 +2,7 @@
 
 Status: **active**. Supersedes the post-0.1.0 framing in
 [`v0.2.0-plan.md`](v0.2.0-plan.md). After review, the decision was made
-to fold the entire writer surface into the v0.1.0 CRAN release rather
+to fold the entire writer surface into the v0.1.0 release rather
 than deferring it. The architectural and feature content of
 `v0.2.0-plan.md` is mostly unchanged; this document captures the
 sequencing, ADRs accepted, and integration points with the existing
