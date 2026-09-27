@@ -90,7 +90,7 @@ Two facts about R limit the options:
   `load_all()` reloads of the same or a changed build, and unloading the
   shared library without `.onUnload`, with or without loading it again.
   All 32 scenarios (8 paths × open, closed, pending and all) now exit
-  cleanly. Before this change, 24 crashed.
+  cleanly. Before this change, 21 crashed.
 - The weak-registry invariant of ADR-024 and ADR-025 still holds. R
   keeps a handle until its finalizer has run, and the finalizer
   deregisters the handle while the library that registered it is still
