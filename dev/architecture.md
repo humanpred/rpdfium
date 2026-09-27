@@ -136,7 +136,9 @@ fixture or pin a font in the build script.
 
 See [ADR-007](decisions/ADR-007-ci-and-coverage.md). Eight workflows;
 four are gates (`R-CMD-check`, `coverage`, `lint`, `pre-commit`).
-`valgrind` and `cran-check` run weekly. `cpp-asan` is advisory.
+`valgrind` runs weekly and on pull requests that touch code, and
+`rhub` runs R-hub's CRAN-flavour platforms weekly (ADR-030).
+`cpp-asan` is advisory.
 `pkgdown` only deploys on tag pushes.
 
 ## Where decisions live
