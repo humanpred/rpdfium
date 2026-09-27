@@ -16,6 +16,11 @@ Survey conducted on **2026-05-15** against CRAN
 - CRAN versions captured below — `available.packages()` against
   `https://cloud.r-project.org` on the survey date.
 
+> **Wording note (2026-09-27).** `pdfium` will not be released to CRAN
+> ([ADR-026](decisions/ADR-026-no-cran-release.md)), so the positioning
+> statement in §5 now says "for the first time in R" instead of "for
+> the first time on CRAN". The survey data were not re-collected.
+
 | Package       | CRAN version on 2026-05-15 |
 |---|---|
 | `pdftools`    | 3.9.0    |
@@ -184,7 +189,7 @@ feature itself is not shipped.
 > walk every drawing operation on the page — each path's segments and Bezier
 > control points, each path's stroke and fill style, each text run's glyph
 > transform and font, and each image XObject — at the granularity PDFium
-> itself sees them. This makes it possible, for the first time on CRAN, to do
+> itself sees them. This makes it possible, for the first time in R, to do
 > tasks like "find every red horizontal rule on this page", "extract every
 > path that bounds the figure region", or "rebuild this chart's geometry in
 > ggplot2" from pure R, without shelling out to Python (`pdfminer.six`) or

@@ -10,12 +10,12 @@ Markdown ADR following the
 |---|----------|---|
 | [001](ADR-001-language-stack.md) | Accepted | Language and framework: R ≥ 4.2 + Rcpp + C++17 + S3 |
 | [002](ADR-002-license.md)        | Accepted | License: MIT for the R package, BSD-3-Clause for the bundled PDFium |
-| [003](ADR-003-binary-distribution.md) | Accepted | Binary distribution: bblanchon pdfium-binaries downloaded at install |
+| [003](ADR-003-binary-distribution.md) | Accepted (CRAN-submission wording superseded by ADR-026) | Binary distribution: bblanchon pdfium-binaries downloaded at install |
 | [004](ADR-004-api-style.md)      | Accepted | API style: snake_case `pdf_*`, S3 classes, tibble outputs |
 | [005](ADR-005-memory-model.md)   | Accepted | Memory model: `externalptr` + finalizers + idempotent explicit close |
 | [006](ADR-006-pdfium-pin.md)     | Accepted | PDFium version pinning policy |
 | [007](ADR-007-ci-and-coverage.md) | Accepted | CI: GitHub Actions matrix, 100% R coverage gate, valgrind, ASan |
-| [008](ADR-008-cran-targeting.md) | Accepted | CRAN-from-v0.1.0 hardening |
+| [008](ADR-008-cran-targeting.md) | Accepted (release targeting superseded by ADR-026; quality constraints in force) | CRAN-from-v0.1.0 hardening |
 | [009](ADR-009-defer-bezier-controls.md) | Superseded by ADR-021 | Defer Bezier control points to a post-0.1.0 release (no public PDFium API) |
 | [010](ADR-010-checkmate-for-argument-validation.md) | Accepted | Use `checkmate` for argument validation throughout the package |
 | [011](ADR-011-mutation-lifecycle.md) | Accepted | Mutation lifecycle: explicit `pdf_save()` |
@@ -33,6 +33,7 @@ Markdown ADR following the
 | [023](ADR-023-annotation-object-ownership.md) | Accepted (decision 3 superseded by ADR-024) | Annotation page-objects: `pdf_annot_append_object()` moves a top-level object off the annotation's page, the annotation finalizer closes the context while its page or document is open, and form-XObject child removal frees the child |
 | [024](ADR-024-annotation-handles-close-with-document.md) | Supersedes ADR-023 decision 3 | Annotation handles close with their document: a per-document registry of live annotation handles, released before every `FPDF_CloseDocument`, so no annotation context outlives its document |
 | [025](ADR-025-document-handles-close-with-document.md) | Accepted (extends ADR-024) | Pages, fonts and XObjects close with their document: the ADR-024 registry holds every handle PDFium closes for a document, released annotations first, then pages, then fonts and XObjects; form-field pages pin their document, and fonts and XObjects are refused on another document's pages |
+| [026](ADR-026-no-cran-release.md) | Supersedes ADR-008's release targeting and ADR-003's CRAN-submission wording | No CRAN release: keep ADR-008's CRAN-quality bar, ship binaries through r-universe and source through GitHub |
 
 ## Policy
 
