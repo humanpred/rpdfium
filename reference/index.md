@@ -891,7 +891,7 @@ setters. Grouped by topic below; all live in `R/api_completion.R`.
   : Page-objects embedded inside an annotation
 
 - [`pdf_annot_append_object()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_append_object.md)
-  : Append a page-object to an annotation
+  : Move a page-object into an annotation
 
 - [`pdf_annot_remove_object()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_remove_object.md)
   : Remove a page-object from an annotation

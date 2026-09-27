@@ -3,6 +3,12 @@
 Wraps `FPDFAnnot_RemoveObject`. The object is identified by its position
 within the annotation's embedded content (one-based, matching
 [`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md)).
+PDFium destroys the object and regenerates the annotation's appearance
+stream, so handles to it from an earlier
+[`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md)
+call are stale and must not be used; call
+[`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md)
+again for the remaining ones.
 
 ## Usage
 
@@ -14,7 +20,8 @@ pdf_annot_remove_object(annot, index)
 
 - annot:
 
-  A `pdfium_annot`.
+  A `pdfium_annot` of subtype `"ink"` or `"stamp"`, the only subtypes
+  PDFium edits embedded objects of. Parent doc must be readwrite.
 
 - index:
 
@@ -23,3 +30,8 @@ pdf_annot_remove_object(annot, index)
 ## Value
 
 Invisibly returns the parent `pdfium_doc`.
+
+## See also
+
+[`pdf_annot_append_object()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_append_object.md),
+[`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md).

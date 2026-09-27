@@ -63,16 +63,23 @@ embedded page-objects via the usual <code>pdf_*_set_*</code> setters.</p>
 
 
 <dl><dt id="arg-annot">annot<a class="anchor" aria-label="anchor" href="#arg-annot"></a></dt>
-<dd><p>A <code>pdfium_annot</code>.</p></dd>
+<dd><p>A <code>pdfium_annot</code> of subtype <code>"ink"</code> or <code>"stamp"</code>, the
+only subtypes PDFium edits embedded objects of. Parent doc must
+be readwrite.</p></dd>
 
 
 <dt id="arg-obj">obj<a class="anchor" aria-label="anchor" href="#arg-obj"></a></dt>
-<dd><p>A <code>pdfium_obj</code> returned by <code><a href="pdf_annot_objects.html">pdf_annot_objects()</a></code>.</p></dd>
+<dd><p>A <code>pdfium_obj</code> returned by <code><a href="pdf_annot_objects.html">pdf_annot_objects()</a></code> on the
+same <code>annot</code> handle.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Invisibly returns the parent <code>pdfium_doc</code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p><code><a href="pdf_annot_append_object.html">pdf_annot_append_object()</a></code>, <code><a href="pdf_annot_objects.html">pdf_annot_objects()</a></code>.</p></div>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
