@@ -123,21 +123,33 @@ SEXP cpp_annot_new(SEXP page_ptr, int subtype_code) {
   return ptr;
 }
 
-// Remove the annotation at `index_zero_based` from its parent page
-// and invalidate the R-side externalptr so subsequent calls fail
-// via the existing is_open() chain (handle_validation.h, ADR-020
-// §4). After FPDFPage_RemoveAnnot the underlying FPDF_ANNOTATION
-// is destroyed; without R_ClearExternalPtr the finalizer would
-// later run FPDFPage_CloseAnnot on a dangling pointer (the
-// finalizer is nullptr-tolerant, but clearing here is the
-// belt-and-braces correctness guarantee).
+// Remove the annotation behind `annot_ptr` from its page. The index
+// comes from FPDFPage_GetAnnotIndex, which finds the handle's own
+// dictionary in /Annots: an index recorded when the handle was made
+// goes stale once an earlier annotation is removed. Returns false,
+// changing nothing, when the dictionary is no longer in /Annots.
+//
+// FPDFPage_RemoveAnnot only drops the dictionary from /Annots; the
+// CPDF_AnnotContext behind the handle, and the page-objects of its
+// appearance stream, live until FPDFPage_CloseAnnot. Clearing the
+// externalptr afterwards leaves the finalizer nothing to close and
+// makes later calls on the handle, or on page-objects read from it,
+// fail in validate_handle() (ADR-020 §4).
 // [[Rcpp::export(name = "cpp_annot_delete")]]
-bool cpp_annot_delete(SEXP page_ptr, SEXP annot_ptr,
-                        int index_zero_based) {
+bool cpp_annot_delete(SEXP page_ptr, SEXP annot_ptr) {
   FPDF_PAGE page = page_from_ptr_local(page_ptr);
-  if (!FPDFPage_RemoveAnnot(page, index_zero_based)) {
+  FPDF_ANNOTATION annot = annot_from_ptr(annot_ptr);
+  int index = FPDFPage_GetAnnotIndex(page, annot);
+  if (index < 0) {
     return false;
   }
+  if (!FPDFPage_RemoveAnnot(page, index)) {
+    // # nocov start — RemoveAnnot fails only for an index outside
+    // /Annots, and GetAnnotIndex just found the dictionary there.
+    Rcpp::stop("FPDFPage_RemoveAnnot(%d) failed.", index);
+    // # nocov end
+  }
+  FPDFPage_CloseAnnot(annot);
   R_ClearExternalPtr(annot_ptr);
   return true;
 }

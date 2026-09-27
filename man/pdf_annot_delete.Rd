@@ -11,20 +11,27 @@ pdf_annot_delete(annot)
 readwrite.}
 }
 \value{
-Invisibly returns the parent \code{pdfium_doc}.
+Invisibly returns the parent \code{pdfium_doc}. Errors, changing
+nothing, when the annotation is no longer on its page, for
+example because it was deleted through another handle.
 }
 \description{
-Wraps \code{FPDFPage_RemoveAnnot}. After the call, the annotation is
-gone from the page's \verb{/Annots} array, the underlying
-\code{FPDF_ANNOTATION} is destroyed, and the R handle's externalptr
-is cleared so further \verb{pdf_annot_*} calls on it error cleanly
-via the package's \code{is_open()} predicate.
+Wraps \code{FPDFPage_GetAnnotIndex}, \code{FPDFPage_RemoveAnnot} and
+\code{FPDFPage_CloseAnnot}. The handle's annotation is located on the
+page when the call is made, so it is the one removed even after
+other annotations on the page were deleted. The annotation leaves
+the page's \verb{/Annots} array, PDFium's annotation context is
+released together with any page-objects of its appearance stream,
+and the handle is closed: further \verb{pdf_annot_*} calls on it, and
+on page-objects read from it with \code{\link[=pdf_annot_objects]{pdf_annot_objects()}}, error
+cleanly.
 }
 \details{
-Page-scoped indices on other annotation handles shift after a
-deletion; re-fetch via \code{\link[=pdf_annotations]{pdf_annotations()}} if you need fresh
-indices.
+Later annotations on the page move down one position. Other handles
+still print the position they had when they were made;
+\code{\link[=pdf_annot_index]{pdf_annot_index()}} gives the current one.
 }
 \seealso{
-\code{\link[=pdf_annot_new]{pdf_annot_new()}}, \code{\link[=pdf_annotations]{pdf_annotations()}}.
+\code{\link[=pdf_annot_new]{pdf_annot_new()}}, \code{\link[=pdf_annotations]{pdf_annotations()}},
+\code{\link[=pdf_annot_index]{pdf_annot_index()}}.
 }
