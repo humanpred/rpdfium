@@ -95,12 +95,13 @@ Optional longer body. Reference issues with "Closes #N".</code></pre>
 </ul><p>If a <code>pre-push</code> hook fails, fix the issue and create a <strong>new</strong> commit — don’t <code>--amend</code> (that complicates code review).</p>
 </div>
 <div class="section level2">
-<h2 id="cran-cleanliness">CRAN cleanliness<a class="anchor" aria-label="anchor" href="#cran-cleanliness"></a></h2>
-<p><code>pdfium</code> targets CRAN at v0.1.0 and stays CRAN-clean. Before merging:</p>
+<h2 id="cran-quality-bar">CRAN-quality bar<a class="anchor" aria-label="anchor" href="#cran-quality-bar"></a></h2>
+<p><code>pdfium</code> is not released to CRAN, but it is held to CRAN’s quality bar (ADR-008, ADR-026). Before merging:</p>
 <ul><li>
 <code>R CMD check --as-cran</code> is green.</li>
 <li>No new internet calls happen during <code>R CMD check</code> (only at install-time <code>configure</code>).</li>
 <li>Examples run in under 5 seconds each.</li>
+<li>Examples and tests write only inside <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code>.</li>
 <li>Any new <code>\dontrun{}</code> is justified in the PR description.</li>
 </ul></div>
 </div>

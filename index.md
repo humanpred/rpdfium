@@ -8,7 +8,7 @@ powers Chrome’s PDF viewer. It has two halves:
   Bezier control points / transformation matrices — alongside text,
   fonts, images, annotations, form fields, attachments, signatures,
   structure tree, and rendering. The path geometry, in particular, no
-  other CRAN package surfaces today.
+  CRAN package surfaces today.
 - a **mutation surface** (opt-in via `readwrite = TRUE`) that lets you
   rotate / reorder / merge pages, draw fresh page objects, create and
   edit annotations, fill form fields, and add file attachments — then
@@ -40,26 +40,34 @@ for how `pdfium` lines up against `pdftools`, `qpdf`, `magick`,
 
 ## Status
 
-First CRAN release (`0.1.0`). The public API is documented on the
-[pkgdown site](https://humanpred.github.io/rpdfium/) and exercised at
-100% R coverage; architectural decisions for the release are recorded
-under `dev/decisions/`.
+Version `0.1.0`. `pdfium` is not on CRAN and no CRAN release is planned,
+but it is held to CRAN’s quality bar: `R CMD check --as-cran` stays
+clean. The public API is documented on the [pkgdown
+site](https://humanpred.github.io/rpdfium/) and exercised at 100% R
+coverage; architectural decisions are recorded under `dev/decisions/`.
 
 ## Installation
 
 ``` r
 
-# Release version (once on CRAN):
-install.packages("pdfium")
+# From r-universe: binary packages for Windows and macOS, source on Linux
+install.packages(
+  "pdfium",
+  repos = c("https://humanpred.r-universe.dev", "https://cloud.r-project.org")
+)
 
-# Development version:
+# Development version from GitHub (builds from source)
 remotes::install_github("humanpred/rpdfium")
 ```
 
+Installing from source needs a C++17 compiler (Rtools on Windows, the
+Xcode command-line tools on macOS).
+
 ### Where the `libpdfium` binary comes from
 
-At install time, the `configure` script picks a `libpdfium` to build
-against, in this order:
+Binary packages from r-universe already contain `libpdfium`. When
+`pdfium` is installed from source, the `configure` script picks a
+`libpdfium` to build against, in this order:
 
 1.  **`PDFIUM_HOME`** — if this environment variable is set and points
     at an existing install, that install is used. The directory must

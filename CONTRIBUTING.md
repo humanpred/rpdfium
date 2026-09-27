@@ -73,12 +73,15 @@ The `.pre-commit-config.yaml` splits hooks into two stages:
 If a `pre-push` hook fails, fix the issue and create a **new** commit —
 don’t `--amend` (that complicates code review).
 
-## CRAN cleanliness
+## CRAN-quality bar
 
-`pdfium` targets CRAN at v0.1.0 and stays CRAN-clean. Before merging:
+`pdfium` is not released to CRAN, but it is held to CRAN’s quality bar
+(ADR-008, ADR-026). Before merging:
 
 - `R CMD check --as-cran` is green.
 - No new internet calls happen during `R CMD check` (only at
   install-time `configure`).
 - Examples run in under 5 seconds each.
+- Examples and tests write only inside
+  [`tempdir()`](https://rdrr.io/r/base/tempfile.html).
 - Any new `\dontrun{}` is justified in the PR description.

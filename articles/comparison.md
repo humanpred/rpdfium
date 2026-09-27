@@ -15,7 +15,7 @@ contributor-facing inventory lives in `dev/r-pdf-ecosystem-survey.md`.
 | Split / merge / compress lossless | `qpdf` (or `cpp11qpdf`) |
 | OCR or general image-processing pipeline | `magick` |
 | Extract a *table* from a PDF | `tabulapdf` |
-| **Inspect path geometry** (segments, Bezier control points, stroke/fill, transform matrices) | **`pdfium`** — no other CRAN package surfaces this |
+| **Inspect path geometry** (segments, Bezier control points, stroke/fill, transform matrices) | **`pdfium`** — no CRAN package surfaces this |
 | **Fill AcroForm fields without a JRE** | **`pdfium`** (`staplr` requires Java + pdftk) |
 | **Edit annotations** (read + write) | **`pdfium`** |
 | **Programmatically build PDFs** — any page count, vector paths, standard-font text, annotations | **`pdfium`** (also `minipdf` for a pure-R writer that additionally supports image embedding today) |
@@ -23,7 +23,7 @@ contributor-facing inventory lives in `dev/r-pdf-ecosystem-survey.md`.
 
 ## What `pdfium` adds
 
-Three capabilities no other CRAN package surfaces today:
+Three capabilities no CRAN package surfaces today:
 
 ### 1. Vector path geometry
 
@@ -62,9 +62,9 @@ pdf_form_field_set_value(by_name[["subscribe"]], TRUE)
 pdf_save(doc, "filled.pdf")
 ```
 
-`staplr` is the only other CRAN package that can fill PDF forms, but it
-shells out to `pdftk-java`, which means installing a JRE + pdftk-java
-jar. `pdfium`’s form-fill API ships entirely as native code — no Java
+`staplr` is the only CRAN package that can fill PDF forms, but it shells
+out to `pdftk-java`, which means installing a JRE + pdftk-java jar.
+`pdfium`’s form-fill API ships entirely as native code — no Java
 dependency.
 
 ### 3. Annotation authoring (full read + write)
@@ -80,8 +80,8 @@ pdf_annot_append_quad(hl, quad = c(100, 700, 400, 700,
 pdf_save(doc, "annotated.pdf")
 ```
 
-No other CRAN package surfaces annotations at all. The full list of
-supported subtypes lives in
+No CRAN package surfaces annotations at all. The full list of supported
+subtypes lives in
 [`?pdf_annot_new`](https://humanpred.github.io/rpdfium/reference/pdf_annot_new.md).
 
 ### 4. Structural mutation without Java or shell-outs

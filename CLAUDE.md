@@ -11,8 +11,15 @@ recording.
   `magick`/`xml2`/`httr`).
 - **Repository name:** `rpdfium` on GitHub.
 - **License:** MIT (package) + BSD-3-Clause (bundled PDFium binary).
-- **CRAN target:** v0.1.0 ships to CRAN. Every change preserves
-  CRAN-cleanliness.
+- **Distribution:** no CRAN release is planned (ADR-026). Binaries ship
+  through r-universe and source through GitHub; see
+  `dev/r-universe-evaluation.md`.
+- **Quality bar:** CRAN quality, kept from ADR-008. Every change keeps
+  `R CMD check --as-cran` clean, the source tarball small (PDFium is
+  downloaded at install time, never vendored), tests and examples free
+  of network access, examples at 5 s or less, writes inside
+  [`tempdir()`](https://rdrr.io/r/base/tempfile.html), no unjustified
+  `\dontrun{}`, and R coverage at 100%.
 
 ## Scope — wrap PDFium, don’t invent helpers
 

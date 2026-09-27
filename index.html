@@ -65,7 +65,7 @@
 
 <p><code>pdfium</code> provides idiomatic R bindings to <a href="https://pdfium.googlesource.com/pdfium/" class="external-link">Google’s PDFium engine</a> — the same library that powers Chrome’s PDF viewer. It has two halves:</p>
 <ul>
-<li>a <strong>read surface</strong> that exposes vector-path geometry — stroke / fill / Bezier control points / transformation matrices — alongside text, fonts, images, annotations, form fields, attachments, signatures, structure tree, and rendering. The path geometry, in particular, no other CRAN package surfaces today.</li>
+<li>a <strong>read surface</strong> that exposes vector-path geometry — stroke / fill / Bezier control points / transformation matrices — alongside text, fonts, images, annotations, form fields, attachments, signatures, structure tree, and rendering. The path geometry, in particular, no CRAN package surfaces today.</li>
 <li>a <strong>mutation surface</strong> (opt-in via <code>readwrite = TRUE</code>) that lets you rotate / reorder / merge pages, draw fresh page objects, create and edit annotations, fill form fields, and add file attachments — then save the result.</li>
 </ul>
 <div class="section level2">
@@ -89,21 +89,25 @@
 <div class="section level2">
 <h2 id="status">Status<a class="anchor" aria-label="anchor" href="#status"></a>
 </h2>
-<p>First CRAN release (<code>0.1.0</code>). The public API is documented on the <a href="https://humanpred.github.io/rpdfium/">pkgdown site</a> and exercised at 100% R coverage; architectural decisions for the release are recorded under <code>dev/decisions/</code>.</p>
+<p>Version <code>0.1.0</code>. <code>pdfium</code> is not on CRAN and no CRAN release is planned, but it is held to CRAN’s quality bar: <code>R CMD check --as-cran</code> stays clean. The public API is documented on the <a href="https://humanpred.github.io/rpdfium/">pkgdown site</a> and exercised at 100% R coverage; architectural decisions are recorded under <code>dev/decisions/</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Release version (once on CRAN):</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"pdfium"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># From r-universe: binary packages for Windows and macOS, source on Linux</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span></span>
+<span>  <span class="st">"pdfium"</span>,</span>
+<span>  repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"https://humanpred.r-universe.dev"</span>, <span class="st">"https://cloud.r-project.org"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Development version:</span></span>
+<span><span class="co"># Development version from GitHub (builds from source)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"humanpred/rpdfium"</span><span class="op">)</span></span></code></pre></div>
+<p>Installing from source needs a C++17 compiler (Rtools on Windows, the Xcode command-line tools on macOS).</p>
 <div class="section level3">
 <h3 id="where-the-libpdfium-binary-comes-from">Where the <code>libpdfium</code> binary comes from<a class="anchor" aria-label="anchor" href="#where-the-libpdfium-binary-comes-from"></a>
 </h3>
-<p>At install time, the <code>configure</code> script picks a <code>libpdfium</code> to build against, in this order:</p>
+<p>Binary packages from r-universe already contain <code>libpdfium</code>. When <code>pdfium</code> is installed from source, the <code>configure</code> script picks a <code>libpdfium</code> to build against, in this order:</p>
 <ol style="list-style-type: decimal">
 <li>
 <p><strong><code>PDFIUM_HOME</code></strong> — if this environment variable is set and points at an existing install, that install is used. The directory must contain headers and the shared library in the conventional layout:</p>

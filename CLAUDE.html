@@ -54,7 +54,9 @@
 <li>
 <strong>License:</strong> MIT (package) + BSD-3-Clause (bundled PDFium binary).</li>
 <li>
-<strong>CRAN target:</strong> v0.1.0 ships to CRAN. Every change preserves CRAN-cleanliness.</li>
+<strong>Distribution:</strong> no CRAN release is planned (ADR-026). Binaries ship through r-universe and source through GitHub; see <code>dev/r-universe-evaluation.md</code>.</li>
+<li>
+<strong>Quality bar:</strong> CRAN quality, kept from ADR-008. Every change keeps <code>R CMD check --as-cran</code> clean, the source tarball small (PDFium is downloaded at install time, never vendored), tests and examples free of network access, examples at 5 s or less, writes inside <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code>, no unjustified <code>\dontrun{}</code>, and R coverage at 100%.</li>
 </ul></div>
 <div class="section level2">
 <h2 id="scope--wrap-pdfium-dont-invent-helpers">Scope — wrap PDFium, don’t invent helpers<a class="anchor" aria-label="anchor" href="#scope--wrap-pdfium-dont-invent-helpers"></a></h2>
