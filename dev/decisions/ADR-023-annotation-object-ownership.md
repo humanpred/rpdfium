@@ -79,11 +79,12 @@ Two workarounds had grown around the double free and hidden it:
   earlier `pdf_annot_objects()` / `pdf_form_objects()` list) are not
   invalidated. `pdf_obj_delete()` has the same limitation; each
   function documents it.
-- An annotation handle collected after its document was explicitly
-  closed still leaks its context, and so does `pdf_annot_delete()`
-  (`FPDFPage_RemoveAnnot` leaves the context alive and the handle is
-  cleared without `FPDFPage_CloseAnnot`). Both are separate from the
-  double free.
+- Two annotation-context leaks are outside this decision: the context
+  of a handle collected after its document was explicitly closed
+  (decision 3 skips the close), and the context behind
+  `pdf_annot_delete()` (`FPDFPage_RemoveAnnot` leaves it alive, and the
+  handle was cleared without `FPDFPage_CloseAnnot`). Neither is part of
+  the double free.
 - `pdf_form_obj_remove_object()` changes the page in memory only.
   PDFium regenerates a modified form XObject through
   `CPDF_PageContentManager`, which writes the new content to a
