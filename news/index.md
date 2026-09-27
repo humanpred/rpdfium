@@ -273,6 +273,20 @@
   by opening a document or by
   [`pdf_system_fonts_install_default()`](https://humanpred.github.io/rpdfium/reference/pdf_system_fonts_install_default.md),
   crashed R (ADR-028).
+- Unloading the package no longer leaves handles that crash R when they
+  are collected or when R exits. After
+  [`unloadNamespace()`](https://rdrr.io/r/base/ns-load.html),
+  `detach(unload = TRUE)`,
+  [`pkgload::unload()`](https://pkgload.r-lib.org/reference/unload.html)
+  or a
+  [`pkgload::load_all()`](https://pkgload.r-lib.org/reference/load_all.html)
+  reload, every handle still around, whether open, closed or waiting to
+  be collected, kept a finalizer that pointed into the unloaded compiled
+  code. The finalizer is now an R function that calls into pdfium’s
+  compiled code only while that code is loaded, and the code releases
+  only the handles it made itself (ADR-031). `pdf_doc_open(source = )`
+  now keeps its copy of the bytes as an R raw vector, so R’s memory
+  accounting sees it.
 - [`pdf_form_fields()`](https://humanpred.github.io/rpdfium/reference/pdf_form_fields.md)’s
   documentation says what it returns, a `pdfium_form_field_list` of
   form-field handles, instead of describing a tibble; the tibble’s

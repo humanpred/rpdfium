@@ -107,10 +107,10 @@ objects for handles). You only ever interact with the R API.</p>
 <span>  <span class="co"># R's GC will eventually finalize it and call FPDF_CloseDocument.</span></span>
 <span><span class="op">}</span></span>
 <span><span class="fu">inspect</span><span class="op">(</span><span class="st">"report.pdf"</span><span class="op">)</span></span></code></pre></div>
-<p>This is safe. <code>pdfium</code> registers a C finalizer on every
-PDF handle. When the R object becomes unreachable, R’s garbage collector
-reclaims it; the finalizer then calls PDFium’s
-<code>FPDF_CloseDocument</code> to release the underlying memory.</p>
+<p>This is safe. <code>pdfium</code> registers a finalizer on every PDF
+handle. When the R object becomes unreachable, R’s garbage collector
+runs the finalizer, which calls PDFium’s <code>FPDF_CloseDocument</code>
+to release the underlying memory, and then reclaims the object.</p>
 <p>The caveat is that GC is <strong>eventual</strong>, not
 deterministic. If you open many large documents in a tight loop, you may
 exhaust process memory before the GC catches up. In that case, close
@@ -183,6 +183,10 @@ exactly once.</li>
 every document still open, with everything read from it, and then runs
 <code>FPDF_DestroyLibrary()</code>.</li>
 </ol>
+<p>Handles that outlive the unload read as closed. Their finalizers are
+R functions that call into the package’s compiled code only while it is
+loaded, so collecting those handles afterwards, reloading the package
+(<code><a href="https://pkgload.r-lib.org/reference/load_all.html" class="external-link">pkgload::load_all()</a></code> included), or quitting R is safe.</p>
 <p>The <code>libpdfium</code> binary was downloaded the first time you
 installed <code>pdfium</code>. The pinned release tag lives in
 <code>tools/pdfium-version.txt</code>. If your machine has no internet
