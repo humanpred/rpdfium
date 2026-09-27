@@ -618,9 +618,8 @@ the wrappers are mechanical.
 `pdf_obj_stroke_color_space()`,
 `pdf_obj_fill_color_raw()`, `pdf_obj_stroke_color_raw()` —
 not yet on the v0.2.0 roadmap, but flagged in the kmextract
-conformance harness as a known fidelity gap. CRAN-acceptance
-unlikely to block on this; CRAN doesn't audit PDF color-space
-fidelity.
+conformance harness as a known fidelity gap. Not a release
+blocker: no check audits PDF color-space fidelity.
 
 **Self-contained?** yes. Lowest priority of the list for the
 R package, but the highest-leverage symbol for any other binding
