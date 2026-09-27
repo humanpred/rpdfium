@@ -10,10 +10,10 @@ Markdown ADR following the
 |---|----------|---|
 | [001](ADR-001-language-stack.md) | Accepted | Language and framework: R ≥ 4.2 + Rcpp + C++17 + S3 |
 | [002](ADR-002-license.md)        | Accepted | License: MIT for the R package, BSD-3-Clause for the bundled PDFium |
-| [003](ADR-003-binary-distribution.md) | Accepted | Binary distribution: bblanchon pdfium-binaries downloaded at install |
+| [003](ADR-003-binary-distribution.md) | Accepted (download-integrity consequence superseded by ADR-027) | Binary distribution: bblanchon pdfium-binaries downloaded at install |
 | [004](ADR-004-api-style.md)      | Accepted | API style: snake_case `pdf_*`, S3 classes, tibble outputs |
 | [005](ADR-005-memory-model.md)   | Accepted | Memory model: `externalptr` + finalizers + idempotent explicit close |
-| [006](ADR-006-pdfium-pin.md)     | Accepted | PDFium version pinning policy |
+| [006](ADR-006-pdfium-pin.md)     | Accepted (hash-pinning alternative superseded by ADR-027) | PDFium version pinning policy |
 | [007](ADR-007-ci-and-coverage.md) | Accepted | CI: GitHub Actions matrix, 100% R coverage gate, valgrind, ASan |
 | [008](ADR-008-cran-targeting.md) | Accepted | CRAN-from-v0.1.0 hardening |
 | [009](ADR-009-defer-bezier-controls.md) | Superseded by ADR-021 | Defer Bezier control points to a post-0.1.0 release (no public PDFium API) |
@@ -32,6 +32,7 @@ Markdown ADR following the
 | [022](ADR-022-no-annotation-refresh-on-render.md) | Supersedes ADR-020 §7 | Rendering does not touch annotations: drop the `FPDFAnnot_SetRect` "AP refresh" walk |
 | [023](ADR-023-annotation-object-ownership.md) | Accepted (decision 3 superseded by ADR-024) | Annotation page-objects: `pdf_annot_append_object()` moves a top-level object off the annotation's page, the annotation finalizer closes the context while its page or document is open, and form-XObject child removal frees the child |
 | [024](ADR-024-annotation-handles-close-with-document.md) | Supersedes ADR-023 decision 3 | Annotation handles close with their document: a per-document registry of live annotation handles, released before every `FPDF_CloseDocument`, so no annotation context outlives its document |
+| [027](ADR-027-verified-pdfium-downloads.md) | Supersedes ADR-003's download-integrity consequence and ADR-006's rejection of hash pinning | PDFium archives are verified before use: SHA-256 pinned per archive in `tools/pdfium-checksums.txt` and tied to the release pin, atomic downloads into the cache, and bad cache entries replaced |
 
 ## Policy
 
