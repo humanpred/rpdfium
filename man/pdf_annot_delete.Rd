@@ -17,9 +17,9 @@ example because it was deleted through another handle.
 }
 \description{
 Wraps \code{FPDFPage_GetAnnotIndex}, \code{FPDFPage_RemoveAnnot} and
-\code{FPDFPage_CloseAnnot}. The annotation is looked up on its page
-from the handle, so the handle's own annotation is removed even
-after other annotations on the page have been deleted. It leaves
+\code{FPDFPage_CloseAnnot}. The handle's annotation is located on the
+page when the call is made, so it is the one removed even after
+other annotations on the page were deleted. The annotation leaves
 the page's \verb{/Annots} array, PDFium's annotation context is
 released together with any page-objects of its appearance stream,
 and the handle is closed: further \verb{pdf_annot_*} calls on it, and
