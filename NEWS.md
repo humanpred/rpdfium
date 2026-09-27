@@ -65,6 +65,25 @@
 * `pdf_form_field_set_value()`'s documentation no longer claims that
   the field's appearance is regenerated; PDFium's API has no way to do
   that outside its interactive form-fill layer.
+* `pdf_annot_append_object()` no longer frees its object twice. PDFium's
+  `FPDFAnnot_AppendObject` takes ownership of the object, but the object
+  was still on its page as well, so closing the page or collecting the
+  annotation handle could crash R. The object is now *moved*: it leaves
+  the annotation's page, its handle is closed, and
+  `pdf_annot_objects()` reaches it inside the annotation. Annotations
+  other than `"ink"` and `"stamp"`, and objects that are not top-level
+  objects of the annotation's page, are refused with an error that
+  leaves everything in place (ADR-023). The documentation of
+  `pdf_annot_append_object()`, `pdf_annot_remove_object()` and
+  `pdf_annot_update_object()` named `"stamp"` or `"freetext"`; PDFium
+  supports `"ink"` and `"stamp"`.
+* `pdf_form_obj_remove_object()` frees the removed child (it used to
+  leak) and closes the child's handle. Its documentation now says that
+  PDFium does not save the removal: the saved file still draws the
+  removed child.
+* Annotation handles collected after their page was closed now release
+  PDFium's annotation context while the document is still open; before,
+  the context leaked.
 * `pdf_annot_delete()` removes the handle's own annotation. It used the
   position recorded when the handle was made, so after an earlier
   delete on the same page it removed the next annotation or failed,

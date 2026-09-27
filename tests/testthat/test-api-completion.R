@@ -455,6 +455,187 @@ test_that("pdf_annot_set_border accepts radii + width", {
 })
 
 # =========================================================================
+# Annotation page-objects: ownership (ADR-023)
+# =========================================================================
+#
+# FPDFAnnot_AppendObject takes ownership of its object, so
+# pdf_annot_append_object() moves the object off the page first; an
+# object left on the page as well is freed twice. The explicit gc()
+# calls run the annotation finalizer (FPDFPage_CloseAnnot) at a known
+# point, so a regression crashes inside the test that exercises it.
+
+# Top-level page-object count and the bounds of the objects inside the
+# first annotation, for page 1 of the PDF at `path`.
+reload_annot_objects <- function(path) {
+  doc <- pdf_doc_open(path)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  annot <- pdf_annotations(page)[[1L]]
+  out <- list(
+    page_objects = length(pdf_page_objects(page)),
+    bounds = lapply(pdf_annot_objects(annot),
+                    function(o) unname(pdf_obj_bounds(o)))
+  )
+  # Collect the annotation handle while the document is open: the
+  # finalizer leaves annotations of a closed document unclosed.
+  rm(annot)
+  gc()
+  out
+}
+
+test_that("pdf_annot_append_object moves the object into the annotation", {
+  for (subtype in c("ink", "stamp")) {
+    s <- annot_blank_page()
+    a <- pdf_annot_new(s$page, subtype, bounds = c(0, 0, 100, 100))
+    rect <- pdf_rect_new(s$page, 10, 10, 50, 50)
+    ret <- pdf_annot_append_object(a, rect)
+    expect_identical(ret, s$doc, info = subtype)
+    expect_identical(length(pdf_page_objects(s$page)), 0L, info = subtype)
+    expect_identical(pdf_annot_object_count(a), 1L, info = subtype)
+    expect_equal(unname(pdf_obj_bounds(pdf_annot_objects(a)[[1L]])),
+                 c(10, 10, 60, 60), info = subtype)
+    expect_error(pdf_obj_bounds(rect), "moved into an annotation",
+                 info = subtype)
+    expect_error(pdf_annot_append_object(a, rect),
+                 "moved into an annotation", info = subtype)
+  }
+})
+
+test_that("an appended object is freed once when the annot goes first", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  pdf_annot_append_object(a, pdf_rect_new(s$page, 0, 0, 50, 50))
+  rm(a)
+  expect_no_error({
+    gc()
+    pdf_page_close(s$page)
+    gc()
+  })
+})
+
+test_that("an appended object is freed once when the page goes first", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  pdf_annot_append_object(a, pdf_rect_new(s$page, 0, 0, 50, 50))
+  pdf_page_close(s$page)
+  rm(a)
+  # The document is still open, so the finalizer closes the annotation
+  # and with it the object the annotation owns.
+  expect_no_error(gc())
+})
+
+test_that("an appended object is freed once when the document goes first", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  pdf_annot_append_object(a, pdf_rect_new(s$page, 0, 0, 50, 50))
+  pdf_doc_close(s$doc)
+  rm(a)
+  # The page handle is still open, so the finalizer closes the
+  # annotation; the deferred page close then runs on a page that no
+  # longer lists the object.
+  expect_no_error(gc())
+})
+
+test_that("pdf_annot_remove_object destroys the embedded object", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  pdf_annot_append_object(a, pdf_rect_new(s$page, 0, 0, 50, 50))
+  pdf_annot_append_object(a, pdf_rect_new(s$page, 60, 60, 20, 20))
+  ret <- pdf_annot_remove_object(a, 1L)
+  expect_identical(ret, s$doc)
+  expect_identical(pdf_annot_object_count(a), 1L)
+  expect_equal(unname(pdf_obj_bounds(pdf_annot_objects(a)[[1L]])),
+               c(60, 60, 80, 80))
+  expect_no_error({
+    pdf_page_close(s$page)
+    rm(a)
+    gc()
+  })
+})
+
+test_that("pdf_annot_update_object reserialises after a child mutation", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  rect <- pdf_rect_new(s$page, 0, 0, 50, 50)
+  # An unpainted path is written as `re n`, which PDFium does not parse
+  # back into an object.
+  pdf_path_set_draw_mode(rect, fill_mode = "winding", stroke = FALSE)
+  pdf_annot_append_object(a, rect)
+  child <- pdf_annot_objects(a)[[1L]]
+  pdf_obj_set_matrix(child, c(1, 0, 0, 1, 10, 20))
+  before <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(s$doc, before)
+  ret <- pdf_annot_update_object(a, child)
+  expect_identical(ret, s$doc)
+  after <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(s$doc, after)
+  # The appearance stream only picks up the moved child once updated.
+  expect_equal(reload_annot_objects(before),
+               list(page_objects = 0L, bounds = list(c(0, 0, 50, 50))))
+  expect_equal(reload_annot_objects(after),
+               list(page_objects = 0L, bounds = list(c(10, 20, 60, 70))))
+  expect_no_error({
+    pdf_page_close(s$page)
+    rm(a, child)
+    gc()
+  })
+})
+
+test_that("pdf_annot_append_object leaves everything in place on a refusal", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "freetext", bounds = c(0, 0, 100, 100))
+  rect <- pdf_rect_new(s$page, 0, 0, 50, 50)
+  expect_error(
+    pdf_annot_append_object(a, rect),
+    paste("Only 'ink' and 'stamp' annotations can hold page-objects;",
+          "`annot` is a 'freetext' annotation."),
+    fixed = TRUE
+  )
+  expect_identical(length(pdf_page_objects(s$page)), 1L)
+  expect_equal(unname(pdf_obj_bounds(rect)), c(0, 0, 50, 50))
+  expect_identical(pdf_annot_object_count(a), 0L)
+})
+
+test_that("pdf_annot_append_object only moves top-level objects of its page", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  p1 <- pdf_page_new(doc, page_num = 1L, width = 612, height = 792)
+  on.exit(pdf_page_close(p1), add = TRUE, after = FALSE)
+  p2 <- pdf_page_new(doc, page_num = 2L, width = 612, height = 792)
+  on.exit(pdf_page_close(p2), add = TRUE, after = FALSE)
+  a <- pdf_annot_new(p1, "stamp", bounds = c(0, 0, 100, 100))
+  b <- pdf_annot_new(p1, "stamp", bounds = c(200, 200, 300, 300))
+  msg <- "`obj` must be a top-level page-object of the annotation's page"
+  on_p2 <- pdf_rect_new(p2, 0, 0, 50, 50)
+  expect_error(pdf_annot_append_object(a, on_p2), msg, fixed = TRUE)
+  expect_identical(length(pdf_page_objects(p2)), 1L)
+  pdf_annot_append_object(a, pdf_rect_new(p1, 0, 0, 50, 50))
+  in_a <- pdf_annot_objects(a)[[1L]]
+  expect_error(pdf_annot_append_object(b, in_a), msg, fixed = TRUE)
+  expect_identical(pdf_annot_object_count(a), 1L)
+  expect_identical(pdf_annot_object_count(b), 0L)
+  rm(a, b, in_a)
+  gc()
+})
+
+test_that("pdf_annot_append_object refuses objects nested in a form XObject", {
+  doc <- pdf_doc_open(fixture_path("form_xobject"), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  form_obj <- pdf_page_objects(page)[[1L]]
+  a <- pdf_annot_new(page, "stamp", bounds = c(0, 0, 100, 100))
+  expect_error(
+    pdf_annot_append_object(a, pdf_form_objects(form_obj)[[1L]]),
+    "`obj` must be a top-level page-object", fixed = TRUE
+  )
+  expect_identical(length(pdf_form_objects(form_obj)), 2L)
+  rm(a)
+  gc()
+})
+
+# =========================================================================
 # Phase C — clip-path authoring
 # =========================================================================
 
@@ -803,16 +984,6 @@ test_that("pdf_annot_link rejects a closed annot", {
                "Annotation handle has been closed")
 })
 
-test_that("pdf_annot_update_object reserialises after a child mutation", {
-  s <- annot_blank_page()
-  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
-  rect <- pdf_rect_new(s$page, 0, 0, 50, 50)
-  pdf_annot_append_object(a, rect)
-  child <- pdf_annot_objects(a)[[1L]]
-  ret <- pdf_annot_update_object(a, child)
-  expect_identical(ret, s$doc)
-})
-
 test_that("print/format methods exist for the new S3 classes", {
   cp <- pdf_clip_path_new(c(0, 0, 100, 100))
   expect_output(print(cp), "pdfium_clip_box")
@@ -919,10 +1090,8 @@ test_that("pdf_annot_remove_object validates its index argument", {
 })
 
 test_that("pdf_annot_remove_object errors on a no-child annot", {
-  # Failure path: PDFium returns false on an empty annot, the
-  # wrapper raises before reaching finalize. The success path
-  # (which corrupts state and segfaults at teardown) stays
-  # coverage-excluded.
+  # PDFium returns false on an empty annot, so the wrapper raises
+  # before marking the page dirty.
   s <- annot_blank_page()
   a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
   expect_error(pdf_annot_remove_object(a, 1L),
@@ -931,7 +1100,7 @@ test_that("pdf_annot_remove_object errors on a no-child annot", {
 
 test_that("pdf_form_obj_remove_object errors on a mismatched child", {
   # Same shape as the annot case: mismatched child → PDFium false →
-  # wrapper raises before finalize. Success path stays excluded.
+  # wrapper raises before marking the page dirty.
   doc <- pdf_doc_open(fixture_path("form_xobject"), readwrite = TRUE)
   on.exit(pdf_doc_close(doc), add = TRUE)
   page <- pdf_page_load(doc, 1L)
@@ -1042,11 +1211,8 @@ test_that("cpp_default_ttf_map_entry errors on out-of-bounds index", {
 })
 
 test_that("cpp_annot_remove_object returns FALSE on a bad index", {
-  # Exercise the C-side body without triggering the page-close
-  # segfault that happens after a successful remove: pass an
-  # invalid index so PDFium returns false but doesn't corrupt
-  # state. The R wrapper validates index >= 1 before reaching the
-  # shim, so we go through ::: directly.
+  # The R wrapper only checks index >= 1, so an out-of-range index
+  # reaches PDFium, which returns false.
   s <- annot_blank_page()
   a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 50, 50))
   out <- pdfium:::cpp_annot_remove_object(a$ptr, 99L)
@@ -1054,9 +1220,8 @@ test_that("cpp_annot_remove_object returns FALSE on a bad index", {
 })
 
 test_that("cpp_form_obj_remove_child returns FALSE on a mismatched child", {
-  # Mismatched (page-obj from one form-xobj passed as the child of
-  # another) makes PDFium reject without corrupting state, so we
-  # can exercise the shim without the page-close segfault.
+  # A page-object that is not a child of the form makes PDFium return
+  # false, and the shim must then leave the handle alone.
   doc <- pdf_doc_open(fixture_path("form_xobject"), readwrite = TRUE)
   on.exit(pdf_doc_close(doc), add = TRUE)
   page <- pdf_page_load(doc, 1L)
@@ -1068,6 +1233,7 @@ test_that("cpp_form_obj_remove_child returns FALSE on a mismatched child", {
   # Pass the form_obj itself as the child — guaranteed mismatch.
   out <- pdfium:::cpp_form_obj_remove_child(form_obj$ptr, form_obj$ptr)
   expect_false(out)
+  expect_identical(length(pdf_form_objects(form_obj)), 2L)
 })
 
 test_that("pdf_text_bounded returns empty string for an empty rect", {
@@ -1118,13 +1284,44 @@ test_that("pdf_annot_add_ink_stroke errors on a non-ink annot", {
   )
 })
 
-# pdf_form_obj_remove_object's success path is covered via a
-# coverage-excluded block in R/api_completion.R. PDFium's
-# FPDFFormObj_RemoveObject corrupts the page's content-stream state
-# when followed by FPDF_ClosePage, so a normal test teardown
-# segfaults the worker. The function is correct for callers that
-# pdf_save() before letting the page handle GC, but we have no
-# safe way to exercise it in the testthat scaffold.
+test_that("pdf_form_obj_remove_object removes and destroys a form child", {
+  doc <- pdf_doc_open(fixture_path("form_xobject"), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  form_obj <- pdf_page_objects(page)[[1L]]
+  # The fixture's first form strokes a red, then a green rectangle.
+  kids <- pdf_form_objects(form_obj)
+  expect_identical(length(kids), 2L)
+  ret <- pdf_form_obj_remove_object(form_obj, kids[[1L]])
+  expect_identical(ret, doc)
+  expect_error(pdf_obj_bounds(kids[[1L]]), "pdf_form_obj_remove_object")
+  remaining <- pdf_form_objects(form_obj)
+  expect_identical(length(remaining), 1L)
+  expect_equal(pdf_path_stroke(remaining[[1L]]),
+               c(red = 0, green = 255, blue = 0, alpha = 255, width = 2))
+})
+
+test_that("PDFium does not save a form-XObject child removal", {
+  # Pins the limitation documented on pdf_form_obj_remove_object():
+  # PDFium writes the regenerated form content to a /Contents key of
+  # the form XObject, which readers ignore. If this fails, PDFium now
+  # saves the removal and the documentation needs updating.
+  doc <- pdf_doc_open(fixture_path("form_xobject"), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  form_obj <- pdf_page_objects(page)[[1L]]
+  pdf_form_obj_remove_object(form_obj, pdf_form_objects(form_obj)[[1L]])
+  out <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(doc, out)
+  saved <- pdf_doc_open(out)
+  withr::defer(pdf_doc_close(saved))
+  saved_page <- pdf_page_load(saved, 1L)
+  withr::defer(pdf_page_close(saved_page), priority = "first")
+  saved_form <- pdf_page_objects(saved_page)[[1L]]
+  expect_identical(length(pdf_form_objects(saved_form)), 2L)
+})
 
 test_that("pdf_annot_set_font_color works on a freetext annot", {
   s <- annot_blank_page()

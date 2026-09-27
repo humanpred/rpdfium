@@ -494,17 +494,51 @@ bool cpp_annot_remove_ink_list(SEXP annot_ptr) {
   return FPDFAnnot_RemoveInkList(annot) != 0;
 }
 
-// Append a page-object (already-detached, returned by
-// FPDFPageObj_CreateNew*) into a stamp / freetext annotation.
+// Move a top-level page-object of `page` into an ink / stamp
+// annotation. FPDFAnnot_AppendObject takes ownership of a
+// free-standing object, but every creator in this package inserts
+// its object into the page, so the object is detached with
+// FPDFPage_RemoveObject first; appending it while it is still on the
+// page would leave the page and the annotation both freeing it.
+//
+// Returns 0 when the object moved (the annotation owns it now, so the
+// R handle is cleared), 1 when the annotation's subtype cannot hold
+// objects, 2 when `obj` is not a top-level object of `page`, and 3
+// when FPDFAnnot_AppendObject refuses the detached object, in which
+// case it goes back to its original index on the page.
 // [[Rcpp::export(name = "cpp_annot_append_object")]]
-bool cpp_annot_append_object(SEXP annot_ptr, SEXP obj_ptr) {
+int cpp_annot_append_object(SEXP annot_ptr, SEXP page_ptr, SEXP obj_ptr) {
   FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
   FPDF_PAGEOBJECT obj = acomp_obj_from_ptr(obj_ptr);
-  // After AppendObject, the annotation owns the page-object; clear
-  // the R-side externalptr so subsequent calls error cleanly.
-  bool ok = FPDFAnnot_AppendObject(annot, obj) != 0;
-  if (ok) R_ClearExternalPtr(obj_ptr);
-  return ok;
+  if (!FPDFAnnot_IsObjectSupportedSubtype(FPDFAnnot_GetSubtype(annot))) {
+    return 1;
+  }
+  const int n = FPDFPage_CountObjects(page);
+  int index = -1;
+  for (int i = 0; i < n; ++i) {
+    if (FPDFPage_GetObject(page, i) == obj) {
+      index = i;
+      break;
+    }
+  }
+  if (index < 0) {
+    return 2;
+  }
+  FPDFPage_RemoveObject(page, obj);
+  if (!FPDFAnnot_AppendObject(annot, obj)) {  // # nocov start
+    // Unreachable after the subtype check: the only remaining failure
+    // is PDFium being unable to create an empty appearance stream.
+    // The object is still ours; FPDFPage_InsertObjectAtIndex frees it
+    // on failure, and then the handle must not keep pointing at it.
+    if (!FPDFPage_InsertObjectAtIndex(page, obj,
+                                      static_cast<size_t>(index))) {
+      R_ClearExternalPtr(obj_ptr);
+    }
+    return 3;
+  }  // # nocov end
+  R_ClearExternalPtr(obj_ptr);
+  return 0;
 }
 
 // [[Rcpp::export(name = "cpp_annot_remove_object")]]
@@ -860,12 +894,19 @@ void cpp_page_insert_object(SEXP page_ptr, SEXP obj_ptr) {
   }  // # nocov end
 }
 
-// Remove a child page-object from a form-xobject.
+// Remove a child page-object from a form-xobject and destroy it.
+// FPDFFormObj_RemoveObject hands the removed child to the caller, so
+// it is freed here and its R handle cleared, as in cpp_obj_delete.
 // [[Rcpp::export(name = "cpp_form_obj_remove_child")]]
 bool cpp_form_obj_remove_child(SEXP form_obj_ptr, SEXP child_ptr) {
   FPDF_PAGEOBJECT form_obj = acomp_obj_from_ptr(form_obj_ptr);
   FPDF_PAGEOBJECT child    = acomp_obj_from_ptr(child_ptr);
-  return FPDFFormObj_RemoveObject(form_obj, child) != 0;
+  if (!FPDFFormObj_RemoveObject(form_obj, child)) {
+    return false;
+  }
+  FPDFPageObj_Destroy(child);
+  R_ClearExternalPtr(child_ptr);
+  return true;
 }
 
 // ===========================================================================

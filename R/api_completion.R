@@ -615,25 +615,59 @@ pdf_annot_objects <- function(annot) {
   out
 }
 
-#' Append a page-object to an annotation
+#' Move a page-object into an annotation
 #'
-#' Wraps `FPDFAnnot_AppendObject`. The page-object must be detached
-#' (typically created by [pdf_path_new()] / [pdf_rect_new()] /
-#' [pdf_text_new()] / [pdf_image_new()] **before** it is inserted into
-#' a page). After the call, the annotation owns the page-object —
-#' the R-side handle is cleared, so subsequent calls on it error
-#' cleanly.
+#' Wraps `FPDFAnnot_AppendObject`. The page-object becomes part of the
+#' annotation's appearance stream, which PDFium regenerates straight
+#' away.
 #'
-#' @param annot A `pdfium_annot` of subtype `"stamp"` or
-#'   `"freetext"`.
-#' @param obj A `pdfium_obj`.
+#' PDFium takes ownership of the object it is given and expects it to
+#' be free-standing, but every page-object creator in this package
+#' ([pdf_path_new()], [pdf_rect_new()], [pdf_text_new()],
+#' [pdf_image_new()], ...) inserts its object into a page. This
+#' function therefore *moves* the object: it takes `obj` off the
+#' annotation's page (`FPDFPage_RemoveObject`) and then appends it to
+#' `annot`, so exactly one of them owns the object at any time.
+#'
+#' After the call `obj` is no longer on the page and its handle is
+#' closed; reach the object through [pdf_annot_objects()] instead.
+#' Other handles to the same object (for example from an earlier
+#' [pdf_page_objects()] call) are stale and must not be used, and the
+#' page-scoped indices of the remaining page-objects shift down by
+#' one. The move only succeeds as a whole: when `annot` cannot hold
+#' page-objects, or `obj` is not a top-level object of the
+#' annotation's page, nothing changes and the function errors.
+#'
+#' @param annot A `pdfium_annot` of subtype `"ink"` or `"stamp"`, the
+#'   only subtypes PDFium lets hold page-objects
+#'   (`FPDFAnnot_IsObjectSupportedSubtype`). Parent doc must be
+#'   readwrite.
+#' @param obj A `pdfium_obj` that is a top-level object of the page
+#'   handle `annot` belongs to, e.g. from [pdf_rect_new()] or
+#'   [pdf_page_objects()] on that page. Objects nested in a form
+#'   XObject ([pdf_form_objects()]), objects already inside an
+#'   annotation ([pdf_annot_objects()]) and objects on another page
+#'   are rejected.
 #' @return Invisibly returns the parent `pdfium_doc`.
+#' @seealso [pdf_annot_objects()], [pdf_annot_update_object()],
+#'   [pdf_annot_remove_object()].
 #' @export
 pdf_annot_append_object <- function(annot, obj) {
-  checkmate::assert_class(obj, "pdfium_obj")
+  check_pdfium_obj(obj)
   ctx <- assert_annot_writable(annot)
-  expect_setter_ok(cpp_annot_append_object(annot$ptr, obj$ptr),
-                    "FPDFAnnot_AppendObject")
+  status <- cpp_annot_append_object(annot$ptr, annot$page$ptr, obj$ptr)
+  if (status == 1L) {
+    stop("Only 'ink' and 'stamp' annotations can hold page-objects; ",
+         "`annot` is a '", pdf_annot_subtype(annot), "' annotation.",
+         call. = FALSE)
+  }
+  if (status == 2L) {
+    stop("`obj` must be a top-level page-object of the annotation's ",
+         "page; objects from pdf_annot_objects(), pdf_form_objects() ",
+         "or another page cannot be moved into `annot`.",
+         call. = FALSE)
+  }
+  expect_setter_ok(status == 0L, "FPDFAnnot_AppendObject")
   finalize_annot_setter(ctx)
 }
 
@@ -641,23 +675,25 @@ pdf_annot_append_object <- function(annot, obj) {
 #'
 #' Wraps `FPDFAnnot_RemoveObject`. The object is identified by its
 #' position within the annotation's embedded content (one-based,
-#' matching [pdf_annot_objects()]).
+#' matching [pdf_annot_objects()]). PDFium destroys the object and
+#' regenerates the annotation's appearance stream, so handles to it
+#' from an earlier [pdf_annot_objects()] call are stale and must not
+#' be used; call [pdf_annot_objects()] again for the remaining ones.
 #'
-#' @param annot A `pdfium_annot`.
+#' @param annot A `pdfium_annot` of subtype `"ink"` or `"stamp"`, the
+#'   only subtypes PDFium edits embedded objects of. Parent doc must
+#'   be readwrite.
 #' @param index One-based index of the embedded object to remove.
 #' @return Invisibly returns the parent `pdfium_doc`.
+#' @seealso [pdf_annot_append_object()], [pdf_annot_objects()].
 #' @export
 pdf_annot_remove_object <- function(annot, index) {
   checkmate::assert_int(index, lower = 1L)
   ctx <- assert_annot_writable(annot)
-  # The success path (PDFium returns true) corrupts the annot's
-  # content-stream walk and segfaults the test worker at page-close;
-  # the failure path (PDFium returns false on a bad index or empty
-  # annot) is what the tests exercise. Both go through expect_setter_ok.
   expect_setter_ok(
     cpp_annot_remove_object(annot$ptr, as.integer(index) - 1L),
     "FPDFAnnot_RemoveObject")
-  finalize_annot_setter(ctx)  # nocov — success path crashes at teardown
+  finalize_annot_setter(ctx)
 }
 
 #' Update an embedded page-object after mutating it
@@ -666,9 +702,13 @@ pdf_annot_remove_object <- function(annot, index) {
 #' annotation's content stream after you've mutated one of the
 #' embedded page-objects via the usual `pdf_*_set_*` setters.
 #'
-#' @param annot A `pdfium_annot`.
-#' @param obj A `pdfium_obj` returned by [pdf_annot_objects()].
+#' @param annot A `pdfium_annot` of subtype `"ink"` or `"stamp"`, the
+#'   only subtypes PDFium edits embedded objects of. Parent doc must
+#'   be readwrite.
+#' @param obj A `pdfium_obj` returned by [pdf_annot_objects()] on the
+#'   same `annot` handle.
 #' @return Invisibly returns the parent `pdfium_doc`.
+#' @seealso [pdf_annot_append_object()], [pdf_annot_objects()].
 #' @export
 pdf_annot_update_object <- function(annot, obj) {
   checkmate::assert_class(obj, "pdfium_obj")
@@ -1105,13 +1145,22 @@ pdf_obj_form_from_xobject <- function(page, xobject) {
 
 #' Remove a child page-object from a form-xobject
 #'
-#' Wraps `FPDFFormObj_RemoveObject`. The child must currently belong
-#' to the form-xobject. After removal the child's R-side externalptr
-#' is unchanged (PDFium destroys the child internally); calling other
-#' setters on the same handle will error cleanly via the existing
-#' `is_open()` chain because PDFium's pointer is no longer valid.
+#' Wraps `FPDFFormObj_RemoveObject` + `FPDFPageObj_Destroy`. The child
+#' must currently belong to the form-xobject. PDFium hands the removed
+#' child back to the caller, so it is destroyed straight away and the
+#' `child` handle is closed: further calls on it error cleanly. Other
+#' handles to the child (and, when the child is itself a form, to its
+#' own children) are stale and must not be used; call
+#' [pdf_form_objects()] again for the remaining children.
 #'
-#' @param form_obj A `pdfium_obj` of `type = "form"`.
+#' The removal changes the page in memory, so rendering and
+#' [pdf_form_objects()] reflect it, but PDFium does not write it back
+#' into the form XObject: when the page is saved, the regenerated form
+#' content goes to a `/Contents` entry that PDF readers ignore, and the
+#' saved file still draws the removed child.
+#'
+#' @param form_obj A `pdfium_obj` of `type = "form"`. Parent doc must
+#'   be readwrite.
 #' @param child A `pdfium_obj` from [pdf_form_objects()] (the
 #'   enumeration of children).
 #' @return Invisibly returns the parent `pdfium_doc`.
@@ -1120,14 +1169,10 @@ pdf_form_obj_remove_object <- function(form_obj, child) {
   checkmate::assert_class(child, "pdfium_obj")
   ctx <- assert_obj_writable(form_obj, allowed_types = "form",
                               arg = "form_obj")
-  # As with pdf_annot_remove_object, the success path corrupts the
-  # form-xobject's content-stream walk and segfaults the test worker
-  # at page-close. The failure path (mismatched child) is exercised
-  # via the cpp shim test below.
   expect_setter_ok(
     cpp_form_obj_remove_child(form_obj$ptr, child$ptr),
     "FPDFFormObj_RemoveObject")
-  finalize_obj_setter(ctx)  # nocov — success path crashes at teardown
+  finalize_obj_setter(ctx)
 }
 
 #' Import page ranges from a source doc into a destination doc
