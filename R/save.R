@@ -204,6 +204,13 @@ pdf_save_to_raw <- function(doc, incremental = FALSE,
 #' Always returned with `readwrite = TRUE`; there is no read-only
 #' new document.
 #'
+#' PDFium fills the new document's `/Info` dictionary with
+#' `/Creator (PDFium)` and a `/CreationDate` holding the current
+#' local wall-clock time. It labels that time with a `+00'00'` (UTC)
+#' offset whatever the local time zone, so on a machine not running
+#' in UTC, [pdf_parse_date()] of the creation date is off by the
+#' local UTC offset.
+#'
 #' @return A `pdfium_doc` with zero pages.
 #' @seealso [pdf_page_new()] to add a page;
 #'   [pdf_save()] to persist the result.

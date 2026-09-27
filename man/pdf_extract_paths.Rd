@@ -41,8 +41,12 @@ page
 \item \code{segment_index} - 1-based segment index within the path
 \item \code{segment_type} - \code{"moveto"}, \code{"lineto"}, \code{"bezierto"}, or
 \code{"unknown"}
-\item \code{x}, \code{y} - the segment's anchor / endpoint in PDF points
+\item \code{x}, \code{y} - the segment's point in PDF points
 \item \code{close_figure} - logical, segment closes the current subpath
+\item \code{cx1}, \code{cy1}, \code{cx2}, \code{cy2} - control points of the cubic Bezier
+curve ending at this row; \code{NA} on every other row. A curve spans
+three \code{"bezierto"} rows (control point 1, control point 2,
+endpoint); see \code{\link[=pdf_path_segments]{pdf_path_segments()}}.
 }
 
 Style (constant across all rows of one path):
@@ -69,14 +73,6 @@ PDF points, from \code{\link[=pdf_page_size]{pdf_page_size()}}
 \code{\link[=pdf_page_rotation]{pdf_page_rotation()}}
 \item \code{text_runs} - tibble with one row per text object on the page,
 the output of \code{\link[=pdf_text_runs]{pdf_text_runs()}}.
-}
-}
-
-\subsection{Known limitations}{
-\itemize{
-\item Bezier control points are not exposed - only segment endpoints.
-PDFium does not expose them through its public C API; see
-\code{dev/decisions/ADR-009-defer-bezier-controls.md}.
 }
 }
 }

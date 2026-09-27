@@ -138,6 +138,61 @@ pdf_obj_rotated_bounds <- function(obj) {
   cpp_obj_rotated_bounds(obj$ptr)
 }
 
+#' Rendered tile of a page object's fill or stroke pattern
+#'
+#' When a page object is painted with a *tiling pattern* (a color
+#' from a `/Pattern` color space whose pattern has `/PatternType 1`:
+#' hatching, dots, checkerboards, repeated logos), these return one
+#' tile of the pattern rendered to a bitmap. Wraps
+#' `FPDFPageObj_GetRenderedFillPattern` and
+#' `FPDFPageObj_GetRenderedStrokePattern`.
+#'
+#' The tile is rasterized in pattern space at one pixel per unit of
+#' the pattern's `/BBox`. Neither the pattern's `/Matrix` nor the
+#' page's transformation is applied, so the bitmap shows the cell as
+#' authored rather than at its on-page scale or rotation. PDFium
+#' returns the tile bottom-up; its rows are flipped so that, like
+#' every other `pdfium_bitmap`, the first row is the top of the tile.
+#'
+#' The stroke variant reports the pattern held in the object's stroke
+#' color whether or not the object is actually stroked; see
+#' [pdf_path_draw_mode()].
+#'
+#' @param obj A `pdfium_obj` from [pdf_page_objects()] (typically a
+#'   path or text object).
+#' @return A `pdfium_bitmap` (see [pdf_render_page()]) holding one
+#'   pattern tile, or `NULL` when the fill (stroke) color is not a
+#'   tiling pattern, e.g. a plain color or a shading pattern.
+#' @seealso [pdf_path_fill()] and [pdf_path_stroke()] for plain
+#'   colors.
+#' @export
+pdf_obj_rendered_fill_pattern <- function(obj) {
+  rendered_pattern_tile(obj, stroke = FALSE)
+}
+
+#' @rdname pdf_obj_rendered_fill_pattern
+#' @export
+pdf_obj_rendered_stroke_pattern <- function(obj) {
+  rendered_pattern_tile(obj, stroke = TRUE)
+}
+
+# Internal: shared body of the two pattern-tile readers.
+rendered_pattern_tile <- function(obj, stroke) {
+  check_pdfium_obj(obj)
+  data <- cpp_obj_rendered_pattern(obj$page$doc$ptr, obj$ptr, stroke)
+  if (is.null(data)) {
+    return(NULL)
+  }
+  attr(data, "channels") <- 4L
+  new_pdfium_bitmap(
+    data,
+    dpi              = NA_real_,
+    source_page      = obj$page$index,
+    source_path      = obj$page$doc$path,
+    rotation_applied = 0L
+  )
+}
+
 #' Content marks attached to a page object
 #'
 #' Returns one tibble row per *content mark* on the page object — the

@@ -11,7 +11,11 @@ pdf_attachment_dict_value(att, key)
 \code{\link[=pdf_attachments]{pdf_attachments()}}.}
 
 \item{key}{The attachment-dict key as a single non-empty
-character string (e.g. \code{"Subtype"}, \code{"AFRelationship"}).}
+character string (e.g. \code{"ModDate"}, \code{"CreationDate"}, or a
+custom key). The description and associated-file relationship
+live on the file specification rather than in \verb{/Params}; read
+them with \code{\link[=pdf_attachment_description]{pdf_attachment_description()}} and
+\code{\link[=pdf_attachment_af_relationship]{pdf_attachment_af_relationship()}}.}
 }
 \value{
 A list:

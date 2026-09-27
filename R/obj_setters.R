@@ -417,6 +417,30 @@ pdf_text_set_render_mode <- function(obj, mode) {
   finalize_obj_setter(ctx)
 }
 
+#' Set the font size of a text page object
+#'
+#' Wraps `FPDFTextObj_SetFontSize`: rewrites the size operand of the
+#' object's `Tf` operator, so [pdf_text_font_size()] reads the new
+#' value back and the object renders at the new size. This is
+#' distinct from scaling the object's matrix with
+#' [pdf_obj_set_matrix()], which changes the rendered size but leaves
+#' the font size unchanged.
+#'
+#' @inheritParams pdf_text_set_content
+#' @param size Numeric scalar, the new font size in PDF points
+#'   (1/72 inch). Must be non-negative; `0` is allowed, matching
+#'   [pdf_text_new()].
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @seealso [pdf_text_font_size()].
+#' @export
+pdf_text_set_font_size <- function(obj, size) {
+  checkmate::assert_number(size, lower = 0, finite = TRUE)
+  ctx <- assert_obj_writable(obj, allowed_types = "text")
+  expect_setter_ok(cpp_text_set_font_size(obj$ptr, as.numeric(size)),
+                    "FPDFTextObj_SetFontSize")
+  finalize_obj_setter(ctx)
+}
+
 #' Add a content mark to a page object
 #'
 #' Wraps `FPDFPageObj_AddMark`. Content marks tag the object for
@@ -488,6 +512,46 @@ pdf_obj_remove_mark <- function(obj, mark_index) {
   expect_setter_ok(
     cpp_obj_remove_mark(obj$ptr, as.integer(mark_index) - 1L),
     "FPDFPageObj_RemoveMark"
+  )
+  finalize_obj_setter(ctx)
+}
+
+#' Share an existing content mark with another page object
+#'
+#' Wraps `FPDFPageObj_AddExistingMark`: appends mark number
+#' `mark_index` of `src` to `obj`'s mark stack. Unlike
+#' [pdf_obj_add_mark()], which creates a fresh mark, the mark is
+#' **shared by reference**: both objects hold the same mark, so a
+#' parameter edited through either object (e.g. with
+#' [pdf_obj_mark_set_blob()] or [pdf_obj_mark_remove_param()]) is
+#' visible from both. When the page content is regenerated,
+#' consecutive page objects that share a mark are written inside a
+#' single marked-content sequence (one `BDC` ... `EMC` pair); this
+#' is how to tag several objects as one logical span, e.g. one
+#' structure element's `MCID`.
+#'
+#' @inheritParams pdf_obj_add_mark
+#' @param src A `pdfium_obj` carrying the mark, from the same
+#'   document as `obj` (it may be `obj` itself or live on another
+#'   page).
+#' @param mark_index One-based index of the mark within `src`, as
+#'   reported by [pdf_obj_marks()].
+#' @return Invisibly returns the parent `pdfium_doc`.
+#' @seealso [pdf_obj_marks()], [pdf_obj_add_mark()],
+#'   [pdf_obj_remove_mark()].
+#' @export
+pdf_obj_add_existing_mark <- function(obj, src, mark_index) {
+  checkmate::assert_count(mark_index, positive = TRUE)
+  ctx <- assert_obj_writable(obj)
+  check_pdfium_obj(src, arg = "src")
+  if (!identical(src$page$doc$ptr, ctx$doc$ptr)) {
+    stop("`src` and `obj` must belong to the same document.",
+         call. = FALSE)
+  }
+  expect_setter_ok(
+    cpp_obj_add_existing_mark(obj$ptr, src$ptr,
+                              as.integer(mark_index) - 1L),
+    "FPDFPageObj_AddExistingMark"
   )
   finalize_obj_setter(ctx)
 }

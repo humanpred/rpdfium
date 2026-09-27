@@ -190,3 +190,84 @@ test_that("accessors refuse a closed parent page", {
     "Parent page has been closed"
   )
 })
+
+# Rendered pattern tiles ----------------------------------------------
+
+# A 96 x 96 pt page. Object 1 fills the bottom half with an 8 x 4
+# tiling pattern whose cell has a blue 2 x 2 square at its bottom-left
+# and a red bar along its top edge. Object 2 is a rectangle filled
+# plain green and stroked with the same pattern.
+pattern_pdf <- function() {
+  inline_pdf_bytes(c(  # nolint: object_usage_linter.
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    paste0("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 96 96] ",
+           "/Contents 4 0 R /Resources << /Pattern << /P1 5 0 R >> >> >>"),
+    inline_pdf_stream("", paste(  # nolint: object_usage_linter.
+      "q /Pattern cs /P1 scn 0 0 96 48 re f Q",
+      "q 0 1 0 rg /Pattern CS /P1 SCN 4 w 8 56 80 32 re B Q"
+    )),
+    inline_pdf_stream(
+      paste("/Type /Pattern /PatternType 1 /PaintType 1 /TilingType 1",
+            "/BBox [0 0 8 4] /XStep 8 /YStep 4 /Resources << >>"),
+      "0 0 1 rg 0 0 2 2 re f 1 0 0 rg 0 3 8 1 re f"
+    )
+  ))
+}
+
+red_mask <- function(rgba) rgba[, , 1L] > 0.9 & rgba[, , 3L] < 0.1
+blue_mask <- function(rgba) rgba[, , 3L] > 0.9 & rgba[, , 1L] < 0.1
+
+test_that("pdf_obj_rendered_fill_pattern returns one tile, top row first", {
+  doc <- pdf_doc_open(source = pattern_pdf())
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  objs <- pdf_page_objects(doc)
+  tile <- pdf_obj_rendered_fill_pattern(objs[[1L]])
+  expect_s3_class(tile, "pdfium_bitmap")
+  expect_identical(dim(tile), c(4L, 8L))
+  expect_identical(attr(tile, "source_page"), 1L)
+  rgba <- as.array(tile)
+  # The cell's top edge (the red bar) is the first row; its
+  # bottom-left blue square the last two rows. Unpainted pixels are
+  # transparent.
+  expect_true(all(red_mask(rgba)[1L, ]))
+  expect_true(all(blue_mask(rgba)[3:4, 1:2]))
+  expect_identical(sum(red_mask(rgba)), 8L)
+  expect_identical(sum(blue_mask(rgba)), 4L)
+  expect_identical(sum(rgba[, , 4L] > 0), 12L)
+  # Same orientation as the page render: the pattern region's top
+  # tile row (page y 44..48) is pixel rows 49..52 at 72 dpi.
+  on_page <- as.array(pdf_render_page(doc, dpi = 72))[49:52, 1:8, ]
+  expect_identical(red_mask(on_page), red_mask(rgba))
+  expect_identical(blue_mask(on_page), blue_mask(rgba))
+})
+
+test_that("pattern tiles are NULL when the colour is not a pattern", {
+  doc <- pdf_doc_open(source = pattern_pdf())
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  objs <- pdf_page_objects(doc)
+  # Object 1's stroke colour is the default black; object 2's fill is
+  # plain green, and its stroke carries the pattern.
+  expect_null(pdf_obj_rendered_stroke_pattern(objs[[1L]]))
+  expect_null(pdf_obj_rendered_fill_pattern(objs[[2L]]))
+  stroke_tile <- pdf_obj_rendered_stroke_pattern(objs[[2L]])
+  expect_identical(as.integer(stroke_tile),
+                   as.integer(pdf_obj_rendered_fill_pattern(objs[[1L]])))
+  shapes <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(shapes), add = TRUE)
+  expect_null(pdf_obj_rendered_fill_pattern(pdf_page_objects(shapes)[[1L]]))
+})
+
+test_that("pattern tile readers refuse bad input and closed pages", {
+  expect_error(pdf_obj_rendered_fill_pattern("nope"),
+               "class .pdfium_obj.")
+  doc <- pdf_doc_open(source = pattern_pdf())
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  p <- pdf_page_load(doc, 1L)
+  obj <- pdf_page_objects(p)[[1L]]
+  pdf_page_close(p)
+  expect_error(pdf_obj_rendered_fill_pattern(obj),
+               "Parent page has been closed")
+  expect_error(pdf_obj_rendered_stroke_pattern(obj),
+               "Parent page has been closed")
+})

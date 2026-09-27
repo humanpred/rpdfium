@@ -99,17 +99,24 @@ test_that("pdf_attachment_set_dict_value writes a /Params entry", {
 })
 
 test_that("pdf_attachment_set_dict_value round-trips ASCII", {
-  # Note: PDFium's FPDFAttachment_SetStringValue stores the value
-  # as a PDF byte-string (PDFDocEncoding), not as UTF-16BE+BOM
-  # (which is what FPDFAnnot_SetStringValue does). High Unicode
-  # characters survive write-then-read but get mangled on the way
-  # back through the PDFDocEncoding-decoding GetUnicodeText() path.
-  # This is an upstream PDFium inconsistency. ASCII round-trips
-  # cleanly; non-ASCII is best-effort until upstream is fixed.
   s <- fresh_writable_attachment()
   msg <- "Quarterly revenue and gross margin summary"
   pdf_attachment_set_dict_value(s$att, "Desc", msg)
   expect_identical(pdf_attachment_dict_value(s$att, "Desc")$value, msg)
+})
+
+test_that("pdf_attachment_set_dict_value round-trips non-ASCII text", {
+  # PDFium < chromium/8066 wrote the raw UTF-8 bytes, which read back
+  # through PDFDocEncoding as mojibake ("cafÃ©"); the value is now
+  # stored as a proper PDF text string.
+  s <- fresh_writable_attachment()
+  msg <- "caf\u00e9 \u65e5\u672c\u8a9e \U0001F600"
+  pdf_attachment_set_dict_value(s$att, "Note", msg)
+  expect_identical(pdf_attachment_dict_value(s$att, "Note")$value, msg)
+  doc2 <- pdf_doc_open(source = pdf_save_to_raw(s$doc))
+  on.exit(pdf_doc_close(doc2), add = TRUE)
+  att2 <- pdf_attachments(doc2)[[1L]]
+  expect_identical(pdf_attachment_dict_value(att2, "Note")$value, msg)
 })
 
 test_that("pdf_attachment_set_dict_value rejects bad inputs", {
@@ -176,6 +183,62 @@ test_that("pdf_attachment_set_data refuses read-only doc", {
   on.exit(pdf_doc_close(doc), add = TRUE)
   att <- pdf_attachments(doc)[[1L]]
   expect_error(pdf_attachment_set_data(att, charToRaw("x")),
+               "readwrite")
+})
+
+# pdf_attachment_set_description ------------------------------------
+
+test_that("pdf_attachment_set_description writes the file-spec /Desc", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  att <- pdf_attachment_new(doc, "notes.txt")
+  expect_identical(pdf_attachment_description(att), "")
+  # Works before any data is set: /Desc lives on the file
+  # specification, not in /Params.
+  ret <- pdf_attachment_set_description(att, "Field notes")
+  expect_identical(ret, doc)
+  expect_identical(pdf_attachment_description(att), "Field notes")
+})
+
+test_that("pdf_attachment_set_description survives set_data and save", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  att <- pdf_attachment_new(doc, "data.csv")
+  msg <- "Donn\u00e9es \u2014 r\u00e9sum\u00e9"
+  pdf_attachment_set_description(att, msg)
+  pdf_attachment_set_data(att, charToRaw("a,b\n1,2\n"))
+  expect_identical(pdf_attachment_description(att), msg)
+  # set_data created /Params, a separate dictionary without /Desc.
+  expect_false(pdf_attachment_dict_value(att, "Desc")$has_key)
+  doc2 <- pdf_doc_open(source = pdf_save_to_raw(doc))
+  on.exit(pdf_doc_close(doc2), add = TRUE)
+  att2 <- pdf_attachments(doc2)[[1L]]
+  expect_identical(pdf_attachment_description(att2), msg)
+  expect_identical(tibble::as_tibble(pdf_attachments(doc2))$description,
+                   msg)
+})
+
+test_that("pdf_attachment_set_description stores an empty string", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  att <- pdf_attachment_new(doc, "a.txt")
+  pdf_attachment_set_description(att, "temporary")
+  pdf_attachment_set_description(att, "")
+  expect_identical(pdf_attachment_description(att), "")
+})
+
+test_that("pdf_attachment_set_description validates its inputs", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  att <- pdf_attachment_new(doc, "a.txt")
+  expect_error(pdf_attachment_set_description(att, NA_character_),
+               "Assertion on 'value' failed")
+  expect_error(pdf_attachment_set_description(att, c("a", "b")),
+               "Assertion on 'value' failed")
+  ro <- pdf_doc_open(fixture_path("attachments"))
+  on.exit(pdf_doc_close(ro), add = TRUE)
+  expect_error(pdf_attachment_set_description(pdf_attachments(ro)[[1L]],
+                                              "x"),
                "readwrite")
 })
 

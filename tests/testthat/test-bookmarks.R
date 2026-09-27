@@ -85,7 +85,8 @@ test_that("pdf_doc_bookmarks returns 0 handles for a doc without an outline", {
     "bookmark_index", "parent_index", "level",
     "title", "page_num", "action_type", "uri",
     "filepath", "dest_view", "dest_x", "dest_y",
-    "dest_zoom", "handle", "source"
+    "dest_zoom", "color_red", "color_green", "color_blue",
+    "italic", "bold", "handle", "source"
   ))
 })
 
@@ -98,7 +99,8 @@ test_that("tibble view returns the documented bookmark columns + handle/source",
     "bookmark_index", "parent_index", "level",
     "title", "page_num", "action_type", "uri",
     "filepath", "dest_view", "dest_x", "dest_y",
-    "dest_zoom", "handle", "source"
+    "dest_zoom", "color_red", "color_green", "color_blue",
+    "italic", "bold", "handle", "source"
   ))
   expect_type(bm$bookmark_index, "integer")
   expect_type(bm$parent_index, "integer")
@@ -108,6 +110,9 @@ test_that("tibble view returns the documented bookmark columns + handle/source",
   expect_type(bm$action_type, "character")
   expect_type(bm$uri, "character")
   expect_type(bm$filepath, "character")
+  expect_type(bm$color_red, "double")
+  expect_type(bm$italic, "logical")
+  expect_type(bm$bold, "logical")
   expect_type(bm$handle, "list")
   expect_type(bm$source, "list")
 })
@@ -163,6 +168,70 @@ test_that("per-handle bookmark getters return the documented fields", {
   expect_type(pdf_bookmark_dest_x(b1), "double")
   expect_type(pdf_bookmark_dest_y(b1), "double")
   expect_type(pdf_bookmark_dest_zoom(b1), "double")
+})
+
+# Outline whose items carry the optional /C colour and /F style
+# entries: a red bold item, an italic item, one with a malformed /C
+# and every /F bit set (only bits 1-2 are defined), and a plain one.
+styled_outline_pdf <- function() {
+  item <- function(title, extra, links) {
+    paste0("<< /Title (", title, ") /Parent 4 0 R ", links,
+           " /Dest [3 0 R /Fit] ", extra, " >>")
+  }
+  inline_pdf_bytes(c(  # nolint: object_usage_linter.
+    "<< /Type /Catalog /Pages 2 0 R /Outlines 4 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] >>",
+    "<< /Type /Outlines /First 5 0 R /Last 8 0 R /Count 4 >>",
+    item("Red bold", "/C [1 0 0] /F 2", "/Next 6 0 R"),
+    item("Italic", "/C [0 0.5 1] /F 1", "/Prev 5 0 R /Next 7 0 R"),
+    item("Malformed", "/C [2 0.5] /F 7", "/Prev 6 0 R /Next 8 0 R"),
+    item("Plain", "", "/Prev 7 0 R")
+  ))
+}
+
+test_that("pdf_bookmark_color / pdf_bookmark_style read /C and /F", {
+  doc <- pdf_doc_open(source = styled_outline_pdf())
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  bm <- pdf_doc_bookmarks(doc)
+  expect_identical(pdf_bookmark_color(bm[[1L]]),
+                   c(red = 1, green = 0, blue = 0))
+  expect_identical(pdf_bookmark_style(bm[[1L]]),
+                   c(italic = FALSE, bold = TRUE))
+  expect_identical(pdf_bookmark_color(bm[[2L]]),
+                   c(red = 0, green = 0.5, blue = 1))
+  expect_identical(pdf_bookmark_style(bm[[2L]]),
+                   c(italic = TRUE, bold = FALSE))
+  # A /C that isn't three numbers in [0, 1] reads as unset.
+  expect_identical(pdf_bookmark_color(bm[[3L]]),
+                   c(red = NA_real_, green = NA_real_, blue = NA_real_))
+  expect_identical(pdf_bookmark_style(bm[[3L]]),
+                   c(italic = TRUE, bold = TRUE))
+  expect_true(all(is.na(pdf_bookmark_color(bm[[4L]]))))
+  expect_identical(pdf_bookmark_style(bm[[4L]]),
+                   c(italic = FALSE, bold = FALSE))
+})
+
+test_that("bookmark tibble carries the colour and style columns", {
+  doc <- pdf_doc_open(source = styled_outline_pdf())
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  tbl <- tibble::as_tibble(pdf_doc_bookmarks(doc))
+  expect_identical(tbl$title, c("Red bold", "Italic", "Malformed", "Plain"))
+  expect_identical(tbl$color_red, c(1, 0, NA, NA))
+  expect_identical(tbl$color_green, c(0, 0.5, NA, NA))
+  expect_identical(tbl$color_blue, c(0, 1, NA, NA))
+  expect_identical(tbl$italic, c(FALSE, TRUE, TRUE, FALSE))
+  expect_identical(tbl$bold, c(TRUE, FALSE, TRUE, FALSE))
+})
+
+test_that("pdf_bookmark_color / pdf_bookmark_style reject bad handles", {
+  expect_error(pdf_bookmark_color(0L), "Assertion on")
+  expect_error(pdf_bookmark_style("x"), "Assertion on")
+  doc <- pdf_doc_open(source = styled_outline_pdf())
+  bm <- pdf_doc_bookmarks(doc)[[1L]]
+  pdf_doc_close(doc)
+  expect_error(pdf_bookmark_color(bm), "closed")
+  expect_error(pdf_bookmark_style(bm), "closed")
 })
 
 test_that("per-handle getters reject non-bookmark input", {

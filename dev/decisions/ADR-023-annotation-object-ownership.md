@@ -20,10 +20,9 @@ so the R side never has to manage a detached object's lifetime.
 `FPDFAnnot_AppendObject`, leaving it in both the page's object list
 and the annotation's form. Whichever of `FPDF_ClosePage` and
 `FPDFPage_CloseAnnot` ran second freed it again.
-`dev/pdfium-8066-api-delta.md` §E-4 (on the chromium/8066 branch)
-reproduced the crash under `MALLOC_CHECK_=3` on chromium/7857 and
-chromium/8066; the default Windows heap turns it into a segfault on
-every run.
+`dev/pdfium-8066-api-delta.md` §E-4 reproduced the crash under
+`MALLOC_CHECK_=3` on chromium/7857 and chromium/8066, and the default
+Windows heap turned it into a segfault in every run tried.
 
 Two workarounds had grown around the double free and hidden it:
 

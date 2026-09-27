@@ -1,12 +1,13 @@
 // pdfium R package — attachment authoring (Phase 8).
 //
-// Four shims, each thin around its FPDFDoc_*Attachment* /
+// Five shims, each thin around its FPDFDoc_*Attachment* /
 // FPDFAttachment_Set* counterpart:
 //
-//   cpp_attachment_new          - FPDFDoc_AddAttachment
-//   cpp_attachment_delete       - FPDFDoc_DeleteAttachment
-//   cpp_attachment_set_dict_value - FPDFAttachment_SetStringValue
-//   cpp_attachment_set_data     - FPDFAttachment_SetFile
+//   cpp_attachment_new             - FPDFDoc_AddAttachment
+//   cpp_attachment_delete          - FPDFDoc_DeleteAttachment
+//   cpp_attachment_set_dict_value  - FPDFAttachment_SetStringValue
+//   cpp_attachment_set_description - FPDFAttachment_SetDescription
+//   cpp_attachment_set_data        - FPDFAttachment_SetFile
 //
 // The handle returned by cpp_attachment_new wraps the new
 // FPDF_ATTACHMENT in an externalptr that pins the parent doc (same
@@ -84,6 +85,19 @@ bool cpp_attachment_set_dict_value(SEXP att_ptr,
   return FPDFAttachment_SetStringValue(
       a, key.c_str(),
       reinterpret_cast<FPDF_WIDESTRING>(v.data())) != 0;
+}
+
+// Writes the file-specification /Desc (chromium/8066+). Unlike
+// FPDFAttachment_SetStringValue this targets the file-spec
+// dictionary itself, not /Params, and survives FPDFAttachment_SetFile.
+// [[Rcpp::export(name = "cpp_attachment_set_description")]]
+bool cpp_attachment_set_description(SEXP att_ptr,
+                                     std::string value_utf8) {
+  FPDF_ATTACHMENT a = att_from_ptr(att_ptr);
+  std::vector<unsigned short> v =
+      pdfium_r::utf8_to_utf16le_nul(value_utf8);
+  return FPDFAttachment_SetDescription(
+      a, reinterpret_cast<FPDF_WIDESTRING>(v.data())) != 0;
 }
 
 // [[Rcpp::export(name = "cpp_attachment_set_data")]]

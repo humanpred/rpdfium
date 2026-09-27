@@ -31,7 +31,7 @@ decoded universal flag bits (bits 1, 2, 3) for convenience.
 \code{TRUE} / \code{FALSE} for \code{checkbox} / \code{radiobutton} fields,
 \code{NA} for every other field type.
 \item \code{control_count} integer - total number of widgets in this
-field's control group (≥ 1; \verb{> 1} for radio button groups
+field's control group (\verb{>= 1}; \verb{> 1} for radio button groups
 with multiple physical widgets). \code{NA} if PDFium reports
 failure.
 \item \code{control_index} integer - 0-based position of this row's

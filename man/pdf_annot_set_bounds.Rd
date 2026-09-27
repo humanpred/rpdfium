@@ -20,6 +20,13 @@ Invisibly returns the parent \code{pdfium_doc}.
 Wraps \code{FPDFAnnot_SetRect}. Replaces the \verb{/Rect} entry with the
 given \verb{(left, bottom, right, top)} in PDF user-space points.
 }
+\details{
+An existing appearance stream is not resized. PDFium, like other
+viewers, draws an appearance by mapping its \verb{/BBox} onto the
+annotation's \verb{/Rect} (ISO 32000-1:2008 section 12.5.5), so the
+appearance is scaled to fill the new rectangle. Replace it with
+\code{\link[=pdf_annot_set_appearance]{pdf_annot_set_appearance()}} if it should keep its size.
+}
 \seealso{
 \code{\link[=pdf_annot_bounds]{pdf_annot_bounds()}}.
 }

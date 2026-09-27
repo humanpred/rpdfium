@@ -18,7 +18,8 @@
 #' [pdf_bookmark_action_type()], [pdf_bookmark_uri()],
 #' [pdf_bookmark_filepath()], [pdf_bookmark_dest_view()],
 #' [pdf_bookmark_dest_x()], [pdf_bookmark_dest_y()],
-#' [pdf_bookmark_dest_zoom()]) operate on a single handle.
+#' [pdf_bookmark_dest_zoom()], [pdf_bookmark_color()],
+#' [pdf_bookmark_style()]) operate on a single handle.
 #'
 #' The list is flat; the tree shape is recovered from each handle's
 #' `parent_index` field. Top-level bookmarks have `parent_index == 0`;
@@ -31,8 +32,9 @@
 #' Wraps `FPDFBookmark_GetFirstChild`, `FPDFBookmark_GetNextSibling`,
 #' `FPDFBookmark_GetTitle`, `FPDFBookmark_GetDest`,
 #' `FPDFBookmark_GetAction`, `FPDFAction_GetType` /
-#' `FPDFAction_GetURIPath` / `FPDFAction_GetFilePath`, and
-#' `FPDFDest_GetDestPageIndex`.
+#' `FPDFAction_GetURIPath` / `FPDFAction_GetFilePath`,
+#' `FPDFDest_GetDestPageIndex`, `FPDFBookmark_GetColor`, and
+#' `FPDFBookmark_GetStyle`.
 #'
 #' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character path.
 #' @return A `pdfium_bookmark_list` (empty if no outline).
@@ -67,8 +69,14 @@ pdf_doc_bookmarks <- function(doc) {
 #'
 #' @param x A `pdfium_bookmark_list` from [pdf_doc_bookmarks()].
 #' @param ... Unused (S3 generic compatibility).
-#' @return A tibble with the documented bookmark columns plus
-#'   `handle` and `source`.
+#' @return A tibble with one row per bookmark: `bookmark_index`,
+#'   `parent_index`, `level`, `title`, `page_num`, `action_type`,
+#'   `uri`, `filepath`, `dest_view`, `dest_x`, `dest_y`, `dest_zoom`
+#'   (see the per-handle getters), `color_red` / `color_green` /
+#'   `color_blue` (title color in `[0, 1]`, `NA` when unset; see
+#'   [pdf_bookmark_color()]) and `italic` / `bold` (see
+#'   [pdf_bookmark_style()]), plus the `handle` and `source`
+#'   list-columns.
 #' @importFrom tibble as_tibble
 #' @method as_tibble pdfium_bookmark_list
 #' @export
@@ -90,6 +98,11 @@ as_tibble.pdfium_bookmark_list <- function(x, ...) {
   dest_xs      <- vapply(info, `[[`, numeric(1L), "dest_x")
   dest_ys      <- vapply(info, `[[`, numeric(1L), "dest_y")
   dest_zooms   <- vapply(info, `[[`, numeric(1L), "dest_zoom")
+  colors <- vapply(x, function(bm) cpp_bookmark_color_handle(bm$ptr),
+                   c(red = 0, green = 0, blue = 0))
+  styles <- decode_bookmark_style(
+    vapply(x, function(bm) cpp_bookmark_style_handle(bm$ptr), integer(1L))
+  )
   tibble::tibble(
     bookmark_index = seq_along(x),
     parent_index   = vapply(x, `[[`, integer(1L), "parent_index"),
@@ -105,6 +118,11 @@ as_tibble.pdfium_bookmark_list <- function(x, ...) {
     dest_x         = dest_xs,
     dest_y         = dest_ys,
     dest_zoom      = dest_zooms,
+    color_red      = unname(colors["red", ]),
+    color_green    = unname(colors["green", ]),
+    color_blue     = unname(colors["blue", ]),
+    italic         = styles$italic,
+    bold           = styles$bold,
     handle         = unclass(x),
     source         = rep(list(src_doc), length(x))
   )
@@ -138,6 +156,11 @@ empty_bookmark_tibble <- function() {
     dest_x         = numeric(),
     dest_y         = numeric(),
     dest_zoom      = numeric(),
+    color_red      = numeric(),
+    color_green    = numeric(),
+    color_blue     = numeric(),
+    italic         = logical(),
+    bold           = logical(),
     handle         = list(),
     source         = list()
   )
@@ -310,6 +333,52 @@ pdf_bookmark_dest_y <- function(bm) {
 pdf_bookmark_dest_zoom <- function(bm) {
   check_bookmark(bm)
   bookmark_action_info(bm)$dest_zoom
+}
+
+#' Bookmark title color
+#'
+#' Returns the color a viewer should use for the bookmark's title
+#' (the outline item's `/C` entry, ISO 32000-1:2008 Table 153). Wraps
+#' `FPDFBookmark_GetColor`.
+#'
+#' @inheritParams pdf_bookmark_title
+#' @return Named numeric `c(red, green, blue)` with components in
+#'   `[0, 1]`, the same scale as [pdf_annot_color()]. All `NA` when
+#'   the bookmark has no `/C` entry, or its `/C` is not three numbers
+#'   in `[0, 1]`.
+#' @seealso [pdf_bookmark_style()]; the `color_*` columns of
+#'   `as_tibble(pdf_doc_bookmarks(doc))`.
+#' @export
+pdf_bookmark_color <- function(bm) {
+  check_bookmark(bm)
+  cpp_bookmark_color_handle(bm$ptr)
+}
+
+#' Bookmark title style
+#'
+#' Returns whether a viewer should draw the bookmark's title in
+#' italic and/or bold (the outline item's `/F` flags, ISO
+#' 32000-1:2008 Table 154). Wraps `FPDFBookmark_GetStyle`.
+#'
+#' @inheritParams pdf_bookmark_title
+#' @return Named logical `c(italic, bold)`; both `FALSE` when the
+#'   bookmark declares no style.
+#' @seealso [pdf_bookmark_color()]; the `italic` / `bold` columns of
+#'   `as_tibble(pdf_doc_bookmarks(doc))`.
+#' @export
+pdf_bookmark_style <- function(bm) {
+  check_bookmark(bm)
+  unlist(decode_bookmark_style(cpp_bookmark_style_handle(bm$ptr)))
+}
+
+# Internal: decode FPDFBookmark_GetStyle's /F integer(s) into the
+# two flags ISO 32000-1 defines (bit 1 italic, bit 2 bold); higher
+# bits are reserved and ignored.
+decode_bookmark_style <- function(code) {
+  list(
+    italic = bitwAnd(code, 1L) != 0L,
+    bold   = bitwAnd(code, 2L) != 0L
+  )
 }
 
 #' Read the logical page label of a PDF page

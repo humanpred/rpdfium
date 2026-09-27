@@ -48,7 +48,7 @@ test_that("pdf_path_segments returns a tibble with the documented schema", {
   expect_s3_class(segs, "tbl_df")
   expect_named(segs, c(
     "segment_index", "segment_type", "x", "y",
-    "close_figure"
+    "close_figure", "cx1", "cy1", "cx2", "cy2"
   ))
   expect_type(segs$segment_index, "integer")
   expect_type(segs$segment_type, "character")
@@ -58,6 +58,30 @@ test_that("pdf_path_segments returns a tibble with the documented schema", {
   expect_identical(segs$segment_index, seq_len(nrow(segs)))
   expect_true(all(segs$segment_type %in%
     c("moveto", "lineto", "bezierto", "unknown")))
+  # The fixture's rectangle has no curves.
+  expect_true(all(is.na(c(segs$cx1, segs$cy1, segs$cx2, segs$cy2))))
+})
+
+test_that("pdf_path_segments puts each cubic's control points on its endpoint", {
+  doc <- pdf_doc_open(source = inline_curves_pdf())
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  segs <- pdf_path_segments(pdf_page_objects(doc)[[1L]])
+  # One moveto, then a (control 1, control 2, endpoint) triplet per
+  # curve.
+  expect_identical(segs$segment_type, c("moveto", rep("bezierto", 9L)))
+  expect_equal(segs$x[2:4], c(20, 40, 60))
+  ends <- segs[!is.na(segs$cx1), ]
+  expect_identical(ends$segment_index, c(4L, 7L, 10L))
+  expect_equal(ends$x, c(60, 100, 140))
+  expect_equal(ends$y, c(70, 110, 150))
+  # `c` gives both control points; `v` reuses the current point
+  # (60, 70) as the first; `y` reuses the endpoint as the second.
+  expect_equal(ends$cx1, c(20, 60, 120))
+  expect_equal(ends$cy1, c(30, 70, 130))
+  expect_equal(ends$cx2, c(40, 80, 140))
+  expect_equal(ends$cy2, c(50, 90, 150))
+  # Control-point rows and the moveto carry no control points.
+  expect_true(all(is.na(segs$cx2[-c(4L, 7L, 10L)])))
 })
 
 test_that("rectangle path matches expected M / L / L / L / L+close pattern", {

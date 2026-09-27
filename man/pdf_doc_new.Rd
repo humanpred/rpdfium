@@ -15,6 +15,14 @@ no pages — add some with \code{\link[=pdf_page_new]{pdf_page_new()}} before sa
 Always returned with \code{readwrite = TRUE}; there is no read-only
 new document.
 }
+\details{
+PDFium fills the new document's \verb{/Info} dictionary with
+\verb{/Creator (PDFium)} and a \verb{/CreationDate} holding the current
+local wall-clock time. It labels that time with a \verb{+00'00'} (UTC)
+offset whatever the local time zone, so on a machine not running
+in UTC, \code{\link[=pdf_parse_date]{pdf_parse_date()}} of the creation date is off by the
+local UTC offset.
+}
 \examples{
 doc <- pdf_doc_new()
 pdf_page_new(doc, 1, 612, 792)

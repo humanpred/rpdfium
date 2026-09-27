@@ -27,19 +27,26 @@ Each row carries:
 \item \code{segment_index} - 1-based segment index within this path
 \item \code{segment_type} - \code{"moveto"}, \code{"lineto"}, \code{"bezierto"}, or
 \code{"unknown"}
-\item \code{x}, \code{y} - the segment's anchor point in PDF points
+\item \code{x}, \code{y} - the segment's point in PDF points
 \item \code{close_figure} - \code{TRUE} if this segment closes the current
 subpath (PDFium's \code{h} operator equivalent)
+\item \code{cx1}, \code{cy1}, \code{cx2}, \code{cy2} - the two control points of the cubic
+Bezier curve that ends at this row; \code{NA} on every other row
 }
+\subsection{Bezier curves}{
 
-\strong{Known limitation:} PDFium's segment readout API exposes only the
-endpoint of a \code{bezierto} segment, not its two control points. The
-public C API offers no way to recover them; the limitation is
-shared by pypdfium2, pdfium-rs, and pdfium-render. For now,
-\code{bezierto} rows show the curve's endpoint; control-point
-information is lost. See
-\code{dev/decisions/ADR-009-defer-bezier-controls.md} for the
-decision record.
+PDFium stores a cubic Bezier curve (the \code{c}, \code{v}, and \code{y} content
+operators) as three consecutive \code{"bezierto"} rows: the first
+control point, the second control point, and the curve's
+endpoint, in that order. The endpoint row additionally carries the
+curve's control points in \code{cx1}/\code{cy1}/\code{cx2}/\code{cy2} (wraps
+\code{FPDFPath_GetBezierControlPoints}), so
+\code{subset(segs, !is.na(cx1))} gives one row per curve, with the
+curve's start point being the previous row's \code{x}/\code{y}. The
+control-point rows keep \code{cx1}..\code{cy2} as \code{NA}, which is how to tell
+them apart from endpoints. \code{\link[=pdf_path_append]{pdf_path_append()}} consumes the
+triplet form, so the output round-trips.
+}
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",

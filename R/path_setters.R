@@ -142,7 +142,8 @@ pdf_path_close <- function(obj) {
 #'   `segment_type` (character), `x`, `y` (numeric), and optionally
 #'   `close_figure` (logical). Matches the [pdf_path_segments()]
 #'   output exactly so a reader → edit → writer round-trip is a
-#'   one-liner.
+#'   one-liner. Other columns (such as the `cx1`..`cy2` control-point
+#'   columns, which repeat the triplet's first two rows) are ignored.
 #' @return Invisibly returns the parent `pdfium_doc`.
 #' @seealso [pdf_path_segments()].
 #' @export
