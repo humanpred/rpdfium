@@ -36,6 +36,7 @@ Markdown ADR following the
 | [026](ADR-026-no-cran-release.md) | Supersedes ADR-008's release targeting and ADR-003's CRAN-submission wording | No CRAN release: keep ADR-008's CRAN-quality bar, ship binaries through r-universe and source through GitHub |
 | [028](ADR-028-library-destroy-closes-every-handle.md) | Accepted (extends ADR-025) | Destroying the library closes every handle first: documents, standalone clip paths, bitmaps and memory-document buffers are registered under the library and released before `FPDF_DestroyLibrary`; every finalizer is attached in one place |
 | [029](ADR-029-handles-follow-their-owners.md) | Accepted (extends ADR-020 §4 and ADR-025) | A handle is refused once any of its owners is closed: clip paths pin their page-object and nested objects their form, and `validate_handle()` and `is_open()` walk the whole ownership chain |
+| [032](ADR-032-annotation-object-handles-close-on-remove.md) | Accepted (extends ADR-029) | Removing an annotation's page-object closes its handles: `pdf_annot_objects()` handles are registered under their document, and `pdf_annot_remove_object()` releases those whose address is the removed object's |
 
 ## Policy
 

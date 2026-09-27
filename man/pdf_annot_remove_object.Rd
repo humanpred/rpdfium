@@ -20,10 +20,15 @@ Invisibly returns the parent \code{pdfium_doc}.
 Wraps \code{FPDFAnnot_RemoveObject}. The object is identified by its
 position within the annotation's embedded content (one-based,
 matching \code{\link[=pdf_annot_objects]{pdf_annot_objects()}}). PDFium destroys the object and
-regenerates the annotation's appearance stream, so handles to it
-from an earlier \code{\link[=pdf_annot_objects]{pdf_annot_objects()}} call, and the clip paths and
-nested objects read from them, are stale and must not be used; call
-\code{\link[=pdf_annot_objects]{pdf_annot_objects()}} again for the remaining ones.
+regenerates the annotation's appearance stream. The handles to the
+object from earlier \code{\link[=pdf_annot_objects]{pdf_annot_objects()}} calls on \code{annot} are
+closed, and so are the clip paths and nested objects read from
+them: further calls on them error cleanly. The handles to the
+remaining objects stay valid, but their positions shift down by
+one; call \code{\link[=pdf_annot_objects]{pdf_annot_objects()}} again for the new positions.
+Objects read through another handle to the same annotation, for
+example from a second \code{\link[=pdf_annotations]{pdf_annotations()}} call, are separate copies
+and are not affected.
 }
 \seealso{
 \code{\link[=pdf_annot_append_object]{pdf_annot_append_object()}}, \code{\link[=pdf_annot_objects]{pdf_annot_objects()}}.

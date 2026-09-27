@@ -528,10 +528,20 @@ int cpp_annot_append_object(SEXP annot_ptr, SEXP page_ptr, SEXP obj_ptr) {
   return 0;
 }
 
+// Remove the page-object at `index_zero` from the annotation. PDFium
+// destroys it, so the handles made to it, registered under the
+// document behind `doc_ptr`, are cleared once the removal succeeded
+// (ADR-032); a refused removal leaves them open.
 // [[Rcpp::export(name = "cpp_annot_remove_object")]]
-bool cpp_annot_remove_object(SEXP annot_ptr, int index_zero) {
+bool cpp_annot_remove_object(SEXP annot_ptr, SEXP doc_ptr, int index_zero) {
   FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
-  return FPDFAnnot_RemoveObject(annot, index_zero) != 0;
+  FPDF_DOCUMENT doc = acomp_doc_from_ptr(doc_ptr);
+  FPDF_PAGEOBJECT obj = FPDFAnnot_GetObject(annot, index_zero);
+  if (!FPDFAnnot_RemoveObject(annot, index_zero)) {
+    return false;
+  }
+  pdfium_r::release_annot_object_handles(doc, obj);
+  return true;
 }
 
 // [[Rcpp::export(name = "cpp_annot_update_object")]]
@@ -547,18 +557,20 @@ int cpp_annot_object_count(SEXP annot_ptr) {
   return FPDFAnnot_GetObjectCount(annot);
 }
 
-// Returns the page-object at the given index. The annotation owns it
-// (no finalizer); the externalptr's prot slot pins the annot so the
-// page-obj reference can't dangle.
+// Returns the page-object at the given index. The annotation owns it;
+// the externalptr's prot slot pins the annot so the page-obj reference
+// can't dangle, and the handle is registered under the document behind
+// `doc_ptr` so that cpp_annot_remove_object() can clear it (ADR-032).
 // [[Rcpp::export(name = "cpp_annot_get_object")]]
-SEXP cpp_annot_get_object(SEXP annot_ptr, int index_zero) {
+SEXP cpp_annot_get_object(SEXP annot_ptr, SEXP doc_ptr, int index_zero) {
   FPDF_ANNOTATION annot = acomp_annot_from_ptr(annot_ptr);
+  FPDF_DOCUMENT doc = acomp_doc_from_ptr(doc_ptr);
   FPDF_PAGEOBJECT obj = FPDFAnnot_GetObject(annot, index_zero);
   if (obj == nullptr) {
     Rcpp::stop("FPDFAnnot_GetObject returned NULL for index %d",
                index_zero);
   }
-  return R_MakeExternalPtr(obj, R_NilValue, annot_ptr);
+  return pdfium_r::make_annot_object_handle(obj, annot_ptr, doc);
 }
 
 // [[Rcpp::export(name = "cpp_annot_set_uri")]]

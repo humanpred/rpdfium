@@ -1,12 +1,14 @@
 // pdfium R package — lifetime of every handle with a finalizer
-// (ADR-024, ADR-025, ADR-028).
+// (ADR-024, ADR-025, ADR-028, ADR-032).
 //
 // PDFium expects every page, annotation context, font and XObject to
 // be closed before the document it belongs to, and every document,
 // clip path and bitmap before FPDF_DestroyLibrary(). The package keeps
 // that order in every teardown: each live handle is registered under
 // what it must be closed before. Annotation contexts, pages, fonts and
-// XObjects are registered under their FPDF_DOCUMENT; documents, the
+// XObjects are registered under their FPDF_DOCUMENT, as are the
+// handles to the page-objects of annotations, which PDFium frees with
+// their annotation and whose release only clears them; documents, the
 // clip paths of pdf_clip_path_new(), bitmaps and the buffers that
 // documents loaded from memory read from are registered under the
 // library. Closing a document releases the handles registered under it
@@ -58,6 +60,14 @@ SEXP make_page_handle(FPDF_PAGE page, SEXP doc_ptr);
 SEXP make_font_handle(FPDF_FONT font, SEXP doc_ptr);
 SEXP make_xobject_handle(FPDF_XOBJECT xobject, SEXP doc_ptr);
 
+// Wrap `obj`, a page-object of the appearance stream of the annotation
+// behind `annot_ptr`, in an externalptr that pins `annot_ptr` in its
+// prot slot and is registered under `doc`, the open document the
+// annotation belongs to. The annotation owns the object, so releasing
+// the handle only clears it.
+SEXP make_annot_object_handle(FPDF_PAGEOBJECT obj, SEXP annot_ptr,
+                              FPDF_DOCUMENT doc);
+
 // Wrap a clip path from FPDF_CreateClipPath(), or a bitmap from
 // FPDFBitmap_Create(), in an externalptr with its finalizer, registered
 // under the library. Neither belongs to a document.
@@ -82,15 +92,23 @@ void release_clip_path_handle(SEXP clip_path_ptr) noexcept;
 void release_bitmap_handle(SEXP bitmap_ptr) noexcept;
 void release_buffer_handle(SEXP buffer_ptr) noexcept;
 
+// Release the annotation page-object handles registered under `doc`
+// whose address is `obj`, an object FPDFAnnot_RemoveObject() has just
+// destroyed. Only addresses are compared.
+void release_annot_object_handles(FPDF_DOCUMENT doc,
+                                  FPDF_PAGEOBJECT obj) noexcept;
+
 // Release every handle registered under the library: documents, each
 // after the handles registered under it, then clip paths, bitmaps and
 // buffers. Must run before FPDF_DestroyLibrary().
 void release_library_handles() noexcept;
 
 // Number of handles registered under the document `doc`, per kind, in
-// the order annotation, page, font, XObject; and under the library, in
-// the order document, clip path, bitmap, buffer.
+// the order annotation, page, font, XObject; of annotation page-object
+// handles registered under it; and of handles registered under the
+// library, in the order document, clip path, bitmap, buffer.
 std::vector<int> count_doc_handles(FPDF_DOCUMENT doc);
+int count_annot_object_handles(FPDF_DOCUMENT doc);
 std::vector<int> count_library_handles();
 
 }  // namespace pdfium_r

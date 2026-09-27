@@ -244,8 +244,8 @@ test_that("objects of a form in an annotation follow the annotation", {
 
 form_closed_obj_msg <- paste0(
   "^Parent form object has been closed: it was deleted, removed from ",
-  "its form or moved into an annotation\\. The object handle is no ",
-  "longer valid\\.$"
+  "its form or annotation, or moved into an annotation\\. The object ",
+  "handle is no longer valid\\.$"
 )
 
 test_that("pdf_obj_delete() on a form closes the objects read from it", {

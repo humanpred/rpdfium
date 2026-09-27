@@ -197,8 +197,8 @@ cpp_annot_append_object <- function(annot_ptr, page_ptr, obj_ptr) {
     .Call(`_pdfium_cpp_annot_append_object`, annot_ptr, page_ptr, obj_ptr)
 }
 
-cpp_annot_remove_object <- function(annot_ptr, index_zero) {
-    .Call(`_pdfium_cpp_annot_remove_object`, annot_ptr, index_zero)
+cpp_annot_remove_object <- function(annot_ptr, doc_ptr, index_zero) {
+    .Call(`_pdfium_cpp_annot_remove_object`, annot_ptr, doc_ptr, index_zero)
 }
 
 cpp_annot_update_object <- function(annot_ptr, obj_ptr) {
@@ -209,8 +209,8 @@ cpp_annot_object_count <- function(annot_ptr) {
     .Call(`_pdfium_cpp_annot_object_count`, annot_ptr)
 }
 
-cpp_annot_get_object <- function(annot_ptr, index_zero) {
-    .Call(`_pdfium_cpp_annot_get_object`, annot_ptr, index_zero)
+cpp_annot_get_object <- function(annot_ptr, doc_ptr, index_zero) {
+    .Call(`_pdfium_cpp_annot_get_object`, annot_ptr, doc_ptr, index_zero)
 }
 
 cpp_annot_set_uri <- function(annot_ptr, uri) {
@@ -611,6 +611,10 @@ cpp_text_char_font_info <- function(page_ptr) {
 
 cpp_doc_handle_counts <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_handle_counts`, doc_ptr)
+}
+
+cpp_annot_object_handle_count <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_annot_object_handle_count`, doc_ptr)
 }
 
 cpp_library_handle_counts <- function() {
