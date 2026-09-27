@@ -99,6 +99,26 @@
   An annotation handle collected after both its page and its document
   had been closed used to leak PDFium's annotation context, together
   with the page-objects of its appearance stream (ADR-024).
+* `pdf_doc_close()`, and the finalizer of a collected document, now also
+  close the document's pages, including the pages of `pdf_form_fields()`.
+  Page and page-object calls on them raise an error ("Page has been
+  closed: its document was closed.") instead of reading freed memory.
+  Rendering or extracting text from a page whose document had been
+  closed read, and for text also wrote, the freed document; the results
+  looked right, so nothing noticed. A page collected after its document
+  had been closed also closed itself after the document, which PDFium
+  does not allow (ADR-025).
+* `pdf_doc_close()` also closes the document's font and XObject handles.
+  `pdf_obj_form_from_xobject()` with an XObject whose document had been
+  closed built the form object from the freed document; it now raises an
+  error.
+* `pdf_text_new()` and `pdf_obj_form_from_xobject()` refuse a font or
+  XObject that belongs to a document other than the page's. With a font
+  from `pdf_font_load()` or an XObject, the new object pointed into the
+  other document: `pdf_save()` wrote it out wrongly, and once the other
+  document was closed, reading the page read freed memory.
+* The form object from `pdf_obj_form_from_xobject()` stays usable after
+  `pdf_xobject_close()`, as documented; it used to raise an error.
 * `pdf_page_insert_clip_path()` no longer closes `clip_path`. PDFium
   never takes ownership of an inserted clip path, so the path was never
   freed. The handle now stays open, can be inserted into other pages,

@@ -273,12 +273,8 @@ cpp_xobject_close <- function(xo_ptr) {
     invisible(.Call(`_pdfium_cpp_xobject_close`, xo_ptr))
 }
 
-cpp_form_obj_from_xobject <- function(xo_ptr) {
-    .Call(`_pdfium_cpp_form_obj_from_xobject`, xo_ptr)
-}
-
-cpp_page_insert_object <- function(page_ptr, obj_ptr) {
-    invisible(.Call(`_pdfium_cpp_page_insert_object`, page_ptr, obj_ptr))
+cpp_form_obj_from_xobject <- function(xo_ptr, page_ptr) {
+    .Call(`_pdfium_cpp_form_obj_from_xobject`, xo_ptr, page_ptr)
 }
 
 cpp_form_obj_remove_child <- function(form_obj_ptr, child_ptr) {
@@ -611,6 +607,10 @@ cpp_text_obj_font_metrics <- function(obj_ptr, font_size) {
 
 cpp_text_char_font_info <- function(page_ptr) {
     .Call(`_pdfium_cpp_text_char_font_info`, page_ptr)
+}
+
+cpp_doc_handle_counts <- function(doc_ptr) {
+    .Call(`_pdfium_cpp_doc_handle_counts`, doc_ptr)
 }
 
 cpp_image_new_from_jpeg <- function(doc_ptr, page_ptr, jpeg_bytes) {

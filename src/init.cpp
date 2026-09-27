@@ -11,7 +11,7 @@
 #include "fpdfview.h"
 #include "fpdf_edit.h"
 #include "fpdf_sysfontinfo.h"
-#include "annot_registry.h"
+#include "handle_registry.h"
 #include "document_handle.h"
 
 using pdfium_r::finalize_document;
@@ -36,7 +36,7 @@ namespace pdfium_r {
 void close_document_handle(SEXP doc_ptr) {
   FPDF_DOCUMENT doc = static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr));
   if (doc == nullptr) return;
-  release_doc_annot_handles(doc);
+  release_doc_handles(doc);
   FPDF_CloseDocument(doc);
   R_ClearExternalPtr(doc_ptr);
 }

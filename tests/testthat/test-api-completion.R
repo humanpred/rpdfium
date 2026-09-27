@@ -835,9 +835,72 @@ test_that("pdf_xobject_from_page + pdf_obj_form_from_xobject round-trip", {
   form <- pdf_obj_form_from_xobject(page, xo)
   expect_s3_class(form, "pdfium_obj")
   expect_identical(form$type, "form")
-  # Closing the XObject after instantiating doesn't kill the form.
+  bounds <- pdf_obj_bounds(form)
+  # Closing the XObject after instantiating doesn't kill the form: the
+  # page owns it, and its handle pins the page.
   pdf_xobject_close(xo)
   expect_silent(pdf_xobject_close(xo))  # idempotent
+  expect_true(is_open(form))
+  expect_identical(pdf_obj_bounds(form), bounds)
+  expect_length(pdf_form_objects(form), 5L)
+  pdf_page_close(page)
+  expect_error(
+    pdfium:::cpp_obj_bounds(form$ptr),
+    "^Page-object handle's parent has been closed"
+  )
+})
+
+test_that("pdf_obj_form_from_xobject refuses a page of another document", {
+  src <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(src), add = TRUE)
+  dest <- pdf_doc_new()
+  on.exit(pdf_doc_close(dest), add = TRUE)
+  other <- pdf_doc_new()
+  on.exit(pdf_doc_close(other), add = TRUE)
+  page <- pdf_page_new(other, page_num = 1L, width = 612, height = 792)
+  xo <- pdf_xobject_from_page(dest, src, 1L)
+  expect_error(
+    pdf_obj_form_from_xobject(page, xo),
+    "^`xobject` and `page` must belong to the same document\\.$"
+  )
+  expect_length(pdf_page_objects(page), 0L)
+})
+
+test_that("pdf_doc_close() closes the destination document's XObjects", {
+  src <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(src), add = TRUE)
+  dest <- pdf_doc_new()
+  page <- pdf_page_new(dest, page_num = 1L, width = 612, height = 792)
+  xo <- pdf_xobject_from_page(dest, src, 1L)
+  closed <- pdf_xobject_from_page(dest, src, 1L)
+  local(pdf_xobject_from_page(dest, src, 1L))
+  pdf_xobject_close(closed)
+  invisible(gc())
+  # An XObject closed or collected before its document leaves the
+  # registry.
+  expect_identical(
+    pdfium:::cpp_doc_handle_counts(dest$ptr),
+    c(annot = 0L, page = 1L, font = 0L, xobject = 1L)
+  )
+  form <- pdf_obj_form_from_xobject(page, xo)
+  pdf_doc_close(dest)
+  expect_false(pdfium:::cpp_handle_is_valid(xo$ptr))
+  expect_identical(format(xo), "<pdfium_xobject [closed] from shapes.pdf page 1>")
+  expect_false(is_open(form))
+  other <- pdf_doc_new()
+  on.exit(pdf_doc_close(other), add = TRUE)
+  other_page <- pdf_page_new(other, page_num = 1L, width = 612, height = 792)
+  expect_error(
+    pdf_obj_form_from_xobject(other_page, xo),
+    "^XObject handle has been closed\\.$"
+  )
+  expect_error(
+    pdfium:::cpp_form_obj_from_xobject(xo$ptr, other_page$ptr),
+    "^XObject handle's parent has been closed"
+  )
+  expect_silent(pdf_xobject_close(xo))
+  rm(xo, closed, form)
+  expect_no_error(gc())
 })
 
 test_that("pdf_obj_form_from_xobject refuses a closed xobject", {
