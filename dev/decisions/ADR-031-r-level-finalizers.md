@@ -118,12 +118,23 @@ Two facts about R limit the options:
   are three runs per build, each the median of seven, and the
   differences are within run-to-run noise. A `gc()` that finalizes
   20,000 unreachable bitmaps took 45 ms before and 44 ms after.
+- `dyn.unload()` cannot unmap a build that exports a GNU-unique
+  symbol: glibc keeps it loaded. covr's and pkgbuild's `-O0` builds
+  export `std::piecewise_construct`; the `-O2` build exports none.
+  Loading the same file again then returns the same image, registry and
+  all, and the registry releases the handles it still holds when they
+  are collected. `tests/testthat/test-finalizer.R` tells the two cases
+  apart by a load generation that `R_init_pdfium()` counts. pkgload
+  loads each build from a new temporary file, so its reloads always get
+  a fresh image.
 - The finalizer resolves `"pdfium"` to the most recently loaded shared
   library of that name (`R_FindSymbol()`). Having two copies loaded at
   once is unsupported, and only a hand-made `dyn.load()` of a second
   copy can cause it. The finalizers of one copy's handles would then
   reach the other copy, which would leave them alone (decision 3), so
-  the first copy's registry would keep entries that R has freed.
+  the first copy's registry would keep entries that R has freed. For
+  the same reason, loading a kept image again by hand after its handles
+  were collected while it was unloaded is unsupported.
 - The memory buffer is now an R vector, so R's garbage collector counts
   it, and a large document read from memory makes R collect sooner. The
   `new[]` buffer it replaces was invisible to R.
