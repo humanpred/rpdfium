@@ -11,9 +11,11 @@ pdf_clip_path_new(bounds)
 in PDF user-space points.}
 }
 \value{
-A \code{pdfium_clip_box} handle. The handle carries an
-\code{FPDF_DestroyClipPath} finalizer; explicit \code{\link[=pdf_clip_path_close]{pdf_clip_path_close()}}
-is optional but useful for deterministic release.
+A \code{pdfium_clip_box} handle. The handle owns the clip path,
+also after \code{\link[=pdf_page_insert_clip_path]{pdf_page_insert_clip_path()}}, so one clip path can go
+into several pages. It carries an \code{FPDF_DestroyClipPath}
+finalizer; explicit \code{\link[=pdf_clip_path_close]{pdf_clip_path_close()}} is optional but useful
+for deterministic release.
 }
 \description{
 Wraps \code{FPDF_CreateClipPath}. Returns a \code{pdfium_clip_box} handle
@@ -23,9 +25,10 @@ to restrict the page's rendered output to the given rectangle.
 \examples{
 \dontrun{
 doc <- pdf_doc_new()
-page <- pdf_page_new(doc, width = 612, height = 792)
+page <- pdf_page_new(doc, page_num = 1, width = 612, height = 792)
 cp <- pdf_clip_path_new(c(72, 72, 540, 720))
 pdf_page_insert_clip_path(page, cp)
+pdf_clip_path_close(cp)
 pdf_save(doc, tempfile(fileext = ".pdf"))
 }
 }

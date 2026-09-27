@@ -11,26 +11,28 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // cpp_annot_get
-SEXP cpp_annot_get(SEXP page_ptr, int index_zero_based);
-RcppExport SEXP _pdfium_cpp_annot_get(SEXP page_ptrSEXP, SEXP index_zero_basedSEXP) {
+SEXP cpp_annot_get(SEXP page_ptr, SEXP doc_ptr, int index_zero_based);
+RcppExport SEXP _pdfium_cpp_annot_get(SEXP page_ptrSEXP, SEXP doc_ptrSEXP, SEXP index_zero_basedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     Rcpp::traits::input_parameter< int >::type index_zero_based(index_zero_basedSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_annot_get(page_ptr, index_zero_based));
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_get(page_ptr, doc_ptr, index_zero_based));
     return rcpp_result_gen;
 END_RCPP
 }
 // cpp_annot_new
-SEXP cpp_annot_new(SEXP page_ptr, int subtype_code);
-RcppExport SEXP _pdfium_cpp_annot_new(SEXP page_ptrSEXP, SEXP subtype_codeSEXP) {
+SEXP cpp_annot_new(SEXP page_ptr, SEXP doc_ptr, int subtype_code);
+RcppExport SEXP _pdfium_cpp_annot_new(SEXP page_ptrSEXP, SEXP doc_ptrSEXP, SEXP subtype_codeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     Rcpp::traits::input_parameter< int >::type subtype_code(subtype_codeSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_annot_new(page_ptr, subtype_code));
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_new(page_ptr, doc_ptr, subtype_code));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -183,15 +185,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_annot_linked_handle
-Rcpp::List cpp_annot_linked_handle(SEXP annot_ptr, SEXP page_ptr, std::string key);
-RcppExport SEXP _pdfium_cpp_annot_linked_handle(SEXP annot_ptrSEXP, SEXP page_ptrSEXP, SEXP keySEXP) {
+Rcpp::List cpp_annot_linked_handle(SEXP annot_ptr, SEXP page_ptr, SEXP doc_ptr, std::string key);
+RcppExport SEXP _pdfium_cpp_annot_linked_handle(SEXP annot_ptrSEXP, SEXP page_ptrSEXP, SEXP doc_ptrSEXP, SEXP keySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type annot_ptr(annot_ptrSEXP);
     Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     Rcpp::traits::input_parameter< std::string >::type key(keySEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_annot_linked_handle(annot_ptr, page_ptr, key));
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_linked_handle(annot_ptr, page_ptr, doc_ptr, key));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -998,16 +1001,6 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type index_zero(index_zeroSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_default_ttf_map_entry(index_zero));
-    return rcpp_result_gen;
-END_RCPP
-}
-// cpp_install_default_sysfont_info
-bool cpp_install_default_sysfont_info();
-RcppExport SEXP _pdfium_cpp_install_default_sysfont_info() {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    rcpp_result_gen = Rcpp::wrap(cpp_install_default_sysfont_info());
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1987,6 +1980,16 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     cpp_destroy_library();
     return R_NilValue;
+END_RCPP
+}
+// cpp_install_default_sysfont_info
+bool cpp_install_default_sysfont_info();
+RcppExport SEXP _pdfium_cpp_install_default_sysfont_info() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(cpp_install_default_sysfont_info());
+    return rcpp_result_gen;
 END_RCPP
 }
 // cpp_open_document
@@ -3306,8 +3309,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_pdfium_cpp_annot_get", (DL_FUNC) &_pdfium_cpp_annot_get, 2},
-    {"_pdfium_cpp_annot_new", (DL_FUNC) &_pdfium_cpp_annot_new, 2},
+    {"_pdfium_cpp_annot_get", (DL_FUNC) &_pdfium_cpp_annot_get, 3},
+    {"_pdfium_cpp_annot_new", (DL_FUNC) &_pdfium_cpp_annot_new, 3},
     {"_pdfium_cpp_annot_delete", (DL_FUNC) &_pdfium_cpp_annot_delete, 2},
     {"_pdfium_cpp_annot_subtype_code", (DL_FUNC) &_pdfium_cpp_annot_subtype_code, 1},
     {"_pdfium_cpp_annot_flags", (DL_FUNC) &_pdfium_cpp_annot_flags, 1},
@@ -3321,7 +3324,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_annot_quad_points_handle", (DL_FUNC) &_pdfium_cpp_annot_quad_points_handle, 1},
     {"_pdfium_cpp_annot_vertices_handle", (DL_FUNC) &_pdfium_cpp_annot_vertices_handle, 1},
     {"_pdfium_cpp_annot_ink_paths_handle", (DL_FUNC) &_pdfium_cpp_annot_ink_paths_handle, 1},
-    {"_pdfium_cpp_annot_linked_handle", (DL_FUNC) &_pdfium_cpp_annot_linked_handle, 3},
+    {"_pdfium_cpp_annot_linked_handle", (DL_FUNC) &_pdfium_cpp_annot_linked_handle, 4},
     {"_pdfium_cpp_annot_file_attachment_name_handle", (DL_FUNC) &_pdfium_cpp_annot_file_attachment_name_handle, 1},
     {"_pdfium_cpp_annot_dict_value", (DL_FUNC) &_pdfium_cpp_annot_dict_value, 3},
     {"_pdfium_cpp_annot_appearance", (DL_FUNC) &_pdfium_cpp_annot_appearance, 3},
@@ -3386,7 +3389,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_image_set_bitmap", (DL_FUNC) &_pdfium_cpp_image_set_bitmap, 2},
     {"_pdfium_cpp_default_ttf_map_size", (DL_FUNC) &_pdfium_cpp_default_ttf_map_size, 0},
     {"_pdfium_cpp_default_ttf_map_entry", (DL_FUNC) &_pdfium_cpp_default_ttf_map_entry, 1},
-    {"_pdfium_cpp_install_default_sysfont_info", (DL_FUNC) &_pdfium_cpp_install_default_sysfont_info, 0},
     {"_pdfium_cpp_doc_import_pages_string", (DL_FUNC) &_pdfium_cpp_doc_import_pages_string, 4},
     {"_pdfium_cpp_doc_copy_viewer_preferences", (DL_FUNC) &_pdfium_cpp_doc_copy_viewer_preferences, 2},
     {"_pdfium_cpp_page_transform_with_clip", (DL_FUNC) &_pdfium_cpp_page_transform_with_clip, 3},
@@ -3471,6 +3473,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_image_filters", (DL_FUNC) &_pdfium_cpp_image_filters, 1},
     {"_pdfium_cpp_init_library", (DL_FUNC) &_pdfium_cpp_init_library, 0},
     {"_pdfium_cpp_destroy_library", (DL_FUNC) &_pdfium_cpp_destroy_library, 0},
+    {"_pdfium_cpp_install_default_sysfont_info", (DL_FUNC) &_pdfium_cpp_install_default_sysfont_info, 0},
     {"_pdfium_cpp_open_document", (DL_FUNC) &_pdfium_cpp_open_document, 2},
     {"_pdfium_cpp_open_document_from_memory", (DL_FUNC) &_pdfium_cpp_open_document_from_memory, 2},
     {"_pdfium_cpp_create_new_document", (DL_FUNC) &_pdfium_cpp_create_new_document, 0},

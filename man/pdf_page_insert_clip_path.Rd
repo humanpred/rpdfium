@@ -16,10 +16,10 @@ pdf_page_insert_clip_path(page, clip_path)
 Invisibly returns the parent \code{pdfium_doc}.
 }
 \description{
-Wraps \code{FPDFPage_InsertClipPath}. After insertion the clip path is
-owned by the page; the R-side \code{pdfium_clip_box} handle's
-externalptr is cleared automatically so subsequent operations on
-it error cleanly via \code{is_open()}.
+Wraps \code{FPDFPage_InsertClipPath}, which inserts the clip path before
+the page's content. PDFium does not take ownership of the clip path:
+\code{clip_path} stays open, can be inserted into other pages, and is
+released by \code{\link[=pdf_clip_path_close]{pdf_clip_path_close()}} or when it is garbage-collected.
 }
 \seealso{
 \code{\link[=pdf_clip_path_new]{pdf_clip_path_new()}}, \code{\link[=pdf_page_transform_with_clip]{pdf_page_transform_with_clip()}}.

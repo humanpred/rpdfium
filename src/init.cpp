@@ -10,6 +10,11 @@
 #include <cstring>
 #include "fpdfview.h"
 #include "fpdf_edit.h"
+#include "fpdf_sysfontinfo.h"
+#include "annot_registry.h"
+#include "document_handle.h"
+
+using pdfium_r::finalize_document;
 
 namespace {
 
@@ -19,16 +24,29 @@ namespace {
 // crashing PDFium.
 bool g_library_initialised = false;
 
-void finalize_document(SEXP ptr) {
-  if (TYPEOF(ptr) != EXTPTRSXP) return;
-  FPDF_DOCUMENT doc = static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(ptr));
-  if (doc != nullptr) {
-    FPDF_CloseDocument(doc);
-    R_ClearExternalPtr(ptr);
-  }
-}
+// The provider cpp_install_default_sysfont_info() installed into the
+// current library instance, if any. The application owns it
+// (fpdf_sysfontinfo.h); cpp_destroy_library() frees it.
+FPDF_SYSFONTINFO* g_default_sysfont_info = nullptr;
 
 } // namespace
+
+namespace pdfium_r {
+
+void close_document_handle(SEXP doc_ptr) {
+  FPDF_DOCUMENT doc = static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr));
+  if (doc == nullptr) return;
+  release_doc_annot_handles(doc);
+  FPDF_CloseDocument(doc);
+  R_ClearExternalPtr(doc_ptr);
+}
+
+void finalize_document(SEXP doc_ptr) {
+  if (TYPEOF(doc_ptr) != EXTPTRSXP) return;
+  close_document_handle(doc_ptr);
+}
+
+}  // namespace pdfium_r
 
 // [[Rcpp::export(name = "cpp_init_library")]]
 void cpp_init_library() {
@@ -46,7 +64,33 @@ void cpp_init_library() {
 void cpp_destroy_library() {
   if (!g_library_initialised) return;
   FPDF_DestroyLibrary();
+  // Tearing the library down runs the installed provider's Release
+  // callback, which reads the struct; only afterwards is it unused.
+  if (g_default_sysfont_info != nullptr) {
+    FPDF_FreeDefaultSystemFontInfo(g_default_sysfont_info);
+    g_default_sysfont_info = nullptr;
+  }
   g_library_initialised = false;
+}
+
+// Install PDFium's platform-default system-font provider into the
+// library, once per library lifetime: while one is installed, a repeat
+// call returns true without allocating another.
+// [[Rcpp::export(name = "cpp_install_default_sysfont_info")]]
+bool cpp_install_default_sysfont_info() {
+  if (!g_library_initialised) cpp_init_library();
+  if (g_default_sysfont_info != nullptr) return true;
+  FPDF_SYSFONTINFO* info = FPDF_GetDefaultSystemFontInfo();
+  // # nocov start — NULL only on platforms without a default provider
+  // (fpdf_sysfontinfo.h); the bundled Linux, macOS and Windows builds
+  // have one.
+  if (info == nullptr) {
+    return false;
+  }
+  // # nocov end
+  FPDF_SetSystemFontInfo(info);
+  g_default_sysfont_info = info;
+  return true;
 }
 
 // [[Rcpp::export(name = "cpp_open_document")]]
@@ -135,11 +179,7 @@ void cpp_close_document(SEXP ptr) {
   if (TYPEOF(ptr) != EXTPTRSXP) {
     Rcpp::stop("Expected an external pointer.");
   }
-  FPDF_DOCUMENT doc = static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(ptr));
-  if (doc != nullptr) {
-    FPDF_CloseDocument(doc);
-    R_ClearExternalPtr(ptr);
-  }
+  pdfium_r::close_document_handle(ptr);
 }
 
 // [[Rcpp::export(name = "cpp_handle_is_valid")]]

@@ -7,9 +7,9 @@
 pdf_system_fonts_install_default()
 }
 \value{
-Invisibly returns \code{TRUE} if the provider was installed,
-\code{FALSE} if the platform has no default provider (e.g.
-stripped-down builds).
+Invisibly returns \code{TRUE} if the provider is installed,
+including by an earlier call, and \code{FALSE} if the platform has no
+default provider (e.g. stripped-down builds).
 }
 \description{
 Wraps \code{FPDF_SetSystemFontInfo(FPDF_GetDefaultSystemFontInfo())}.
@@ -20,10 +20,10 @@ table only — which is fine for most documents but misses
 platform-installed typefaces.
 }
 \details{
-Idempotent across calls; the provider persists for the package's
-lifetime (PDFium retains the pointer; we don't call
-\code{FPDF_FreeDefaultSystemFontInfo} because the provider is
-library-global).
+The provider is installed once per PDFium library lifetime: a
+repeat call returns \code{TRUE} without installing another. The package
+frees it with \code{FPDF_FreeDefaultSystemFontInfo} when it shuts the
+library down, on package unload.
 
 Custom providers (R-side callbacks for font enumeration) are
 deferred to a later release — they require marshalling

@@ -165,6 +165,11 @@ validate_pdf_open_path <- function(path) {
 #' explicit close is recommended when handling many large documents or when a
 #' subsequent operation needs to delete the source file (relevant on Windows).
 #'
+#' Annotation handles still open on the document, including the form-field
+#' handles of [pdf_form_fields()], are closed first, because PDFium releases
+#' an annotation's resources only while its document is open. Afterwards they
+#' print as closed, and `pdf_annot_*()` calls on them raise an error.
+#'
 #' @param doc A `pdfium_doc` produced by [pdf_doc_open()].
 #' @return Invisibly returns `doc` with its underlying pointer marked closed.
 #' @export

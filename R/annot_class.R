@@ -226,7 +226,9 @@ pdf_annot_at <- function(page, annotation_index, page_num = 1L) {
       annotation_index, n
     ), call. = FALSE)
   }
-  ptr <- cpp_annot_get(page$ptr, as.integer(annotation_index - 1L))
+  ptr <- cpp_annot_get(
+    page$ptr, page$doc$ptr, as.integer(annotation_index - 1L)
+  )
   new_pdfium_annot(ptr, page, annotation_index)
 }
 
@@ -312,7 +314,9 @@ pdf_annot_ink_paths <- function(annot) {
 # Internal: resolve a linked-annot key ("Popup" or "IRT") to a
 # pdfium_annot handle or NULL.
 linked_annot_handle <- function(annot, key) {
-  raw <- cpp_annot_linked_handle(annot$ptr, annot$page$ptr, key)
+  raw <- cpp_annot_linked_handle(
+    annot$ptr, annot$page$ptr, annot$page$doc$ptr, key
+  )
   if (!isTRUE(raw$found) || is.null(raw$handle)) return(NULL)
   new_pdfium_annot(raw$handle, annot$page,
                     as.integer(raw$index))

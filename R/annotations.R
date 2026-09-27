@@ -166,7 +166,7 @@ pdf_annotations <- function(page, page_num = 1L) {
   page <- as_open_page(page, page_num, defer_close = FALSE)
   n <- cpp_annot_count(page$ptr)
   handles <- lapply(seq_len(n), function(i) {
-    ptr <- cpp_annot_get(page$ptr, as.integer(i - 1L))
+    ptr <- cpp_annot_get(page$ptr, page$doc$ptr, as.integer(i - 1L))
     new_pdfium_annot(ptr, page, i)
   })
   new_pdfium_annot_list(handles, page)

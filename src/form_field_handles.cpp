@@ -8,10 +8,10 @@
 // Lifetime contract:
 //   * Each page that carries at least one widget annotation gets
 //     ONE externalptr with a finalizer (FPDF_ClosePage).
-//   * Each widget annotation gets ONE externalptr with a finalizer
-//     (FPDFPage_CloseAnnot). The annot externalptr pins its parent
-//     page externalptr in its `prot` slot so the page outlives the
-//     annot.
+//   * Each widget annotation gets ONE annotation handle from
+//     make_annot_handle() (annot_registry.h), registered under
+//     `doc`. The annot externalptr pins its parent page externalptr
+//     in its `prot` slot so the page outlives the annot.
 //   * The returned list keeps both alive until R's GC reclaims it.
 //
 // The FFL env itself is opened and closed inside this call (same
@@ -23,6 +23,7 @@
 #include "fpdfview.h"
 #include "fpdf_annot.h"
 #include "fpdf_formfill.h"
+#include "annot_registry.h"
 
 namespace {
 
@@ -35,27 +36,9 @@ void finalize_page(SEXP ptr) {
   }
 }
 
-void finalize_annot(SEXP ptr) {
-  if (TYPEOF(ptr) != EXTPTRSXP) return;
-  FPDF_ANNOTATION a =
-      static_cast<FPDF_ANNOTATION>(R_ExternalPtrAddr(ptr));
-  if (a != nullptr) {
-    FPDFPage_CloseAnnot(a);
-    R_ClearExternalPtr(ptr);
-  }
-}
-
 SEXP make_page_ptr(FPDF_PAGE page) {
   SEXP ptr = PROTECT(R_MakeExternalPtr(page, R_NilValue, R_NilValue));
   R_RegisterCFinalizerEx(ptr, finalize_page,
-                         static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ptr;
-}
-
-SEXP make_annot_ptr(FPDF_ANNOTATION annot, SEXP page_ptr) {
-  SEXP ptr = PROTECT(R_MakeExternalPtr(annot, R_NilValue, page_ptr));
-  R_RegisterCFinalizerEx(ptr, finalize_annot,
                          static_cast<Rboolean>(TRUE));
   UNPROTECT(1);
   return ptr;
@@ -126,7 +109,7 @@ Rcpp::List cpp_form_field_handles(SEXP doc_ptr) {
         this_page_idx = static_cast<int>(page_handles.size());
         page_kept = true;
       }
-      SEXP annot_ptr = make_annot_ptr(a, page_ptr);
+      SEXP annot_ptr = pdfium_r::make_annot_handle(a, page_ptr, doc);
       annot_handles.push_back(annot_ptr);
       annot_page_idx.push_back(this_page_idx);
       int ftype = FPDFAnnot_GetFormFieldType(form, a);

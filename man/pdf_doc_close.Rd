@@ -19,3 +19,9 @@ an already-closed document is a no-op. The finalizer registered at
 explicit close is recommended when handling many large documents or when a
 subsequent operation needs to delete the source file (relevant on Windows).
 }
+\details{
+Annotation handles still open on the document, including the form-field
+handles of \code{\link[=pdf_form_fields]{pdf_form_fields()}}, are closed first, because PDFium releases
+an annotation's resources only while its document is open. Afterwards they
+print as closed, and \verb{pdf_annot_*()} calls on them raise an error.
+}

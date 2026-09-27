@@ -10,6 +10,7 @@
 #   * cpp_annot_ink_paths_handle success branch (ink)
 #   * cpp_annot_linked_handle success branches (/Popup, /IRT)
 #   * cpp_annot_file_attachment_name_handle success branch
+#   * pdf_doc_close() closing live annotation handles (ADR-024)
 #
 # Inline-PDF helpers below build minimal hand-rolled fixtures for the
 # subtypes the shipped annotated.pdf doesn't carry (FreeText with /DA,
@@ -160,7 +161,7 @@ test_that("cpp_annot_get errors when the index exceeds the page's annots", {
   # annotated.pdf has 5 annots; asking for index 99 makes
   # FPDFPage_GetAnnot return NULL and triggers the Rcpp::stop.
   expect_error(
-    pdfium:::cpp_annot_get(page$ptr, 99L),
+    pdfium:::cpp_annot_get(page$ptr, doc$ptr, 99L),
     "FPDFPage_GetAnnot\\(99\\) returned NULL"
   )
 })
@@ -371,4 +372,108 @@ test_that("pdf_annot_file_attachment_name is empty when /FS is missing", {
   on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   a <- pdf_annot_new(page, "fileattachment", bounds = c(10, 10, 30, 30))
   expect_identical(pdf_annot_file_attachment_name(a), "")
+})
+
+# pdf_doc_close() and live annotation handles (ADR-024) ------------
+#
+# An annotation handle owns a PDFium annotation context, released
+# together with the page-objects of its appearance stream. Closing a
+# document closes every annotation handle still open on it first, so
+# no context outlives its document.
+
+test_that("pdf_doc_close() closes annotation handles from every source", {
+  doc <- pdf_doc_open(fixture_path("annotated"), readwrite = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  linked_doc <- pdf_doc_open(source = build_linked_pdf())
+  linked <- pdf_annotations(linked_doc, page_num = 1L)
+  handles <- list(
+    list_item = pdf_annotations(page)[[1L]],
+    at = pdf_annot_at(page, 2L),
+    link_hit = pdf_link_annot_at_point(page, 125, 160),
+    new = pdf_annot_new(page, "square", bounds = c(10, 10, 50, 50)),
+    form_field = pdf_form_fields(doc)[[1L]],
+    popup = pdf_annot_popup(linked[[1L]]),
+    in_reply_to = pdf_annot_in_reply_to(linked[[3L]])
+  )
+  for (nm in names(handles)) {
+    expect_true(is_open(handles[[nm]]), info = nm)
+  }
+  pdf_doc_close(doc)
+  pdf_doc_close(linked_doc)
+  for (nm in names(handles)) {
+    expect_false(is_open(handles[[nm]]), info = nm)
+    expect_false(pdfium:::cpp_handle_is_valid(handles[[nm]]$ptr), info = nm)
+    expect_error(
+      pdf_annot_subtype(handles[[nm]]),
+      "Annotation handle has been closed",
+      info = nm
+    )
+  }
+  expect_identical(vapply(linked, is_open, logical(1L)), rep(FALSE, 3L))
+  rm(handles, linked)
+  expect_no_error(gc())
+})
+
+test_that("annotation handles bound across page and document close", {
+  doc <- pdf_doc_new()
+  page <- pdf_page_new(doc, page_num = 1L, width = 300, height = 300)
+  stamp <- pdf_annot_new(page, "stamp", bounds = c(0, 0, 200, 200))
+  pdf_annot_append_object(stamp, pdf_text_new(page, "Hello", x = 10, y = 10))
+  pdf_annot_append_object(stamp, pdf_rect_new(page, 20, 20, 50, 50))
+  expect_identical(pdf_annot_object_count(stamp), 2L)
+  # A second handle to the same annotation has a context of its own.
+  again <- pdf_annotations(page)[[1L]]
+  pdf_page_close(page)
+  # A closed page leaves each context with its handle until the
+  # handle is collected or the document closes.
+  expect_true(pdfium:::cpp_handle_is_valid(stamp$ptr))
+  expect_true(pdfium:::cpp_handle_is_valid(again$ptr))
+  pdf_doc_close(doc)
+  expect_false(pdfium:::cpp_handle_is_valid(stamp$ptr))
+  expect_false(pdfium:::cpp_handle_is_valid(again$ptr))
+  expect_no_error(gc())
+  rm(stamp, again)
+  expect_no_error(gc())
+})
+
+test_that("pdf_doc_close() leaves other documents' annotation handles open", {
+  doc_a <- pdf_doc_open(fixture_path("annotated"))
+  page_a <- pdf_page_load(doc_a, 1L)
+  doc_b <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc_b), add = TRUE)
+  page_b <- pdf_page_load(doc_b, 1L)
+  on.exit(pdf_page_close(page_b), add = TRUE, after = FALSE)
+  # Collected handles leave the registry, so doc_b's handles below may
+  # reuse their memory without closing doc_a reaching them.
+  for (i in seq_len(20L)) pdf_annotations(page_a)
+  gc()
+  kept_a <- pdf_annotations(page_a)
+  handles_b <- pdf_annotations(page_b)
+  pdf_page_close(page_a)
+  pdf_doc_close(doc_a)
+  expect_identical(
+    vapply(
+      kept_a, function(h) pdfium:::cpp_handle_is_valid(h$ptr),
+      logical(1L)
+    ),
+    rep(FALSE, 5L)
+  )
+  expect_identical(vapply(handles_b, is_open, logical(1L)), rep(TRUE, 5L))
+  expect_identical(
+    vapply(handles_b, pdf_annot_subtype, character(1L)),
+    c("text", "highlight", "link", "widget", "widget")
+  )
+})
+
+test_that("cpp_annot_get refuses a closed document handle", {
+  doc <- pdf_doc_open(fixture_path("annotated"))
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  closed <- pdf_doc_open(fixture_path("minimal"))
+  pdf_doc_close(closed)
+  expect_error(
+    pdfium:::cpp_annot_get(page$ptr, closed$ptr, 0L),
+    "Document handle is NULL"
+  )
 })
