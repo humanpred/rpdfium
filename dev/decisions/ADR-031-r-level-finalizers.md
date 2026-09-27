@@ -27,15 +27,18 @@ those states, one R process per scenario:
 
 - `unloadNamespace()` and `detach(unload = TRUE)`: SIGSEGV in every
   state.
-- `pkgload::unload()`: the same. `pkgload::load_all()` loads a fresh
-  copy of the library from a new temporary file each time. After an
-  identical rebuild the copy maps at the old address, so the stale
-  address happens to hit the same function. After a changed rebuild it
-  crashes.
+- `pkgload::unload()`: SIGSEGV for open and closed handles. Pending
+  ones survived only because pkgload's own R code happened to finalize
+  them before the unload. `pkgload::load_all()` loads a fresh copy of
+  the library from a new temporary file each time. After an identical
+  rebuild the copy maps at the old address, so the stale address
+  happens to hit the same function. After a changed rebuild it crashes
+  just like `pkgload::unload()`.
 - When `unloadNamespace()` fails, pkgload falls back to unregistering
   the namespace and unloading the library without `.onUnload`. Nothing
-  releases the handles first, and the next collection crashes, whether
-  or not the library is loaded again.
+  releases the handles first, and the next collection crashes. If the
+  library is loaded again, only closed handles escape, because their
+  stale address lands on the same function in the new copy.
 
 Two facts about R limit the options:
 
