@@ -141,6 +141,23 @@ test_that("pdf_annot_delete closes page-objects read from the annotation", {
   invisible(gc())
 })
 
+test_that("pdf_annot_delete frees an appended object exactly once", {
+  s <- annot_authoring_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  pdf_annot_append_object(a, pdf_rect_new(s$page, 0, 0, 50, 50))
+  child <- pdf_annot_objects(a)[[1L]]
+  pdf_annot_delete(a)
+  expect_length(pdf_page_objects(s$page), 0L)
+  expect_error(pdf_obj_bounds(child), "parent has been closed")
+  # pdf_annot_delete() closed the annotation and with it the object;
+  # closing the page and collecting the handle must not free it again.
+  expect_no_error({
+    pdf_page_close(s$page)
+    rm(a)
+    gc()
+  })
+})
+
 test_that("pdf_annot_delete removes a form field's own widget", {
   doc <- pdf_doc_open(fixture_path("annotated"), readwrite = TRUE)
   on.exit(pdf_doc_close(doc), add = TRUE)
