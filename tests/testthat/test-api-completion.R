@@ -652,17 +652,23 @@ test_that("pdf_clip_path_close is idempotent", {
   expect_silent(pdf_clip_path_close(cp))
 })
 
-test_that("pdf_page_insert_clip_path transfers ownership", {
+test_that("pdf_page_insert_clip_path leaves the clip path with its handle", {
   doc <- pdf_doc_new()
   on.exit(pdf_doc_close(doc), add = TRUE)
-  page <- pdf_page_new(doc, page_num = 1L, width = 612, height = 792)
-  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  page1 <- pdf_page_new(doc, page_num = 1L, width = 612, height = 792)
+  on.exit(pdf_page_close(page1), add = TRUE, after = FALSE)
+  page2 <- pdf_page_new(doc, page_num = 2L, width = 612, height = 792)
+  on.exit(pdf_page_close(page2), add = TRUE, after = FALSE)
   cp <- pdf_clip_path_new(c(72, 72, 540, 720))
+  expect_identical(pdf_page_insert_clip_path(page1, cp), doc)
+  # FPDFPage_InsertClipPath does not take ownership: the handle stays
+  # open, so one clip path can go into several pages.
   expect_true(pdfium:::cpp_handle_is_valid(cp$ptr))
-  ret <- pdf_page_insert_clip_path(page, cp)
-  expect_identical(ret, doc)
-  # After insert, the externalptr is cleared (page owns the path).
+  expect_identical(pdf_page_insert_clip_path(page2, cp), doc)
+  expect_true(pdfium:::cpp_handle_is_valid(cp$ptr))
+  pdf_clip_path_close(cp)
   expect_false(pdfium:::cpp_handle_is_valid(cp$ptr))
+  expect_match(format(cp), "[closed]", fixed = TRUE)
 })
 
 test_that("pdf_page_insert_clip_path refuses a closed clip box", {

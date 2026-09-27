@@ -99,6 +99,10 @@
   An annotation handle collected after both its page and its document
   had been closed used to leak PDFium's annotation context, together
   with the page-objects of its appearance stream (ADR-024).
+* `pdf_page_insert_clip_path()` no longer closes `clip_path`. PDFium
+  never takes ownership of an inserted clip path, so the path was never
+  freed. The handle now stays open, can be inserted into other pages,
+  and is released by `pdf_clip_path_close()` or garbage collection.
 
 # pdfium 0.1.0
 

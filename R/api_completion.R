@@ -914,18 +914,21 @@ print.pdfium_clip_box <- function(x, ...) {
 #'
 #' @param bounds Numeric length-4 vector `c(left, bottom, right, top)`
 #'   in PDF user-space points.
-#' @return A `pdfium_clip_box` handle. The handle carries an
-#'   `FPDF_DestroyClipPath` finalizer; explicit [pdf_clip_path_close()]
-#'   is optional but useful for deterministic release.
+#' @return A `pdfium_clip_box` handle. The handle owns the clip path,
+#'   also after [pdf_page_insert_clip_path()], so one clip path can go
+#'   into several pages. It carries an `FPDF_DestroyClipPath`
+#'   finalizer; explicit [pdf_clip_path_close()] is optional but useful
+#'   for deterministic release.
 #' @seealso [pdf_page_insert_clip_path()],
 #'   [pdf_obj_transform_clip_path()],
 #'   [pdf_page_transform_with_clip()].
 #' @examples
 #' \dontrun{
 #' doc <- pdf_doc_new()
-#' page <- pdf_page_new(doc, width = 612, height = 792)
+#' page <- pdf_page_new(doc, page_num = 1, width = 612, height = 792)
 #' cp <- pdf_clip_path_new(c(72, 72, 540, 720))
 #' pdf_page_insert_clip_path(page, cp)
+#' pdf_clip_path_close(cp)
 #' pdf_save(doc, tempfile(fileext = ".pdf"))
 #' }
 #' @export
@@ -957,10 +960,10 @@ pdf_clip_path_close <- function(clip_path) {
 
 #' Insert a clip path into a page
 #'
-#' Wraps `FPDFPage_InsertClipPath`. After insertion the clip path is
-#' owned by the page; the R-side `pdfium_clip_box` handle's
-#' externalptr is cleared automatically so subsequent operations on
-#' it error cleanly via `is_open()`.
+#' Wraps `FPDFPage_InsertClipPath`, which inserts the clip path before
+#' the page's content. PDFium does not take ownership of the clip path:
+#' `clip_path` stays open, can be inserted into other pages, and is
+#' released by [pdf_clip_path_close()] or when it is garbage-collected.
 #'
 #' @param page A `pdfium_page` from [pdf_page_load()] or
 #'   [pdf_page_new()]. Parent doc must be readwrite.

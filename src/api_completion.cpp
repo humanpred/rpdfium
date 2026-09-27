@@ -779,19 +779,15 @@ void cpp_clip_path_close(SEXP cp_ptr) {
   R_ClearExternalPtr(cp_ptr);
 }
 
-// Insert the clip path as a page-level clip. Ownership transfers
-// to the page (FPDFPage_InsertClipPath copies internally and the
-// page takes ownership of the inserted entry). Clear the R-side
-// externalptr so the finalizer is a no-op.
+// Insert the clip path as a page-level clip. FPDFPage_InsertClipPath
+// inserts it before the page's content and does not take ownership
+// (fpdf_transformpage.h), so the handle stays open: its finalizer or
+// cpp_clip_path_close() destroys the path.
 // [[Rcpp::export(name = "cpp_page_insert_clip_path")]]
 void cpp_page_insert_clip_path(SEXP page_ptr, SEXP cp_ptr) {
   FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
   FPDF_CLIPPATH cp = acomp_clip_from_ptr(cp_ptr);
   FPDFPage_InsertClipPath(page, cp);
-  // PDFium keeps an internal reference to the clip path data; the
-  // wrapper's externalptr is no longer the unique owner. Clear it
-  // to prevent a double-destroy via the finalizer.
-  R_ClearExternalPtr(cp_ptr);
 }
 
 // Transform a page-object's clip path in-place. Returns void per
