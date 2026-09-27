@@ -275,23 +275,28 @@ test_that("page-objects read before pdf_doc_close() are refused after it", {
   form_doc <- pdf_doc_open(fixture_path("form_xobject"))
   forms <- pdf_page_objects(pdf_page_load(form_doc, 1L))
   nested <- pdf_form_objects(forms[[1L]])
-  stamp_doc <- pdf_doc_new()
-  stamp_page <- pdf_page_new(stamp_doc, 1L, width = 300, height = 300)
-  stamp <- pdf_annot_new(stamp_page, "stamp", bounds = c(0, 0, 200, 200))
-  pdf_annot_append_object(stamp, pdf_rect_new(stamp_page, 20, 20, 50, 50))
+  # Objects in an annotation's appearance stream, and the children of a
+  # form among them, pin the annotation rather than the page.
+  ap_doc <- pdf_doc_open(source = inline_annot_objects_pdf())
+  stamp <- pdf_annotations(pdf_page_load(ap_doc, 1L))[[1L]]
   in_annot <- pdf_annot_objects(stamp)
+  in_annot_form <- pdf_form_objects(in_annot[[5L]])
   expect_identical(
     vapply(objs, function(o) o$type, character(1L)),
     c("path", "text", "text", "text", "text", "text")
   )
   expect_length(nested, 2L)
-  expect_length(in_annot, 1L)
-  handles <- c(objs, nested, in_annot)
-  expect_identical(vapply(handles, is_open, logical(1L)), rep(TRUE, 9L))
+  expect_identical(
+    vapply(in_annot, function(o) o$type, character(1L)),
+    c("path", "text", "image", "shading", "form")
+  )
+  expect_length(in_annot_form, 1L)
+  handles <- c(objs, nested, in_annot, in_annot_form)
+  expect_identical(vapply(handles, is_open, logical(1L)), rep(TRUE, 14L))
   pdf_doc_close(doc)
   pdf_doc_close(form_doc)
-  pdf_doc_close(stamp_doc)
-  expect_identical(vapply(handles, is_open, logical(1L)), rep(FALSE, 9L))
+  pdf_doc_close(ap_doc)
+  expect_identical(vapply(handles, is_open, logical(1L)), rep(FALSE, 14L))
   for (obj in handles) {
     expect_error(pdf_obj_bounds(obj), doc_close_obj_msg)
     expect_error(pdf_obj_matrix(obj), doc_close_obj_msg)
@@ -304,6 +309,8 @@ test_that("page-objects read before pdf_doc_close() are refused after it", {
   }
   expect_error(pdf_text_content(objs[[2L]]), doc_close_obj_msg)
   expect_error(pdf_path_segments(nested[[1L]]), doc_close_obj_msg)
+  expect_error(pdf_form_objects(in_annot[[5L]]), doc_close_obj_msg)
+  expect_error(pdf_text_font_size(in_annot_form[[1L]]), doc_close_obj_msg)
 })
 
 test_that("pdf_form_fields() pages close with their document", {
