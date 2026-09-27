@@ -48,6 +48,14 @@
 
 ## Bug fixes
 
+* `pdf_annot_objects()` reports each embedded object's own type
+  (`"path"`, `"text"`, `"image"`, `"shading"` or `"form"`) instead of
+  `"unknown"`, so the type-specific readers and setters such as
+  `pdf_path_fill()`, `pdf_path_set_fill()` and `pdf_text_set_content()`
+  accept objects inside an annotation; `pdf_annot_update_object()`
+  then writes a change into the appearance stream. `pdf_text_content()`
+  refuses these objects with an error, because PDFium only reads the
+  text of objects in the page's own content.
 * `pdf_render_page()`, `pdf_image_bitmap()`, `pdf_image_rendered()` and
   `pdf_text_obj_rendered_bitmap()` now return a **conformant**
   `nativeRaster`: the backing integer buffer is laid out row-major, so

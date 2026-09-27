@@ -46,6 +46,11 @@ pdf_text_font_size <- function(obj) {
 #' `pdf_text_runs()` (Phase 3 slice 2) will share a single text-page
 #' across the entire page to avoid the per-call overhead.
 #'
+#' That context covers only the page's own content, so text objects
+#' from an annotation's appearance stream ([pdf_annot_objects()],
+#' directly or nested in a Form XObject there) are refused with an
+#' error: PDFium finds no text for them.
+#'
 #' @param obj A `pdfium_obj` of type `"text"` (from
 #'   [pdf_page_objects()]).
 #' @return A character scalar (UTF-8 encoded). An empty text object
@@ -67,7 +72,12 @@ pdf_text_font_size <- function(obj) {
 #' @export
 pdf_text_content <- function(obj) {
   check_text_obj(obj)
-  cpp_text_content(obj$ptr)
+  if (!is.null(obj_parent_annot(obj))) {
+    stop("`obj` is in an annotation's appearance stream; PDFium only ",
+         "reads the text of objects in the page's own content.",
+         call. = FALSE)
+  }
+  cpp_text_content(obj$ptr, obj$page$ptr)
 }
 
 #' Extract every text run on a page

@@ -587,15 +587,34 @@ pdf_annot_object_count <- function(annot) {
 
 #' Page-objects embedded inside an annotation
 #'
-#' Wraps `FPDFAnnot_GetObject` over the full count. Returns a list of
-#' `pdfium_obj` handles; each handle's externalptr pins the parent
-#' annotation, so the embedded objects can't dangle past the annot's
-#' lifetime.
+#' Wraps `FPDFAnnot_GetObject` over the full count and
+#' `FPDFPageObj_GetType` for each object. PDFium parses the objects
+#' from the annotation's normal (`/AP /N`) appearance stream. Returns a
+#' list of `pdfium_obj` handles; each handle's externalptr pins the
+#' parent annotation, so the embedded objects can't dangle past the
+#' annot's lifetime.
+#'
+#' Each handle's `type` is the object's own type (`"path"`, `"text"`,
+#' `"image"`, `"shading"` or `"form"`), as in [pdf_page_objects()] and
+#' [pdf_form_objects()], so the type-specific readers and setters take
+#' it: [pdf_path_segments()] or [pdf_path_set_fill()] on a path,
+#' [pdf_text_set_content()] on text, [pdf_form_objects()] on a form,
+#' and so on. [pdf_text_content()] is the exception: PDFium reads text
+#' through the page's text layer, which has no annotation content, so
+#' it refuses these objects.
+#'
+#' A setter changes the object in memory only. Call
+#' [pdf_annot_update_object()] afterwards to rewrite the appearance
+#' stream from the annotation's objects; [pdf_save()] writes that
+#' stream, so a change left out of it is not saved. The rewrite drops
+#' shading objects and inline images, which PDFium's content writer
+#' does not serialise.
 #'
 #' @param annot A `pdfium_annot`.
-#' @return A list of `pdfium_obj` handles (zero-length when the
-#'   annotation has no embedded objects).
-#' @seealso [pdf_annot_object_count()], [pdf_annot_append_object()].
+#' @return A list of `pdfium_obj` handles in appearance-stream order
+#'   (zero-length when the annotation has no embedded objects).
+#' @seealso [pdf_annot_object_count()], [pdf_annot_append_object()],
+#'   [pdf_annot_update_object()].
 #' @export
 pdf_annot_objects <- function(annot) {
   checkmate::assert_class(annot, "pdfium_annot")
@@ -610,7 +629,9 @@ pdf_annot_objects <- function(annot) {
   page <- annot$page
   for (i in seq_len(n)) {
     ptr <- cpp_annot_get_object(annot$ptr, i - 1L)
-    out[[i]] <- new_pdfium_obj(ptr, page, i, "unknown")
+    type_int <- cpp_obj_type(ptr)
+    out[[i]] <- new_pdfium_obj(ptr, page, i, pdfium_obj_type_name(type_int),
+                               parent_annot = annot)
   }
   out
 }

@@ -31,7 +31,10 @@ Each returned object carries a \code{parent_form} slot pointing back
 at \code{form}, used by the print/format methods to show the
 containment path (\code{"obj 2 of form 1 on page 1"}). Lifetime is
 bound to the parent page, not to the form: as long as the page
-is open, the form and its nested objects remain valid.
+is open, the form and its nested objects remain valid. For a form
+in an annotation's appearance stream (\code{\link[=pdf_annot_objects]{pdf_annot_objects()}}) it is
+bound to the annotation instead: once the annotation is deleted,
+the nested objects are refused like the form itself.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "form_xobject.pdf",

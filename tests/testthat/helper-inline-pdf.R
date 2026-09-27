@@ -28,6 +28,45 @@ inline_pdf_stream <- function(dict, content) {
           dict, nchar(content, "bytes"), content)
 }
 
+# One page with a stamp annotation whose appearance stream holds one
+# object of each type PDFium parses: a filled rectangle, a "Hi" text
+# run, a 1x1 inline image, an axial shading and the Form XObject /Fm,
+# which draws a "Nested" text run. The page's own content draws /Fm
+# as well.
+inline_annot_objects_pdf <- function() {
+  inline_pdf_bytes(c(
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    paste0("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] ",
+           "/Resources << /XObject << /Fm 7 0 R >> >> ",
+           "/Contents 9 0 R /Annots [4 0 R] >>"),
+    paste0("<< /Type /Annot /Subtype /Stamp /Rect [0 0 100 100] ",
+           "/AP << /N 5 0 R >> >>"),
+    inline_pdf_stream(
+      paste("/Type /XObject /Subtype /Form /BBox [0 0 100 100]",
+            "/Resources << /Font << /F1 6 0 R >> /XObject << /Fm 7 0 R >>",
+            "/Shading << /Sh 8 0 R >> >>"),
+      paste("1 0 0 rg 10 10 30 30 re f",
+            "BT /F1 12 Tf 10 60 Td (Hi) Tj ET",
+            "q 10 0 0 10 50 10 cm",
+            "BI /W 1 /H 1 /CS /G /BPC 8 /F /AHx ID ff> EI Q",
+            "q /Sh sh Q",
+            "q 1 0 0 1 60 60 cm /Fm Do Q",
+            sep = "\n")
+    ),
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    inline_pdf_stream(
+      paste("/Type /XObject /Subtype /Form /BBox [0 0 50 50]",
+            "/Resources << /Font << /F1 6 0 R >> >>"),
+      "BT /F1 10 Tf 0 0 Td (Nested) Tj ET"
+    ),
+    paste("<< /ShadingType 2 /ColorSpace /DeviceRGB /Coords [0 0 100 0]",
+          "/Function << /FunctionType 2 /Domain [0 1] /C0 [1 0 0]",
+          "/C1 [0 0 1] /N 1 >> >>"),
+    inline_pdf_stream("", "q 1 0 0 1 100 100 cm /Fm Do Q")
+  ))
+}
+
 # One page whose content stream strokes a single path built with each
 # cubic Bezier operator: `c` (both control points given), `v` (first
 # control point = current point) and `y` (second control point =

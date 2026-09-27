@@ -1804,15 +1804,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_form_get_object
-SEXP cpp_form_get_object(SEXP form_ptr, SEXP page_ptr, int index_zero_based);
-RcppExport SEXP _pdfium_cpp_form_get_object(SEXP form_ptrSEXP, SEXP page_ptrSEXP, SEXP index_zero_basedSEXP) {
+SEXP cpp_form_get_object(SEXP form_ptr, SEXP owner_ptr, int index_zero_based);
+RcppExport SEXP _pdfium_cpp_form_get_object(SEXP form_ptrSEXP, SEXP owner_ptrSEXP, SEXP index_zero_basedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type form_ptr(form_ptrSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type owner_ptr(owner_ptrSEXP);
     Rcpp::traits::input_parameter< int >::type index_zero_based(index_zero_basedSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_form_get_object(form_ptr, page_ptr, index_zero_based));
+    rcpp_result_gen = Rcpp::wrap(cpp_form_get_object(form_ptr, owner_ptr, index_zero_based));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3183,13 +3183,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_text_content
-SEXP cpp_text_content(SEXP obj_ptr);
-RcppExport SEXP _pdfium_cpp_text_content(SEXP obj_ptrSEXP) {
+SEXP cpp_text_content(SEXP obj_ptr, SEXP page_ptr);
+RcppExport SEXP _pdfium_cpp_text_content(SEXP obj_ptrSEXP, SEXP page_ptrSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_text_content(obj_ptr));
+    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_text_content(obj_ptr, page_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3569,7 +3570,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_signature_byte_range", (DL_FUNC) &_pdfium_cpp_signature_byte_range, 2},
     {"_pdfium_cpp_struct_tree_page", (DL_FUNC) &_pdfium_cpp_struct_tree_page, 2},
     {"_pdfium_cpp_text_font_size", (DL_FUNC) &_pdfium_cpp_text_font_size, 1},
-    {"_pdfium_cpp_text_content", (DL_FUNC) &_pdfium_cpp_text_content, 1},
+    {"_pdfium_cpp_text_content", (DL_FUNC) &_pdfium_cpp_text_content, 2},
     {"_pdfium_cpp_text_font", (DL_FUNC) &_pdfium_cpp_text_font, 1},
     {"_pdfium_cpp_page_text_runs", (DL_FUNC) &_pdfium_cpp_page_text_runs, 1},
     {"_pdfium_cpp_text_render_mode", (DL_FUNC) &_pdfium_cpp_text_render_mode, 1},
