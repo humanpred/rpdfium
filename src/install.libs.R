@@ -11,12 +11,13 @@
 #      install logic for src/-produced libraries.
 #   2. On Windows only, also copy bblanchon's libpdfium.dll into
 #      <pkg>/libs/<R_ARCH>/ so it sits next to the package's DLL.
-#      R's library.dynam uses LoadLibraryEx with
-#      LOAD_WITH_ALTERED_SEARCH_PATH, which makes the loaded DLL's
-#      directory the FIRST entry in the Windows DLL search path -
-#      so pdfium.dll's DT_NEEDED on libpdfium.dll resolves
-#      automatically at LoadLibrary time, no delay-load or preload
-#      needed.
+#      Windows does not look for a DLL's dependencies in that DLL's
+#      own directory. library.dynam() finds libpdfium.dll there
+#      because it prepends <pkg>/libs/<R_ARCH> to PATH and calls
+#      dyn.load(file, DLLpath = <pkg>/libs/<R_ARCH>), and R's
+#      R_loadLibrary() wraps a plain LoadLibrary() in
+#      SetDllDirectory(DLLpath). A bare dyn.load() without DLLpath
+#      does not find it.
 #
 # On Linux/macOS, libpdfium.{so,dylib} remains in <pkg>/lib/ (copied
 # from inst/lib by R's normal inst-tree copy). The RPATH embedded in
