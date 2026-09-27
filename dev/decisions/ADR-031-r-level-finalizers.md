@@ -30,10 +30,13 @@ those states, one R process per scenario:
 - `pkgload::unload()`: SIGSEGV for open and closed handles. Pending
   ones survived only because pkgload's own R code happened to finalize
   them before the unload. `pkgload::load_all()` loads a fresh copy of
-  the library from a new temporary file each time. After an identical
-  rebuild the copy maps at the old address, so the stale address
-  happens to hit the same function. After a changed rebuild it crashes
-  just like `pkgload::unload()`.
+  the library from a new temporary file each time. Reloading an
+  unchanged build maps the copy at the old address, so the stale
+  address happens to hit the same function, and nothing crashes.
+  Reloading a build whose code has moved crashes just like
+  `pkgload::unload()`. The measurement reloaded a second build with
+  64 KB of padding placed ahead of its finalizers, which moves them as
+  an edit would.
 - When `unloadNamespace()` fails, pkgload falls back to unregistering
   the namespace and unloading the library without `.onUnload`. Nothing
   releases the handles first, and the next collection crashes. If the
