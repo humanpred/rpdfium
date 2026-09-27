@@ -115,6 +115,55 @@ test_that("pdf_text_new rejects a closed pdfium_font handle", {
                "closed")
 })
 
+test_that("pdf_text_new refuses a font loaded into another document", {
+  s <- font_blank_page()
+  other <- pdf_doc_new()
+  on.exit(pdf_doc_close(other), add = TRUE)
+  f <- pdf_font_load_standard(other, "Helvetica")
+  expect_error(
+    pdf_text_new(s$page, "x", font = f),
+    "^`font` and `page` must belong to the same document\\.$"
+  )
+  expect_length(pdf_page_objects(s$page), 0L)
+})
+
+# Fonts and pdf_doc_close() (ADR-025) -------------------------------
+
+test_that("pdf_doc_close() closes the document's font handles", {
+  doc <- pdf_doc_new()
+  standard <- pdf_font_load_standard(doc, "Helvetica")
+  kept <- pdf_font_load_standard(doc, "Courier")
+  local(pdf_font_load_standard(doc, "Times-Roman"))
+  pdf_font_close(kept)
+  invisible(gc())
+  # A font closed or collected before its document leaves the registry.
+  expect_identical(
+    pdfium:::cpp_doc_handle_counts(doc$ptr),
+    c(annot = 0L, page = 0L, font = 1L, xobject = 0L)
+  )
+  pdf_doc_close(doc)
+  expect_false(pdfium:::cpp_handle_is_valid(standard$ptr))
+  expect_identical(format(standard), "<pdfium_font [closed] Helvetica>")
+  expect_silent(pdf_font_close(standard))
+  rm(standard, kept)
+  expect_no_error(gc())
+})
+
+test_that("pdf_doc_close() closes an embedded font used by a text object", {
+  ttf <- find_system_ttf()
+  skip_if(is.null(ttf), "no system TrueType font available")
+  doc <- pdf_doc_new()
+  page <- pdf_page_new(doc, page_num = 1L, width = 200, height = 100)
+  f <- pdf_font_load(doc, ttf)
+  txt <- pdf_text_new(page, "Hi", font = f, font_size = 18, x = 10, y = 10)
+  expect_identical(pdf_text_content(txt), "Hi")
+  pdf_doc_close(doc)
+  expect_false(pdfium:::cpp_handle_is_valid(f$ptr))
+  expect_false(is_open(page))
+  rm(f, txt, page)
+  expect_no_error(gc())
+})
+
 # pdf_font_load (TrueType) ------------------------------------------
 
 test_that("pdf_font_load loads a TrueType font from a path", {

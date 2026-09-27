@@ -2,10 +2,12 @@
 //
 // FPDF_PAGE lifetime: a page is loaded from a document via
 // FPDF_LoadPage(doc, index), and must be closed via FPDF_ClosePage
-// before the document is closed. We wrap the FPDF_PAGE in an
-// externalptr with a finalizer; the externalptr's `prot` slot holds
-// the parent document's externalptr so R's GC cannot reclaim the
-// document while any page is still live.
+// before the document is closed. make_page_handle() wraps the
+// FPDF_PAGE in an externalptr with a finalizer and registers it under
+// its document, which closes it first (handle_registry.h, ADR-025);
+// the externalptr's `prot` slot holds the parent document's
+// externalptr so R's GC cannot reclaim the document while any page is
+// still live.
 //
 // Indexing: the FPDF_LoadPage page index is zero-based. The R-side
 // API is one-based per R convention; R/page.R does the translation.
@@ -13,19 +15,7 @@
 #include <Rcpp.h>
 #include "fpdfview.h"
 #include "fpdf_edit.h"  // for FPDFPage_GetRotation
-
-namespace {
-
-void finalize_page(SEXP ptr) {
-  if (TYPEOF(ptr) != EXTPTRSXP) return;
-  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(ptr));
-  if (page != nullptr) {
-    FPDF_ClosePage(page);
-    R_ClearExternalPtr(ptr);
-  }
-}
-
-} // namespace
+#include "handle_registry.h"
 
 // [[Rcpp::export(name = "cpp_load_page")]]
 SEXP cpp_load_page(SEXP doc_ptr, int page_index_zero_based) {
@@ -41,11 +31,7 @@ SEXP cpp_load_page(SEXP doc_ptr, int page_index_zero_based) {
     Rcpp::stop("FPDF_LoadPage returned NULL for page index %d",  // # nocov  // R wrapper bounds-checks page_num before this
                page_index_zero_based);
   }
-  // tag = NilValue; prot = parent doc externalptr (keeps parent alive).
-  SEXP ptr = PROTECT(R_MakeExternalPtr(page, R_NilValue, doc_ptr));
-  R_RegisterCFinalizerEx(ptr, finalize_page, static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ptr;
+  return pdfium_r::make_page_handle(page, doc_ptr);
 }
 
 // [[Rcpp::export(name = "cpp_close_page")]]
@@ -53,11 +39,7 @@ void cpp_close_page(SEXP ptr) {
   if (TYPEOF(ptr) != EXTPTRSXP) {
     Rcpp::stop("Expected an external pointer.");  // # nocov  // R wrapper validates via checkmate
   }
-  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(ptr));
-  if (page != nullptr) {
-    FPDF_ClosePage(page);
-    R_ClearExternalPtr(ptr);
-  }
+  pdfium_r::release_page_handle(ptr);
 }
 
 // [[Rcpp::export(name = "cpp_page_size")]]

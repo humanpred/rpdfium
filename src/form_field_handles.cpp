@@ -7,12 +7,15 @@
 //
 // Lifetime contract:
 //   * Each page that carries at least one widget annotation gets
-//     ONE externalptr with a finalizer (FPDF_ClosePage).
+//     ONE page handle from make_page_handle() (handle_registry.h),
+//     registered under `doc` and pinning `doc_ptr` in its `prot`
+//     slot, like a page from cpp_load_page.
 //   * Each widget annotation gets ONE annotation handle from
-//     make_annot_handle() (annot_registry.h), registered under
-//     `doc`. The annot externalptr pins its parent page externalptr
-//     in its `prot` slot so the page outlives the annot.
-//   * The returned list keeps both alive until R's GC reclaims it.
+//     make_annot_handle(), registered under `doc`. The annot
+//     externalptr pins its parent page externalptr in its `prot`
+//     slot so the page outlives the annot.
+//   * The returned list keeps both alive until R's GC reclaims it;
+//     closing the document closes both first.
 //
 // The FFL env itself is opened and closed inside this call (same
 // pattern as src/form_fields.cpp). A future Phase 7 will turn it
@@ -23,26 +26,9 @@
 #include "fpdfview.h"
 #include "fpdf_annot.h"
 #include "fpdf_formfill.h"
-#include "annot_registry.h"
+#include "handle_registry.h"
 
 namespace {
-
-void finalize_page(SEXP ptr) {
-  if (TYPEOF(ptr) != EXTPTRSXP) return;
-  FPDF_PAGE p = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(ptr));
-  if (p != nullptr) {
-    FPDF_ClosePage(p);
-    R_ClearExternalPtr(ptr);
-  }
-}
-
-SEXP make_page_ptr(FPDF_PAGE page) {
-  SEXP ptr = PROTECT(R_MakeExternalPtr(page, R_NilValue, R_NilValue));
-  R_RegisterCFinalizerEx(ptr, finalize_page,
-                         static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ptr;
-}
 
 FPDF_DOCUMENT doc_from_ptr(SEXP doc_ptr) {
   if (TYPEOF(doc_ptr) != EXTPTRSXP) {
@@ -101,9 +87,9 @@ Rcpp::List cpp_form_field_handles(SEXP doc_ptr) {
         continue;
       }
       // First widget on this page — promote the page to a kept
-      // externalptr with a finalizer.
+      // page handle.
       if (!page_kept) {
-        page_ptr = make_page_ptr(page);
+        page_ptr = pdfium_r::make_page_handle(page, doc_ptr);
         page_handles.push_back(page_ptr);
         page_nums.push_back(p + 1);
         this_page_idx = static_cast<int>(page_handles.size());

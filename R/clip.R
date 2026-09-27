@@ -2,20 +2,19 @@
 # `FPDFClipPath_*` functions plus `FPDFPageObj_GetClipPath`, with
 # a small `pdfium_clip_path` S3 class for handle hygiene.
 
-# Internal constructor. The clip path's lifetime is owned by the
-# parent page; the externalptr already carries the page pointer in
-# its `prot` slot (see cpp_obj_get_clip_path), but we store the
-# pdfium_page on the R-side wrapper too so format/print can show
-# the containment chain.
-new_pdfium_clip_path <- function(ptr, page, source_obj_index, n_paths) {
+# Internal constructor. The clip path is part of the page-object it was
+# read from and lives as long as that object; the externalptr carries
+# the object's externalptr in its `prot` slot (see
+# cpp_obj_get_clip_path), and the R-side wrapper keeps the pdfium_obj,
+# which is_open() follows, and its page, which format/print show.
+new_pdfium_clip_path <- function(ptr, obj, n_paths) {
   checkmate::assert_class(ptr, "externalptr")
-  checkmate::assert_class(page, "pdfium_page")
-  checkmate::assert_number(source_obj_index)
+  checkmate::assert_class(obj, "pdfium_obj")
   checkmate::assert_number(n_paths)
   structure(
     list(
-      ptr = ptr, page = page,
-      source_obj_index = as.integer(source_obj_index),
+      ptr = ptr, obj = obj, page = obj$page,
+      source_obj_index = obj$index,
       n_paths = as.integer(n_paths)
     ),
     class = c("pdfium_clip_path", "pdfium_handle")
@@ -24,7 +23,7 @@ new_pdfium_clip_path <- function(ptr, page, source_obj_index, n_paths) {
 
 #' @export
 format.pdfium_clip_path <- function(x, ...) {
-  state <- if (is_open(x$page)) "open" else "closed"
+  state <- if (is_open(x)) "open" else "closed"
   sprintf(
     "<pdfium_clip_path [%s] %d sub-path(s) from obj %d on page %d>",
     state, x$n_paths, x$source_obj_index, x$page$index
@@ -50,8 +49,16 @@ print.pdfium_clip_path <- function(x, ...) {
 #' `NULL` so callers only see clip-path objects with at least one
 #' real sub-path.
 #'
-#' @param obj A `pdfium_obj` (from [pdf_page_objects()] or
-#'   [pdf_form_objects()]).
+#' The clip path is part of `obj` and is valid for as long as the
+#' `obj` handle is: [pdf_clip_path_count()] and
+#' [pdf_clip_path_segments()] refuse it once `obj` is closed, whether
+#' by closing its page or document, by deleting the annotation or
+#' form object that holds it, or by [pdf_obj_delete()],
+#' [pdf_form_obj_remove_object()] or [pdf_annot_append_object()] on
+#' `obj` itself.
+#'
+#' @param obj A `pdfium_obj` (from [pdf_page_objects()],
+#'   [pdf_form_objects()] or [pdf_annot_objects()]).
 #' @return A `pdfium_clip_path` object, or `NULL` when `obj` has no
 #'   clip path or only an empty one.
 #'
@@ -72,7 +79,7 @@ print.pdfium_clip_path <- function(x, ...) {
 #' @export
 pdf_obj_clip_path <- function(obj) {
   check_pdfium_obj(obj)
-  ptr <- cpp_obj_get_clip_path(obj$ptr, obj$page$ptr)
+  ptr <- cpp_obj_get_clip_path(obj$ptr)
   # FPDFPageObj_GetClipPath returns a handle for every page object
   # (it's a pointer to the obj's `m_ClipPath` member, which exists
   # even when empty), so this branch is defensive against future
@@ -86,7 +93,7 @@ pdf_obj_clip_path <- function(obj) {
   if (n == 0L) {
     return(NULL)
   }
-  new_pdfium_clip_path(ptr, obj$page, obj$index, n)
+  new_pdfium_clip_path(ptr, obj, n)
 }
 
 #' Count sub-paths in a clip path
@@ -100,10 +107,8 @@ pdf_obj_clip_path <- function(obj) {
 #' @export
 pdf_clip_path_count <- function(clip_path) {
   checkmate::assert_class(clip_path, "pdfium_clip_path")
-  if (!is_open(clip_path$page)) {
-    stop("Parent page has been closed; the clip path is no longer valid.",
-      call. = FALSE
-    )
+  if (!is_open(clip_path)) {
+    stop(clip_path_closed_message(clip_path), call. = FALSE)
   }
   cpp_clip_path_count_paths(clip_path$ptr)
 }
@@ -136,10 +141,8 @@ pdf_clip_path_count <- function(clip_path) {
 #' @export
 pdf_clip_path_segments <- function(clip_path) {
   checkmate::assert_class(clip_path, "pdfium_clip_path")
-  if (!is_open(clip_path$page)) {
-    stop("Parent page has been closed; the clip path is no longer valid.",
-      call. = FALSE
-    )
+  if (!is_open(clip_path)) {
+    stop(clip_path_closed_message(clip_path), call. = FALSE)
   }
   raw <- cpp_clip_path_segments_df(clip_path$ptr)
   # PDFium segment-type ints: 0 = LINETO, 1 = BEZIERTO, 2 = MOVETO.

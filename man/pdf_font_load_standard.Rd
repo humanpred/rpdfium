@@ -14,7 +14,7 @@ listed in the \strong{Standard fonts} section below.}
 }
 \value{
 A \code{pdfium_font} handle. Pass it as the \code{font} argument
-of \code{\link[=pdf_text_new]{pdf_text_new()}}.
+of \code{\link[=pdf_text_new]{pdf_text_new()}} for a page of \code{doc}.
 }
 \description{
 Wraps \code{FPDFText_LoadStandardFont}. The 14 standard fonts

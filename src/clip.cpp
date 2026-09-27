@@ -14,10 +14,13 @@
 //   FPDFClipPath_CountPathSegments(clip, path_index) -> int
 //   FPDFClipPath_GetPathSegment(clip, path_index, seg_index) -> FPDF_PATHSEGMENT
 //
-// The FPDF_CLIPPATH is owned by the page; we wrap it in an
-// externalptr without a finalizer and keep the page's externalptr
-// in `prot` so R's GC cannot reclaim the page (and therefore
-// invalidate the clip) while any clip reference is live.
+// The FPDF_CLIPPATH is part of its page-object: FPDFPageObj_GetClipPath
+// returns the object's own clip path, which lives as long as the
+// object. We wrap it in an externalptr without a finalizer and keep
+// the object's externalptr in `prot`, so R's GC cannot reclaim the
+// object's owners while any clip reference is live, and
+// validate_handle() refuses the clip path once the object, or
+// anything that owns it, is closed (ADR-029).
 
 #include <Rcpp.h>
 #include "fpdfview.h"
@@ -34,7 +37,8 @@ FPDF_PAGEOBJECT obj_from_ptr(SEXP obj_ptr) {
 }
 
 FPDF_CLIPPATH clip_from_ptr(SEXP clip_ptr) {
-  // Clip paths are page-owned (no finalizer); prot pins the page.
+  // Clip paths belong to their page-object (no finalizer); prot pins
+  // the object.
   return static_cast<FPDF_CLIPPATH>(
       pdfium_r::validate_handle(clip_ptr, "Clip-path",
                                   /*require_prot_alive=*/true));
@@ -43,19 +47,12 @@ FPDF_CLIPPATH clip_from_ptr(SEXP clip_ptr) {
 }  // namespace
 
 // [[Rcpp::export(name = "cpp_obj_get_clip_path")]]
-SEXP cpp_obj_get_clip_path(SEXP obj_ptr, SEXP page_ptr) {
+SEXP cpp_obj_get_clip_path(SEXP obj_ptr) {
   FPDF_PAGEOBJECT obj = obj_from_ptr(obj_ptr);
-  // Explicit page-ptr validation: this shim takes the page as a
-  // separate argument (not via the obj's prot slot) so we still
-  // need to verify it directly.
-  (void)pdfium_r::validate_handle(page_ptr, "Page",
-                                   /*require_prot_alive=*/false);
   FPDF_CLIPPATH clip = FPDFPageObj_GetClipPath(obj);
   if (clip == nullptr) return R_NilValue;
-  // No finalizer: the clip path is owned by the page. Keep the
-  // page's externalptr in `prot` so the page cannot be GC'd while
-  // any clip reference remains live.
-  return R_MakeExternalPtr(clip, R_NilValue, page_ptr);
+  // No finalizer: the clip path is part of the object.
+  return R_MakeExternalPtr(clip, R_NilValue, obj_ptr);
 }
 
 // [[Rcpp::export(name = "cpp_clip_path_count_paths")]]

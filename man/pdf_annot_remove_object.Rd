@@ -21,8 +21,9 @@ Wraps \code{FPDFAnnot_RemoveObject}. The object is identified by its
 position within the annotation's embedded content (one-based,
 matching \code{\link[=pdf_annot_objects]{pdf_annot_objects()}}). PDFium destroys the object and
 regenerates the annotation's appearance stream, so handles to it
-from an earlier \code{\link[=pdf_annot_objects]{pdf_annot_objects()}} call are stale and must not
-be used; call \code{\link[=pdf_annot_objects]{pdf_annot_objects()}} again for the remaining ones.
+from an earlier \code{\link[=pdf_annot_objects]{pdf_annot_objects()}} call, and the clip paths and
+nested objects read from them, are stale and must not be used; call
+\code{\link[=pdf_annot_objects]{pdf_annot_objects()}} again for the remaining ones.
 }
 \seealso{
 \code{\link[=pdf_annot_append_object]{pdf_annot_append_object()}}, \code{\link[=pdf_annot_objects]{pdf_annot_objects()}}.

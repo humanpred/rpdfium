@@ -378,8 +378,14 @@ reloaded_annot_fill <- function(path) {
   on.exit(pdf_doc_close(doc), add = TRUE)
   page <- pdf_page_load(doc, 1L)
   on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
-  obj <- pdf_annot_objects(pdf_annotations(page)[[1L]])[[1L]]
-  list(type = obj$type, fill = pdf_path_fill(obj))
+  annot <- pdf_annotations(page)[[1L]]
+  obj <- pdf_annot_objects(annot)[[1L]]
+  out <- list(type = obj$type, fill = pdf_path_fill(obj))
+  # Collect the annotation while its page is open, so its finalizer
+  # closes it.
+  rm(annot, obj)
+  gc()
+  out
 }
 
 test_that("a fill set on an annotation's path is saved after an update", {
@@ -408,6 +414,35 @@ test_that("a fill set on an annotation's path is saved after an update", {
     reloaded_annot_fill(after),
     list(type = "path", fill = c(red = 0, green = 0, blue = 255, alpha = 255))
   )
+})
+
+test_that("a fill set on an appended path is saved after an update", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  rect <- pdf_rect_new(s$page, 10, 10, 50, 50)
+  # An unpainted path is written as `re n`, which PDFium does not parse
+  # back into an object.
+  pdf_path_set_draw_mode(rect, fill_mode = "winding", stroke = FALSE)
+  pdf_path_set_fill(rect, c(255, 0, 0))
+  pdf_annot_append_object(a, rect)
+  # The append moves the rectangle into the annotation and closes
+  # `rect`; the annotation hands it back with its real type.
+  obj <- pdf_annot_objects(a)[[1L]]
+  expect_identical(obj$type, "path")
+  expect_identical(pdf_path_fill(obj),
+                   c(red = 255, green = 0, blue = 0, alpha = 255))
+  pdf_path_set_fill(obj, c(0, 0, 255))
+  expect_identical(pdf_annot_update_object(a, obj), s$doc)
+  out <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(s$doc, out)
+  expect_identical(
+    reloaded_annot_fill(out),
+    list(type = "path", fill = c(red = 0, green = 0, blue = 255, alpha = 255))
+  )
+  # Collect the annotation before the deferred page close, so its
+  # finalizer closes it while the page is open.
+  rm(a, obj)
+  gc()
 })
 
 test_that("pdf_annot_set_uri sets the URI on a link annotation", {
@@ -898,9 +933,72 @@ test_that("pdf_xobject_from_page + pdf_obj_form_from_xobject round-trip", {
   form <- pdf_obj_form_from_xobject(page, xo)
   expect_s3_class(form, "pdfium_obj")
   expect_identical(form$type, "form")
-  # Closing the XObject after instantiating doesn't kill the form.
+  bounds <- pdf_obj_bounds(form)
+  # Closing the XObject after instantiating doesn't kill the form: the
+  # page owns it, and its handle pins the page.
   pdf_xobject_close(xo)
   expect_silent(pdf_xobject_close(xo))  # idempotent
+  expect_true(is_open(form))
+  expect_identical(pdf_obj_bounds(form), bounds)
+  expect_length(pdf_form_objects(form), 5L)
+  pdf_page_close(page)
+  expect_error(
+    pdfium:::cpp_obj_bounds(form$ptr),
+    "^Page-object handle's parent has been closed"
+  )
+})
+
+test_that("pdf_obj_form_from_xobject refuses a page of another document", {
+  src <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(src), add = TRUE)
+  dest <- pdf_doc_new()
+  on.exit(pdf_doc_close(dest), add = TRUE)
+  other <- pdf_doc_new()
+  on.exit(pdf_doc_close(other), add = TRUE)
+  page <- pdf_page_new(other, page_num = 1L, width = 612, height = 792)
+  xo <- pdf_xobject_from_page(dest, src, 1L)
+  expect_error(
+    pdf_obj_form_from_xobject(page, xo),
+    "^`xobject` and `page` must belong to the same document\\.$"
+  )
+  expect_length(pdf_page_objects(page), 0L)
+})
+
+test_that("pdf_doc_close() closes the destination document's XObjects", {
+  src <- pdf_doc_open(fixture_path("shapes"))
+  on.exit(pdf_doc_close(src), add = TRUE)
+  dest <- pdf_doc_new()
+  page <- pdf_page_new(dest, page_num = 1L, width = 612, height = 792)
+  xo <- pdf_xobject_from_page(dest, src, 1L)
+  closed <- pdf_xobject_from_page(dest, src, 1L)
+  local(pdf_xobject_from_page(dest, src, 1L))
+  pdf_xobject_close(closed)
+  invisible(gc())
+  # An XObject closed or collected before its document leaves the
+  # registry.
+  expect_identical(
+    pdfium:::cpp_doc_handle_counts(dest$ptr),
+    c(annot = 0L, page = 1L, font = 0L, xobject = 1L)
+  )
+  form <- pdf_obj_form_from_xobject(page, xo)
+  pdf_doc_close(dest)
+  expect_false(pdfium:::cpp_handle_is_valid(xo$ptr))
+  expect_identical(format(xo), "<pdfium_xobject [closed] from shapes.pdf page 1>")
+  expect_false(is_open(form))
+  other <- pdf_doc_new()
+  on.exit(pdf_doc_close(other), add = TRUE)
+  other_page <- pdf_page_new(other, page_num = 1L, width = 612, height = 792)
+  expect_error(
+    pdf_obj_form_from_xobject(other_page, xo),
+    "^XObject handle has been closed\\.$"
+  )
+  expect_error(
+    pdfium:::cpp_form_obj_from_xobject(xo$ptr, other_page$ptr),
+    "^XObject handle's parent has been closed"
+  )
+  expect_silent(pdf_xobject_close(xo))
+  rm(xo, closed, form)
+  expect_no_error(gc())
 })
 
 test_that("pdf_obj_form_from_xobject refuses a closed xobject", {
@@ -1104,6 +1202,24 @@ test_that("pdf_form_obj_remove_object validates child class", {
   form_obj <- objs[vapply(objs, function(o) o$type, "") == "form"][[1L]]
   expect_error(pdf_form_obj_remove_object(form_obj, "not a pdfium_obj"),
                "Must inherit from class")
+})
+
+test_that("object mutators refuse a closed object with the closed-handle message", {
+  doc <- pdf_doc_open(fixture_path("form_xobject"), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  form_obj <- pdf_page_objects(page)[[1L]]
+  child <- pdf_form_objects(form_obj)[[1L]]
+  pdf_form_obj_remove_object(form_obj, child)
+  closed <- paste0(
+    "^Parent page has been closed; object handle is no longer valid ",
+    "\\(or the object was deleted via pdf_obj_delete\\(\\) or ",
+    "pdf_form_obj_remove_object\\(\\), or moved into an annotation by ",
+    "pdf_annot_append_object\\(\\)\\)\\.$"
+  )
+  expect_error(pdf_form_obj_remove_object(form_obj, child), closed)
+  a <- pdf_annot_new(page, "stamp", bounds = c(0, 0, 100, 100))
+  expect_error(pdf_annot_update_object(a, child), closed)
 })
 
 test_that("pdf_bitmap_* reject closed bitmaps", {

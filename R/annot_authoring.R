@@ -101,8 +101,9 @@ pdf_annot_new <- function(page, subtype, bounds = NULL) {
 #' the page's `/Annots` array, PDFium's annotation context is
 #' released together with any page-objects of its appearance stream,
 #' and the handle is closed: further `pdf_annot_*` calls on it, and
-#' on page-objects read from it with [pdf_annot_objects()], error
-#' cleanly.
+#' on page-objects read from it with [pdf_annot_objects()], on their
+#' clip paths ([pdf_obj_clip_path()]) and on the objects of forms among
+#' them ([pdf_form_objects()]), error cleanly.
 #'
 #' Later annotations on the page move down one position. Other handles
 #' still print the position they had when they were made;

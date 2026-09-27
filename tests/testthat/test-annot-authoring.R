@@ -125,16 +125,33 @@ test_that("pdf_annot_delete errors and changes nothing once the annotation is go
   expect_identical(pdf_annot_subtype(a_again), "text")
 })
 
+annot_deleted_obj_msg <- paste0(
+  "^Parent annotation has been closed: it was deleted with ",
+  "pdf_annot_delete\\(\\)\\. The object handle is no longer valid\\.$"
+)
+
 test_that("pdf_annot_delete closes page-objects read from the annotation", {
   s <- annot_authoring_blank_page()
   a <- pdf_annot_new(s$page, "stamp", bounds = c(10, 10, 50, 50))
   pdf_annot_set_appearance(a, "normal", "0 0 1 rg 10 10 40 40 re f")
   objs <- pdf_annot_objects(a)
   expect_length(objs, 1L)
+  expect_true(is_open(objs[[1L]]))
   pdf_annot_delete(a)
   # FPDFPage_CloseAnnot freed the appearance-stream objects along with
-  # the annotation context, so their handles must be refused.
-  expect_error(pdf_obj_bounds(objs[[1L]]), "parent has been closed")
+  # the annotation context, so their handles read as closed and are
+  # refused, by the R wrappers and by the C++ shims.
+  expect_false(is_open(objs[[1L]]))
+  expect_identical(
+    format(objs[[1L]]), "<pdfium_obj [closed] path, obj 1 on page 1>"
+  )
+  expect_error(pdf_obj_bounds(objs[[1L]]), annot_deleted_obj_msg)
+  expect_error(pdf_path_segments(objs[[1L]]), annot_deleted_obj_msg)
+  expect_error(pdf_obj_clip_path(objs[[1L]]), annot_deleted_obj_msg)
+  expect_error(
+    pdfium:::cpp_obj_bounds(objs[[1L]]$ptr),
+    "^Page-object handle's parent has been closed"
+  )
   # Collecting the cleared handle runs its finalizer while the page is
   # still open; it must not close the context a second time.
   rm(a)
@@ -148,7 +165,7 @@ test_that("pdf_annot_delete frees an appended object exactly once", {
   child <- pdf_annot_objects(a)[[1L]]
   pdf_annot_delete(a)
   expect_length(pdf_page_objects(s$page), 0L)
-  expect_error(pdf_obj_bounds(child), "parent has been closed")
+  expect_error(pdf_obj_bounds(child), annot_deleted_obj_msg)
   # pdf_annot_delete() closed the annotation and with it the object;
   # closing the page and collecting the handle must not free it again.
   expect_no_error({

@@ -7,8 +7,8 @@
 pdf_obj_clip_path(obj)
 }
 \arguments{
-\item{obj}{A \code{pdfium_obj} (from \code{\link[=pdf_page_objects]{pdf_page_objects()}} or
-\code{\link[=pdf_form_objects]{pdf_form_objects()}}).}
+\item{obj}{A \code{pdfium_obj} (from \code{\link[=pdf_page_objects]{pdf_page_objects()}},
+\code{\link[=pdf_form_objects]{pdf_form_objects()}} or \code{\link[=pdf_annot_objects]{pdf_annot_objects()}}).}
 }
 \value{
 A \code{pdfium_clip_path} object, or \code{NULL} when \code{obj} has no
@@ -26,6 +26,14 @@ clip is "empty" (the underlying \code{CPDF_ClipPath} exists but has
 no sub-paths attached). This wrapper normalizes that case to
 \code{NULL} so callers only see clip-path objects with at least one
 real sub-path.
+
+The clip path is part of \code{obj} and is valid for as long as the
+\code{obj} handle is: \code{\link[=pdf_clip_path_count]{pdf_clip_path_count()}} and
+\code{\link[=pdf_clip_path_segments]{pdf_clip_path_segments()}} refuse it once \code{obj} is closed, whether
+by closing its page or document, by deleting the annotation or
+form object that holds it, or by \code{\link[=pdf_obj_delete]{pdf_obj_delete()}},
+\code{\link[=pdf_form_obj_remove_object]{pdf_form_obj_remove_object()}} or \code{\link[=pdf_annot_append_object]{pdf_annot_append_object()}} on
+\code{obj} itself.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "clip.pdf",

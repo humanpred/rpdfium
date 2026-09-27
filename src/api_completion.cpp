@@ -25,6 +25,7 @@
 #include "fpdf_ppo.h"
 #include "fpdf_sysfontinfo.h"
 #include "action_helpers.h"
+#include "handle_registry.h"
 #include "handle_validation.h"
 #include "utf16.h"
 
@@ -391,21 +392,7 @@ SEXP cpp_font_load_cidtype2(SEXP doc_ptr, Rcpp::RawVector font_data,
     Rcpp::stop("FPDFText_LoadCidType2Font returned NULL — check the "
                "TTF bytes, ToUnicode CMap, and CID-to-GID map sizes.");
   }
-  SEXP ext = PROTECT(R_MakeExternalPtr(font, R_NilValue, doc_ptr));
-  // Reuse the font_authoring.cpp finalizer indirectly: we re-register
-  // a small lambda-equivalent that calls FPDFFont_Close.
-  R_RegisterCFinalizerEx(
-      ext,
-      [](SEXP p) {
-        if (TYPEOF(p) != EXTPTRSXP) return;
-        FPDF_FONT f = static_cast<FPDF_FONT>(R_ExternalPtrAddr(p));
-        if (f == nullptr) return;
-        FPDFFont_Close(f);
-        R_ClearExternalPtr(p);
-      },
-      static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ext;
+  return pdfium_r::make_font_handle(font, doc_ptr);
 }
 
 // ---------------------------------------------------------------------------
@@ -741,42 +728,29 @@ inline FPDF_CLIPPATH acomp_clip_from_ptr(SEXP cp_ptr) {
                                   /*require_prot_alive=*/false));
 }
 
-void clip_path_finalizer(SEXP cp_ptr) {
-  if (TYPEOF(cp_ptr) != EXTPTRSXP) return;
-  FPDF_CLIPPATH cp = static_cast<FPDF_CLIPPATH>(R_ExternalPtrAddr(cp_ptr));
-  if (cp == nullptr) return;
-  FPDF_DestroyClipPath(cp);
-  R_ClearExternalPtr(cp_ptr);
-}
-
 }  // namespace
 
 // Create a fresh clip path covering the given rectangle. Returns
-// an externalptr with a finalizer that calls FPDF_DestroyClipPath.
+// an externalptr from make_clip_path_handle(), whose finalizer calls
+// FPDF_DestroyClipPath unless destroying the library released it
+// first.
 // [[Rcpp::export(name = "cpp_clip_path_new")]]
 SEXP cpp_clip_path_new(double left, double bottom,
                         double right, double top) {
+  pdfium_r::ensure_library_initialised();
   FPDF_CLIPPATH cp = FPDF_CreateClipPath(
       static_cast<float>(left), static_cast<float>(bottom),
       static_cast<float>(right), static_cast<float>(top));
   if (cp == nullptr) {  // # nocov start
     Rcpp::stop("FPDF_CreateClipPath returned NULL.");
   }  // # nocov end
-  SEXP ext = PROTECT(R_MakeExternalPtr(cp, R_NilValue, R_NilValue));
-  R_RegisterCFinalizerEx(ext, clip_path_finalizer,
-                         static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ext;
+  return pdfium_r::make_clip_path_handle(cp);
 }
 
 // Idempotent close — matches the doc/page/font close pattern.
 // [[Rcpp::export(name = "cpp_clip_path_close")]]
 void cpp_clip_path_close(SEXP cp_ptr) {
-  if (TYPEOF(cp_ptr) != EXTPTRSXP) return;
-  FPDF_CLIPPATH cp = static_cast<FPDF_CLIPPATH>(R_ExternalPtrAddr(cp_ptr));
-  if (cp == nullptr) return;
-  FPDF_DestroyClipPath(cp);
-  R_ClearExternalPtr(cp_ptr);
+  pdfium_r::release_clip_path_handle(cp_ptr);
 }
 
 // Insert the clip path as a page-level clip. FPDFPage_InsertClipPath
@@ -809,18 +783,12 @@ void cpp_obj_transform_clip_path(SEXP obj_ptr,
 
 namespace {
 
+// The prot slot pins the destination document, whose close also
+// closes the XObject (ADR-025).
 inline FPDF_XOBJECT acomp_xobj_from_ptr(SEXP xo_ptr) {
   return static_cast<FPDF_XOBJECT>(
       pdfium_r::validate_handle(xo_ptr, "XObject",
-                                  /*require_prot_alive=*/false));
-}
-
-void xobject_finalizer(SEXP xo_ptr) {
-  if (TYPEOF(xo_ptr) != EXTPTRSXP) return;
-  FPDF_XOBJECT xo = static_cast<FPDF_XOBJECT>(R_ExternalPtrAddr(xo_ptr));
-  if (xo == nullptr) return;
-  FPDF_CloseXObject(xo);
-  R_ClearExternalPtr(xo_ptr);
+                                  /*require_prot_alive=*/true));
 }
 
 }  // namespace
@@ -836,58 +804,40 @@ SEXP cpp_xobject_from_page(SEXP dest_doc_ptr, SEXP src_doc_ptr,
   if (xo == nullptr) {
     Rcpp::stop("FPDF_NewXObjectFromPage returned NULL.");
   }
-  // prot = dest_doc so the source-side doc isn't pinned (the XObject's
-  // data has already been copied into dest_doc).
-  SEXP ext = PROTECT(R_MakeExternalPtr(xo, R_NilValue, dest_doc_ptr));
-  R_RegisterCFinalizerEx(ext, xobject_finalizer,
-                         static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ext;
+  // Registered under, and pinning, dest_doc only: the source-side doc
+  // isn't pinned because the XObject's data has already been copied
+  // into dest_doc.
+  return pdfium_r::make_xobject_handle(xo, dest_doc_ptr);
 }
 
 // Idempotent close.
 // [[Rcpp::export(name = "cpp_xobject_close")]]
 void cpp_xobject_close(SEXP xo_ptr) {
-  if (TYPEOF(xo_ptr) != EXTPTRSXP) return;
-  FPDF_XOBJECT xo = static_cast<FPDF_XOBJECT>(R_ExternalPtrAddr(xo_ptr));
-  if (xo == nullptr) return;
-  FPDF_CloseXObject(xo);
-  R_ClearExternalPtr(xo_ptr);
+  pdfium_r::release_xobject_handle(xo_ptr);
 }
 
-// Create a form-xobject page-object from an FPDF_XOBJECT handle.
-// The XObject can be reused across multiple form-obj instantiations
-// (it stays alive until FPDF_CloseXObject is called). Returns a
-// page-object externalptr; caller is responsible for inserting it
-// into a page.
+// Create a form-xobject page-object from an FPDF_XOBJECT handle and
+// insert it into the page. The XObject can be reused across multiple
+// form-obj instantiations (it stays alive until FPDF_CloseXObject is
+// called), and closing it does not affect the page-objects made from
+// it. The page owns the new object, so its handle pins the page, like
+// the objects the other creators return.
 // [[Rcpp::export(name = "cpp_form_obj_from_xobject")]]
-SEXP cpp_form_obj_from_xobject(SEXP xo_ptr) {
+SEXP cpp_form_obj_from_xobject(SEXP xo_ptr, SEXP page_ptr) {
   FPDF_XOBJECT xo = acomp_xobj_from_ptr(xo_ptr);
+  FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
   FPDF_PAGEOBJECT obj = FPDF_NewFormObjectFromXObject(xo);
   if (obj == nullptr) {  // # nocov start
     Rcpp::stop("FPDF_NewFormObjectFromXObject returned NULL.");
   }  // # nocov end
-  // The page-object is detached until inserted into a page. prot =
-  // the xobject pointer pins it (so the XObject outlives any
-  // page-objects derived from it).
-  return R_MakeExternalPtr(obj, R_NilValue, xo_ptr);
-}
-
-// Insert a detached page-object (e.g. returned by
-// cpp_form_obj_from_xobject) into a page. Wraps
-// FPDFPage_InsertObject for the standalone-insertion path the
-// existing creators do internally.
-// [[Rcpp::export(name = "cpp_page_insert_object")]]
-void cpp_page_insert_object(SEXP page_ptr, SEXP obj_ptr) {
-  FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
-  FPDF_PAGEOBJECT obj = acomp_obj_from_ptr(obj_ptr);
   // FPDFPage_InsertObject returns FPDF_BOOL as of chromium/7857; the
-  // object is caller-owned (a detached handle) until this succeeds, so
-  // on failure we leave it intact for the caller and just raise.
+  // object is ours until it succeeds.
   if (!FPDFPage_InsertObject(page, obj)) {  // # nocov start
+    FPDFPageObj_Destroy(obj);
     Rcpp::stop("FPDFPage_InsertObject() failed to attach the object "
                "to the page.");
   }  // # nocov end
+  return R_MakeExternalPtr(obj, R_NilValue, page_ptr);
 }
 
 // Remove a child page-object from a form-xobject and destroy it.
@@ -917,37 +867,22 @@ inline FPDF_BITMAP acomp_bitmap_from_ptr(SEXP bm_ptr) {
                                   /*require_prot_alive=*/false));
 }
 
-void bitmap_finalizer(SEXP bm_ptr) {
-  if (TYPEOF(bm_ptr) != EXTPTRSXP) return;
-  FPDF_BITMAP bm = static_cast<FPDF_BITMAP>(R_ExternalPtrAddr(bm_ptr));
-  if (bm == nullptr) return;
-  FPDFBitmap_Destroy(bm);
-  R_ClearExternalPtr(bm_ptr);
-}
-
 }  // namespace
 
 // [[Rcpp::export(name = "cpp_bitmap_new")]]
 SEXP cpp_bitmap_new(int width, int height, bool alpha) {
+  pdfium_r::ensure_library_initialised();
   FPDF_BITMAP bm = FPDFBitmap_Create(width, height, alpha ? 1 : 0);
   if (bm == nullptr) {  // # nocov start
     Rcpp::stop("FPDFBitmap_Create returned NULL (likely out of "
                "memory or invalid dimensions).");
   }  // # nocov end
-  SEXP ext = PROTECT(R_MakeExternalPtr(bm, R_NilValue, R_NilValue));
-  R_RegisterCFinalizerEx(ext, bitmap_finalizer,
-                         static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ext;
+  return pdfium_r::make_bitmap_handle(bm);
 }
 
 // [[Rcpp::export(name = "cpp_bitmap_close")]]
 void cpp_bitmap_close(SEXP bm_ptr) {
-  if (TYPEOF(bm_ptr) != EXTPTRSXP) return;
-  FPDF_BITMAP bm = static_cast<FPDF_BITMAP>(R_ExternalPtrAddr(bm_ptr));
-  if (bm == nullptr) return;
-  FPDFBitmap_Destroy(bm);
-  R_ClearExternalPtr(bm_ptr);
+  pdfium_r::release_bitmap_handle(bm_ptr);
 }
 
 // [[Rcpp::export(name = "cpp_bitmap_info")]]

@@ -5,7 +5,8 @@
 #' [pdf_page_close()] explicitly when you need deterministic release.
 #' The page keeps the parent document alive for as long as the page
 #' is reachable, so it is safe to drop your reference to `doc` while
-#' still holding a page.
+#' still holding a page. Closing `doc` with [pdf_doc_close()] closes the
+#' page too: later calls on it raise an error.
 #'
 #' @param doc A `pdfium_doc` from [pdf_doc_open()].
 #' @param page_num One-based page index. Must satisfy
@@ -44,7 +45,8 @@ pdf_page_load <- function(doc, page_num = 1L) {
 #' Close a page handle
 #'
 #' Releases the underlying PDFium handle. Idempotent — calling
-#' `pdf_page_close()` on an already-closed page is a no-op.
+#' `pdf_page_close()` on an already-closed page, including one that
+#' [pdf_doc_close()] closed with its document, is a no-op.
 #'
 #' @param page A `pdfium_page` from [pdf_page_load()].
 #' @return Invisibly returns `page` with its underlying pointer marked closed.
@@ -102,7 +104,7 @@ pdf_page_close <- function(page) {
 pdf_page_size <- function(page, page_num = 1L) {
   checkmate::assert_multi_class(page, c("pdfium_page", "pdfium_doc"))
   if (inherits(page, "pdfium_page")) {
-    if (!is_open(page)) stop("Page has been closed.", call. = FALSE)
+    if (!is_open(page)) stop(page_closed_message(page), call. = FALSE)
     return(cpp_page_size(page$ptr))
   }
   # `page` is a pdfium_doc.
@@ -145,7 +147,7 @@ pdf_page_size <- function(page, page_num = 1L) {
 pdf_page_rotation <- function(page, page_num = 1L) {
   checkmate::assert_multi_class(page, c("pdfium_page", "pdfium_doc"))
   if (inherits(page, "pdfium_page")) {
-    if (!is_open(page)) stop("Page has been closed.", call. = FALSE)
+    if (!is_open(page)) stop(page_closed_message(page), call. = FALSE)
     return(cpp_page_rotation(page$ptr))
   }
   # `page` is a pdfium_doc.
@@ -258,7 +260,7 @@ pdf_pages_summary <- function(doc, password = NULL) {
 #'   page-loaded counts.
 #' @export
 summary.pdfium_page <- function(object, ...) {
-  if (!is_open(object)) stop("Page has been closed.", call. = FALSE)
+  if (!is_open(object)) stop(page_closed_message(object), call. = FALSE)
   sz <- cpp_page_size(object$ptr)
   labels <- tryCatch(pdf_page_labels(object$doc),
                      error = function(e) NULL)

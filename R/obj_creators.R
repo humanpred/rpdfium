@@ -89,10 +89,10 @@ pdf_rect_new <- function(page, x, y, width, height) {
 #' @param font Either a character scalar — one of the 14 PDF
 #'   standard font names (see [pdf_font_load_standard()] for the
 #'   list) — or a `pdfium_font` handle from
-#'   [pdf_font_load_standard()] or [pdf_font_load()]. Default
-#'   `"Helvetica"`. Pass a `pdfium_font` handle when you need a
-#'   custom TrueType / Type1 font; the standard-font shortcut is
-#'   purely for convenience.
+#'   [pdf_font_load_standard()] or [pdf_font_load()], loaded into
+#'   the document `page` belongs to. Default `"Helvetica"`. Pass a
+#'   `pdfium_font` handle when you need a custom TrueType / Type1
+#'   font; the standard-font shortcut is purely for convenience.
 #' @param font_size Numeric scalar — font size in points. Default
 #'   `12`.
 #' @param x,y Numeric scalars — baseline position in PDF user-space
@@ -116,6 +116,11 @@ pdf_text_new <- function(page, text,
   if (inherits(font, "pdfium_font")) {
     if (!is_open(font)) {
       stop("Font handle has been closed.", call. = FALSE)
+    }
+    if (!identical(font$doc$ptr, ph$doc$ptr)) {
+      stop("`font` and `page` must belong to the same document.",
+        call. = FALSE
+      )
     }
     ptr <- cpp_text_new_with_font(
       ph$doc$ptr, ph$page$ptr, font$ptr,
@@ -146,7 +151,10 @@ pdf_text_new <- function(page, text,
 #' * The C++ object is destroyed.
 #' * The R `pdfium_obj` handle's externalptr is cleared so calling
 #'   any other `pdf_obj_*` / `pdf_path_*` / `pdf_text_*` function
-#'   on it errors cleanly via the existing closed-handle path.
+#'   on it errors cleanly via the existing closed-handle path. The
+#'   clip paths read from it with [pdf_obj_clip_path()] and, for a
+#'   form object, the objects read from it with [pdf_form_objects()]
+#'   are refused the same way.
 #'
 #' Re-fetch via [pdf_page_objects()] if you need an updated obj
 #' list after deletions (the page-scoped indices shift).
