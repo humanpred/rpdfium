@@ -34,6 +34,7 @@ Markdown ADR following the
 | [024](ADR-024-annotation-handles-close-with-document.md) | Supersedes ADR-023 decision 3 | Annotation handles close with their document: a per-document registry of live annotation handles, released before every `FPDF_CloseDocument`, so no annotation context outlives its document |
 | [025](ADR-025-document-handles-close-with-document.md) | Accepted (extends ADR-024) | Pages, fonts and XObjects close with their document: the ADR-024 registry holds every handle PDFium closes for a document, released annotations first, then pages, then fonts and XObjects; form-field pages pin their document, and fonts and XObjects are refused on another document's pages |
 | [028](ADR-028-library-destroy-closes-every-handle.md) | Accepted (extends ADR-025) | Destroying the library closes every handle first: documents, standalone clip paths, bitmaps and memory-document buffers are registered under the library and released before `FPDF_DestroyLibrary`; every finalizer is attached in one place |
+| [029](ADR-029-handles-follow-their-owners.md) | Accepted (extends ADR-020 §4 and ADR-025) | A handle is refused once any of its owners is closed: clip paths pin their page-object and nested objects their form, and `validate_handle()` and `is_open()` walk the whole ownership chain |
 
 ## Policy
 

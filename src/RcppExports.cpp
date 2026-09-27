@@ -1298,14 +1298,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_obj_get_clip_path
-SEXP cpp_obj_get_clip_path(SEXP obj_ptr, SEXP page_ptr);
-RcppExport SEXP _pdfium_cpp_obj_get_clip_path(SEXP obj_ptrSEXP, SEXP page_ptrSEXP) {
+SEXP cpp_obj_get_clip_path(SEXP obj_ptr);
+RcppExport SEXP _pdfium_cpp_obj_get_clip_path(SEXP obj_ptrSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_obj_get_clip_path(obj_ptr, page_ptr));
+    rcpp_result_gen = Rcpp::wrap(cpp_obj_get_clip_path(obj_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1786,15 +1785,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_form_get_object
-SEXP cpp_form_get_object(SEXP form_ptr, SEXP owner_ptr, int index_zero_based);
-RcppExport SEXP _pdfium_cpp_form_get_object(SEXP form_ptrSEXP, SEXP owner_ptrSEXP, SEXP index_zero_basedSEXP) {
+SEXP cpp_form_get_object(SEXP form_ptr, int index_zero_based);
+RcppExport SEXP _pdfium_cpp_form_get_object(SEXP form_ptrSEXP, SEXP index_zero_basedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type form_ptr(form_ptrSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type owner_ptr(owner_ptrSEXP);
     Rcpp::traits::input_parameter< int >::type index_zero_based(index_zero_basedSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_form_get_object(form_ptr, owner_ptr, index_zero_based));
+    rcpp_result_gen = Rcpp::wrap(cpp_form_get_object(form_ptr, index_zero_based));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3425,7 +3423,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_bookmark_color_handle", (DL_FUNC) &_pdfium_cpp_bookmark_color_handle, 1},
     {"_pdfium_cpp_bookmark_style_handle", (DL_FUNC) &_pdfium_cpp_bookmark_style_handle, 1},
     {"_pdfium_cpp_bookmark_action_handle", (DL_FUNC) &_pdfium_cpp_bookmark_action_handle, 2},
-    {"_pdfium_cpp_obj_get_clip_path", (DL_FUNC) &_pdfium_cpp_obj_get_clip_path, 2},
+    {"_pdfium_cpp_obj_get_clip_path", (DL_FUNC) &_pdfium_cpp_obj_get_clip_path, 1},
     {"_pdfium_cpp_clip_path_count_paths", (DL_FUNC) &_pdfium_cpp_clip_path_count_paths, 1},
     {"_pdfium_cpp_clip_path_count_segments", (DL_FUNC) &_pdfium_cpp_clip_path_count_segments, 2},
     {"_pdfium_cpp_clip_path_segments_df", (DL_FUNC) &_pdfium_cpp_clip_path_segments_df, 1},
@@ -3467,7 +3465,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_page_flatten", (DL_FUNC) &_pdfium_cpp_page_flatten, 2},
     {"_pdfium_cpp_form_fields_list", (DL_FUNC) &_pdfium_cpp_form_fields_list, 1},
     {"_pdfium_cpp_form_object_count", (DL_FUNC) &_pdfium_cpp_form_object_count, 1},
-    {"_pdfium_cpp_form_get_object", (DL_FUNC) &_pdfium_cpp_form_get_object, 3},
+    {"_pdfium_cpp_form_get_object", (DL_FUNC) &_pdfium_cpp_form_get_object, 2},
     {"_pdfium_cpp_text_obj_glyph_path", (DL_FUNC) &_pdfium_cpp_text_obj_glyph_path, 3},
     {"_pdfium_cpp_text_obj_glyph_width", (DL_FUNC) &_pdfium_cpp_text_obj_glyph_width, 3},
     {"_pdfium_cpp_text_obj_font_metrics", (DL_FUNC) &_pdfium_cpp_text_obj_font_metrics, 2},

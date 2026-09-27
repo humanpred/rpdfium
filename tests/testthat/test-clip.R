@@ -179,3 +179,121 @@ test_that("cpp_clip_path_count_segments reports per-sub-path segment count", {
     0L
   )
 })
+
+# Clip paths close with their page-object (ADR-029) ------------------
+#
+# A clip path is part of the page-object it was read from, so it is
+# refused once that object's handle is closed: when the object is
+# deleted, removed from its form or moved into an annotation, and when
+# the annotation, form, page or document holding it goes.
+
+clip_closed_msg <- function(reason) {
+  paste0("^", reason, " The clip path is no longer valid\\.$")
+}
+clip_obj_closed_msg <- clip_closed_msg(paste0(
+  "The clip path's page-object has been closed: it was deleted via ",
+  "pdf_obj_delete\\(\\) or pdf_form_obj_remove_object\\(\\), or moved ",
+  "into an annotation by pdf_annot_append_object\\(\\)\\."
+))
+
+# Every reader refuses `clip`, in R and in C++.
+expect_clip_refused <- function(clip, msg) {
+  testthat::expect_false(is_open(clip))
+  testthat::expect_match(format(clip), "^<pdfium_clip_path \\[closed\\] ")
+  testthat::expect_error(pdf_clip_path_count(clip), msg)
+  testthat::expect_error(pdf_clip_path_segments(clip), msg)
+  for (fn in list(
+    pdfium:::cpp_clip_path_count_paths,
+    pdfium:::cpp_clip_path_segments_df
+  )) {
+    testthat::expect_error(
+      fn(clip$ptr), "^Clip-path handle's parent has been closed"
+    )
+  }
+}
+
+test_that("an annotation object's clip path closes with the annotation", {
+  doc <- pdf_doc_new()
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_new(doc, page_num = 1L, width = 200, height = 200)
+  a <- pdf_annot_new(page, "stamp", bounds = c(0, 0, 100, 100))
+  pdf_annot_set_appearance(a, "normal", inline_clipped_rect)
+  clip <- pdf_obj_clip_path(pdf_annot_objects(a)[[1L]])
+  expect_true(is_open(clip))
+  expect_identical(
+    format(clip),
+    "<pdfium_clip_path [open] 1 sub-path(s) from obj 1 on page 1>"
+  )
+  expect_identical(pdf_clip_path_count(clip), 1L)
+  expect_identical(nrow(pdf_clip_path_segments(clip)), 5L)
+  pdf_annot_delete(a)
+  expect_clip_refused(clip, clip_closed_msg(paste0(
+    "Parent annotation has been closed: it was deleted with ",
+    "pdf_annot_delete\\(\\)\\."
+  )))
+})
+
+test_that("a clip path closes when pdf_obj_delete() deletes its object", {
+  doc <- pdf_doc_open(source = inline_clip_pdf(), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  obj <- pdf_page_objects(page)[[1L]]
+  clip <- pdf_obj_clip_path(obj)
+  expect_identical(pdf_clip_path_count(clip), 1L)
+  pdf_obj_delete(obj)
+  expect_clip_refused(clip, clip_obj_closed_msg)
+})
+
+test_that("a clip path closes when its object leaves its form", {
+  doc <- pdf_doc_open(source = inline_clip_pdf(), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  form <- pdf_page_objects(page)[[2L]]
+  child <- pdf_form_objects(form)[[1L]]
+  clip <- pdf_obj_clip_path(child)
+  expect_identical(pdf_clip_path_count(clip), 1L)
+  pdf_form_obj_remove_object(form, child)
+  expect_clip_refused(clip, clip_obj_closed_msg)
+})
+
+test_that("a clip path closes when its object moves into an annotation", {
+  doc <- pdf_doc_open(source = inline_clip_pdf(), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  obj <- pdf_page_objects(page)[[1L]]
+  clip <- pdf_obj_clip_path(obj)
+  a <- pdf_annot_new(page, "stamp", bounds = c(0, 0, 100, 100))
+  pdf_annot_append_object(a, obj)
+  expect_clip_refused(clip, clip_obj_closed_msg)
+  # The object now belongs to the annotation, which frees it with its
+  # clip path when it is deleted; the old clip handle stays refused.
+  moved <- pdf_obj_clip_path(pdf_annot_objects(a)[[1L]])
+  expect_identical(pdf_clip_path_count(moved), 1L)
+  pdf_annot_delete(a)
+  expect_clip_refused(clip, clip_obj_closed_msg)
+  expect_false(is_open(moved))
+})
+
+test_that("a nested object's clip path closes when its form is deleted", {
+  doc <- pdf_doc_open(source = inline_clip_pdf(), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  form <- pdf_page_objects(page)[[2L]]
+  clip <- pdf_obj_clip_path(pdf_form_objects(form)[[1L]])
+  expect_identical(pdf_clip_path_count(clip), 1L)
+  pdf_obj_delete(form)
+  expect_clip_refused(clip, clip_closed_msg(paste0(
+    "Parent form object has been closed: it was deleted, removed from ",
+    "its form or moved into an annotation\\."
+  )))
+})
+
+test_that("a clip path closes with its document", {
+  doc <- pdf_doc_open(source = inline_clip_pdf())
+  page <- pdf_page_load(doc, 1L)
+  clip <- pdf_obj_clip_path(pdf_page_objects(page)[[1L]])
+  pdf_doc_close(doc)
+  expect_clip_refused(clip, clip_closed_msg(
+    "Parent page has been closed: its document was closed\\."
+  ))
+})
