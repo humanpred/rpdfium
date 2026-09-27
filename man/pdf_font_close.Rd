@@ -24,4 +24,6 @@ deterministic release.
 Closing a font does \strong{not} invalidate text objects that already
 used it — PDFium keeps an internal reference. Only the embedder's
 R-side handle is released.
+
+\code{\link[=pdf_doc_close]{pdf_doc_close()}} closes the document's fonts as well.
 }

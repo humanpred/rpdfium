@@ -14,5 +14,6 @@ Invisibly returns \code{page} with its underlying pointer marked closed.
 }
 \description{
 Releases the underlying PDFium handle. Idempotent — calling
-\code{pdf_page_close()} on an already-closed page is a no-op.
+\code{pdf_page_close()} on an already-closed page, including one that
+\code{\link[=pdf_doc_close]{pdf_doc_close()}} closed with its document, is a no-op.
 }

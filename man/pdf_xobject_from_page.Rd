@@ -14,7 +14,8 @@ pdf_xobject_from_page(dest_doc, src_doc, src_page_num = 1L)
 \item{src_page_num}{One-based page index in \code{src_doc}.}
 }
 \value{
-A \code{pdfium_xobject} handle.
+A \code{pdfium_xobject} handle. It belongs to \code{dest_doc}:
+\code{\link[=pdf_doc_close]{pdf_doc_close()}} on \code{dest_doc} closes it.
 }
 \description{
 Wraps \code{FPDF_NewXObjectFromPage}. Copies the visual content of
