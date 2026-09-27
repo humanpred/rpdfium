@@ -29,12 +29,15 @@ type \code{"form"} can be passed back into \code{pdf_form_objects()}.
 \details{
 Each returned object carries a \code{parent_form} slot pointing back
 at \code{form}, used by the print/format methods to show the
-containment path (\code{"obj 2 of form 1 on page 1"}). Lifetime is
-bound to the parent page, not to the form: as long as the page
-is open, the form and its nested objects remain valid. For a form
-in an annotation's appearance stream (\code{\link[=pdf_annot_objects]{pdf_annot_objects()}}) it is
-bound to the annotation instead: once the annotation is deleted,
-the nested objects are refused like the form itself.
+containment path (\code{"obj 2 of form 1 on page 1"}). Its lifetime is
+bound to the \code{form} handle: the nested objects are refused, like
+\code{form} itself, once \code{form}'s page or document is closed, once the
+annotation whose appearance stream holds \code{form}
+(\code{\link[=pdf_annot_objects]{pdf_annot_objects()}}) is deleted, and once \code{form} is deleted with
+\code{\link[=pdf_obj_delete]{pdf_obj_delete()}}, removed from its own form with
+\code{\link[=pdf_form_obj_remove_object]{pdf_form_obj_remove_object()}} or moved into an annotation with
+\code{\link[=pdf_annot_append_object]{pdf_annot_append_object()}}. After such a move, read the objects
+again through \code{\link[=pdf_annot_objects]{pdf_annot_objects()}} and then \code{pdf_form_objects()}.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "form_xobject.pdf",

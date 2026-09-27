@@ -151,7 +151,10 @@ pdf_text_new <- function(page, text,
 #' * The C++ object is destroyed.
 #' * The R `pdfium_obj` handle's externalptr is cleared so calling
 #'   any other `pdf_obj_*` / `pdf_path_*` / `pdf_text_*` function
-#'   on it errors cleanly via the existing closed-handle path.
+#'   on it errors cleanly via the existing closed-handle path. The
+#'   clip paths read from it with [pdf_obj_clip_path()] and, for a
+#'   form object, the objects read from it with [pdf_form_objects()]
+#'   are refused the same way.
 #'
 #' Re-fetch via [pdf_page_objects()] if you need an updated obj
 #' list after deletions (the page-scoped indices shift).

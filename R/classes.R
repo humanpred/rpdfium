@@ -38,22 +38,31 @@ new_pdfium_doc <- function(ptr, path, readwrite = FALSE) {
 #'
 #' Document and page handles check the underlying externalptr for
 #' non-NULL. Page-object handles do not own their lifetime - they
-#' live as long as their parent page - so for a `pdfium_obj` this
-#' delegates to the parent page's open state.
+#' live as long as what owns them (see `obj_owner()`) - so for a
+#' `pdfium_obj` this also requires the owner to be open, and for a
+#' `pdfium_clip_path` the page-object it was read from.
 #'
 #' @param x A `pdfium_handle`.
 #' @return `TRUE` if the underlying PDFium handle is still live,
-#'   `FALSE` if the parent has been closed.
+#'   `FALSE` if it or an owner has been closed.
 #' @keywords internal
 #' @noRd
 is_open <- function(x) {
-  # Page-children: obj + annot lifetimes both pivot on their
-  # parent page. Object normally has no finalizer (page-borrowed)
-  # but `pdf_obj_delete()` clears its externalptr explicitly, so
-  # the own-ptr check is necessary alongside the page check.
-  # Annot has its own finalizer (FPDFPage_CloseAnnot); same
-  # combined-check semantics apply.
-  if (inherits(x, c("pdfium_obj", "pdfium_annot"))) {
+  # Page-children: an object lives as long as its owner, an annotation
+  # as long as its page. Object normally has no finalizer (borrowed)
+  # but `pdf_obj_delete()` and the other mutators clear its
+  # externalptr explicitly, so the own-ptr check is necessary alongside
+  # the owner check. Annot has its own finalizer
+  # (FPDFPage_CloseAnnot); same combined-check semantics apply. The C++
+  # layer walks the same chain through the externalptrs' prot slots
+  # (ADR-029).
+  if (inherits(x, "pdfium_obj")) {
+    return(cpp_handle_is_valid(x$ptr) && is_open(obj_owner(x)))
+  }
+  if (inherits(x, "pdfium_clip_path")) {
+    return(cpp_handle_is_valid(x$ptr) && is_open(x$obj))
+  }
+  if (inherits(x, "pdfium_annot")) {
     return(cpp_handle_is_valid(x$ptr) && is_open(x$page))
   }
   # Doc-children: attachment / signature / bookmark carry no
@@ -145,25 +154,25 @@ print.pdfium_page <- function(x, ...) {
 #' Construct a `pdfium_obj` from an external pointer
 #'
 #' Internal helper. Page objects do not own their own lifetime - they
-#' point into the parent `pdfium_page`'s internal storage and become
-#' dangling when the page closes. The externalptr's `prot` slot holds
-#' the parent page's externalptr so R's GC cannot reclaim the page
-#' while any object reference is live, but there is no finalizer on
-#' the object itself.
+#' point into their owner's internal storage and become dangling when
+#' the owner goes. The owner of a top-level page object is its
+#' `pdfium_page`: the externalptr's `prot` slot holds the page's
+#' externalptr so R's GC cannot reclaim the page while any object
+#' reference is live, but there is no finalizer on the object itself.
 #'
 #' Nested objects (those inside a Form XObject, returned by
 #' [pdf_form_objects()]) additionally carry a `parent_form` field
-#' pointing back at the form's `pdfium_obj`. The form's own lifetime
-#' is still bound to the page externalptr, so the lifetime model is
-#' unchanged; `parent_form` is informational, used by
-#' [format.pdfium_obj()] to render the containment chain.
+#' pointing back at the form's `pdfium_obj`, which owns them: their
+#' `prot` slot pins the form's externalptr, and `is_open()` follows
+#' `parent_form`. `format.pdfium_obj()` also uses it to render the
+#' containment chain.
 #'
 #' Objects inside an annotation's appearance stream (returned by
 #' [pdf_annot_objects()]) carry a `parent_annot` field pointing at the
 #' `pdfium_annot` instead. Their externalptr's `prot` slot pins the
-#' annotation, which owns them, rather than the page, as does that of
-#' the children [pdf_form_objects()] returns for a form among them;
-#' none of them are part of the page's content.
+#' annotation, which owns them, rather than the page; none of them,
+#' nor the children [pdf_form_objects()] returns for a form among
+#' them, are part of the page's content.
 #'
 #' @param ptr An `externalptr` to a PDFium `FPDF_PAGEOBJECT`.
 #' @param page The parent `pdfium_page`.
@@ -195,6 +204,19 @@ new_pdfium_obj <- function(ptr, page, index, type, parent_form = NULL,
     ),
     class = c("pdfium_obj", "pdfium_handle")
   )
+}
+
+# Internal: what owns `obj` and must stay open for it to be valid: the
+# form XObject it is nested in, else the annotation whose appearance
+# stream holds it, else its page.
+obj_owner <- function(obj) {
+  if (!is.null(obj$parent_form)) {
+    return(obj$parent_form)
+  }
+  if (!is.null(obj$parent_annot)) {
+    return(obj$parent_annot)
+  }
+  obj$page
 }
 
 # Internal: the annotation whose appearance stream holds `obj`, directly

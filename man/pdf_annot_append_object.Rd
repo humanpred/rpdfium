@@ -37,9 +37,12 @@ annotation's page (\code{FPDFPage_RemoveObject}) and then appends it to
 \code{annot}, so exactly one of them owns the object at any time.
 
 After the call \code{obj} is no longer on the page and its handle is
-closed; reach the object through \code{\link[=pdf_annot_objects]{pdf_annot_objects()}} instead.
-Other handles to the same object (for example from an earlier
-\code{\link[=pdf_page_objects]{pdf_page_objects()}} call) are stale and must not be used, and the
+closed, as are the clip paths read from it with
+\code{\link[=pdf_obj_clip_path]{pdf_obj_clip_path()}} and, for a form object, the objects read from
+it with \code{\link[=pdf_form_objects]{pdf_form_objects()}}; reach the object through
+\code{\link[=pdf_annot_objects]{pdf_annot_objects()}} instead. Other handles to the same object
+(for example from an earlier \code{\link[=pdf_page_objects]{pdf_page_objects()}} call) are stale
+and must not be used, and the
 page-scoped indices of the remaining page-objects shift down by
 one. The move only succeeds as a whole: when \code{annot} cannot hold
 page-objects, or \code{obj} is not a top-level object of the

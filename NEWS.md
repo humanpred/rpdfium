@@ -151,6 +151,40 @@
   system-font provider once per library lifetime, and the package frees
   it when it shuts the library down. Each call used to allocate a new
   provider that was never completely freed.
+* Page-objects read with `pdf_annot_objects()`, and the objects of forms
+  among them, print as closed once their annotation is deleted with
+  `pdf_annot_delete()`, and page-object functions refuse them with
+  "Parent annotation has been closed: it was deleted with
+  pdf_annot_delete()." They used to print as open and fail with an
+  internal message. `pdf_annot_update_object()` and
+  `pdf_form_obj_remove_object()` now refuse a closed page-object with
+  the same messages as the other page-object functions.
+* A clip path from `pdf_obj_clip_path()` belongs to its page-object, not
+  to the page: `pdf_clip_path_count()` and `pdf_clip_path_segments()`
+  refuse it once the object is deleted with `pdf_obj_delete()` or
+  `pdf_form_obj_remove_object()`, moved into an annotation with
+  `pdf_annot_append_object()`, or once the annotation or form holding it
+  is deleted. They used to read the freed object, and for an
+  annotation's object after `pdf_annot_delete()` they crashed R
+  (ADR-029).
+* The objects `pdf_form_objects()` returns belong to the form handle
+  they were read through: they are refused once that form is deleted
+  with `pdf_obj_delete()`, removed with `pdf_form_obj_remove_object()`
+  or moved into an annotation with `pdf_annot_append_object()`. After a
+  move, read them again through `pdf_annot_objects()` and
+  `pdf_form_objects()`. They used to read the freed objects once the
+  form was destroyed (ADR-029).
+* Shutting PDFium down, as unloading the package does, first closes
+  every open document together with its pages, annotations, fonts and
+  XObjects, and every clip path and bitmap from `pdf_clip_path_new()`
+  and `pdf_bitmap_new()`; their handles read as closed afterwards.
+  Closing, using or collecting one of them after the shutdown, or after
+  PDFium was initialised again by opening a document or by
+  `pdf_system_fonts_install_default()`, crashed R (ADR-028).
+* `pdf_form_fields()`'s documentation says what it returns, a
+  `pdfium_form_field_list` of form-field handles, instead of describing
+  a tibble; the tibble's columns are now documented on
+  `as_tibble.pdfium_form_field_list()`, which builds it.
 
 # pdfium 0.1.0
 

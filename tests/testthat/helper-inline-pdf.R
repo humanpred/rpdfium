@@ -83,3 +83,49 @@ inline_curves_pdf <- function() {
     )
   ))
 }
+
+# Content that paints a red 100 x 100 square clipped to the 50 x 50
+# square at (10, 10), so the square's path object carries a one-sub-path
+# clip path.
+inline_clipped_rect <- "q 10 10 50 50 re W n 1 0 0 rg 0 0 100 100 re f Q"
+
+# One page that paints `inline_clipped_rect` and then draws the Form
+# XObject /Fm, which paints it too: the page's objects are the clipped
+# path and the form, whose one child is a clipped path.
+inline_clip_pdf <- function() {
+  inline_pdf_bytes(c(
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    paste0("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] ",
+           "/Resources << /XObject << /Fm 5 0 R >> >> /Contents 4 0 R >>"),
+    inline_pdf_stream("", paste(inline_clipped_rect, "/Fm Do")),
+    inline_pdf_stream("/Type /XObject /Subtype /Form /BBox [0 0 100 100]",
+                      inline_clipped_rect)
+  ))
+}
+
+# One page that draws a chain of `depth` Form XObjects, each drawing
+# the next one; the innermost paints `inline_clipped_rect`.
+inline_nested_forms_pdf <- function(depth) {
+  forms <- vapply(seq_len(depth), function(i) {
+    if (i == depth) {
+      return(inline_pdf_stream(
+        "/Type /XObject /Subtype /Form /BBox [0 0 100 100]",
+        inline_clipped_rect
+      ))
+    }
+    inline_pdf_stream(
+      sprintf(paste("/Type /XObject /Subtype /Form /BBox [0 0 100 100]",
+                    "/Resources << /XObject << /Fm %d 0 R >> >>"), i + 5L),
+      "/Fm Do"
+    )
+  }, character(1L))
+  inline_pdf_bytes(c(
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    paste0("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] ",
+           "/Resources << /XObject << /Fm 5 0 R >> >> /Contents 4 0 R >>"),
+    inline_pdf_stream("", "/Fm Do"),
+    forms
+  ))
+}
