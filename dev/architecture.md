@@ -44,7 +44,12 @@ Read [ADR-005](decisions/ADR-005-memory-model.md) first. Summary:
 4. Children (pages, page objects) hold an R-level reference to their
    parent (doc, page) through the `prot` slot of the child
    externalptr. R's GC keeps the parent alive while a child exists.
-5. PDFium's library lifecycle (`FPDF_InitLibraryWithConfig` /
+5. Closing a document, explicitly or in its finalizer, first closes
+   the annotation, page, font and XObject handles still open on it:
+   each is registered under its document in `src/handle_registry.h`
+   (ADR-024, ADR-025). Mint and release these handles only through
+   that header's `make_*_handle()` / `release_*_handle()`.
+6. PDFium's library lifecycle (`FPDF_InitLibraryWithConfig` /
    `FPDF_DestroyLibrary`) runs in `.onLoad` / `.onUnload`.
 
 The auto-close test in `tests/testthat/test-document.R` is

@@ -314,7 +314,7 @@ flush_page_if_dirty <- function(page) {
 pdf_page_flush <- function(page) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   cpp_page_generate_content(page$ptr)
   # If the page lives in a doc with mutation state, clear its

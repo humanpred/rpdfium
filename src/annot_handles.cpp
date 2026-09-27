@@ -3,7 +3,7 @@
 // Companion to src/annotations.cpp's bulk reader. Where the bulk
 // reader returns one big table for all annotations on a page, this
 // file returns ONE annotation handle at a time. The handle is an R
-// externalptr minted by make_annot_handle() (annot_registry.h): its
+// externalptr minted by make_annot_handle() (handle_registry.h): its
 // finalizer calls FPDFPage_CloseAnnot, unless closing the document
 // released the handle first.
 //
@@ -19,7 +19,7 @@
 #include "fpdf_annot.h"
 #include "fpdf_attachment.h"
 #include "fpdf_formfill.h"
-#include "annot_registry.h"
+#include "handle_registry.h"
 #include "handle_validation.h"
 #include "utf16.h"
 
@@ -43,9 +43,9 @@ FPDF_PAGE page_from_ptr_local(SEXP page_ptr) {
 }
 
 // The document a new handle is registered under. It comes from the R
-// layer because a page handle cannot always name its document: PDFium
-// has no page-to-document call, and form-field page handles do not
-// pin their document.
+// layer (ADR-024) because PDFium has no page-to-document call. Every
+// page handle now pins its document in `prot` (ADR-025), but the
+// shims keep taking it from R.
 FPDF_DOCUMENT doc_from_ptr_local(SEXP doc_ptr) {
   return static_cast<FPDF_DOCUMENT>(
       pdfium_r::validate_handle(doc_ptr, "Document",

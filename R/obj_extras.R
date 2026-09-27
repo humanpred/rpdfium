@@ -11,18 +11,7 @@
 check_pdfium_obj <- function(obj, allowed_types = NULL, arg = "obj") {
   checkmate::assert_class(obj, "pdfium_obj", .var.name = arg)
   if (!is_open(obj)) {
-    # Trips when the parent page is closed (most common) or when a
-    # mutator cleared the handle: pdf_obj_delete() and
-    # pdf_form_obj_remove_object() destroy the object, and
-    # pdf_annot_append_object() hands it to an annotation. The message
-    # leads with the page-closed framing for back-compatibility with
-    # existing tests; the parenthetical covers the cleared handles.
-    stop("Parent page has been closed; object handle is no longer ",
-         "valid (or the object was deleted via pdf_obj_delete() or ",
-         "pdf_form_obj_remove_object(), or moved into an annotation ",
-         "by pdf_annot_append_object()).",
-      call. = FALSE
-    )
+    stop(obj_closed_message(obj), call. = FALSE)
   }
   if (!is.null(allowed_types)) {
     checkmate::assert_choice(
@@ -31,6 +20,28 @@ check_pdfium_obj <- function(obj, allowed_types = NULL, arg = "obj") {
     )
   }
   invisible(obj)
+}
+
+# Internal: the error message for a closed `pdfium_obj`. The handle
+# reads as closed when its page is closed, which closing the document
+# also does (ADR-025), or when a mutator cleared it: pdf_obj_delete()
+# and pdf_form_obj_remove_object() destroy the object, and
+# pdf_annot_append_object() hands it to an annotation. The page-closed
+# framing leads for back-compatibility with existing tests; the
+# parenthetical covers the cleared handles.
+obj_closed_message <- function(obj) {
+  if (!is_open(obj$page$doc)) {
+    return(paste0(
+      "Parent page has been closed: its document was closed. ",
+      "The object handle is no longer valid."
+    ))
+  }
+  paste0(
+    "Parent page has been closed; object handle is no longer ",
+    "valid (or the object was deleted via pdf_obj_delete() or ",
+    "pdf_form_obj_remove_object(), or moved into an annotation ",
+    "by pdf_annot_append_object())."
+  )
 }
 
 #' Stroke line-cap style of a path page-object

@@ -8,7 +8,7 @@
 //
 // Annotation creation (cpp_annot_new) and removal (cpp_annot_delete)
 // live in annot_handles.cpp alongside cpp_annot_get because they
-// mint and release handles (annot_registry.h). The setters in this
+// mint and release handles (handle_registry.h). The setters in this
 // file don't allocate or release annot handles; they only mutate.
 
 #include <Rcpp.h>

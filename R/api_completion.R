@@ -100,7 +100,7 @@ pdf_bookmark_child_count <- function(bookmark) {
 pdf_page_has_transparency <- function(page) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   cpp_page_has_transparency(page$ptr)
 }
@@ -123,7 +123,7 @@ pdf_page_has_transparency <- function(page) {
 pdf_page_bounding_box <- function(page) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   cpp_page_bounding_box(page$ptr)
 }
@@ -206,7 +206,7 @@ pdf_device_to_page <- function(page, start_x, start_y, size_x, size_y,
                                 rotate, device_x, device_y) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   checkmate::assert_int(start_x)
   checkmate::assert_int(start_y)
@@ -237,7 +237,7 @@ pdf_page_to_device <- function(page, start_x, start_y, size_x, size_y,
                                 rotate, page_x, page_y) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   checkmate::assert_int(start_x)
   checkmate::assert_int(start_y)
@@ -276,7 +276,7 @@ pdf_page_to_device <- function(page, start_x, start_y, size_x, size_y,
 pdf_text_rects <- function(page, start_char = 1L, char_count = -1L) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   checkmate::assert_int(start_char, lower = 1L)
   checkmate::assert_int(char_count)
@@ -310,7 +310,7 @@ pdf_text_rects <- function(page, start_char = 1L, char_count = -1L) {
 pdf_text_bounded <- function(page, bounds) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   checkmate::assert_numeric(bounds, len = 4L, any.missing = FALSE,
                              finite = TRUE)
@@ -345,7 +345,7 @@ pdf_text_bounded <- function(page, bounds) {
 pdf_text_char_geometry <- function(page) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   raw <- cpp_text_char_geometry(page$ptr)
   mat <- raw$matrix
@@ -1100,7 +1100,8 @@ print.pdfium_xobject <- function(x, ...) {
 #' @param dest_doc A `pdfium_doc` opened with `readwrite = TRUE`.
 #' @param src_doc Source `pdfium_doc`. Read-only is fine.
 #' @param src_page_num One-based page index in `src_doc`.
-#' @return A `pdfium_xobject` handle.
+#' @return A `pdfium_xobject` handle. It belongs to `dest_doc`:
+#'   [pdf_doc_close()] on `dest_doc` closes it.
 #' @seealso [pdf_obj_form_from_xobject()] to instantiate as a page
 #'   object; [pdf_xobject_close()] for deterministic release.
 #' @export
@@ -1123,7 +1124,8 @@ pdf_xobject_from_page <- function(dest_doc, src_doc, src_page_num = 1L) {
 #' Wraps `FPDF_CloseXObject`. Idempotent. Closing the XObject does
 #' NOT invalidate page-objects created from it via
 #' [pdf_obj_form_from_xobject()] — those are owned by their parent
-#' page and survive the XObject's release.
+#' page and survive the XObject's release. [pdf_doc_close()] on the
+#' destination document closes its XObjects as well.
 #'
 #' @param xobject A `pdfium_xobject` from [pdf_xobject_from_page()].
 #' @return Invisibly returns `xobject`.
@@ -1146,7 +1148,7 @@ pdf_xobject_close <- function(xobject) {
 #'   [pdf_page_load()] (parent doc must be readwrite).
 #' @param xobject A `pdfium_xobject` from [pdf_xobject_from_page()].
 #'   The XObject must have been created against the same `dest_doc`
-#'   that owns `page`.
+#'   that owns `page`; one from another document is an error.
 #' @return The new `pdfium_obj` (type `"form"`).
 #' @seealso [pdf_xobject_from_page()].
 #' @export
@@ -1157,11 +1159,12 @@ pdf_obj_form_from_xobject <- function(page, xobject) {
   }
   ph <- as_page_and_doc(page)
   assert_readwrite(ph$doc)
-  obj_ptr <- cpp_form_obj_from_xobject(xobject$ptr)
-  # cpp_form_obj_from_xobject returns a detached page-object. Insert
-  # via cpp_page_insert_object (already wrapped for the existing
-  # creators).
-  cpp_page_insert_object(ph$page$ptr, obj_ptr)
+  if (!identical(xobject$doc$ptr, ph$doc$ptr)) {
+    stop("`xobject` and `page` must belong to the same document.",
+      call. = FALSE
+    )
+  }
+  obj_ptr <- cpp_form_obj_from_xobject(xobject$ptr, ph$page$ptr)
   idx <- cpp_page_object_count(ph$page$ptr)
   mark_page_dirty(ph$doc, ph$page$index)
   new_pdfium_obj(obj_ptr, ph$page, idx, "form")

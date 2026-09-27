@@ -17,10 +17,10 @@ create an empty text object you'll populate later via
 \item{font}{Either a character scalar — one of the 14 PDF
 standard font names (see \code{\link[=pdf_font_load_standard]{pdf_font_load_standard()}} for the
 list) — or a \code{pdfium_font} handle from
-\code{\link[=pdf_font_load_standard]{pdf_font_load_standard()}} or \code{\link[=pdf_font_load]{pdf_font_load()}}. Default
-\code{"Helvetica"}. Pass a \code{pdfium_font} handle when you need a
-custom TrueType / Type1 font; the standard-font shortcut is
-purely for convenience.}
+\code{\link[=pdf_font_load_standard]{pdf_font_load_standard()}} or \code{\link[=pdf_font_load]{pdf_font_load()}}, loaded into
+the document \code{page} belongs to. Default \code{"Helvetica"}. Pass a
+\code{pdfium_font} handle when you need a custom TrueType / Type1
+font; the standard-font shortcut is purely for convenience.}
 
 \item{font_size}{Numeric scalar — font size in points. Default
 \code{12}.}

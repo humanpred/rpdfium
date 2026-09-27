@@ -139,6 +139,36 @@ test_that("cpp_obj_* shims reject a closed page-object handle", {
   }
 })
 
+test_that("cpp_* page and page-object shims reject a closed document's", {
+  # pdf_doc_close() closes the document's pages first (ADR-025), so
+  # the page shims see a cleared page and the page-object shims a
+  # cleared parent, as after pdf_page_close().
+  doc <- pdf_doc_open(fixture_path("shapes"))
+  page <- pdf_page_load(doc, 1L)
+  page_ptr <- page$ptr
+  obj_ptr <- pdf_page_objects(page)[[1L]]$ptr
+  pdf_doc_close(doc)
+  for (fn in list(
+    function() pdfium:::cpp_page_object_count(page_ptr),
+    function() pdfium:::cpp_annot_count(page_ptr),
+    function() pdfium:::cpp_page_size(page_ptr),
+    function() pdfium:::cpp_page_rotation(page_ptr),
+    function() pdfium:::cpp_page_text_runs(page_ptr),
+    function() {
+      pdfium:::cpp_render_page(page_ptr, 10L, 10L, 0L, 0L, -1L, TRUE)
+    }
+  )) {
+    expect_error(fn(), "^Page handle is (closed|NULL \\(closed\\?\\))\\.$")
+  }
+  for (fn in list(
+    function() pdfium:::cpp_obj_type(obj_ptr),
+    function() pdfium:::cpp_obj_bounds(obj_ptr),
+    function() pdfium:::cpp_path_segment_count(obj_ptr)
+  )) {
+    expect_error(fn(), "^Page-object handle's parent has been closed")
+  }
+})
+
 test_that("cpp_* shims reject non-externalptr arguments", {
   # Each of the shims below validates TYPEOF == EXTPTRSXP. Feeding
   # a non-externalptr should error cleanly.

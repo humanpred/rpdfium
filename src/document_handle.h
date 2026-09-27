@@ -1,9 +1,11 @@
-// pdfium R package — closing FPDF_DOCUMENT handles (ADR-024).
+// pdfium R package — closing FPDF_DOCUMENT handles (ADR-024,
+// ADR-025).
 //
 // Every FPDF_CloseDocument call in the package goes through
 // close_document_handle(), which first releases the document's live
-// annotation handles (annot_registry.h). Code that mints a document
-// externalptr registers finalize_document as its finalizer.
+// annotation, page, font and XObject handles (handle_registry.h).
+// Code that mints a document externalptr registers finalize_document
+// as its finalizer.
 
 #ifndef PDFIUM_R_PKG_DOCUMENT_HANDLE_H
 #define PDFIUM_R_PKG_DOCUMENT_HANDLE_H

@@ -20,8 +20,10 @@ explicit close is recommended when handling many large documents or when a
 subsequent operation needs to delete the source file (relevant on Windows).
 }
 \details{
-Annotation handles still open on the document, including the form-field
-handles of \code{\link[=pdf_form_fields]{pdf_form_fields()}}, are closed first, because PDFium releases
-an annotation's resources only while its document is open. Afterwards they
-print as closed, and \verb{pdf_annot_*()} calls on them raise an error.
+Handles still open on the document are closed first, because PDFium
+expects them to be closed before their document: annotation handles,
+including the form-field handles of \code{\link[=pdf_form_fields]{pdf_form_fields()}}, then pages, then
+fonts and XObjects. Afterwards they print as closed, and calls on them, or
+on page-objects read from the closed pages, raise an error. Close a
+document when you are done with everything read from it.
 }

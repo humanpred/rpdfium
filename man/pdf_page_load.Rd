@@ -21,7 +21,8 @@ garbage-collected with a finalizer that calls \code{FPDF_ClosePage}; call
 \code{\link[=pdf_page_close]{pdf_page_close()}} explicitly when you need deterministic release.
 The page keeps the parent document alive for as long as the page
 is reachable, so it is safe to drop your reference to \code{doc} while
-still holding a page.
+still holding a page. Closing \code{doc} with \code{\link[=pdf_doc_close]{pdf_doc_close()}} closes the
+page too: later calls on it raise an error.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "minimal.pdf",
