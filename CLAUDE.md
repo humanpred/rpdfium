@@ -129,13 +129,32 @@ for the rationale. The short version:
 ## Memory model — the rule that bites if you forget it
 
 - Every PDFium handle (`FPDF_DOCUMENT`, `FPDF_PAGE`, etc.) lives behind an
-  R `externalptr` with a C finalizer registered via `R_RegisterCFinalizerEx(..., TRUE)`.
-- The finalizer is the **only** path that calls `FPDF_*Close*`. After it
-  runs, it calls `R_ClearExternalPtr` so the pointer reads as NULL on
-  subsequent access. This makes `pdf_doc_close()` safely idempotent.
-- Children (pages, page objects) hold an R-level reference to their parent
-  (doc, page) so GC can't reclaim the parent before the child. Always set
-  the parent into the `prot` slot of the child's externalptr.
+  R `externalptr`. Every handle with a finalizer is in one registry,
+  `src/handle_registry.{h,cpp}` (ADR-024, ADR-025, ADR-028): annotation
+  contexts, pages, fonts and XObjects under their document; documents,
+  `pdf_clip_path_new()` clip paths, bitmaps and memory-document buffers
+  under the library.
+- One mint and one release path per kind: `make_*_handle()` alone creates
+  the externalptr (finalizer attached, handle registered), and
+  `release_*_handle()` alone closes and clears it — the finalizer, the
+  explicit `pdf_*_close()` / `pdf_annot_delete()` and the owner's release
+  all call it, so every close is idempotent. Never close a handle
+  `make_*_handle()` made, or call `R_RegisterCFinalizerEx`, anywhere
+  else.
+- Owners release their handles first: `pdf_doc_close()` closes the
+  document's annotations, pages, fonts and XObjects before
+  `FPDF_CloseDocument`, and `cpp_destroy_library()` closes every document,
+  clip path and bitmap before `FPDF_DestroyLibrary`. Those handles then
+  read as closed.
+- Registry entries are weak: the externalptr `SEXP`s sit in C++
+  containers R does not scan, and the finalizer removes each one from the
+  registry before R frees it, so an unreachable handle is still collected
+  promptly.
+- Children pin their immediate owner in `prot` (a page its document, an
+  annotation its page, a page-object its page, annotation or form, a clip
+  path its page-object), and both `validate_handle()` in C++ and
+  `is_open()` in R walk the whole chain (ADR-029): a handle is refused
+  once any owner is closed.
 - Automatic close on GC works — see `vignettes/architecture.Rmd`. But for
   large documents or platform-sensitive code (Windows file-handle blocking
   deletion), call `pdf_doc_close()` explicitly.
