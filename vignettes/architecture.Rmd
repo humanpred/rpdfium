@@ -92,7 +92,7 @@ the background until the last page (or object) that depends on it goes
 away. The order is: **child references the parent**, never the other
 way around.
 
-Closing the parent explicitly is different. PDFium requires a page to
+Closing the parent explicitly is different. PDFium expects a page to
 be closed before its document, so `pdf_doc_close()` first closes the
 pages still open on the document, which invalidates their
 page-objects, and the document's annotation and form-field handles,
@@ -184,7 +184,7 @@ the full conventions.
 - **Pages and other handles after `pdf_doc_close()`.** Closing a
   document also closes the pages, page-objects, annotation and
   form-field handles, fonts and XObjects still open on it, because
-  PDFium releases them only while their document is open. Calls on
+  PDFium expects them to be closed before their document. Calls on
   them then raise an error.
 - **Forgetting `readwrite = TRUE`.** Setters error with `"doc must be
   readwrite"` when called on a doc opened for inspection only.

@@ -114,8 +114,8 @@
   Rendering or extracting text from a page whose document had been
   closed read, and for text also wrote, the freed document; the results
   looked right, so nothing noticed. A page collected after its document
-  had been closed also closed itself after the document, which PDFium
-  does not allow (ADR-025).
+  had been closed also closed itself after the document, the reverse of
+  the order PDFium expects (ADR-025).
 * `pdf_doc_close()` also closes the document's font and XObject handles.
   `pdf_obj_form_from_xobject()` with an XObject whose document had been
   closed built the form object from the freed document; it now raises an

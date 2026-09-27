@@ -166,7 +166,7 @@ validate_pdf_open_path <- function(path) {
 #' subsequent operation needs to delete the source file (relevant on Windows).
 #'
 #' Handles still open on the document are closed first, because PDFium
-#' releases them only while their document is open: annotation handles,
+#' expects them to be closed before their document: annotation handles,
 #' including the form-field handles of [pdf_form_fields()], then pages, then
 #' fonts and XObjects. Afterwards they print as closed, and calls on them, or
 #' on page-objects read from the closed pages, raise an error. Close a
