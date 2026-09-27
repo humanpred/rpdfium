@@ -55,13 +55,20 @@ Two workarounds had grown around the double free and hidden it:
    same page, objects nested in a form XObject, and objects already
    inside an annotation. PDFium itself accepts the last case and would
    create the same double ownership between two annotations.
-3. The annotation finalizer closes the annotation context whenever the
-   document is still open, including after the page has closed. The
-   context keeps only an unowned page pointer, which its destructor
-   never reads (`pdf_use_partition_alloc = false` in the bblanchon
-   builds, so `UnownedPtr` is a plain pointer). Once the document is
-   closed the finalizer still skips the close, because destroying
-   embedded image and font objects calls back into the document.
+3. The annotation finalizer closes the annotation context while its
+   page handle or its document is still open, so a page closed first
+   no longer leaks the context. The context keeps only an unowned page
+   pointer, which its destructor never reads
+   (`pdf_use_partition_alloc = false` in the bblanchon builds, so
+   `UnownedPtr` is a plain pointer). Destroying the fonts and images of
+   its page-objects calls back into the document only while it is
+   alive: `CPDF_DocPageData`'s destructor marks every cached font and
+   image, generated images included, so that releasing them later
+   skips the callback. Valgrind on Linux found no invalid access when
+   closing after `pdf_doc_close()` with path, text, image, shading and
+   form objects in the appearance stream. Once the page and the
+   document are both closed, the close is still skipped: that teardown
+   order is unexercised, and a leak is the safer failure.
 4. `pdf_form_obj_remove_object()` destroys the child that
    `FPDFFormObj_RemoveObject` hands back and clears its handle, the
    contract `pdf_obj_delete()` already has.
@@ -69,8 +76,9 @@ Two workarounds had grown around the double free and hidden it:
 ## Consequences
 
 - Appending no longer double-frees. Append, remove and update run
-  under test with explicit `gc()` in both teardown orders, and the
-  success paths lose their `# nocov` markers.
+  under test with explicit `gc()` in each teardown order (annotation,
+  page or document first), and the success paths lose their `# nocov`
+  markers.
 - The move is visible to callers: after `pdf_annot_append_object()`
   the object is no longer on the page, and the page-scoped indices of
   later page-objects shift down by one, as after `pdf_obj_delete()`.
@@ -80,8 +88,8 @@ Two workarounds had grown around the double free and hidden it:
   invalidated. `pdf_obj_delete()` has the same limitation; each
   function documents it.
 - Two annotation-context leaks are outside this decision: the context
-  of a handle collected after its document was explicitly closed
-  (decision 3 skips the close), and the context behind
+  of a handle collected after both its page and its document were
+  closed (decision 3 skips the close), and the context behind
   `pdf_annot_delete()` (`FPDFPage_RemoveAnnot` leaves it alive, and the
   handle was cleared without `FPDFPage_CloseAnnot`). Neither is part of
   the double free.
@@ -107,6 +115,10 @@ Two workarounds had grown around the double free and hidden it:
 - **Keep skipping `FPDFPage_CloseAnnot` after the page closes**: leaks
   every annotation context in the page-first teardown order and keeps a
   regression of the double free invisible in that order.
+- **Close only while the document is open**: stops closing contexts
+  after an explicit `pdf_doc_close()` while the page handle is still
+  open, which the finalizer always did without any observed invalid
+  access; the test suite's valgrind leak totals roughly double.
 
 ## References
 
@@ -116,6 +128,8 @@ Two workarounds had grown around the double free and hidden it:
   `FPDFAnnot_RemoveObject`, `FPDFAnnot_IsObjectSupportedSubtype`),
   `fpdfsdk/fpdf_editpage.cpp` (`FPDFPage_RemoveObject`,
   `FPDFFormObj_RemoveObject`), `core/fpdfapi/page/cpdf_annotcontext.h`,
-  `core/fpdfapi/edit/cpdf_pagecontentgenerator.cpp` (`ProcessForm`).
+  `core/fpdfapi/page/cpdf_docpagedata.cpp` (`~CPDF_DocPageData`),
+  `core/fpdfapi/edit/cpdf_pagecontentgenerator.cpp` (`ProcessForm`,
+  `ProcessImage`).
 - `tests/testthat/test-api-completion.R`, section "Annotation
   page-objects: ownership (ADR-023)".

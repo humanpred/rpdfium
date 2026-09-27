@@ -42,22 +42,23 @@ FPDF_PAGE page_from_ptr_local(SEXP page_ptr) {
                                   /*require_prot_alive=*/false));
 }
 
-// Whether FPDFPage_CloseAnnot may still run for this handle. Closing
-// frees the annotation context and the page-objects of its appearance
-// stream (FPDFAnnot_AppendObject hands those to the context). The
-// context keeps only an unowned page pointer that its destructor never
-// reads, so closing after the page is fine, but destroying embedded
-// image and font objects calls back into the document. The prot chain
-// is annot -> page externalptr -> doc externalptr; page handles minted
-// without the doc in prot fall back to the page's own liveness.
+// Whether FPDFPage_CloseAnnot may run for this handle. Closing frees
+// the annotation context and the page-objects of its appearance stream
+// (FPDFAnnot_AppendObject hands those to the context). The context
+// keeps only an unowned page pointer, which its destructor never reads,
+// and a document marks its cached fonts and images when it is destroyed
+// (CPDF_DocPageData::~CPDF_DocPageData), so releasing them later does
+// not call back into it. The close runs while the page handle or the
+// document is open; with both closed the context is left in place, a
+// leak rather than an unexercised teardown order. The prot chain is
+// annot -> page externalptr -> doc externalptr.
 bool annot_close_is_safe(SEXP annot_ptr) {
   SEXP page_ptr = R_ExternalPtrProtected(annot_ptr);
   if (TYPEOF(page_ptr) != EXTPTRSXP) return false;
+  if (R_ExternalPtrAddr(page_ptr) != nullptr) return true;
   SEXP doc_ptr = R_ExternalPtrProtected(page_ptr);
-  if (TYPEOF(doc_ptr) == EXTPTRSXP) {
-    return R_ExternalPtrAddr(doc_ptr) != nullptr;
-  }
-  return R_ExternalPtrAddr(page_ptr) != nullptr;
+  return TYPEOF(doc_ptr) == EXTPTRSXP &&
+         R_ExternalPtrAddr(doc_ptr) != nullptr;
 }
 
 void finalize_annot(SEXP ptr) {
@@ -65,8 +66,6 @@ void finalize_annot(SEXP ptr) {
   FPDF_ANNOTATION a =
       static_cast<FPDF_ANNOTATION>(R_ExternalPtrAddr(ptr));
   if (a == nullptr) return;
-  // After the document is closed the context is leaked rather than
-  // risk a use-after-free.
   if (annot_close_is_safe(ptr)) {
     FPDFPage_CloseAnnot(a);
   }

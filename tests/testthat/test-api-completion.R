@@ -525,6 +525,18 @@ test_that("an appended object is freed once when the page goes first", {
   expect_no_error(gc())
 })
 
+test_that("an appended object is freed once when the document goes first", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  pdf_annot_append_object(a, pdf_rect_new(s$page, 0, 0, 50, 50))
+  pdf_doc_close(s$doc)
+  rm(a)
+  # The page handle is still open, so the finalizer closes the
+  # annotation; the deferred page close then runs on a page that no
+  # longer lists the object.
+  expect_no_error(gc())
+})
+
 test_that("pdf_annot_remove_object destroys the embedded object", {
   s <- annot_blank_page()
   a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
