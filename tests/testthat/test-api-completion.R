@@ -472,16 +472,11 @@ reload_annot_objects <- function(path) {
   page <- pdf_page_load(doc, 1L)
   on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   annot <- pdf_annotations(page)[[1L]]
-  out <- list(
+  list(
     page_objects = length(pdf_page_objects(page)),
     bounds = lapply(pdf_annot_objects(annot),
                     function(o) unname(pdf_obj_bounds(o)))
   )
-  # Collect the annotation handle while the document is open: the
-  # finalizer leaves annotations of a closed document unclosed.
-  rm(annot)
-  gc()
-  out
 }
 
 test_that("pdf_annot_append_object moves the object into the annotation", {
@@ -530,10 +525,11 @@ test_that("an appended object is freed once when the document goes first", {
   a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
   pdf_annot_append_object(a, pdf_rect_new(s$page, 0, 0, 50, 50))
   pdf_doc_close(s$doc)
+  # pdf_doc_close() closes the annotation, and with it the object the
+  # annotation owns, before the document; the deferred page close then
+  # runs on a page that no longer lists the object.
+  expect_false(pdfium:::cpp_handle_is_valid(a$ptr))
   rm(a)
-  # The page handle is still open, so the finalizer closes the
-  # annotation; the deferred page close then runs on a page that no
-  # longer lists the object.
   expect_no_error(gc())
 })
 

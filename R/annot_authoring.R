@@ -79,7 +79,7 @@ pdf_annot_new <- function(page, subtype, bounds = NULL) {
   }
   ph <- as_page_and_doc(page)
   assert_readwrite(ph$doc)
-  ptr <- cpp_annot_new(ph$page$ptr, code)
+  ptr <- cpp_annot_new(ph$page$ptr, ph$doc$ptr, code)
   idx <- cpp_annot_count(ph$page$ptr)
   if (!is.null(bounds)) {
     expect_setter_ok(

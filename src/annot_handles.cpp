@@ -3,9 +3,9 @@
 // Companion to src/annotations.cpp's bulk reader. Where the bulk
 // reader returns one big table for all annotations on a page, this
 // file returns ONE annotation handle at a time. The handle is an R
-// externalptr with a finalizer that calls FPDFPage_CloseAnnot, so
-// R's GC reclaims annotation memory deterministically when the
-// `pdfium_annot` is no longer reachable.
+// externalptr minted by make_annot_handle() (annot_registry.h): its
+// finalizer calls FPDFPage_CloseAnnot, unless closing the document
+// released the handle first.
 //
 // Per-attribute getters live here too. Each is a single PDFium
 // call; the R-side `pdf_annot_*` functions are thin wrappers.
@@ -19,18 +19,18 @@
 #include "fpdf_annot.h"
 #include "fpdf_attachment.h"
 #include "fpdf_formfill.h"
+#include "annot_registry.h"
 #include "handle_validation.h"
 #include "utf16.h"
 
 namespace {
 
 FPDF_ANNOTATION annot_from_ptr(SEXP annot_ptr) {
-  // Annot has its own finalizer (FPDFPage_CloseAnnot); its prot
-  // slot pins the parent page externalptr. When the page closes,
-  // the page externalptr's address goes NULL. The annotation
-  // context itself stays allocated until the finalizer closes it,
-  // but its page pointer now dangles, so no further PDFium call may
-  // go through the handle.
+  // The prot slot pins the parent page externalptr. When the page
+  // closes, the page externalptr's address goes NULL. The annotation
+  // context itself stays allocated until the handle is released, but
+  // its page pointer now dangles, so no further PDFium call may go
+  // through the handle.
   return static_cast<FPDF_ANNOTATION>(
       pdfium_r::validate_handle(annot_ptr, "Annotation",
                                   /*require_prot_alive=*/true));
@@ -42,34 +42,14 @@ FPDF_PAGE page_from_ptr_local(SEXP page_ptr) {
                                   /*require_prot_alive=*/false));
 }
 
-// Whether FPDFPage_CloseAnnot may run for this handle. Closing frees
-// the annotation context and the page-objects of its appearance stream
-// (FPDFAnnot_AppendObject hands those to the context). The context
-// keeps only an unowned page pointer, which its destructor never reads,
-// and a document marks its cached fonts and images when it is destroyed
-// (CPDF_DocPageData::~CPDF_DocPageData), so releasing them later does
-// not call back into it. The close runs while the page handle or the
-// document is open; with both closed the context is left in place, a
-// leak rather than an unexercised teardown order. The prot chain is
-// annot -> page externalptr -> doc externalptr.
-bool annot_close_is_safe(SEXP annot_ptr) {
-  SEXP page_ptr = R_ExternalPtrProtected(annot_ptr);
-  if (TYPEOF(page_ptr) != EXTPTRSXP) return false;
-  if (R_ExternalPtrAddr(page_ptr) != nullptr) return true;
-  SEXP doc_ptr = R_ExternalPtrProtected(page_ptr);
-  return TYPEOF(doc_ptr) == EXTPTRSXP &&
-         R_ExternalPtrAddr(doc_ptr) != nullptr;
-}
-
-void finalize_annot(SEXP ptr) {
-  if (TYPEOF(ptr) != EXTPTRSXP) return;
-  FPDF_ANNOTATION a =
-      static_cast<FPDF_ANNOTATION>(R_ExternalPtrAddr(ptr));
-  if (a == nullptr) return;
-  if (annot_close_is_safe(ptr)) {
-    FPDFPage_CloseAnnot(a);
-  }
-  R_ClearExternalPtr(ptr);
+// The document a new handle is registered under. It comes from the R
+// layer because a page handle cannot always name its document: PDFium
+// has no page-to-document call, and form-field page handles do not
+// pin their document.
+FPDF_DOCUMENT doc_from_ptr_local(SEXP doc_ptr) {
+  return static_cast<FPDF_DOCUMENT>(
+      pdfium_r::validate_handle(doc_ptr, "Document",
+                                  /*require_prot_alive=*/false));
 }
 
 std::string read_annot_string_local(FPDF_ANNOTATION annot, const char* key) {
@@ -85,27 +65,23 @@ std::string read_annot_string_local(FPDF_ANNOTATION annot, const char* key) {
 
 }  // namespace
 
+// `doc_ptr` is the document `page_ptr`'s page was loaded from.
 // [[Rcpp::export(name = "cpp_annot_get")]]
-SEXP cpp_annot_get(SEXP page_ptr, int index_zero_based) {
+SEXP cpp_annot_get(SEXP page_ptr, SEXP doc_ptr, int index_zero_based) {
   FPDF_PAGE page = page_from_ptr_local(page_ptr);
+  FPDF_DOCUMENT doc = doc_from_ptr_local(doc_ptr);
   FPDF_ANNOTATION a = FPDFPage_GetAnnot(page, index_zero_based);
   if (a == nullptr) {
     Rcpp::stop("FPDFPage_GetAnnot(%d) returned NULL.",
                index_zero_based);
   }
-  // Pin the parent page in the externalptr's `prot` slot so the
-  // page can't be GC'd before this annot handle. Matches the
-  // pattern used by pdfium_obj.
-  SEXP ptr = PROTECT(R_MakeExternalPtr(a, R_NilValue, page_ptr));
-  R_RegisterCFinalizerEx(ptr, finalize_annot,
-                         static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ptr;
+  return pdfium_r::make_annot_handle(a, page_ptr, doc);
 }
 
 // [[Rcpp::export(name = "cpp_annot_new")]]
-SEXP cpp_annot_new(SEXP page_ptr, int subtype_code) {
+SEXP cpp_annot_new(SEXP page_ptr, SEXP doc_ptr, int subtype_code) {
   FPDF_PAGE page = page_from_ptr_local(page_ptr);
+  FPDF_DOCUMENT doc = doc_from_ptr_local(doc_ptr);
   FPDF_ANNOTATION a = FPDFPage_CreateAnnot(
       page,
       static_cast<FPDF_ANNOTATION_SUBTYPE>(subtype_code));
@@ -114,13 +90,7 @@ SEXP cpp_annot_new(SEXP page_ptr, int subtype_code) {
         "FPDFPage_CreateAnnot failed for subtype code %d "
         "(subtype is illegal or unsupported).", subtype_code);
   }
-  // Same lifetime as cpp_annot_get(): the handle releases via
-  // FPDFPage_CloseAnnot on R-side GC; prot pins the parent page.
-  SEXP ptr = PROTECT(R_MakeExternalPtr(a, R_NilValue, page_ptr));
-  R_RegisterCFinalizerEx(ptr, finalize_annot,
-                         static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ptr;
+  return pdfium_r::make_annot_handle(a, page_ptr, doc);
 }
 
 // Remove the annotation behind `annot_ptr` from its page. The index
@@ -131,10 +101,10 @@ SEXP cpp_annot_new(SEXP page_ptr, int subtype_code) {
 //
 // FPDFPage_RemoveAnnot only drops the dictionary from /Annots; the
 // CPDF_AnnotContext behind the handle, and the page-objects of its
-// appearance stream, live until FPDFPage_CloseAnnot. Clearing the
-// externalptr afterwards leaves the finalizer nothing to close and
-// makes later calls on the handle, or on page-objects read from it,
-// fail in validate_handle() (ADR-020 §4).
+// appearance stream, live until FPDFPage_CloseAnnot. Releasing the
+// handle closes the context and clears the externalptr, which makes
+// later calls on the handle, or on page-objects read from it, fail in
+// validate_handle() (ADR-020 §4).
 // [[Rcpp::export(name = "cpp_annot_delete")]]
 bool cpp_annot_delete(SEXP page_ptr, SEXP annot_ptr) {
   FPDF_PAGE page = page_from_ptr_local(page_ptr);
@@ -149,8 +119,7 @@ bool cpp_annot_delete(SEXP page_ptr, SEXP annot_ptr) {
     Rcpp::stop("FPDFPage_RemoveAnnot(%d) failed.", index);
     // # nocov end
   }
-  FPDFPage_CloseAnnot(annot);
-  R_ClearExternalPtr(annot_ptr);
+  pdfium_r::release_annot_handle(annot_ptr);
   return true;
 }
 
@@ -344,17 +313,18 @@ SEXP cpp_annot_ink_paths_handle(SEXP annot_ptr) {
 }
 
 // Resolve a linked annotation (Popup, IRT) and return BOTH:
-//   * a fresh externalptr with a finalizer (FPDFPage_CloseAnnot),
+//   * a fresh annotation handle (make_annot_handle()),
 //   * the 1-based index of that annot on the page.
 // `key` is the linked-annot dict name (`"Popup"` or `"IRT"`).
 // `page_ptr` is needed because resolving the index requires walking
 // the page's annots to compare pointers (PDFium has no direct
-// "index of an annotation" API).
+// "index of an annotation" API); `doc_ptr` is its page's document.
 // [[Rcpp::export(name = "cpp_annot_linked_handle")]]
 Rcpp::List cpp_annot_linked_handle(SEXP annot_ptr, SEXP page_ptr,
-                                    std::string key) {
+                                    SEXP doc_ptr, std::string key) {
   FPDF_ANNOTATION annot = annot_from_ptr(annot_ptr);
   FPDF_PAGE page = page_from_ptr_local(page_ptr);
+  FPDF_DOCUMENT doc = doc_from_ptr_local(doc_ptr);
   FPDF_ANNOTATION linked =
       FPDFAnnot_GetLinkedAnnot(annot, key.c_str());
   if (linked == nullptr) {
@@ -416,14 +386,13 @@ Rcpp::List cpp_annot_linked_handle(SEXP annot_ptr, SEXP page_ptr,
         Rcpp::_["index"]  = found_idx);
     // # nocov end
   }
-  SEXP ptr = PROTECT(R_MakeExternalPtr(fresh, R_NilValue, page_ptr));
-  R_RegisterCFinalizerEx(ptr, finalize_annot,
-                          static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return Rcpp::List::create(
+  SEXP ptr = PROTECT(pdfium_r::make_annot_handle(fresh, page_ptr, doc));
+  Rcpp::List out = Rcpp::List::create(
       Rcpp::_["found"]  = true,
       Rcpp::_["handle"] = ptr,
       Rcpp::_["index"]  = found_idx);
+  UNPROTECT(1);
+  return out;
 }
 
 // File-attachment annotation payload: returns the attached file's

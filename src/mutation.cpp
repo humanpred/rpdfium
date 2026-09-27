@@ -20,6 +20,7 @@
 #include "fpdf_catalog.h"
 #include "fpdf_ppo.h"
 #include "fpdf_transformpage.h"
+#include "document_handle.h"
 #include "utf16.h"
 
 namespace {
@@ -127,20 +128,8 @@ SEXP cpp_import_n_pages_to_one(SEXP src_doc_ptr,
   }
   // # nocov end
   SEXP ptr = PROTECT(R_MakeExternalPtr(out, R_NilValue, R_NilValue));
-  // Reuse the document finalizer by registering one inline. Mirrors
-  // init.cpp's finalize_document.
-  R_RegisterCFinalizerEx(
-      ptr,
-      [](SEXP p) {
-        if (TYPEOF(p) != EXTPTRSXP) return;
-        FPDF_DOCUMENT d =
-            static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(p));
-        if (d != nullptr) {
-          FPDF_CloseDocument(d);
-          R_ClearExternalPtr(p);
-        }
-      },
-      static_cast<Rboolean>(TRUE));
+  R_RegisterCFinalizerEx(ptr, pdfium_r::finalize_document,
+                         static_cast<Rboolean>(TRUE));
   UNPROTECT(1);
   return ptr;
 }

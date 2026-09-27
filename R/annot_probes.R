@@ -135,7 +135,7 @@ pdf_link_annot_at_point <- function(page, x, y, page_num = 1L) {
   # page, which the shipped fixtures don't exercise.
   if (is.na(idx)) return(NULL)
   # nocov end
-  ptr <- cpp_annot_get(page$ptr, idx - 1L)
+  ptr <- cpp_annot_get(page$ptr, page$doc$ptr, idx - 1L)
   new_pdfium_annot(ptr, page, idx)
 }
 

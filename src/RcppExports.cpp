@@ -11,26 +11,28 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // cpp_annot_get
-SEXP cpp_annot_get(SEXP page_ptr, int index_zero_based);
-RcppExport SEXP _pdfium_cpp_annot_get(SEXP page_ptrSEXP, SEXP index_zero_basedSEXP) {
+SEXP cpp_annot_get(SEXP page_ptr, SEXP doc_ptr, int index_zero_based);
+RcppExport SEXP _pdfium_cpp_annot_get(SEXP page_ptrSEXP, SEXP doc_ptrSEXP, SEXP index_zero_basedSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     Rcpp::traits::input_parameter< int >::type index_zero_based(index_zero_basedSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_annot_get(page_ptr, index_zero_based));
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_get(page_ptr, doc_ptr, index_zero_based));
     return rcpp_result_gen;
 END_RCPP
 }
 // cpp_annot_new
-SEXP cpp_annot_new(SEXP page_ptr, int subtype_code);
-RcppExport SEXP _pdfium_cpp_annot_new(SEXP page_ptrSEXP, SEXP subtype_codeSEXP) {
+SEXP cpp_annot_new(SEXP page_ptr, SEXP doc_ptr, int subtype_code);
+RcppExport SEXP _pdfium_cpp_annot_new(SEXP page_ptrSEXP, SEXP doc_ptrSEXP, SEXP subtype_codeSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     Rcpp::traits::input_parameter< int >::type subtype_code(subtype_codeSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_annot_new(page_ptr, subtype_code));
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_new(page_ptr, doc_ptr, subtype_code));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -183,15 +185,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_annot_linked_handle
-Rcpp::List cpp_annot_linked_handle(SEXP annot_ptr, SEXP page_ptr, std::string key);
-RcppExport SEXP _pdfium_cpp_annot_linked_handle(SEXP annot_ptrSEXP, SEXP page_ptrSEXP, SEXP keySEXP) {
+Rcpp::List cpp_annot_linked_handle(SEXP annot_ptr, SEXP page_ptr, SEXP doc_ptr, std::string key);
+RcppExport SEXP _pdfium_cpp_annot_linked_handle(SEXP annot_ptrSEXP, SEXP page_ptrSEXP, SEXP doc_ptrSEXP, SEXP keySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type annot_ptr(annot_ptrSEXP);
     Rcpp::traits::input_parameter< SEXP >::type page_ptr(page_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     Rcpp::traits::input_parameter< std::string >::type key(keySEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_annot_linked_handle(annot_ptr, page_ptr, key));
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_linked_handle(annot_ptr, page_ptr, doc_ptr, key));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3305,8 +3308,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_pdfium_cpp_annot_get", (DL_FUNC) &_pdfium_cpp_annot_get, 2},
-    {"_pdfium_cpp_annot_new", (DL_FUNC) &_pdfium_cpp_annot_new, 2},
+    {"_pdfium_cpp_annot_get", (DL_FUNC) &_pdfium_cpp_annot_get, 3},
+    {"_pdfium_cpp_annot_new", (DL_FUNC) &_pdfium_cpp_annot_new, 3},
     {"_pdfium_cpp_annot_delete", (DL_FUNC) &_pdfium_cpp_annot_delete, 2},
     {"_pdfium_cpp_annot_subtype_code", (DL_FUNC) &_pdfium_cpp_annot_subtype_code, 1},
     {"_pdfium_cpp_annot_flags", (DL_FUNC) &_pdfium_cpp_annot_flags, 1},
@@ -3320,7 +3323,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_annot_quad_points_handle", (DL_FUNC) &_pdfium_cpp_annot_quad_points_handle, 1},
     {"_pdfium_cpp_annot_vertices_handle", (DL_FUNC) &_pdfium_cpp_annot_vertices_handle, 1},
     {"_pdfium_cpp_annot_ink_paths_handle", (DL_FUNC) &_pdfium_cpp_annot_ink_paths_handle, 1},
-    {"_pdfium_cpp_annot_linked_handle", (DL_FUNC) &_pdfium_cpp_annot_linked_handle, 3},
+    {"_pdfium_cpp_annot_linked_handle", (DL_FUNC) &_pdfium_cpp_annot_linked_handle, 4},
     {"_pdfium_cpp_annot_file_attachment_name_handle", (DL_FUNC) &_pdfium_cpp_annot_file_attachment_name_handle, 1},
     {"_pdfium_cpp_annot_dict_value", (DL_FUNC) &_pdfium_cpp_annot_dict_value, 3},
     {"_pdfium_cpp_annot_appearance", (DL_FUNC) &_pdfium_cpp_annot_appearance, 3},

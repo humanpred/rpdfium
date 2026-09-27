@@ -10,6 +10,10 @@
 #include <cstring>
 #include "fpdfview.h"
 #include "fpdf_edit.h"
+#include "annot_registry.h"
+#include "document_handle.h"
+
+using pdfium_r::finalize_document;
 
 namespace {
 
@@ -19,16 +23,24 @@ namespace {
 // crashing PDFium.
 bool g_library_initialised = false;
 
-void finalize_document(SEXP ptr) {
-  if (TYPEOF(ptr) != EXTPTRSXP) return;
-  FPDF_DOCUMENT doc = static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(ptr));
-  if (doc != nullptr) {
-    FPDF_CloseDocument(doc);
-    R_ClearExternalPtr(ptr);
-  }
+} // namespace
+
+namespace pdfium_r {
+
+void close_document_handle(SEXP doc_ptr) {
+  FPDF_DOCUMENT doc = static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr));
+  if (doc == nullptr) return;
+  release_doc_annot_handles(doc);
+  FPDF_CloseDocument(doc);
+  R_ClearExternalPtr(doc_ptr);
 }
 
-} // namespace
+void finalize_document(SEXP doc_ptr) {
+  if (TYPEOF(doc_ptr) != EXTPTRSXP) return;
+  close_document_handle(doc_ptr);
+}
+
+}  // namespace pdfium_r
 
 // [[Rcpp::export(name = "cpp_init_library")]]
 void cpp_init_library() {
@@ -135,11 +147,7 @@ void cpp_close_document(SEXP ptr) {
   if (TYPEOF(ptr) != EXTPTRSXP) {
     Rcpp::stop("Expected an external pointer.");
   }
-  FPDF_DOCUMENT doc = static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(ptr));
-  if (doc != nullptr) {
-    FPDF_CloseDocument(doc);
-    R_ClearExternalPtr(ptr);
-  }
+  pdfium_r::close_document_handle(ptr);
 }
 
 // [[Rcpp::export(name = "cpp_handle_is_valid")]]
