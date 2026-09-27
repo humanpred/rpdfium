@@ -14,7 +14,7 @@ Markdown ADR following the
 | [004](ADR-004-api-style.md)      | Accepted | API style: snake_case `pdf_*`, S3 classes, tibble outputs |
 | [005](ADR-005-memory-model.md)   | Accepted (C finalizers superseded by ADR-031) | Memory model: `externalptr` + finalizers + idempotent explicit close |
 | [006](ADR-006-pdfium-pin.md)     | Accepted | PDFium version pinning policy |
-| [007](ADR-007-ci-and-coverage.md) | Accepted | CI: GitHub Actions matrix, 100% R coverage gate, valgrind, ASan |
+| [007](ADR-007-ci-and-coverage.md) | Accepted (`cran-check.yaml` row superseded by ADR-030) | CI: GitHub Actions matrix, 100% R coverage gate, valgrind, ASan |
 | [008](ADR-008-cran-targeting.md) | Accepted (release targeting superseded by ADR-026; quality constraints in force) | CRAN-from-v0.1.0 hardening |
 | [009](ADR-009-defer-bezier-controls.md) | Superseded by ADR-021 | Defer Bezier control points to a post-0.1.0 release (no public PDFium API) |
 | [010](ADR-010-checkmate-for-argument-validation.md) | Accepted | Use `checkmate` for argument validation throughout the package |
@@ -36,6 +36,7 @@ Markdown ADR following the
 | [026](ADR-026-no-cran-release.md) | Supersedes ADR-008's release targeting and ADR-003's CRAN-submission wording | No CRAN release: keep ADR-008's CRAN-quality bar, ship binaries through r-universe and source through GitHub |
 | [028](ADR-028-library-destroy-closes-every-handle.md) | Accepted (extends ADR-025; memory-buffer handle superseded by ADR-031) | Destroying the library closes every handle first: documents, standalone clip paths, bitmaps and memory-document buffers are registered under the library and released before `FPDF_DestroyLibrary`; every finalizer is attached in one place |
 | [029](ADR-029-handles-follow-their-owners.md) | Accepted (extends ADR-020 §4 and ADR-025) | A handle is refused once any of its owners is closed: clip paths pin their page-object and nested objects their form, and `validate_handle()` and `is_open()` walk the whole ownership chain |
+| [030](ADR-030-rhub-v2-cran-flavour-checks.md) | Supersedes ADR-007's `cran-check.yaml` row | Weekly CRAN-flavour checks with rhub v2 (`rhub.yaml`): windows and macos-arm64 on R-devel, gcc-asan, clang-asan, rchk, nosuggests; replaces the defunct `rhub::check_for_cran()` job |
 | [031](ADR-031-r-level-finalizers.md) | Supersedes ADR-005's C finalizers and ADR-028's memory-buffer handle | Handle finalizers are R functions that call in only while the shared library is loaded: `make_handle()` registers `finalize_handle()`, which looks its routine up by name each time and releases only handles the loaded library registered; a memory document's bytes are a raw vector in its handle's `prot` slot |
 
 ## Policy
