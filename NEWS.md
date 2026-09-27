@@ -103,6 +103,10 @@
   never takes ownership of an inserted clip path, so the path was never
   freed. The handle now stays open, can be inserted into other pages,
   and is released by `pdf_clip_path_close()` or garbage collection.
+* `pdf_system_fonts_install_default()` installs PDFium's default
+  system-font provider once per library lifetime, and the package frees
+  it when it shuts the library down. Each call used to allocate a new
+  provider that was never completely freed.
 
 # pdfium 0.1.0
 

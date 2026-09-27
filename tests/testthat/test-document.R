@@ -175,3 +175,34 @@ test_that("cpp_destroy_library + reopen survives a round-trip", {
   on.exit(pdf_doc_close(doc), add = TRUE)
   expect_identical(pdf_page_count(doc), 1L)
 })
+
+test_that("the default system-font provider survives a library round-trip", {
+  # Finalize documents from earlier tests while the library that
+  # opened them is still alive.
+  invisible(gc())
+  expect_identical(pdf_system_fonts_install_default(), TRUE)
+  # Destroying the library frees the provider; installing again
+  # re-initialises the library and installs a new one.
+  pdfium:::cpp_destroy_library()
+  expect_identical(pdf_system_fonts_install_default(), TRUE)
+  expect_identical(pdf_system_fonts_install_default(), TRUE)
+  # A font that is not embedded is substituted through the font
+  # mapper, which consults the installed provider.
+  bytes <- inline_pdf_bytes(c(
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    paste0(
+      "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 60] ",
+      "/Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>"
+    ),
+    inline_pdf_stream("", "BT /F1 36 Tf 10 15 Td (Hello) Tj ET"),
+    "<< /Type /Font /Subtype /TrueType /BaseFont /DejaVuSans >>"
+  ))
+  doc <- pdf_doc_open(source = bytes)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  text_obj <- pdf_page_objects(page)[[1L]]
+  expect_false(pdf_text_font(text_obj)$font_is_embedded)
+  expect_true(any(as.raster(pdf_render_page(page)) != "#FFFFFFFF"))
+})

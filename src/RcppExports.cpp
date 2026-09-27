@@ -1004,16 +1004,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// cpp_install_default_sysfont_info
-bool cpp_install_default_sysfont_info();
-RcppExport SEXP _pdfium_cpp_install_default_sysfont_info() {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    rcpp_result_gen = Rcpp::wrap(cpp_install_default_sysfont_info());
-    return rcpp_result_gen;
-END_RCPP
-}
 // cpp_doc_import_pages_string
 bool cpp_doc_import_pages_string(SEXP dest_ptr, SEXP src_ptr, std::string range, int dest_index_zero);
 RcppExport SEXP _pdfium_cpp_doc_import_pages_string(SEXP dest_ptrSEXP, SEXP src_ptrSEXP, SEXP rangeSEXP, SEXP dest_index_zeroSEXP) {
@@ -1990,6 +1980,16 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     cpp_destroy_library();
     return R_NilValue;
+END_RCPP
+}
+// cpp_install_default_sysfont_info
+bool cpp_install_default_sysfont_info();
+RcppExport SEXP _pdfium_cpp_install_default_sysfont_info() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(cpp_install_default_sysfont_info());
+    return rcpp_result_gen;
 END_RCPP
 }
 // cpp_open_document
@@ -3388,7 +3388,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_image_set_bitmap", (DL_FUNC) &_pdfium_cpp_image_set_bitmap, 2},
     {"_pdfium_cpp_default_ttf_map_size", (DL_FUNC) &_pdfium_cpp_default_ttf_map_size, 0},
     {"_pdfium_cpp_default_ttf_map_entry", (DL_FUNC) &_pdfium_cpp_default_ttf_map_entry, 1},
-    {"_pdfium_cpp_install_default_sysfont_info", (DL_FUNC) &_pdfium_cpp_install_default_sysfont_info, 0},
     {"_pdfium_cpp_doc_import_pages_string", (DL_FUNC) &_pdfium_cpp_doc_import_pages_string, 4},
     {"_pdfium_cpp_doc_copy_viewer_preferences", (DL_FUNC) &_pdfium_cpp_doc_copy_viewer_preferences, 2},
     {"_pdfium_cpp_page_transform_with_clip", (DL_FUNC) &_pdfium_cpp_page_transform_with_clip, 3},
@@ -3473,6 +3472,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_image_filters", (DL_FUNC) &_pdfium_cpp_image_filters, 1},
     {"_pdfium_cpp_init_library", (DL_FUNC) &_pdfium_cpp_init_library, 0},
     {"_pdfium_cpp_destroy_library", (DL_FUNC) &_pdfium_cpp_destroy_library, 0},
+    {"_pdfium_cpp_install_default_sysfont_info", (DL_FUNC) &_pdfium_cpp_install_default_sysfont_info, 0},
     {"_pdfium_cpp_open_document", (DL_FUNC) &_pdfium_cpp_open_document, 2},
     {"_pdfium_cpp_open_document_from_memory", (DL_FUNC) &_pdfium_cpp_open_document_from_memory, 2},
     {"_pdfium_cpp_create_new_document", (DL_FUNC) &_pdfium_cpp_create_new_document, 0},

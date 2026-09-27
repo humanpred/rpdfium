@@ -725,8 +725,10 @@ test_that("pdf_system_fonts_default_ttf_map returns a tibble", {
 })
 
 test_that("pdf_system_fonts_install_default returns TRUE on supported platforms", {
-  ok <- pdf_system_fonts_install_default()
-  expect_true(isTRUE(ok))
+  expect_identical(pdf_system_fonts_install_default(), TRUE)
+  # The provider is installed once per library lifetime; a repeat call
+  # reports it as installed rather than allocating another.
+  expect_identical(pdf_system_fonts_install_default(), TRUE)
 })
 
 # =========================================================================

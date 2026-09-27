@@ -321,10 +321,6 @@ cpp_default_ttf_map_entry <- function(index_zero) {
     .Call(`_pdfium_cpp_default_ttf_map_entry`, index_zero)
 }
 
-cpp_install_default_sysfont_info <- function() {
-    .Call(`_pdfium_cpp_install_default_sysfont_info`)
-}
-
 cpp_doc_import_pages_string <- function(dest_ptr, src_ptr, range, dest_index_zero) {
     .Call(`_pdfium_cpp_doc_import_pages_string`, dest_ptr, src_ptr, range, dest_index_zero)
 }
@@ -659,6 +655,10 @@ cpp_init_library <- function() {
 
 cpp_destroy_library <- function() {
     invisible(.Call(`_pdfium_cpp_destroy_library`))
+}
+
+cpp_install_default_sysfont_info <- function() {
+    .Call(`_pdfium_cpp_install_default_sysfont_info`)
 }
 
 cpp_open_document <- function(path, password) {
