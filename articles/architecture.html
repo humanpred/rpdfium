@@ -159,10 +159,12 @@ instead of reading freed memory:</p>
 <span><span class="co">#&gt; Error: Page has been closed: its document was closed.</span></span></code></pre></div>
 <p>The same holds further down. Deleting an annotation with
 <code><a href="../reference/pdf_annot_delete.html">pdf_annot_delete()</a></code> closes the page-objects read from its
-appearance stream with <code><a href="../reference/pdf_annot_objects.html">pdf_annot_objects()</a></code>, and deleting a
-form object with <code><a href="../reference/pdf_obj_delete.html">pdf_obj_delete()</a></code> closes the objects read
-from it with <code><a href="../reference/pdf_form_objects.html">pdf_form_objects()</a></code>. A clip path from
-<code><a href="../reference/pdf_obj_clip_path.html">pdf_obj_clip_path()</a></code> closes with its page-object.</p>
+appearance stream with <code><a href="../reference/pdf_annot_objects.html">pdf_annot_objects()</a></code>, removing one of
+them with <code><a href="../reference/pdf_annot_remove_object.html">pdf_annot_remove_object()</a></code> closes the handles to
+it, and deleting a form object with <code><a href="../reference/pdf_obj_delete.html">pdf_obj_delete()</a></code> closes
+the objects read from it with <code><a href="../reference/pdf_form_objects.html">pdf_form_objects()</a></code>. A clip
+path from <code><a href="../reference/pdf_obj_clip_path.html">pdf_obj_clip_path()</a></code> closes with its
+page-object.</p>
 <p>Close a document when you are done with everything read from it.</p>
 </div>
 <div class="section level2">

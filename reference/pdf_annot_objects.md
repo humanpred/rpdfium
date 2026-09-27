@@ -5,7 +5,9 @@ Wraps `FPDFAnnot_GetObject` over the full count and
 the annotation's normal (`/AP /N`) appearance stream. Returns a list of
 `pdfium_obj` handles; each handle's externalptr pins the parent
 annotation, so the embedded objects can't dangle past the annot's
-lifetime.
+lifetime, and
+[`pdf_annot_remove_object()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_remove_object.md)
+closes the handles to the object it removes.
 
 ## Usage
 

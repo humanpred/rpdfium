@@ -103,7 +103,9 @@ The same holds further down. Deleting an annotation with
 [`pdf_annot_delete()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_delete.md)
 closes the page-objects read from its appearance stream with
 [`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md),
-and deleting a form object with
+removing one of them with
+[`pdf_annot_remove_object()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_remove_object.md)
+closes the handles to it, and deleting a form object with
 [`pdf_obj_delete()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_delete.md)
 closes the objects read from it with
 [`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md).

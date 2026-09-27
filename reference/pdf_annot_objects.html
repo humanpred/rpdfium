@@ -4,12 +4,14 @@ FPDFPageObj_GetType for each object. PDFium parses the objects
 from the annotation's normal (/AP /N) appearance stream. Returns a
 list of pdfium_obj handles; each handle's externalptr pins the
 parent annotation, so the embedded objects can't dangle past the
-annot's lifetime."><meta property="og:description" content="Wraps FPDFAnnot_GetObject over the full count and
+annot's lifetime, and pdf_annot_remove_object() closes the handles
+to the object it removes."><meta property="og:description" content="Wraps FPDFAnnot_GetObject over the full count and
 FPDFPageObj_GetType for each object. PDFium parses the objects
 from the annotation's normal (/AP /N) appearance stream. Returns a
 list of pdfium_obj handles; each handle's externalptr pins the
 parent annotation, so the embedded objects can't dangle past the
-annot's lifetime."></head><body>
+annot's lifetime, and pdf_annot_remove_object() closes the handles
+to the object it removes."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -59,7 +61,8 @@ annot's lifetime."></head><body>
 from the annotation's normal (<code>/AP /N</code>) appearance stream. Returns a
 list of <code>pdfium_obj</code> handles; each handle's externalptr pins the
 parent annotation, so the embedded objects can't dangle past the
-annot's lifetime.</p>
+annot's lifetime, and <code><a href="pdf_annot_remove_object.html">pdf_annot_remove_object()</a></code> closes the handles
+to the object it removes.</p>
     </div>
 
     <div class="section level2">

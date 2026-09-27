@@ -4,12 +4,17 @@ Wraps `FPDFAnnot_RemoveObject`. The object is identified by its position
 within the annotation's embedded content (one-based, matching
 [`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md)).
 PDFium destroys the object and regenerates the annotation's appearance
-stream, so handles to it from an earlier
+stream. The handles to the object from earlier
 [`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md)
-call, and the clip paths and nested objects read from them, are stale
-and must not be used; call
+calls on `annot` are closed, and so are the clip paths and nested
+objects read from them: further calls on them error cleanly. The handles
+to the remaining objects stay valid, but their positions shift down by
+one; call
 [`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md)
-again for the remaining ones.
+again for the new positions. Objects read through another handle to the
+same annotation, for example from a second
+[`pdf_annotations()`](https://humanpred.github.io/rpdfium/reference/pdf_annotations.md)
+call, are separate copies and are not affected.
 
 ## Usage
 

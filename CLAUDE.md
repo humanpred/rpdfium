@@ -140,8 +140,9 @@ for the rationale. The short version:
 
 - Every PDFium handle (`FPDF_DOCUMENT`, `FPDF_PAGE`, etc.) lives behind
   an R `externalptr`. Every handle with a finalizer is in one registry,
-  `src/handle_registry.{h,cpp}` (ADR-024, ADR-025, ADR-028): annotation
-  contexts, pages, fonts and XObjects under their document; documents,
+  `src/handle_registry.{h,cpp}` (ADR-024, ADR-025, ADR-028, ADR-031,
+  ADR-032): annotation contexts, pages, fonts, XObjects and annotation
+  page-objects under their document; documents,
   [`pdf_clip_path_new()`](https://humanpred.github.io/rpdfium/reference/pdf_clip_path_new.md)
   clip paths and bitmaps under the library.
 - One mint and one release path per kind: `make_*_handle()` alone

@@ -262,6 +262,13 @@
   [`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md).
   They used to read the freed objects once the form was destroyed
   (ADR-029).
+- [`pdf_annot_remove_object()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_remove_object.md)
+  closes the handles to the object it removes, from every earlier
+  [`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md)
+  call on the annotation handle, together with the clip paths and nested
+  objects read from them; they now fail with “The object was removed
+  from its annotation by pdf_annot_remove_object().” They used to read
+  the freed object (ADR-032).
 - Shutting PDFium down, as unloading the package does, first closes
   every open document together with its pages, annotations, fonts and
   XObjects, and every clip path and bitmap from
