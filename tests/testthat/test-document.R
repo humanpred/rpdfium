@@ -163,28 +163,117 @@ test_that("cpp_open_document_from_memory errors on garbage bytes", {
   )
 })
 
-test_that("cpp_destroy_library + reopen survives a round-trip", {
-  # Drive the .onUnload code path mid-process by destroying and
-  # re-initialising the library, then verify a fresh document opens.
-  # All previously-open docs in this test must be closed first.
+test_that("documents, clip paths, bitmaps and buffers are registered under the library", {
+  # Collect what earlier tests left to the collector: a handle whose
+  # owner has a finalizer too is finalized one collection before it.
+  for (i in 1:5) invisible(gc())
+  before <- pdfium:::cpp_library_handle_counts()
+  kept <- list(
+    doc = pdf_doc_new(),
+    clip = pdf_clip_path_new(c(0, 0, 10, 10)),
+    bitmap = pdf_bitmap_new(4L, 4L)
+  )
+  dropped <- list(
+    doc = pdf_doc_open(source = inline_clip_pdf()),
+    clip = pdf_clip_path_new(c(0, 0, 10, 10)),
+    bitmap = pdf_bitmap_new(4L, 4L)
+  )
+  expect_identical(
+    pdfium:::cpp_library_handle_counts() - before,
+    c(document = 2L, clip_path = 2L, bitmap = 2L, buffer = 1L)
+  )
+  # Collecting a handle deregisters it; the buffer of a document read
+  # from memory goes a collection after the document handle pinning it.
+  rm(dropped)
+  for (i in 1:3) invisible(gc())
+  expect_identical(
+    pdfium:::cpp_library_handle_counts() - before,
+    c(document = 1L, clip_path = 1L, bitmap = 1L, buffer = 0L)
+  )
+  # So does closing it.
+  pdf_doc_close(kept$doc)
+  pdf_clip_path_close(kept$clip)
+  pdf_bitmap_close(kept$bitmap)
+  expect_identical(
+    pdfium:::cpp_library_handle_counts() - before,
+    c(document = 0L, clip_path = 0L, bitmap = 0L, buffer = 0L)
+  )
+})
+
+test_that("cpp_destroy_library() closes every handle first (ADR-028)", {
+  # Drive the .onUnload code path mid-process with a handle of every
+  # kind the package closes still open, plus handles that are
+  # unreachable but not yet collected.
+  doc <- pdf_doc_open(source = inline_annot_objects_pdf(), readwrite = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  annot <- pdf_annotations(page)[[1L]]
+  obj <- pdf_annot_objects(annot)[[1L]]
+  font <- pdf_font_load_standard(doc, "Helvetica")
+  xobject <- pdf_xobject_from_page(doc, doc, 1L)
+  clip <- pdf_clip_path_new(c(0, 0, 10, 10))
+  bitmap <- pdf_bitmap_new(4L, 4L)
+  local({
+    d <- pdf_doc_open(source = inline_annot_objects_pdf())
+    pdf_annotations(pdf_page_load(d, 1L))
+    invisible(NULL)
+  })
+  expect_identical(
+    pdfium:::cpp_doc_handle_counts(doc$ptr),
+    c(annot = 1L, page = 1L, font = 1L, xobject = 1L)
+  )
   pdfium:::cpp_destroy_library()
   # Idempotent: a second destroy is a no-op.
   pdfium:::cpp_destroy_library()
+  expect_identical(
+    pdfium:::cpp_library_handle_counts(),
+    c(document = 0L, clip_path = 0L, bitmap = 0L, buffer = 0L)
+  )
+  expect_identical(
+    pdfium:::cpp_doc_handle_counts(doc$ptr),
+    c(annot = 0L, page = 0L, font = 0L, xobject = 0L)
+  )
+  for (h in list(doc, page, annot, obj, font, xobject)) {
+    expect_false(is_open(h))
+  }
+  expect_false(pdfium:::cpp_handle_is_valid(clip$ptr))
+  expect_false(pdfium:::cpp_handle_is_valid(bitmap$ptr))
+  expect_error(pdf_page_count(doc), "^Document has been closed\\.$")
+  expect_error(
+    pdf_render_page(page),
+    "^Page has been closed: its document was closed\\.$"
+  )
+  expect_error(pdf_annot_subtype(annot), "^Annotation handle has been closed\\.$")
+  expect_error(pdf_bitmap_info(bitmap), "^Bitmap handle has been closed\\.$")
+  # Closing them again, and collecting them, reaches no PDFium state.
+  expect_no_error({
+    pdf_page_close(page)
+    pdf_font_close(font)
+    pdf_xobject_close(xobject)
+    pdf_clip_path_close(clip)
+    pdf_bitmap_close(bitmap)
+    pdf_doc_close(doc)
+    rm(doc, page, annot, obj, font, xobject, clip, bitmap)
+    gc()
+  })
   # Open auto-reinits via the g_library_initialised flag in init.cpp.
   doc <- pdf_doc_open(fixture_path("minimal"))
   on.exit(pdf_doc_close(doc), add = TRUE)
   expect_identical(pdf_page_count(doc), 1L)
+  expect_identical(pdf_bitmap_info(pdf_bitmap_new(2L, 3L))$height, 3L)
 })
 
 test_that("the default system-font provider survives a library round-trip", {
-  # Finalize documents from earlier tests while the library that
-  # opened them is still alive.
-  invisible(gc())
   expect_identical(pdf_system_fonts_install_default(), TRUE)
+  # A document left open across the round-trip is closed by it.
+  open_before <- pdf_doc_open(source = inline_annot_objects_pdf())
+  page_before <- pdf_page_load(open_before, 1L)
   # Destroying the library frees the provider; installing again
   # re-initialises the library and installs a new one.
   pdfium:::cpp_destroy_library()
   expect_identical(pdf_system_fonts_install_default(), TRUE)
+  expect_false(is_open(open_before))
+  expect_false(is_open(page_before))
+  expect_invisible(pdf_doc_close(open_before))
   expect_identical(pdf_system_fonts_install_default(), TRUE)
   # A font that is not embedded is substituted through the font
   # mapper, which consults the installed provider.

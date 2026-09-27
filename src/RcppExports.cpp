@@ -1858,6 +1858,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_library_handle_counts
+Rcpp::IntegerVector cpp_library_handle_counts();
+RcppExport SEXP _pdfium_cpp_library_handle_counts() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(cpp_library_handle_counts());
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_image_new_from_jpeg
 SEXP cpp_image_new_from_jpeg(SEXP doc_ptr, SEXP page_ptr, Rcpp::RawVector jpeg_bytes);
 RcppExport SEXP _pdfium_cpp_image_new_from_jpeg(SEXP doc_ptrSEXP, SEXP page_ptrSEXP, SEXP jpeg_bytesSEXP) {
@@ -3463,6 +3473,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_text_obj_font_metrics", (DL_FUNC) &_pdfium_cpp_text_obj_font_metrics, 2},
     {"_pdfium_cpp_text_char_font_info", (DL_FUNC) &_pdfium_cpp_text_char_font_info, 1},
     {"_pdfium_cpp_doc_handle_counts", (DL_FUNC) &_pdfium_cpp_doc_handle_counts, 1},
+    {"_pdfium_cpp_library_handle_counts", (DL_FUNC) &_pdfium_cpp_library_handle_counts, 0},
     {"_pdfium_cpp_image_new_from_jpeg", (DL_FUNC) &_pdfium_cpp_image_new_from_jpeg, 3},
     {"_pdfium_cpp_image_new_blank", (DL_FUNC) &_pdfium_cpp_image_new_blank, 2},
     {"_pdfium_cpp_image_metadata", (DL_FUNC) &_pdfium_cpp_image_metadata, 2},

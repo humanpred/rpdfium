@@ -12,9 +12,6 @@
 #include "fpdf_edit.h"
 #include "fpdf_sysfontinfo.h"
 #include "handle_registry.h"
-#include "document_handle.h"
-
-using pdfium_r::finalize_document;
 
 namespace {
 
@@ -31,23 +28,6 @@ FPDF_SYSFONTINFO* g_default_sysfont_info = nullptr;
 
 } // namespace
 
-namespace pdfium_r {
-
-void close_document_handle(SEXP doc_ptr) {
-  FPDF_DOCUMENT doc = static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr));
-  if (doc == nullptr) return;
-  release_doc_handles(doc);
-  FPDF_CloseDocument(doc);
-  R_ClearExternalPtr(doc_ptr);
-}
-
-void finalize_document(SEXP doc_ptr) {
-  if (TYPEOF(doc_ptr) != EXTPTRSXP) return;
-  close_document_handle(doc_ptr);
-}
-
-}  // namespace pdfium_r
-
 // [[Rcpp::export(name = "cpp_init_library")]]
 void cpp_init_library() {
   if (g_library_initialised) return;
@@ -60,9 +40,22 @@ void cpp_init_library() {
   g_library_initialised = true;
 }
 
+namespace pdfium_r {
+
+void ensure_library_initialised() { cpp_init_library(); }
+
+}  // namespace pdfium_r
+
+// PDFium must not be called once the library is destroyed, and a
+// document, page or other object it made is not safe to close after
+// that, nor once the library is initialised again (fpdfview.h,
+// ADR-028). Every such handle is registered under the library, so it
+// is released first: its externalptr reads as closed from then on, and
+// its finalizer only deregisters it.
 // [[Rcpp::export(name = "cpp_destroy_library")]]
 void cpp_destroy_library() {
   if (!g_library_initialised) return;
+  pdfium_r::release_library_handles();
   FPDF_DestroyLibrary();
   // Tearing the library down runs the installed provider's Release
   // callback, which reads the struct; only afterwards is it unused.
@@ -78,7 +71,7 @@ void cpp_destroy_library() {
 // call returns true without allocating another.
 // [[Rcpp::export(name = "cpp_install_default_sysfont_info")]]
 bool cpp_install_default_sysfont_info() {
-  if (!g_library_initialised) cpp_init_library();
+  pdfium_r::ensure_library_initialised();
   if (g_default_sysfont_info != nullptr) return true;
   FPDF_SYSFONTINFO* info = FPDF_GetDefaultSystemFontInfo();
   // # nocov start — NULL only on platforms without a default provider
@@ -95,71 +88,50 @@ bool cpp_install_default_sysfont_info() {
 
 // [[Rcpp::export(name = "cpp_open_document")]]
 SEXP cpp_open_document(std::string path, std::string password) {
-  if (!g_library_initialised) cpp_init_library();
+  pdfium_r::ensure_library_initialised();
   const char* pwd = password.empty() ? nullptr : password.c_str();
   FPDF_DOCUMENT doc = FPDF_LoadDocument(path.c_str(), pwd);
   if (doc == nullptr) {
     unsigned long err = FPDF_GetLastError();
     Rcpp::stop("Failed to load PDF (FPDF error %lu): %s", err, path);
   }
-  SEXP ptr = PROTECT(R_MakeExternalPtr(doc, R_NilValue, R_NilValue));
-  // Explicit Rboolean cast: PDFium's public headers transitively include
-  // <windows.h> on Windows, which defines TRUE as the integer macro 1.
-  // Under -Werror=permissive that conversion to Rboolean fails to compile;
-  // the cast keeps the source portable across Linux / macOS / Windows.
-  R_RegisterCFinalizerEx(ptr, finalize_document, static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ptr;
+  return pdfium_r::make_document_handle(doc, R_NilValue);
 }
 
 // [[Rcpp::export(name = "cpp_open_document_from_memory")]]
 SEXP cpp_open_document_from_memory(Rcpp::RawVector bytes,
                                    std::string password) {
-  if (!g_library_initialised) cpp_init_library();
+  pdfium_r::ensure_library_initialised();
   const char* pwd = password.empty() ? nullptr : password.c_str();
   // FPDF_LoadMemDocument64 takes a 64-bit size so R xlen_t values
   // beyond INT_MAX are safe. The buffer must remain valid for the
   // lifetime of the FPDF_DOCUMENT (PDFium does not copy it), so we
-  // copy the R RAW vector into a heap buffer owned by the document
-  // and free it in the finalizer via the externalptr's `tag` slot.
+  // copy the R RAW vector into a heap buffer whose handle the
+  // document's handle pins in its prot slot; the buffer handle's
+  // finalizer frees it once the document handle is gone. The buffer
+  // gets its handle before the document is loaded, so no failure
+  // leaves an open document reading a freed buffer.
   size_t n = static_cast<size_t>(bytes.size());
   unsigned char* buf = new unsigned char[n];
   std::memcpy(buf, bytes.begin(), n);
+  SEXP buf_ptr = PROTECT(pdfium_r::make_buffer_handle(buf));
   FPDF_DOCUMENT doc =
       FPDF_LoadMemDocument64(buf, n, pwd);
   if (doc == nullptr) {
-    delete[] buf;
+    pdfium_r::release_buffer_handle(buf_ptr);
+    UNPROTECT(1);
     unsigned long err = FPDF_GetLastError();
     Rcpp::stop("Failed to load PDF from memory (FPDF error %lu).",
                err);
   }
-  // Wrap the heap buffer in an externalptr so R reclaims it when
-  // the document externalptr is GC'd. The buffer-finalizer cannot
-  // run while the doc is live because we keep the buffer-ptr in
-  // the doc-ptr's protected slot.
-  SEXP buf_ptr = PROTECT(
-      R_MakeExternalPtr(buf, R_NilValue, R_NilValue));
-  R_RegisterCFinalizerEx(buf_ptr,
-                          [](SEXP p) {
-                            void* b = R_ExternalPtrAddr(p);
-                            if (b != nullptr) {
-                              delete[] static_cast<unsigned char*>(b);
-                              R_ClearExternalPtr(p);
-                            }
-                          },
-                          static_cast<Rboolean>(TRUE));
-  // doc_ptr's prot slot pins buf_ptr (so the buffer outlives the
-  // doc); doc_ptr's tag slot is unused.
-  SEXP doc_ptr = PROTECT(R_MakeExternalPtr(doc, R_NilValue, buf_ptr));
-  R_RegisterCFinalizerEx(doc_ptr, finalize_document,
-                          static_cast<Rboolean>(TRUE));
-  UNPROTECT(2);
+  SEXP doc_ptr = pdfium_r::make_document_handle(doc, buf_ptr);
+  UNPROTECT(1);
   return doc_ptr;
 }
 
 // [[Rcpp::export(name = "cpp_create_new_document")]]
 SEXP cpp_create_new_document() {
-  if (!g_library_initialised) cpp_init_library();
+  pdfium_r::ensure_library_initialised();
   FPDF_DOCUMENT doc = FPDF_CreateNewDocument();
   // # nocov start — FPDF_CreateNewDocument allocates a fresh in-memory
   // doc and only returns NULL on out-of-memory, which we don't
@@ -168,10 +140,7 @@ SEXP cpp_create_new_document() {
     Rcpp::stop("FPDF_CreateNewDocument() returned NULL.");
   }
   // # nocov end
-  SEXP ptr = PROTECT(R_MakeExternalPtr(doc, R_NilValue, R_NilValue));
-  R_RegisterCFinalizerEx(ptr, finalize_document, static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ptr;
+  return pdfium_r::make_document_handle(doc, R_NilValue);
 }
 
 // [[Rcpp::export(name = "cpp_close_document")]]
@@ -179,7 +148,7 @@ void cpp_close_document(SEXP ptr) {
   if (TYPEOF(ptr) != EXTPTRSXP) {
     Rcpp::stop("Expected an external pointer.");
   }
-  pdfium_r::close_document_handle(ptr);
+  pdfium_r::release_document_handle(ptr);
 }
 
 // [[Rcpp::export(name = "cpp_handle_is_valid")]]

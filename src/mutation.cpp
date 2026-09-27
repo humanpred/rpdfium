@@ -20,7 +20,6 @@
 #include "fpdf_catalog.h"
 #include "fpdf_ppo.h"
 #include "fpdf_transformpage.h"
-#include "document_handle.h"
 #include "handle_registry.h"
 #include "utf16.h"
 
@@ -115,11 +114,7 @@ SEXP cpp_import_n_pages_to_one(SEXP src_doc_ptr,
     Rcpp::stop("FPDF_ImportNPagesToOne failed.");
   }
   // # nocov end
-  SEXP ptr = PROTECT(R_MakeExternalPtr(out, R_NilValue, R_NilValue));
-  R_RegisterCFinalizerEx(ptr, pdfium_r::finalize_document,
-                         static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ptr;
+  return pdfium_r::make_document_handle(out, R_NilValue);
 }
 
 // [[Rcpp::export(name = "cpp_page_set_box")]]

@@ -33,6 +33,7 @@ Markdown ADR following the
 | [023](ADR-023-annotation-object-ownership.md) | Accepted (decision 3 superseded by ADR-024) | Annotation page-objects: `pdf_annot_append_object()` moves a top-level object off the annotation's page, the annotation finalizer closes the context while its page or document is open, and form-XObject child removal frees the child |
 | [024](ADR-024-annotation-handles-close-with-document.md) | Supersedes ADR-023 decision 3 | Annotation handles close with their document: a per-document registry of live annotation handles, released before every `FPDF_CloseDocument`, so no annotation context outlives its document |
 | [025](ADR-025-document-handles-close-with-document.md) | Accepted (extends ADR-024) | Pages, fonts and XObjects close with their document: the ADR-024 registry holds every handle PDFium closes for a document, released annotations first, then pages, then fonts and XObjects; form-field pages pin their document, and fonts and XObjects are refused on another document's pages |
+| [028](ADR-028-library-destroy-closes-every-handle.md) | Accepted (extends ADR-025) | Destroying the library closes every handle first: documents, standalone clip paths, bitmaps and memory-document buffers are registered under the library and released before `FPDF_DestroyLibrary`; every finalizer is attached in one place |
 
 ## Policy
 

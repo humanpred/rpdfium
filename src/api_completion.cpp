@@ -728,42 +728,29 @@ inline FPDF_CLIPPATH acomp_clip_from_ptr(SEXP cp_ptr) {
                                   /*require_prot_alive=*/false));
 }
 
-void clip_path_finalizer(SEXP cp_ptr) {
-  if (TYPEOF(cp_ptr) != EXTPTRSXP) return;
-  FPDF_CLIPPATH cp = static_cast<FPDF_CLIPPATH>(R_ExternalPtrAddr(cp_ptr));
-  if (cp == nullptr) return;
-  FPDF_DestroyClipPath(cp);
-  R_ClearExternalPtr(cp_ptr);
-}
-
 }  // namespace
 
 // Create a fresh clip path covering the given rectangle. Returns
-// an externalptr with a finalizer that calls FPDF_DestroyClipPath.
+// an externalptr from make_clip_path_handle(), whose finalizer calls
+// FPDF_DestroyClipPath unless destroying the library released it
+// first.
 // [[Rcpp::export(name = "cpp_clip_path_new")]]
 SEXP cpp_clip_path_new(double left, double bottom,
                         double right, double top) {
+  pdfium_r::ensure_library_initialised();
   FPDF_CLIPPATH cp = FPDF_CreateClipPath(
       static_cast<float>(left), static_cast<float>(bottom),
       static_cast<float>(right), static_cast<float>(top));
   if (cp == nullptr) {  // # nocov start
     Rcpp::stop("FPDF_CreateClipPath returned NULL.");
   }  // # nocov end
-  SEXP ext = PROTECT(R_MakeExternalPtr(cp, R_NilValue, R_NilValue));
-  R_RegisterCFinalizerEx(ext, clip_path_finalizer,
-                         static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ext;
+  return pdfium_r::make_clip_path_handle(cp);
 }
 
 // Idempotent close — matches the doc/page/font close pattern.
 // [[Rcpp::export(name = "cpp_clip_path_close")]]
 void cpp_clip_path_close(SEXP cp_ptr) {
-  if (TYPEOF(cp_ptr) != EXTPTRSXP) return;
-  FPDF_CLIPPATH cp = static_cast<FPDF_CLIPPATH>(R_ExternalPtrAddr(cp_ptr));
-  if (cp == nullptr) return;
-  FPDF_DestroyClipPath(cp);
-  R_ClearExternalPtr(cp_ptr);
+  pdfium_r::release_clip_path_handle(cp_ptr);
 }
 
 // Insert the clip path as a page-level clip. FPDFPage_InsertClipPath
@@ -880,37 +867,22 @@ inline FPDF_BITMAP acomp_bitmap_from_ptr(SEXP bm_ptr) {
                                   /*require_prot_alive=*/false));
 }
 
-void bitmap_finalizer(SEXP bm_ptr) {
-  if (TYPEOF(bm_ptr) != EXTPTRSXP) return;
-  FPDF_BITMAP bm = static_cast<FPDF_BITMAP>(R_ExternalPtrAddr(bm_ptr));
-  if (bm == nullptr) return;
-  FPDFBitmap_Destroy(bm);
-  R_ClearExternalPtr(bm_ptr);
-}
-
 }  // namespace
 
 // [[Rcpp::export(name = "cpp_bitmap_new")]]
 SEXP cpp_bitmap_new(int width, int height, bool alpha) {
+  pdfium_r::ensure_library_initialised();
   FPDF_BITMAP bm = FPDFBitmap_Create(width, height, alpha ? 1 : 0);
   if (bm == nullptr) {  // # nocov start
     Rcpp::stop("FPDFBitmap_Create returned NULL (likely out of "
                "memory or invalid dimensions).");
   }  // # nocov end
-  SEXP ext = PROTECT(R_MakeExternalPtr(bm, R_NilValue, R_NilValue));
-  R_RegisterCFinalizerEx(ext, bitmap_finalizer,
-                         static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ext;
+  return pdfium_r::make_bitmap_handle(bm);
 }
 
 // [[Rcpp::export(name = "cpp_bitmap_close")]]
 void cpp_bitmap_close(SEXP bm_ptr) {
-  if (TYPEOF(bm_ptr) != EXTPTRSXP) return;
-  FPDF_BITMAP bm = static_cast<FPDF_BITMAP>(R_ExternalPtrAddr(bm_ptr));
-  if (bm == nullptr) return;
-  FPDFBitmap_Destroy(bm);
-  R_ClearExternalPtr(bm_ptr);
+  pdfium_r::release_bitmap_handle(bm_ptr);
 }
 
 // [[Rcpp::export(name = "cpp_bitmap_info")]]

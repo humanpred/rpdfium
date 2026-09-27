@@ -613,6 +613,10 @@ cpp_doc_handle_counts <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_handle_counts`, doc_ptr)
 }
 
+cpp_library_handle_counts <- function() {
+    .Call(`_pdfium_cpp_library_handle_counts`)
+}
+
 cpp_image_new_from_jpeg <- function(doc_ptr, page_ptr, jpeg_bytes) {
     .Call(`_pdfium_cpp_image_new_from_jpeg`, doc_ptr, page_ptr, jpeg_bytes)
 }

@@ -135,6 +135,13 @@
   system-font provider once per library lifetime, and the package frees
   it when it shuts the library down. Each call used to allocate a new
   provider that was never completely freed.
+* Shutting PDFium down, as unloading the package does, first closes
+  every open document together with its pages, annotations, fonts and
+  XObjects, and every clip path and bitmap from `pdf_clip_path_new()`
+  and `pdf_bitmap_new()`; their handles read as closed afterwards.
+  Closing, using or collecting one of them after the shutdown, or after
+  PDFium was initialised again by opening a document or by
+  `pdf_system_fonts_install_default()`, crashed R (ADR-028).
 
 # pdfium 0.1.0
 
