@@ -35,8 +35,11 @@ shared library is loaded once per session.
 Read [ADR-005](decisions/ADR-005-memory-model.md) first. Summary:
 
 1. Every PDFium handle (`FPDF_DOCUMENT`, `FPDF_PAGE`, etc.) lives
-   behind an R `externalptr`. Those PDFium closes carry a C finalizer
-   registered via `R_RegisterCFinalizerEx(ptr, finalizer, TRUE)`.
+   behind an R `externalptr`. Those PDFium closes carry the R
+   finalizer `finalize_handle()` (`R/finalizer.R`), registered via
+   `R_RegisterFinalizerEx(ptr, finalizer, TRUE)`. It calls into the
+   shared library only while it is loaded, and releases only the
+   handles the loaded library registered (ADR-031).
 2. Each such kind has one minting and one releasing function in
    `src/handle_registry.h`: `make_*_handle()` attaches the finalizer
    and registers the handle, and `release_*_handle()`, which the
@@ -56,10 +59,11 @@ Read [ADR-005](decisions/ADR-005-memory-model.md) first. Summary:
    each is registered under its document (ADR-024, ADR-025). So are
    the handles to an annotation's page-objects, which
    `pdf_annot_remove_object()` clears by address (ADR-032).
-   Documents, clip paths, bitmaps and memory-document buffers are
-   registered under the library, and `cpp_destroy_library()` releases
-   them, each document with its handles, before `FPDF_DestroyLibrary`
-   (ADR-028).
+   Documents, clip paths and bitmaps are registered under the
+   library, and `cpp_destroy_library()` releases them, each document
+   with its handles, before `FPDF_DestroyLibrary` (ADR-028). A
+   document loaded from memory reads from a raw vector in its
+   handle's `prot` slot, which needs no finalizer (ADR-031).
 6. PDFium's library lifecycle (`FPDF_InitLibraryWithConfig` /
    `FPDF_DestroyLibrary`) runs in `.onLoad` / `.onUnload`; opening a
    document after a destroy initialises the library again.
@@ -110,10 +114,12 @@ package load (every R session)
 - **GC order.** Finalizers are registered with `onexit = TRUE`, so
   they run at R session shutdown. A handle collected after the library
   was destroyed is harmless, because the destroy released it first
-  (ADR-028). A handle that survives `.onUnload`'s
-  `library.dynam.unload()` is not: its finalizer then points into the
-  unloaded shared library, and R crashes at the next collection or at
-  exit (ADR-028, to be fixed by ADR-031).
+  (ADR-028). So is a handle that survives `.onUnload`'s
+  `library.dynam.unload()`: its finalizer is R code that finds the
+  shared library gone, or a reloaded copy that never registered the
+  handle, and does nothing (ADR-031). Never attach a C finalizer: R
+  would call it after the library is unloaded, and
+  `test-finalizer.R` refuses one.
 - **Parallel testthat + valgrind.** They don't compose. `valgrind.yaml`
   and `cpp-asan.yaml` set `TESTTHAT_PARALLEL=false` to force serial
   tests under instrumentation.
@@ -123,7 +129,10 @@ package load (every R session)
 When updating `tools/pdfium-version.txt`:
 
 1. Update the file to the new release tag exactly as bblanchon ships
-   it (e.g. `chromium/7210`).
+   it (e.g. `chromium/7210`), then run
+   `Rscript tools/update-pdfium-checksums.R` to regenerate
+   `tools/pdfium-checksums.txt`. Installs refuse to run until that
+   file's `release:` line matches the pin (ADR-027).
 2. Rebuild fixtures via `Rscript tools/build-fixtures.R`.
 3. Run the full test suite locally: `devtools::test()`.
 4. Run `devtools::check()` and confirm no new warnings or notes.
@@ -156,7 +165,9 @@ fixture or pin a font in the build script.
 
 See [ADR-007](decisions/ADR-007-ci-and-coverage.md). Eight workflows;
 four are gates (`R-CMD-check`, `coverage`, `lint`, `pre-commit`).
-`valgrind` and `cran-check` run weekly. `cpp-asan` is advisory.
+`valgrind` runs weekly and on pull requests that touch code, and
+`rhub` runs R-hub's CRAN-flavour platforms weekly (ADR-030).
+`cpp-asan` is advisory.
 `pkgdown` only deploys on tag pushes.
 
 ## Where decisions live

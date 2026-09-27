@@ -18,6 +18,13 @@
 #   - PDFIUM_CACHE_DIR      directory to cache downloaded archives across
 #                           rebuilds. Defaults to tools::R_user_dir("pdfium",
 #                           "cache") when available.
+#
+# Every archive, whether downloaded, cached or vendored, is checked against
+# the SHA-256 pinned for it in tools/pdfium-checksums.txt before it is
+# unpacked. tools::sha256sum() needs R >= 4.5.0; on older R the check can
+# only confirm that the archive is complete. A download lands in a temporary
+# file and moves into the cache only once it passes, so an interrupted or
+# wrong download is never reused.
 
 local({
   args <- commandArgs(trailingOnly = TRUE)
@@ -306,6 +313,64 @@ local({
     ))
   }
 
+  # Read the SHA-256 pinned for `archive` from tools/pdfium-checksums.txt,
+  # which holds a `release: <tag>` line and `<sha256>  <archive>` lines.
+  # Checksums for another release than the pin, or no entry for `archive`,
+  # stop the install: a pin bump must regenerate the file.
+  read_pinned_sha256 <- function(path, release, archive) {
+    if (!file.exists(path)) stop("Missing ", path, call. = FALSE)
+    lines <- trimws(readLines(path, warn = FALSE))
+    lines <- lines[nzchar(lines) & !startsWith(lines, "#")]
+    is_release <- startsWith(lines, "release:")
+    pinned_release <- trimws(sub("^release:", "", lines[is_release]))
+    if (!identical(pinned_release, release)) {
+      stop("tools/pdfium-checksums.txt is for ",
+           paste(pinned_release, collapse = ", "),
+           " but tools/pdfium-version.txt pins ", release,
+           ". Run `Rscript tools/update-pdfium-checksums.R` after changing the pin.",
+           call. = FALSE)
+    }
+    fields <- strsplit(lines[!is_release], "[[:space:]]+")
+    well_formed <- lengths(fields) == 2L &
+      grepl("^[0-9a-fA-F]{64}$", vapply(fields, `[`, character(1L), 1L))
+    if (!all(well_formed)) {
+      stop("Malformed line in tools/pdfium-checksums.txt: ",
+           lines[!is_release][!well_formed][[1L]], call. = FALSE)
+    }
+    sums <- tolower(vapply(fields, `[`, character(1L), 1L))
+    names(sums) <- vapply(fields, `[`, character(1L), 2L)
+    if (anyDuplicated(names(sums)) > 0L) {
+      stop("tools/pdfium-checksums.txt lists ",
+           names(sums)[[anyDuplicated(names(sums))]], " more than once.",
+           call. = FALSE)
+    }
+    if (!archive %in% names(sums)) {
+      stop("tools/pdfium-checksums.txt pins no archive named ", archive,
+           ". Set PDFIUM_HOME to build against your own libpdfium.",
+           call. = FALSE)
+    }
+    sums[[archive]]
+  }
+
+  # TRUE when the archive at `path` is the pinned one. Without
+  # tools::sha256sum() (R < 4.5.0), TRUE when it lists completely, which a
+  # partial download does not.
+  archive_ok <- function(path, expected_sha256) {
+    if (exists("sha256sum", envir = asNamespace("tools"))) {
+      return(identical(unname(tools::sha256sum(path)), expected_sha256))
+    }
+    tryCatch(
+      withCallingHandlers(
+        {
+          utils::untar(path, list = TRUE, tar = "internal")
+          TRUE
+        },
+        warning = function(w) stop(conditionMessage(w), call. = FALSE)
+      ),
+      error = function(e) FALSE
+    )
+  }
+
   platform <- if (is.null(platform_tag)) detect_platform() else platform_tag
   archive_name <- sprintf("pdfium-%s.tgz", platform)
   base_url <- "https://github.com/bblanchon/pdfium-binaries/releases/download"
@@ -324,34 +389,72 @@ local({
   cache_path <- file.path(cache_dir, sprintf("%s-%s", basename(release_tag), archive_name))
   offline <- isTRUE(Sys.getenv("PDFIUM_OFFLINE") == "1")
 
+  expected_sha256 <- read_pinned_sha256(
+    file.path(pkg_root, "tools", "pdfium-checksums.txt"), release_tag, archive_name
+  )
+  if (!exists("sha256sum", envir = asNamespace("tools"))) {
+    message("[pdfium] R < 4.5.0 has no tools::sha256sum(); checking only that ",
+            "the PDFium archive is complete, not that it is the pinned build.")
+  }
+  not_pinned <- sprintf("not the pinned %s for %s (SHA-256 %s)",
+                        archive_name, release_tag, expected_sha256)
+
   vendored <- file.path(pkg_root, "inst", "pdfium-binaries", archive_name)
   if (file.exists(vendored)) {
     message("[pdfium] Using vendored archive: ", vendored)
-    cache_path <- vendored
+    if (!archive_ok(vendored, expected_sha256)) {
+      stop("The vendored archive ", vendored, " is incomplete or ", not_pinned,
+           ".", call. = FALSE)
+    }
+    archive <- vendored
   } else if (offline) {
     stop("PDFIUM_OFFLINE=1 set but vendored archive not found at ", vendored)
-  } else if (!file.exists(cache_path)) {
-    message("[pdfium] Downloading ", url)
-    tryCatch(
-      utils::download.file(url, cache_path, mode = "wb", quiet = TRUE),
-      error = function(e) stop(
-        "Failed to download PDFium binary from ", url,
-        ". Set PDFIUM_OFFLINE=1 and place the archive at inst/pdfium-binaries/",
-        archive_name, " to install without network access. Original error: ",
-        conditionMessage(e), call. = FALSE
-      )
-    )
   } else {
-    message("[pdfium] Using cached archive: ", cache_path)
+    if (file.exists(cache_path) && !archive_ok(cache_path, expected_sha256)) {
+      message("[pdfium] Discarding cached archive ", cache_path,
+              ": it is incomplete or ", not_pinned, ".")
+      unlink(cache_path)
+    }
+    if (file.exists(cache_path)) {
+      message("[pdfium] Using cached archive: ", cache_path)
+    } else {
+      message("[pdfium] Downloading ", url)
+      partial <- tempfile(paste0(basename(cache_path), "-"), tmpdir = cache_dir)
+      on.exit(unlink(partial), add = TRUE)
+      tryCatch(
+        utils::download.file(url, partial, mode = "wb", quiet = TRUE),
+        error = function(e) stop(
+          "Failed to download PDFium binary from ", url,
+          ". Set PDFIUM_OFFLINE=1 and place the archive at inst/pdfium-binaries/",
+          archive_name, " to install without network access. Original error: ",
+          conditionMessage(e), call. = FALSE
+        )
+      )
+      if (!archive_ok(partial, expected_sha256)) {
+        stop("The archive downloaded from ", url, " is incomplete or ",
+             not_pinned, ".", call. = FALSE)
+      }
+      # A concurrent install may have cached the same archive first.
+      if (!file.rename(partial, cache_path) &&
+          !(file.exists(cache_path) && archive_ok(cache_path, expected_sha256))) {
+        stop("Failed to move the downloaded archive into the cache at ",
+             cache_path, call. = FALSE)
+      }
+    }
+    archive <- cache_path
   }
 
   extract_root <- file.path(pkg_root, "inst")
   staging <- tempfile("pdfium-extract-")
   dir.create(staging, recursive = TRUE)
   on.exit(unlink(staging, recursive = TRUE), add = TRUE)
-  utils::untar(cache_path, exdir = staging)
+  withCallingHandlers(
+    utils::untar(archive, exdir = staging),
+    warning = function(w) stop("Failed to unpack ", archive, ": ",
+                               conditionMessage(w), call. = FALSE)
+  )
   if (!file.exists(file.path(staging, "licenses", "pdfium.txt"))) {
-    stop("The PDFium archive ", basename(cache_path), " has no licenses/pdfium.txt; ",
+    stop("The PDFium archive ", basename(archive), " has no licenses/pdfium.txt; ",
          "refusing to install libpdfium without PDFium's licence notice.",
          call. = FALSE)
   }

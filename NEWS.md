@@ -64,6 +64,15 @@
   pointed at a file that was never installed; it also misnamed
   bblanchon/pdfium-binaries' licence as Apache-2.0. Installation now
   stops if a PDFium archive lacks PDFium's own notice.
+* Installing from source no longer reuses an incomplete PDFium download.
+  Every archive, whether downloaded, cached or vendored, must now match
+  the SHA-256 pinned for it in `tools/pdfium-checksums.txt` (on R < 4.5,
+  which cannot compute SHA-256, it must at least be complete). A download
+  is moved into the cache only once it passes, and a cached archive that
+  fails is downloaded again. Before, an interrupted download stayed in
+  the cache and broke every later install, and a truncated archive was
+  unpacked without an error, leaving a truncated `libpdfium` for the
+  link step to fail on (ADR-027).
 * `pdf_annot_objects()` reports each embedded object's own type
   (`"path"`, `"text"`, `"image"`, `"shading"` or `"form"`) instead of
   `"unknown"`, so the type-specific readers and setters such as
@@ -187,6 +196,16 @@
   Closing, using or collecting one of them after the shutdown, or after
   PDFium was initialised again by opening a document or by
   `pdf_system_fonts_install_default()`, crashed R (ADR-028).
+* Unloading the package no longer leaves handles that crash R when they
+  are collected or when R exits. After `unloadNamespace()`,
+  `detach(unload = TRUE)`, `pkgload::unload()` or a
+  `pkgload::load_all()` reload, every handle still around, whether open,
+  closed or waiting to be collected, kept a finalizer that pointed into
+  the unloaded compiled code. The finalizer is now an R function that
+  calls into pdfium's compiled code only while that code is loaded, and
+  the code releases only the handles it made itself (ADR-031).
+  `pdf_doc_open(source = )` now keeps its copy of the bytes as an R raw
+  vector, so R's memory accounting sees it.
 * `pdf_form_fields()`'s documentation says what it returns, a
   `pdfium_form_field_list` of form-field handles, instead of describing
   a tibble; the tibble's columns are now documented on

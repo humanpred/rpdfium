@@ -26,7 +26,9 @@
 #'    `/opt/homebrew`, `/opt/local` (POSIX only).
 #' 4. Download from
 #'    [bblanchon/pdfium-binaries](https://github.com/bblanchon/pdfium-binaries).
-#'    The pinned release lives in `tools/pdfium-version.txt`.
+#'    The pinned release lives in `tools/pdfium-version.txt`, and
+#'    each archive must match the SHA-256 pinned for it in
+#'    `tools/pdfium-checksums.txt`.
 #'    Set `PDFIUM_OFFLINE=1` and stage the tarball under
 #'    `inst/pdfium-binaries/` for offline installs.
 #'

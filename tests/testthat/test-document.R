@@ -163,7 +163,21 @@ test_that("cpp_open_document_from_memory errors on garbage bytes", {
   )
 })
 
-test_that("documents, clip paths, bitmaps and buffers are registered under the library", {
+test_that("a document read from memory outlives the caller's bytes", {
+  path <- fixture_path("weblinks")
+  expected <- pdf_doc_text(path)
+  bytes <- readBin(path, "raw", file.size(path))
+  doc <- pdf_doc_open(source = bytes)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  rm(bytes)
+  for (i in 1:3) invisible(gc())
+  # PDFium parses the page from the document's own copy of the bytes,
+  # which its handle keeps.
+  expect_identical(pdf_doc_text(doc), expected)
+  expect_match(expected, "Visit https://example.com today", fixed = TRUE)
+})
+
+test_that("documents, clip paths and bitmaps are registered under the library", {
   # Collect what earlier tests left to the collector: a handle whose
   # owner has a finalizer too is finalized one collection before it.
   for (i in 1:5) invisible(gc())
@@ -180,15 +194,14 @@ test_that("documents, clip paths, bitmaps and buffers are registered under the l
   )
   expect_identical(
     pdfium:::cpp_library_handle_counts() - before,
-    c(document = 2L, clip_path = 2L, bitmap = 2L, buffer = 1L)
+    c(document = 2L, clip_path = 2L, bitmap = 2L)
   )
-  # Collecting a handle deregisters it; the buffer of a document read
-  # from memory goes a collection after the document handle pinning it.
+  # Collecting a handle deregisters it.
   rm(dropped)
-  for (i in 1:3) invisible(gc())
+  invisible(gc())
   expect_identical(
     pdfium:::cpp_library_handle_counts() - before,
-    c(document = 1L, clip_path = 1L, bitmap = 1L, buffer = 0L)
+    c(document = 1L, clip_path = 1L, bitmap = 1L)
   )
   # So does closing it.
   pdf_doc_close(kept$doc)
@@ -196,7 +209,7 @@ test_that("documents, clip paths, bitmaps and buffers are registered under the l
   pdf_bitmap_close(kept$bitmap)
   expect_identical(
     pdfium:::cpp_library_handle_counts() - before,
-    c(document = 0L, clip_path = 0L, bitmap = 0L, buffer = 0L)
+    c(document = 0L, clip_path = 0L, bitmap = 0L)
   )
 })
 
@@ -226,7 +239,7 @@ test_that("cpp_destroy_library() closes every handle first (ADR-028)", {
   pdfium:::cpp_destroy_library()
   expect_identical(
     pdfium:::cpp_library_handle_counts(),
-    c(document = 0L, clip_path = 0L, bitmap = 0L, buffer = 0L)
+    c(document = 0L, clip_path = 0L, bitmap = 0L)
   )
   expect_identical(
     pdfium:::cpp_doc_handle_counts(doc$ptr),

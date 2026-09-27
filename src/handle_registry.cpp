@@ -1,5 +1,5 @@
 // pdfium R package — registry of live handles. See handle_registry.h,
-// ADR-024, ADR-025, ADR-028 and ADR-032.
+// ADR-024, ADR-025, ADR-028, ADR-031 and ADR-032.
 
 #include <Rcpp.h>
 #include <algorithm>
@@ -20,9 +20,8 @@ namespace {
 // Also the order in which the handles registered under one owner are
 // released. Annotation contexts, pages, fonts, XObjects and annotation
 // page-objects are registered under their document, the page-objects
-// last because releasing one only clears it; documents, clip paths,
-// bitmaps and memory-document buffers under the library, the buffers
-// last because a document reads its buffer until it is closed.
+// last because releasing one only clears it; documents, clip paths
+// and bitmaps under the library.
 enum Kind : int {
   kAnnot = 0,
   kPage,
@@ -32,7 +31,6 @@ enum Kind : int {
   kDocument,
   kClipPath,
   kBitmap,
-  kBuffer,
   kKindCount
 };
 // The document kinds count_doc_handles() reports: annotation, page,
@@ -46,8 +44,9 @@ constexpr FPDF_DOCUMENT kLibrary = nullptr;
 
 // The handles are the externalptr SEXPs themselves, held weakly:
 // nothing here protects them, and the finalizer removes each one
-// before R frees it. The reverse map finds a handle's owner without
-// reading the handle's address, which is NULL once cleared.
+// before R frees it (R keeps a handle until its finalizer has run).
+// The reverse map finds a handle's owner without reading the handle's
+// address, which is NULL once cleared.
 struct Owner {
   FPDF_DOCUMENT doc;
   Kind kind;
@@ -98,13 +97,11 @@ void close_clip_path(void* addr) {
 void close_bitmap(void* addr) {
   FPDFBitmap_Destroy(static_cast<FPDF_BITMAP>(addr));
 }
-void close_buffer(void* addr) { delete[] static_cast<unsigned char*>(addr); }
 
 using CloseFn = void (*)(void*);
 const std::array<CloseFn, kKindCount> kClose = {
-    close_annot,     close_page,   close_font,  close_xobject,
-    close_nothing,   close_document, close_clip_path, close_bitmap,
-    close_buffer};
+    close_annot,    close_page,      close_font,  close_xobject,
+    close_nothing,  close_document,  close_clip_path, close_bitmap};
 
 void release(SEXP ptr, Kind kind) noexcept {
   if (TYPEOF(ptr) != EXTPTRSXP) return;
@@ -127,25 +124,24 @@ void release_owned(FPDF_DOCUMENT owner) noexcept {
   }
 }
 
-void finalize_annot(SEXP ptr) { release(ptr, kAnnot); }
-void finalize_page(SEXP ptr) { release(ptr, kPage); }
-void finalize_font(SEXP ptr) { release(ptr, kFont); }
-void finalize_xobject(SEXP ptr) { release(ptr, kXObject); }
-void finalize_annot_object(SEXP ptr) { release(ptr, kAnnotObject); }
-void finalize_document(SEXP ptr) { release(ptr, kDocument); }
-void finalize_clip_path(SEXP ptr) { release(ptr, kClipPath); }
-void finalize_bitmap(SEXP ptr) { release(ptr, kBitmap); }
-void finalize_buffer(SEXP ptr) { release(ptr, kBuffer); }
-
-const std::array<R_CFinalizer_t, kKindCount> kFinalize = {
-    finalize_annot,    finalize_page,          finalize_font,
-    finalize_xobject,  finalize_annot_object,  finalize_document,
-    finalize_clip_path, finalize_bitmap,       finalize_buffer};
+// The finalizer every handle carries: finalize_handle() in
+// R/finalizer.R, which .onLoad passes to cpp_set_handle_finalizer().
+// It is an R function, not a C one, because R keeps a C finalizer's
+// address after the package's shared library is unloaded, and calls
+// it (ADR-031).
+SEXP g_finalizer = R_NilValue;
 
 SEXP make_handle(void* addr, SEXP prot, FPDF_DOCUMENT owner, Kind kind) {
+  if (g_finalizer == R_NilValue) {
+    // # nocov start — .onLoad sets the finalizer before anything can
+    // make a handle, and .onUnload clears it only after the library,
+    // and every handle with it, is released.
+    kClose[kind](addr);
+    Rcpp::stop("pdfium's handle finalizer is not set; reload pdfium.");
+    // # nocov end
+  }
   SEXP ptr = PROTECT(R_MakeExternalPtr(addr, R_NilValue, prot));
-  R_RegisterCFinalizerEx(ptr, kFinalize[kind],
-                         static_cast<Rboolean>(TRUE));
+  R_RegisterFinalizerEx(ptr, g_finalizer, static_cast<Rboolean>(TRUE));
   try {
     track(owner, kind, ptr);
   } catch (...) {
@@ -217,10 +213,6 @@ SEXP make_bitmap_handle(FPDF_BITMAP bitmap) {
   return make_handle(bitmap, R_NilValue, kLibrary, kBitmap);
 }
 
-SEXP make_buffer_handle(unsigned char* buffer) {
-  return make_handle(buffer, R_NilValue, kLibrary, kBuffer);
-}
-
 void release_document_handle(SEXP doc_ptr) noexcept {
   release(doc_ptr, kDocument);
 }
@@ -247,10 +239,6 @@ void release_clip_path_handle(SEXP clip_path_ptr) noexcept {
 
 void release_bitmap_handle(SEXP bitmap_ptr) noexcept {
   release(bitmap_ptr, kBitmap);
-}
-
-void release_buffer_handle(SEXP buffer_ptr) noexcept {
-  release(buffer_ptr, kBuffer);
 }
 
 void release_annot_object_handles(FPDF_DOCUMENT doc,
@@ -289,6 +277,31 @@ std::vector<int> count_library_handles() {
 
 }  // namespace pdfium_r
 
+// Set the finalizer make_handle() attaches: finalize_handle() from
+// .onLoad, NULL from .onUnload. The function is preserved while set.
+// [[Rcpp::export(name = "cpp_set_handle_finalizer", rng = false)]]
+void cpp_set_handle_finalizer(SEXP fun) {
+  if (fun != R_NilValue && TYPEOF(fun) != CLOSXP) {
+    Rcpp::stop("The handle finalizer must be a function or NULL.");
+  }
+  if (fun != R_NilValue) R_PreserveObject(fun);
+  if (g_finalizer != R_NilValue) R_ReleaseObject(g_finalizer);
+  g_finalizer = fun;
+}
+
+// The native half of finalize_handle(). A handle this copy of the
+// shared library registered is released. Any other handle is left
+// alone: it was released already, or an earlier copy, unloaded since,
+// made it, and whatever it points to belongs to that copy's PDFium.
+// Without rng = false the export would read and write .Random.seed,
+// which a finalizer must not do.
+// [[Rcpp::export(name = "cpp_finalize_handle", rng = false)]]
+void cpp_finalize_handle(SEXP ptr) {
+  auto it = g_owner_of.find(ptr);
+  if (it == g_owner_of.end()) return;
+  release(ptr, it->second.kind);
+}
+
 // Test hook: the handles registered under a document, per kind. A
 // closed document has none.
 // [[Rcpp::export(name = "cpp_doc_handle_counts")]]
@@ -320,7 +333,7 @@ int cpp_annot_object_handle_count(SEXP doc_ptr) {
 Rcpp::IntegerVector cpp_library_handle_counts() {
   Rcpp::IntegerVector out =
       Rcpp::wrap(pdfium_r::count_library_handles());
-  out.names() = Rcpp::CharacterVector::create("document", "clip_path",
-                                              "bitmap", "buffer");
+  out.names() =
+      Rcpp::CharacterVector::create("document", "clip_path", "bitmap");
   return out;
 }
