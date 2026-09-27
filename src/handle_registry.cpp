@@ -1,7 +1,8 @@
 // pdfium R package — registry of live handles. See handle_registry.h,
-// ADR-024, ADR-025, ADR-028 and ADR-031.
+// ADR-024, ADR-025, ADR-028, ADR-031 and ADR-032.
 
 #include <Rcpp.h>
+#include <algorithm>
 #include <array>
 #include <unordered_map>
 #include <unordered_set>
@@ -17,20 +18,24 @@
 namespace {
 
 // Also the order in which the handles registered under one owner are
-// released. Annotation contexts, pages, fonts and XObjects are
-// registered under their document; documents, clip paths and bitmaps
-// under the library.
+// released. Annotation contexts, pages, fonts, XObjects and annotation
+// page-objects are registered under their document, the page-objects
+// last because releasing one only clears it; documents, clip paths
+// and bitmaps under the library.
 enum Kind : int {
   kAnnot = 0,
   kPage,
   kFont,
   kXObject,
+  kAnnotObject,
   kDocument,
   kClipPath,
   kBitmap,
   kKindCount
 };
-constexpr int kDocKindCount = kDocument;
+// The document kinds count_doc_handles() reports: annotation, page,
+// font and XObject.
+constexpr int kDocCountedKinds = kXObject + 1;
 constexpr int kLibraryKindCount = kKindCount - kDocument;
 
 // The owner the library's handles are registered under. No document
@@ -79,6 +84,8 @@ void close_font(void* addr) { FPDFFont_Close(static_cast<FPDF_FONT>(addr)); }
 void close_xobject(void* addr) {
   FPDF_CloseXObject(static_cast<FPDF_XOBJECT>(addr));
 }
+// An annotation page-object belongs to its annotation, which frees it.
+void close_nothing(void*) {}
 void close_document(void* addr) {
   FPDF_DOCUMENT doc = static_cast<FPDF_DOCUMENT>(addr);
   release_owned(doc);
@@ -94,7 +101,7 @@ void close_bitmap(void* addr) {
 using CloseFn = void (*)(void*);
 const std::array<CloseFn, kKindCount> kClose = {
     close_annot,    close_page,      close_font,  close_xobject,
-    close_document, close_clip_path, close_bitmap};
+    close_nothing,  close_document,  close_clip_path, close_bitmap};
 
 void release(SEXP ptr, Kind kind) noexcept {
   if (TYPEOF(ptr) != EXTPTRSXP) return;
@@ -193,6 +200,11 @@ SEXP make_xobject_handle(FPDF_XOBJECT xobject, SEXP doc_ptr) {
   return make_handle(xobject, doc_ptr, document_of(doc_ptr), kXObject);
 }
 
+SEXP make_annot_object_handle(FPDF_PAGEOBJECT obj, SEXP annot_ptr,
+                              FPDF_DOCUMENT doc) {
+  return make_handle(obj, annot_ptr, doc, kAnnotObject);
+}
+
 SEXP make_clip_path_handle(FPDF_CLIPPATH clip_path) {
   return make_handle(clip_path, R_NilValue, kLibrary, kClipPath);
 }
@@ -229,13 +241,34 @@ void release_bitmap_handle(SEXP bitmap_ptr) noexcept {
   release(bitmap_ptr, kBitmap);
 }
 
+void release_annot_object_handles(FPDF_DOCUMENT doc,
+                                  FPDF_PAGEOBJECT obj) noexcept {
+  // Releasing a handle removes it from the set, and the document's entry
+  // once all its sets are empty, so look the set up again each time.
+  for (;;) {
+    auto doc_it = g_handles.find(doc);
+    if (doc_it == g_handles.end()) return;
+    const auto& handles = doc_it->second[kAnnotObject];
+    auto hit = std::find_if(handles.begin(), handles.end(), [obj](SEXP ptr) {
+      return R_ExternalPtrAddr(ptr) == obj;
+    });
+    if (hit == handles.end()) return;
+    release(*hit, kAnnotObject);
+  }
+}
+
 void release_library_handles() noexcept { release_owned(kLibrary); }
 
 std::vector<int> count_doc_handles(FPDF_DOCUMENT doc) {
   // A closed document's address reads as NULL, which is the library's
   // key; it has no handles of its own.
-  if (doc == kLibrary) return std::vector<int>(kDocKindCount, 0);
-  return count_owned(doc, 0, kDocKindCount);
+  if (doc == kLibrary) return std::vector<int>(kDocCountedKinds, 0);
+  return count_owned(doc, kAnnot, kDocCountedKinds);
+}
+
+int count_annot_object_handles(FPDF_DOCUMENT doc) {
+  if (doc == kLibrary) return 0;
+  return count_owned(doc, kAnnotObject, 1)[0];
 }
 
 std::vector<int> count_library_handles() {
@@ -282,6 +315,17 @@ Rcpp::IntegerVector cpp_doc_handle_counts(SEXP doc_ptr) {
   out.names() =
       Rcpp::CharacterVector::create("annot", "page", "font", "xobject");
   return out;
+}
+
+// Test hook: the annotation page-object handles registered under a
+// document. A closed document has none.
+// [[Rcpp::export(name = "cpp_annot_object_handle_count")]]
+int cpp_annot_object_handle_count(SEXP doc_ptr) {
+  if (TYPEOF(doc_ptr) != EXTPTRSXP) {
+    Rcpp::stop("Expected an external pointer for the document.");
+  }
+  return pdfium_r::count_annot_object_handles(
+      static_cast<FPDF_DOCUMENT>(R_ExternalPtrAddr(doc_ptr)));
 }
 
 // Test hook: the handles registered under the library, per kind.

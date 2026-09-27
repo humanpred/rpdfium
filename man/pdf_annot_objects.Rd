@@ -19,7 +19,8 @@ Wraps \code{FPDFAnnot_GetObject} over the full count and
 from the annotation's normal (\verb{/AP /N}) appearance stream. Returns a
 list of \code{pdfium_obj} handles; each handle's externalptr pins the
 parent annotation, so the embedded objects can't dangle past the
-annot's lifetime.
+annot's lifetime, and \code{\link[=pdf_annot_remove_object]{pdf_annot_remove_object()}} closes the handles
+to the object it removes.
 }
 \details{
 Each handle's \code{type} is the object's own type (\code{"path"}, \code{"text"},

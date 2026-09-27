@@ -629,14 +629,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_annot_remove_object
-bool cpp_annot_remove_object(SEXP annot_ptr, int index_zero);
-RcppExport SEXP _pdfium_cpp_annot_remove_object(SEXP annot_ptrSEXP, SEXP index_zeroSEXP) {
+bool cpp_annot_remove_object(SEXP annot_ptr, SEXP doc_ptr, int index_zero);
+RcppExport SEXP _pdfium_cpp_annot_remove_object(SEXP annot_ptrSEXP, SEXP doc_ptrSEXP, SEXP index_zeroSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type annot_ptr(annot_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     Rcpp::traits::input_parameter< int >::type index_zero(index_zeroSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_annot_remove_object(annot_ptr, index_zero));
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_remove_object(annot_ptr, doc_ptr, index_zero));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -664,14 +665,15 @@ BEGIN_RCPP
 END_RCPP
 }
 // cpp_annot_get_object
-SEXP cpp_annot_get_object(SEXP annot_ptr, int index_zero);
-RcppExport SEXP _pdfium_cpp_annot_get_object(SEXP annot_ptrSEXP, SEXP index_zeroSEXP) {
+SEXP cpp_annot_get_object(SEXP annot_ptr, SEXP doc_ptr, int index_zero);
+RcppExport SEXP _pdfium_cpp_annot_get_object(SEXP annot_ptrSEXP, SEXP doc_ptrSEXP, SEXP index_zeroSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type annot_ptr(annot_ptrSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     Rcpp::traits::input_parameter< int >::type index_zero(index_zeroSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_annot_get_object(annot_ptr, index_zero));
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_get_object(annot_ptr, doc_ptr, index_zero));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1871,6 +1873,17 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_doc_handle_counts(doc_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_annot_object_handle_count
+int cpp_annot_object_handle_count(SEXP doc_ptr);
+RcppExport SEXP _pdfium_cpp_annot_object_handle_count(SEXP doc_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type doc_ptr(doc_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_annot_object_handle_count(doc_ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3395,10 +3408,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_annot_add_ink_stroke", (DL_FUNC) &_pdfium_cpp_annot_add_ink_stroke, 2},
     {"_pdfium_cpp_annot_remove_ink_list", (DL_FUNC) &_pdfium_cpp_annot_remove_ink_list, 1},
     {"_pdfium_cpp_annot_append_object", (DL_FUNC) &_pdfium_cpp_annot_append_object, 3},
-    {"_pdfium_cpp_annot_remove_object", (DL_FUNC) &_pdfium_cpp_annot_remove_object, 2},
+    {"_pdfium_cpp_annot_remove_object", (DL_FUNC) &_pdfium_cpp_annot_remove_object, 3},
     {"_pdfium_cpp_annot_update_object", (DL_FUNC) &_pdfium_cpp_annot_update_object, 2},
     {"_pdfium_cpp_annot_object_count", (DL_FUNC) &_pdfium_cpp_annot_object_count, 1},
-    {"_pdfium_cpp_annot_get_object", (DL_FUNC) &_pdfium_cpp_annot_get_object, 2},
+    {"_pdfium_cpp_annot_get_object", (DL_FUNC) &_pdfium_cpp_annot_get_object, 3},
     {"_pdfium_cpp_annot_set_uri", (DL_FUNC) &_pdfium_cpp_annot_set_uri, 2},
     {"_pdfium_cpp_annot_set_appearance", (DL_FUNC) &_pdfium_cpp_annot_set_appearance, 3},
     {"_pdfium_cpp_annot_add_file_attachment", (DL_FUNC) &_pdfium_cpp_annot_add_file_attachment, 3},
@@ -3501,6 +3514,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_set_handle_finalizer", (DL_FUNC) &_pdfium_cpp_set_handle_finalizer, 1},
     {"_pdfium_cpp_finalize_handle", (DL_FUNC) &_pdfium_cpp_finalize_handle, 1},
     {"_pdfium_cpp_doc_handle_counts", (DL_FUNC) &_pdfium_cpp_doc_handle_counts, 1},
+    {"_pdfium_cpp_annot_object_handle_count", (DL_FUNC) &_pdfium_cpp_annot_object_handle_count, 1},
     {"_pdfium_cpp_library_handle_counts", (DL_FUNC) &_pdfium_cpp_library_handle_counts, 0},
     {"_pdfium_cpp_image_new_from_jpeg", (DL_FUNC) &_pdfium_cpp_image_new_from_jpeg, 3},
     {"_pdfium_cpp_image_new_blank", (DL_FUNC) &_pdfium_cpp_image_new_blank, 2},

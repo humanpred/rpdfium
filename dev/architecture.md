@@ -56,7 +56,9 @@ Read [ADR-005](decisions/ADR-005-memory-model.md) first. Summary:
    chain is closed (ADR-029).
 5. Closing a document, explicitly or in its finalizer, first closes
    the annotation, page, font and XObject handles still open on it:
-   each is registered under its document (ADR-024, ADR-025).
+   each is registered under its document (ADR-024, ADR-025). So are
+   the handles to an annotation's page-objects, which
+   `pdf_annot_remove_object()` clears by address (ADR-032).
    Documents, clip paths and bitmaps are registered under the
    library, and `cpp_destroy_library()` releases them, each document
    with its handles, before `FPDF_DestroyLibrary` (ADR-028). A

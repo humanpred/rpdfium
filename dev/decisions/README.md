@@ -39,6 +39,7 @@ Markdown ADR following the
 | [029](ADR-029-handles-follow-their-owners.md) | Accepted (extends ADR-020 §4 and ADR-025) | A handle is refused once any of its owners is closed: clip paths pin their page-object and nested objects their form, and `validate_handle()` and `is_open()` walk the whole ownership chain |
 | [030](ADR-030-rhub-v2-cran-flavour-checks.md) | Supersedes ADR-007's `cran-check.yaml` row | Weekly CRAN-flavour checks with rhub v2 (`rhub.yaml`): windows and macos-arm64 on R-devel, gcc-asan, clang-asan, rchk, nosuggests; replaces the defunct `rhub::check_for_cran()` job |
 | [031](ADR-031-r-level-finalizers.md) | Supersedes ADR-005's C finalizers and ADR-028's memory-buffer handle | Handle finalizers are R functions that call in only while the shared library is loaded: `make_handle()` registers `finalize_handle()`, which looks its routine up by name each time and releases only handles the loaded library registered; a memory document's bytes are a raw vector in its handle's `prot` slot |
+| [032](ADR-032-annotation-object-handles-close-on-remove.md) | Accepted (extends ADR-029) | Removing an annotation's page-object closes its handles: `pdf_annot_objects()` handles are registered under their document, and `pdf_annot_remove_object()` releases those whose address is the removed object's |
 
 ## Policy
 

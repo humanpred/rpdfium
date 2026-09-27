@@ -27,8 +27,9 @@ check_pdfium_obj <- function(obj, allowed_types = NULL, arg = "obj") {
 # document was closed, which closes its pages (ADR-025); "annotation"
 # when the annotation whose appearance stream holds it was deleted
 # with pdf_annot_delete(); "form" when a form object it is nested in
-# was closed by a mutator; otherwise "page" (its page was closed, or a
-# mutator cleared the handle itself).
+# was closed by a mutator; "removed" when pdf_annot_remove_object()
+# removed it from its annotation (ADR-032); otherwise "page" (its page
+# was closed, or a mutator cleared the handle itself).
 obj_closed_cause <- function(obj) {
   if (!is_open(obj$page$doc)) {
     return("document")
@@ -47,6 +48,9 @@ obj_closed_cause <- function(obj) {
     }
     form <- form$parent_form
   }
+  if (!is.null(obj$parent_annot) && !cpp_handle_is_valid(obj$ptr)) {
+    return("removed")
+  }
   "page"
 }
 
@@ -64,8 +68,13 @@ closed_cause_message <- function(cause, what) {
     ),
     form = paste0(
       "Parent form object has been closed: it was deleted, removed ",
-      "from its form or moved into an annotation. The ", what,
-      " is no longer valid."
+      "from its form or annotation, or moved into an annotation. The ",
+      what, " is no longer valid."
+    ),
+    removed = paste0(
+      if (what == "clip path") "The clip path's page-object" else "The object",
+      " was removed from its annotation by pdf_annot_remove_object(). ",
+      "The ", what, " is no longer valid."
     )
   )
 }

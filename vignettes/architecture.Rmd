@@ -109,7 +109,9 @@ pdf_text_runs(page)
 
 The same holds further down. Deleting an annotation with
 `pdf_annot_delete()` closes the page-objects read from its appearance
-stream with `pdf_annot_objects()`, and deleting a form object with
+stream with `pdf_annot_objects()`, removing one of them with
+`pdf_annot_remove_object()` closes the handles to it, and deleting a
+form object with
 `pdf_obj_delete()` closes the objects read from it with
 `pdf_form_objects()`. A clip path from `pdf_obj_clip_path()` closes
 with its page-object.

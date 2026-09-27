@@ -284,7 +284,7 @@ test_that("a nested object's clip path closes when its form is deleted", {
   pdf_obj_delete(form)
   expect_clip_refused(clip, clip_closed_msg(paste0(
     "Parent form object has been closed: it was deleted, removed from ",
-    "its form or moved into an annotation\\."
+    "its form or annotation, or moved into an annotation\\."
   )))
 })
 

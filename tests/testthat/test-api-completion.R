@@ -1359,7 +1359,7 @@ test_that("cpp_annot_get_object errors on out-of-bounds index", {
   # 0-based for the shim; the annot has no embedded objects so
   # any non-negative index fails.
   expect_error(
-    pdfium:::cpp_annot_get_object(a$ptr, 0L),
+    pdfium:::cpp_annot_get_object(a$ptr, s$doc$ptr, 0L),
     "FPDFAnnot_GetObject returned NULL"
   )
 })
@@ -1398,7 +1398,7 @@ test_that("cpp_annot_remove_object returns FALSE on a bad index", {
   # reaches PDFium, which returns false.
   s <- annot_blank_page()
   a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 50, 50))
-  out <- pdfium:::cpp_annot_remove_object(a$ptr, 99L)
+  out <- pdfium:::cpp_annot_remove_object(a$ptr, s$doc$ptr, 99L)
   expect_false(out)
 })
 
@@ -1579,5 +1579,134 @@ test_that("cpp_page_transform_with_clip rejects bad-shape inputs at C boundary",
                                             c(1, 0, 0, 1, 0, 0),
                                             c(1, 2)),  # wrong length
     "length-4"
+  )
+})
+
+# pdf_annot_remove_object() closes the removed object's handles (ADR-032)
+#
+# PDFium destroys the object it removes. The handles made to it, and the
+# clip paths and nested objects read through them, close with it; the
+# handles to the other objects stay usable.
+
+annot_removed_obj_msg <- paste0(
+  "^The object was removed from its annotation by ",
+  "pdf_annot_remove_object\\(\\)\\. The object handle is no longer valid\\.$"
+)
+
+# A stamp annotation whose appearance stream paints a red square clipped
+# to the 50 x 50 square at (10, 10), then a green square.
+annot_two_objects <- function(envir = parent.frame()) {
+  s <- annot_blank_page(envir)
+  s$annot <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  pdf_annot_set_appearance(
+    s$annot, "normal",
+    "q 10 10 50 50 re W n 1 0 0 rg 0 0 100 100 re f Q 0 1 0 rg 70 70 20 20 re f"
+  )
+  s
+}
+
+test_that("pdf_annot_remove_object() closes every handle to the object", {
+  s <- annot_two_objects()
+  objs <- pdf_annot_objects(s$annot)
+  again <- pdf_annot_objects(s$annot)[[1L]]
+  clip <- pdf_obj_clip_path(objs[[1L]])
+  removed_bounds <- pdf_obj_bounds(objs[[1L]])
+  kept_bounds <- pdf_obj_bounds(objs[[2L]])
+  # Another handle to the same annotation reads its own copies.
+  copy <- pdf_annot_objects(pdf_annotations(s$page)[[1L]])[[1L]]
+  pdf_annot_remove_object(s$annot, 1L)
+  for (obj in list(objs[[1L]], again)) {
+    expect_false(is_open(obj))
+    expect_identical(
+      format(obj), "<pdfium_obj [closed] path, obj 1 on page 1>"
+    )
+    expect_error(pdf_obj_bounds(obj), annot_removed_obj_msg)
+    expect_error(
+      pdfium:::cpp_obj_bounds(obj$ptr),
+      "^Page-object handle is NULL \\(closed\\?\\)\\.$"
+    )
+  }
+  expect_false(is_open(clip))
+  expect_error(
+    pdf_clip_path_count(clip),
+    paste0(
+      "^The clip path's page-object was removed from its annotation by ",
+      "pdf_annot_remove_object\\(\\)\\. The clip path is no longer valid\\.$"
+    )
+  )
+  expect_error(
+    pdfium:::cpp_clip_path_count_paths(clip$ptr),
+    "^Clip-path handle's parent has been closed"
+  )
+  # The other object keeps its handle; its position moves down by one.
+  expect_true(is_open(objs[[2L]]))
+  expect_identical(pdf_obj_bounds(objs[[2L]]), kept_bounds)
+  remaining <- pdf_annot_objects(s$annot)
+  expect_length(remaining, 1L)
+  expect_identical(pdf_obj_bounds(remaining[[1L]]), kept_bounds)
+  expect_true(is_open(copy))
+  expect_identical(pdf_obj_bounds(copy), removed_bounds)
+})
+
+test_that("removing a form from an annotation closes the objects read from it", {
+  doc <- pdf_doc_open(source = inline_annot_objects_pdf(), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  a <- pdf_annotations(page)[[1L]]
+  form <- pdf_annot_objects(a)[[5L]]
+  child <- pdf_form_objects(form)[[1L]]
+  pdf_annot_remove_object(a, 5L)
+  expect_error(pdf_obj_bounds(form), annot_removed_obj_msg)
+  expect_false(is_open(child))
+  expect_error(
+    pdf_text_font_size(child),
+    paste0(
+      "^Parent form object has been closed: it was deleted, removed from ",
+      "its form or annotation, or moved into an annotation\\. The object ",
+      "handle is no longer valid\\.$"
+    )
+  )
+  expect_error(
+    pdfium:::cpp_text_font_size(child$ptr),
+    "^Page-object handle's parent has been closed"
+  )
+  expect_length(pdf_annot_objects(a), 4L)
+})
+
+test_that("a removal PDFium refuses leaves the object's handles open", {
+  # PDFium removes objects from ink and stamp annotations only.
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "square", bounds = c(0, 0, 100, 100))
+  pdf_annot_set_appearance(a, "normal", "0 0 1 rg 10 10 40 40 re f")
+  obj <- pdf_annot_objects(a)[[1L]]
+  expect_error(
+    pdf_annot_remove_object(a, 1L),
+    "^FPDFAnnot_RemoveObject failed\\.$"
+  )
+  expect_true(is_open(obj))
+  expect_identical(unname(pdf_obj_bounds(obj)), c(10, 10, 50, 50))
+})
+
+test_that("annotation page-object handles are registered under their document", {
+  s <- annot_two_objects()
+  count <- function() pdfium:::cpp_annot_object_handle_count(s$doc$ptr)
+  expect_identical(count(), 0L)
+  objs <- pdf_annot_objects(s$annot)
+  expect_identical(count(), 2L)
+  # Removing an object releases its handles; collecting a handle does too.
+  pdf_annot_remove_object(s$annot, 1L)
+  expect_identical(count(), 1L)
+  rm(objs)
+  for (i in 1:2) invisible(gc())
+  expect_identical(count(), 0L)
+  # Closing the document releases the rest.
+  kept <- pdf_annot_objects(s$annot)[[1L]]
+  expect_identical(count(), 1L)
+  pdf_doc_close(s$doc)
+  expect_false(pdfium:::cpp_handle_is_valid(kept$ptr))
+  expect_identical(count(), 0L)
+  expect_error(
+    pdfium:::cpp_annot_object_handle_count("doc"),
+    "^Expected an external pointer for the document\\.$"
   )
 })

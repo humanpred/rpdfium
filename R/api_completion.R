@@ -592,7 +592,8 @@ pdf_annot_object_count <- function(annot) {
 #' from the annotation's normal (`/AP /N`) appearance stream. Returns a
 #' list of `pdfium_obj` handles; each handle's externalptr pins the
 #' parent annotation, so the embedded objects can't dangle past the
-#' annot's lifetime.
+#' annot's lifetime, and [pdf_annot_remove_object()] closes the handles
+#' to the object it removes.
 #'
 #' Each handle's `type` is the object's own type (`"path"`, `"text"`,
 #' `"image"`, `"shading"` or `"form"`), as in [pdf_page_objects()] and
@@ -628,7 +629,7 @@ pdf_annot_objects <- function(annot) {
   out <- vector("list", n)
   page <- annot$page
   for (i in seq_len(n)) {
-    ptr <- cpp_annot_get_object(annot$ptr, i - 1L)
+    ptr <- cpp_annot_get_object(annot$ptr, page$doc$ptr, i - 1L)
     type_int <- cpp_obj_type(ptr)
     out[[i]] <- new_pdfium_obj(ptr, page, i, pdfium_obj_type_name(type_int),
                                parent_annot = annot)
@@ -700,10 +701,15 @@ pdf_annot_append_object <- function(annot, obj) {
 #' Wraps `FPDFAnnot_RemoveObject`. The object is identified by its
 #' position within the annotation's embedded content (one-based,
 #' matching [pdf_annot_objects()]). PDFium destroys the object and
-#' regenerates the annotation's appearance stream, so handles to it
-#' from an earlier [pdf_annot_objects()] call, and the clip paths and
-#' nested objects read from them, are stale and must not be used; call
-#' [pdf_annot_objects()] again for the remaining ones.
+#' regenerates the annotation's appearance stream. The handles to the
+#' object from earlier [pdf_annot_objects()] calls on `annot` are
+#' closed, and so are the clip paths and nested objects read from
+#' them: further calls on them error cleanly. The handles to the
+#' remaining objects stay valid, but their positions shift down by
+#' one; call [pdf_annot_objects()] again for the new positions.
+#' Objects read through another handle to the same annotation, for
+#' example from a second [pdf_annotations()] call, are separate copies
+#' and are not affected.
 #'
 #' @param annot A `pdfium_annot` of subtype `"ink"` or `"stamp"`, the
 #'   only subtypes PDFium edits embedded objects of. Parent doc must
@@ -716,7 +722,7 @@ pdf_annot_remove_object <- function(annot, index) {
   checkmate::assert_int(index, lower = 1L)
   ctx <- assert_annot_writable(annot)
   expect_setter_ok(
-    cpp_annot_remove_object(annot$ptr, as.integer(index) - 1L),
+    cpp_annot_remove_object(annot$ptr, annot$page$doc$ptr, as.integer(index) - 1L),
     "FPDFAnnot_RemoveObject")
   finalize_annot_setter(ctx)
 }
