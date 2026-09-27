@@ -41,7 +41,7 @@ Mirrors pypdfium2's \code{PdfImage.extract()} convenience.
 fixture <- system.file("extdata", "fixtures", "image.pdf",
   package = "pdfium"
 )
-if (nzchar(fixture)) {
+if (nzchar(fixture) && requireNamespace("png", quietly = TRUE)) {
   doc <- pdf_doc_open(fixture)
   page <- pdf_page_load(doc, 1L)
   imgs <- Filter(function(o) o$type == "image", pdf_page_objects(page))
