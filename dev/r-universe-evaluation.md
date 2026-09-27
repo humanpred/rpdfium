@@ -58,9 +58,10 @@ It fits for four reasons.
 2. **The binaries it produces are self-contained.** The installed
    package already carries `libpdfium` next to, or under, the package's
    own shared library, found through a relative RPATH on Linux and macOS
-   and through the same-directory DLL search on Windows. A binary built
-   on r-universe therefore loads on a user's machine that has no PDFium
-   at all (see [How binaries carry libpdfium](#how-binary-packages-carry-libpdfium)).
+   and, on Windows, through the DLL search path that `library.dynam()`
+   sets to the package's `libs` directory. A binary built on r-universe
+   therefore loads on a user's machine that has no PDFium at all (see
+   [How binaries carry libpdfium](#how-binary-packages-carry-libpdfium)).
 3. **bblanchon ships a matching archive for every native platform
    r-universe builds**: Linux, macOS and Windows, each on x86_64 and
    arm64.
@@ -241,7 +242,7 @@ directory already carries the library:
 |---|---|---|
 | Linux | `pdfium/libs/pdfium.so` and `pdfium/lib/libpdfium.so` (from `inst/lib`) | RPATH `$ORIGIN/../lib`, written into `src/Makevars` by `configure` |
 | macOS | `pdfium/libs/pdfium.so` and `pdfium/lib/libpdfium.dylib`, with the install name rewritten to `@rpath/libpdfium.dylib` by `tools/download-pdfium.R` | RPATH `@loader_path/../lib` |
-| Windows | `pdfium/libs/<arch>/pdfium.dll` and `pdfium/libs/<arch>/libpdfium.dll`, the latter copied there by `src/install.libs.R` | `library.dynam()` loads through `LoadLibraryEx(LOAD_WITH_ALTERED_SEARCH_PATH)`, which searches the DLL's own directory first |
+| Windows | `pdfium/libs/<arch>/pdfium.dll` and `pdfium/libs/<arch>/libpdfium.dll`, the latter copied there by `src/install.libs.R` | Windows does not look for a DLL's dependencies in that DLL's own directory. `library.dynam()` prepends `pdfium/libs/<arch>` to `PATH` and calls `dyn.load()` with it as `DLLpath`, and R's `R_loadLibrary()` wraps a plain `LoadLibrary()` in `SetDllDirectory(DLLpath)` |
 
 All three paths are relative, so a binary works wherever it is
 installed. The Windows binary also keeps a second, unused copy at

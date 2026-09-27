@@ -50,10 +50,10 @@ inspect <- function(path) {
 inspect("report.pdf")
 ```
 
-This is safe. `pdfium` registers a C finalizer on every PDF handle.
-When the R object becomes unreachable, R's garbage collector reclaims
-it; the finalizer then calls PDFium's `FPDF_CloseDocument` to release
-the underlying memory.
+This is safe. `pdfium` registers a finalizer on every PDF handle.
+When the R object becomes unreachable, R's garbage collector runs the
+finalizer, which calls PDFium's `FPDF_CloseDocument` to release the
+underlying memory, and then reclaims the object.
 
 The caveat is that GC is **eventual**, not deterministic. If you open
 many large documents in a tight loop, you may exhaust process memory
@@ -128,6 +128,11 @@ When you `library(pdfium)`, this happens:
 4. When the package is unloaded (`unloadNamespace("pdfium")`),
    `.onUnload` closes every document still open, with everything read
    from it, and then runs `FPDF_DestroyLibrary()`.
+
+Handles that outlive the unload read as closed. Their finalizers are R
+functions that call into the package's compiled code only while it is
+loaded, so collecting those handles afterwards, reloading the package
+(`pkgload::load_all()` included), or quitting R is safe.
 
 The `libpdfium` binary was downloaded the first time you installed
 `pdfium`. The pinned release tag lives in `tools/pdfium-version.txt`.

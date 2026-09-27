@@ -139,15 +139,21 @@ for the rationale. The short version:
   R `externalptr`. Every handle with a finalizer is in one registry,
   `src/handle_registry.{h,cpp}` (ADR-024, ADR-025, ADR-028): annotation
   contexts, pages, fonts and XObjects under their document; documents,
-  `pdf_clip_path_new()` clip paths, bitmaps and memory-document buffers
-  under the library.
+  `pdf_clip_path_new()` clip paths and bitmaps under the library.
 - One mint and one release path per kind: `make_*_handle()` alone creates
   the externalptr (finalizer attached, handle registered), and
   `release_*_handle()` alone closes and clears it — the finalizer, the
   explicit `pdf_*_close()` / `pdf_annot_delete()` and the owner's release
   all call it, so every close is idempotent. Never close a handle
-  `make_*_handle()` made, or call `R_RegisterCFinalizerEx`, anywhere
-  else.
+  `make_*_handle()` made anywhere else.
+- The finalizer is the R function `finalize_handle()` (ADR-031), which
+  `make_handle()` alone attaches. It calls into the shared library only
+  while the library is loaded, looking the routine up by name each time,
+  and the library releases only handles its own registry holds, so a
+  handle may outlive `unloadNamespace()`, `detach(unload = TRUE)` or a
+  `pkgload::load_all()` reload. Never attach a C finalizer
+  (`R_RegisterCFinalizerEx`): R calls it even after the library is
+  unloaded, and `test-finalizer.R` fails on one.
 - Owners release their handles first: `pdf_doc_close()` closes the
   document's annotations, pages, fonts and XObjects before
   `FPDF_CloseDocument`, and `cpp_destroy_library()` closes every document,
@@ -157,6 +163,9 @@ for the rationale. The short version:
   containers R does not scan, and the finalizer removes each one from the
   registry before R frees it, so an unreachable handle is still collected
   promptly.
+- A document loaded from memory reads from a raw vector in its handle's
+  `prot` slot: PDFium reads the bytes until the document is closed, and
+  R frees the vector only after the handle.
 - Children pin their immediate owner in `prot` (a page its document, an
   annotation its page, a page-object its page, annotation or form, a clip
   path its page-object), and both `validate_handle()` in C++ and

@@ -66,6 +66,7 @@ Collate:
     'utils.R'
     'enum_codes.R'
     'extract.R'
+    'finalizer.R'
     'fonts.R'
     'form_field_setters.R'
     'forms.R'

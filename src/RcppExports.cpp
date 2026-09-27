@@ -1845,6 +1845,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_set_handle_finalizer
+void cpp_set_handle_finalizer(SEXP fun);
+RcppExport SEXP _pdfium_cpp_set_handle_finalizer(SEXP funSEXP) {
+BEGIN_RCPP
+    Rcpp::traits::input_parameter< SEXP >::type fun(funSEXP);
+    cpp_set_handle_finalizer(fun);
+    return R_NilValue;
+END_RCPP
+}
+// cpp_finalize_handle
+void cpp_finalize_handle(SEXP ptr);
+RcppExport SEXP _pdfium_cpp_finalize_handle(SEXP ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::traits::input_parameter< SEXP >::type ptr(ptrSEXP);
+    cpp_finalize_handle(ptr);
+    return R_NilValue;
+END_RCPP
+}
 // cpp_doc_handle_counts
 Rcpp::IntegerVector cpp_doc_handle_counts(SEXP doc_ptr);
 RcppExport SEXP _pdfium_cpp_doc_handle_counts(SEXP doc_ptrSEXP) {
@@ -1970,6 +1988,16 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type obj_ptr(obj_ptrSEXP);
     rcpp_result_gen = Rcpp::wrap(cpp_image_filters(obj_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_load_generation
+int cpp_load_generation();
+RcppExport SEXP _pdfium_cpp_load_generation() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(cpp_load_generation());
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3470,6 +3498,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_text_obj_glyph_width", (DL_FUNC) &_pdfium_cpp_text_obj_glyph_width, 3},
     {"_pdfium_cpp_text_obj_font_metrics", (DL_FUNC) &_pdfium_cpp_text_obj_font_metrics, 2},
     {"_pdfium_cpp_text_char_font_info", (DL_FUNC) &_pdfium_cpp_text_char_font_info, 1},
+    {"_pdfium_cpp_set_handle_finalizer", (DL_FUNC) &_pdfium_cpp_set_handle_finalizer, 1},
+    {"_pdfium_cpp_finalize_handle", (DL_FUNC) &_pdfium_cpp_finalize_handle, 1},
     {"_pdfium_cpp_doc_handle_counts", (DL_FUNC) &_pdfium_cpp_doc_handle_counts, 1},
     {"_pdfium_cpp_library_handle_counts", (DL_FUNC) &_pdfium_cpp_library_handle_counts, 0},
     {"_pdfium_cpp_image_new_from_jpeg", (DL_FUNC) &_pdfium_cpp_image_new_from_jpeg, 3},
@@ -3481,6 +3511,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_image_data", (DL_FUNC) &_pdfium_cpp_image_data, 2},
     {"_pdfium_cpp_image_icc_profile", (DL_FUNC) &_pdfium_cpp_image_icc_profile, 2},
     {"_pdfium_cpp_image_filters", (DL_FUNC) &_pdfium_cpp_image_filters, 1},
+    {"_pdfium_cpp_load_generation", (DL_FUNC) &_pdfium_cpp_load_generation, 0},
     {"_pdfium_cpp_init_library", (DL_FUNC) &_pdfium_cpp_init_library, 0},
     {"_pdfium_cpp_destroy_library", (DL_FUNC) &_pdfium_cpp_destroy_library, 0},
     {"_pdfium_cpp_install_default_sysfont_info", (DL_FUNC) &_pdfium_cpp_install_default_sysfont_info, 0},
@@ -3595,7 +3626,9 @@ static const R_CallMethodDef CallEntries[] = {
     {NULL, NULL, 0}
 };
 
+void count_load_generation(DllInfo* /*dll*/);
 RcppExport void R_init_pdfium(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
+    count_load_generation(dll);
 }

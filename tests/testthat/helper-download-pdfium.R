@@ -1,17 +1,7 @@
-#' Path to `tools/download-pdfium.R`, or `""` outside a source tree.
-#'
-#' `devtools::test()` runs from the source tree; `R CMD check` runs the
-#' tests next to the unpacked source under `00_pkg_src/`. An installed
-#' package has no `tools/` directory, so callers skip on `""`.
+#' Path to `tools/download-pdfium.R`, or `""` outside a source tree
+#' (`source_tree_path()`).
 download_pdfium_script <- function() {
-  candidates <- c(
-    testthat::test_path("..", "..", "tools", "download-pdfium.R"),
-    testthat::test_path(
-      "..", "..", "00_pkg_src", "pdfium", "tools", "download-pdfium.R"
-    )
-  )
-  hit <- candidates[file.exists(candidates)]
-  if (length(hit) == 0L) "" else normalizePath(hit[[1L]])
+  source_tree_path("tools", "download-pdfium.R") # nolint: object_usage_linter.
 }
 
 #' Whether this R can compute SHA-256 (`tools::sha256sum()`, R >= 4.5.0).

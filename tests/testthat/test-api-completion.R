@@ -844,7 +844,7 @@ test_that("pdf_bitmap_new + close round-trip", {
 
 test_that("bitmap finalizer releases the FPDF_BITMAP on GC", {
   # Drop the only reference to the bitmap *without* calling
-  # pdf_bitmap_close(); the registered C finalizer must run on the
+  # pdf_bitmap_close(); the registered finalizer must run on the
   # next garbage-collection pass and call FPDFBitmap_Destroy.
   local({
     bm <- pdf_bitmap_new(4L, 4L, alpha = TRUE)
@@ -1016,7 +1016,7 @@ test_that("pdf_obj_form_from_xobject refuses a closed xobject", {
 
 test_that("xobject finalizer releases the FPDF_XOBJECT on GC", {
   # Drop the only reference to the XObject *without* calling
-  # pdf_xobject_close(); the registered C finalizer must run on the
+  # pdf_xobject_close(); the registered finalizer must run on the
   # next garbage-collection pass and call FPDF_CloseXObject. The
   # XObject's data has been copied into the dest doc, so it's safe
   # to release after the round-trip.

@@ -36,9 +36,9 @@ namespace pdfium_r {
 // Longest `prot` chain validate_handle() walks. The longest real chain
 // runs from a clip path through its page-object, one form object per
 // level of Form XObject nesting (PDFium parses 40 levels), an
-// annotation, the page and the document to its memory buffer. A
-// handle's `prot` is fixed when the handle is made, so a chain cannot
-// loop back on itself; the cap only bounds the walk.
+// annotation and the page to the document. A handle's `prot` is fixed
+// when the handle is made, so a chain cannot loop back on itself; the
+// cap only bounds the walk.
 constexpr int kMaxOwnerChain = 64;
 
 // Validate the externalptr `ptr` and return its underlying address.
@@ -47,8 +47,8 @@ constexpr int kMaxOwnerChain = 64;
 // chain must have a non-NULL address — this catches the "an owner was
 // closed, the child still references freed memory" case. The walk
 // stops at the first prot that is not an externalptr: the document
-// handle carries R_NilValue, or its memory buffer, whose own prot is
-// R_NilValue.
+// handle carries R_NilValue, or the raw vector a document loaded from
+// memory reads from.
 inline void* validate_handle(SEXP ptr, const char* what,
                               bool require_prot_alive) {
   if (TYPEOF(ptr) != EXTPTRSXP) {

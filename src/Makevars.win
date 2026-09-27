@@ -14,11 +14,11 @@
 #     loop back on itself ("procedure not found").
 #
 # src/install.libs.R then copies libpdfium.dll into <pkg>/libs/x64/
-# (next to the package's own pdfium.dll). R's library.dynam loads
-# pdfium.dll via LoadLibraryEx with LOAD_WITH_ALTERED_SEARCH_PATH,
-# which puts the loaded DLL's directory first on the Windows search
-# path - so pdfium.dll's DT_NEEDED on libpdfium.dll resolves
-# automatically.
+# (next to the package's own pdfium.dll). library.dynam() loads
+# pdfium.dll with that directory on the DLL search path, through
+# PATH and dyn.load()'s DLLpath (SetDllDirectory() in R's
+# R_loadLibrary()), so pdfium.dll's import of libpdfium.dll resolves
+# there; see src/install.libs.R.
 
 PKG_CPPFLAGS = -I../inst/include -DR_NO_REMAP
 PKG_LIBS    = -L../inst/lib -lpdfium
