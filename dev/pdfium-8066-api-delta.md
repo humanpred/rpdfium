@@ -326,7 +326,7 @@ assumptions against it.
 - **E-3 (fixed). `man/plot.pdfium_bitmap.Rd` was stale** — the roxygen
   source in `R/render.R` changed in the nativeRaster fix, the Rd
   didn't. Regenerated.
-- **E-4 (follow-up). `pdf_annot_append_object()` double-frees.** Every
+- **E-4 (fixed, ADR-023). `pdf_annot_append_object()` double-frees.** Every
   object creator inserts the new object into the page, so the object
   handed to `FPDFAnnot_AppendObject` is owned by both the page and the
   annotation; `pdf_page_close()` then crashes (reproduced on both
@@ -336,7 +336,9 @@ assumptions against it.
   while the equivalent note on `pdf_form_obj_remove_object()` does not
   reproduce on either build. Needs a design decision (detach the
   object from the page first, or refuse page-owned objects) — out of
-  scope for a pin bump.
+  scope for a pin bump. Resolved by ADR-023: the object is detached
+  from the page before it is appended, and
+  `pdf_form_obj_remove_object()` now frees the child it used to leak.
 - **E-5 (follow-up). Form fields are never drawn by
   `pdf_render_page(annotations = TRUE)`.** PDFium's
   `FPDF_RenderPageBitmap` hard-codes widget annotations as hidden; they
@@ -384,7 +386,7 @@ assumptions against it.
 | 3 | Drop the render-time `SetRect` walk (ADR-022) + regression test | **Done** |
 | 4 | Update docs/tests for D-1..D-4 | **Done** |
 | 5 | Report D-4 (`+00'00'` offset on local time) upstream | Suggested — maintainer (has a Gerrit/CLA setup) |
-| 6 | Fix E-4 (annotation append double ownership) | Follow-up PR; needs a small ADR |
+| 6 | Fix E-4 (annotation append double ownership) | **Done** (ADR-023) |
 | 7 | Document or implement widget rendering (E-5) | Follow-up |
 | 8 | Declare `Rcpp (>= 1.1.0)` in `LinkingTo` (E-6) | Follow-up |
 | 9 | Refresh `dev/upstream-patches/` for the two landed patches | **Done** (status notes) |
