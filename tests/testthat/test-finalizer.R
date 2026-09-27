@@ -170,3 +170,73 @@ test_that("R's exit closes every handle while the shared library is loaded", {
     )
   )
 })
+
+# One place attaches finalizers --------------------------------------
+# make_handle() in src/handle_registry.cpp attaches finalize_handle(),
+# an R function, to every handle (ADR-028, ADR-031), and only the load
+# hooks set it. A C finalizer anywhere would be called after the shared
+# library is unloaded.
+
+c_finalizer_call <- "\\bR_RegisterCFinalizer(Ex)?\\s*\\("
+weak_ref_call <- "\\bR_MakeWeakRef(C)?\\s*\\("
+r_finalizer_call <- "\\bR_RegisterFinalizer(Ex)?\\s*\\("
+reg_finalizer_call <- "\\breg\\.finalizer\\s*\\("
+set_finalizer_call <- "\\bcpp_set_handle_finalizer\\s*\\("
+
+#' The lines of `files` that match `pattern` once `comment` is removed
+#' from each, as `"<file name>:<line number>"`.
+calls_in <- function(files, pattern, comment) {
+  lines <- lapply(files, readLines, warn = FALSE)
+  file <- rep(basename(files), lengths(lines))
+  line <- sequence(lengths(lines))
+  code <- sub(comment, "", unlist(lines))
+  hit <- grepl(pattern, code, perl = TRUE)
+  sprintf("%s:%d", file[hit], line[hit])
+}
+
+test_that("make_handle() is the only code that attaches a finalizer", {
+  src <- source_tree_path("src")
+  skip_if(!nzchar(src), "src/ is only in a source tree")
+  cpp <- list.files(src, pattern = "\\.(c|cc|cpp|h|hpp)$", full.names = TRUE)
+  r <- list.files(source_tree_path("R"), pattern = "\\.[Rr]$", full.names = TRUE)
+
+  expect_identical(calls_in(cpp, c_finalizer_call, "//.*$"), character())
+  expect_identical(calls_in(cpp, weak_ref_call, "//.*$"), character())
+  expect_identical(
+    sub(":.*", "", calls_in(cpp, r_finalizer_call, "//.*$")),
+    "handle_registry.cpp"
+  )
+  expect_identical(calls_in(r, reg_finalizer_call, "#.*$"), character())
+  expect_identical(
+    sub(":.*", "", calls_in(r, set_finalizer_call, "#.*$")),
+    c("zzz.R", "zzz.R")
+  )
+})
+
+test_that("the finalizer scan finds planted registrations, not comments", {
+  dir <- withr::local_tempdir()
+  cpp <- file.path(dir, "planted.cpp")
+  writeLines(c(
+    "// R_RegisterCFinalizerEx(ptr, fin, TRUE) in a comment",
+    "void f(SEXP p, SEXP fun) {",
+    "  R_RegisterCFinalizerEx(p, fin, TRUE);  // planted",
+    "  R_MakeWeakRefC(p, R_NilValue, fin, TRUE);",
+    "  R_RegisterFinalizer (p, fun);",
+    "}"
+  ), cpp)
+  r <- file.path(dir, "planted.R")
+  writeLines(c(
+    "# reg.finalizer(e, f) in a comment",
+    "f <- function(e) reg.finalizer(e, g, onexit = TRUE)",
+    "cpp_set_handle_finalizer(NULL)"
+  ), r)
+
+  expect_identical(calls_in(cpp, c_finalizer_call, "//.*$"), "planted.cpp:3")
+  expect_identical(calls_in(cpp, weak_ref_call, "//.*$"), "planted.cpp:4")
+  expect_identical(calls_in(cpp, r_finalizer_call, "//.*$"), "planted.cpp:5")
+  expect_identical(calls_in(r, reg_finalizer_call, "#.*$"), "planted.R:2")
+  expect_identical(calls_in(r, set_finalizer_call, "#.*$"), "planted.R:3")
+  # No match is no site, not an empty one.
+  expect_identical(calls_in(r, c_finalizer_call, "#.*$"), character())
+  expect_identical(calls_in(character(), c_finalizer_call, "#.*$"), character())
+})
