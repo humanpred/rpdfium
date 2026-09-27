@@ -1,8 +1,8 @@
 # Memory-hygiene contract test.
 #
-# Per the architecture vignette and ADR-005, every PDFium handle
-# lives behind an externalptr with a C finalizer registered via
-# R_RegisterCFinalizerEx(..., TRUE). When the externalptr becomes
+# Per the architecture vignette, ADR-005 and ADR-031, every PDFium
+# handle lives behind an externalptr with a finalizer registered via
+# R_RegisterFinalizerEx(..., TRUE). When the externalptr becomes
 # unreachable, R's GC reclaims it, which runs the finalizer, which
 # calls FPDF_CloseDocument / FPDF_ClosePage. This test exercises
 # that contract by creating many short-lived handles in a tight

@@ -284,13 +284,13 @@ print.pdfium_obj_list <- function(x, ...) {
 #' Construct a `pdfium_font` from an external pointer
 #'
 #' Internal helper. The `FPDF_FONT` handle has its own lifetime —
-#' the externalptr carries a C finalizer that calls `FPDFFont_Close`,
-#' registered C-side in `cpp_font_load_*`. The parent doc is pinned
-#' in the externalptr's `prot` slot so R's GC cannot reclaim the doc
-#' while any font handle is reachable. `name` is informational —
-#' for standard fonts it's the spec name; for loaded TTF/Type1 fonts
-#' it's the file's basename when the font was loaded from a path,
-#' or `"<raw>"` for in-memory loads.
+#' the externalptr carries the handle finalizer, which calls
+#' `FPDFFont_Close`, attached C-side in `cpp_font_load_*`. The parent
+#' doc is pinned in the externalptr's `prot` slot so R's GC cannot
+#' reclaim the doc while any font handle is reachable. `name` is
+#' informational — for standard fonts it's the spec name; for loaded
+#' TTF/Type1 fonts it's the file's basename when the font was loaded
+#' from a path, or `"<raw>"` for in-memory loads.
 #'
 #' @param ptr An `externalptr` to an `FPDF_FONT`.
 #' @param doc Parent `pdfium_doc`.
