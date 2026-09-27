@@ -52,7 +52,7 @@ pypdfium2 modules surveyed (all of `_helpers/`):
   iterable / length-supporting object → rpdfium could expose a
   `length.pdfium_doc()` (already implicit via `pdf_page_count()`)
   and a tidyverse-friendly `pdfium_doc` accessor (not part of the
-  CRAN scope but listed for v0.3+). The
+  0.1.0 scope but listed for v0.3+). The
   `PdfBitmap.to_pil()` / `to_numpy()` /
   `from_pil()` triad has direct R analogues
   (`as.raster.pdfium_bitmap`, `as.array.pdfium_bitmap`,
@@ -89,7 +89,7 @@ pypdfium2 modules surveyed (all of `_helpers/`):
 |---|---|---|---|
 | `PdfDocument.get_version()` ([`_helpers/document.py:265`](file:///tmp/pypdfium2-compare/src/pypdfium2/_helpers/document.py)) | `FPDF_GetFileVersion` | `pdf_doc_file_version(doc)` | Direct accessor for `15` / `17` etc. We already expose this as `pdf_doc_info()$file_version` — adding a standalone is one-liner symmetry with other `pdf_doc_*` accessors. Low priority; arguably already covered. |
 | `PdfDocument.get_identifier(type=FILEIDTYPE_PERMANENT \| FILEIDTYPE_CHANGING)` ([`_helpers/document.py:248`](file:///tmp/pypdfium2-compare/src/pypdfium2/_helpers/document.py)) | `FPDF_GetFileIdentifier(type=...)` with the type enum | `pdf_doc_file_id(doc, which = c("permanent", "changing"))` | rpdfium's `pdf_doc_file_id()` exists but always returns the permanent ID. PDFium's enum has two values — the *changing* one is regenerated each time the PDF is incrementally saved, useful for revision tracking. Small parameter addition. |
-| `PdfTextSearcher.get_prev()` ([`_helpers/textpage.py:329`](file:///tmp/pypdfium2-compare/src/pypdfium2/_helpers/textpage.py)) | `FPDFText_FindPrev` | rpdfium's `pdf_text_search()` only iterates forward via `FPDFText_FindNext` | `FPDFText_FindPrev` lets you walk backward from the latest hit. Niche but free if we already have the searcher handle plumbing in place. Worth a check before CRAN. |
+| `PdfTextSearcher.get_prev()` ([`_helpers/textpage.py:329`](file:///tmp/pypdfium2-compare/src/pypdfium2/_helpers/textpage.py)) | `FPDFText_FindPrev` | rpdfium's `pdf_text_search()` only iterates forward via `FPDFText_FindNext` | `FPDFText_FindPrev` lets you walk backward from the latest hit. Niche but free if we already have the searcher handle plumbing in place. Worth a check before the next release. |
 | `PdfTextPage.get_textobj(index)` ([`_helpers/textpage.py:241`](file:///tmp/pypdfium2-compare/src/pypdfium2/_helpers/textpage.py)) | `FPDFText_GetTextObject` | `pdf_text_obj_at_char(page, char_index)` | Returns the `pdfium_obj` (TEXT type) that contains a given char index. We expose `pdf_text_char_obj_index()` to get the obj-index, but the caller then has to round-trip through `pdf_page_objects()` to materialize the handle. A direct handle-returning helper would shave a step for the layout-reconstruction use case. |
 
 ## DELIBERATELY OMITTED — to reconsider
@@ -97,7 +97,7 @@ pypdfium2 modules surveyed (all of `_helpers/`):
 | pypdfium2 name | Why pypdfium2 includes it | Why we excluded | Recommendation |
 |---|---|---|---|
 | `PdfBitmap.from_pil()` + `PdfImage.set_bitmap()` ([`_helpers/bitmap.py:281`](file:///tmp/pypdfium2-compare/src/pypdfium2/_helpers/bitmap.py), [`_helpers/pageobjects.py:415`](file:///tmp/pypdfium2-compare/src/pypdfium2/_helpers/pageobjects.py)) | Embed any-format raster (PNG, TIFF, in-memory pixel data) as an image page-object | Per [`v0.2.0-plan.md`](v0.2.0-plan.md) §1 non-goals, "PNG / TIFF / raw-bitmap image embedding" was deferred. Workaround: convert to JPEG with `magick::image_write()` and use `pdf_image_new()`. We *do* now wrap `FPDFBitmap_Create*` + `FPDFImageObj_SetBitmap` in v0.1.0 as `pdf_bitmap_*` / `pdf_image_set_bitmap`. | **Partial — already there, just not user-facing as a single call.** v0.1.0 ships every primitive needed (`pdf_bitmap_new`, `pdf_bitmap_set_buffer`, `pdf_image_set_bitmap`). A small `pdf_image_new_from_bitmap(doc, bitmap)` or `pdf_image_new_from_raster(doc, raster)` wrapper would close the gap without new symbols. Track for v0.2.x rather than v0.1.0. |
-| `PdfImage.extract(dest, fb_format = ...)` ([`_helpers/pageobjects.py:542`](file:///tmp/pypdfium2-compare/src/pypdfium2/_helpers/pageobjects.py)) | One-call write-image-to-file: walks the filter chain, picks JPEG / JPEG2000 / PNG / TIFF based on what's in the stream, falls back to PIL re-encode for everything else | Not in the audit document. We expose `pdf_image_data()` (raw or simple-decoded bytes), `pdf_image_filters()` (filter names), and `pdf_image_bitmap()` (rasterize) — but the caller has to assemble these themselves to extract an image. | **Add — convenience win, low risk.** The "best-effort image extraction" pattern is widely used. R analogue: `pdf_image_extract(obj, path)` returning the on-disk format chosen. Can defer to v0.2.x; not blocking 0.1.0 CRAN. Note that pypdfium2's implementation depends on PIL for the fallback; rpdfium would use `magick` (already a soft dependency target for image embedding). |
+| `PdfImage.extract(dest, fb_format = ...)` ([`_helpers/pageobjects.py:542`](file:///tmp/pypdfium2-compare/src/pypdfium2/_helpers/pageobjects.py)) | One-call write-image-to-file: walks the filter chain, picks JPEG / JPEG2000 / PNG / TIFF based on what's in the stream, falls back to PIL re-encode for everything else | Not in the audit document. We expose `pdf_image_data()` (raw or simple-decoded bytes), `pdf_image_filters()` (filter names), and `pdf_image_bitmap()` (rasterize) — but the caller has to assemble these themselves to extract an image. | **Add — convenience win, low risk.** The "best-effort image extraction" pattern is widely used. R analogue: `pdf_image_extract(obj, path)` returning the on-disk format chosen. Can defer to v0.2.x; not blocking 0.1.0. Note that pypdfium2's implementation depends on PIL for the fallback; rpdfium would use `magick` (already a soft dependency target for image embedding). |
 | `PdfDest` reader class ([`_helpers/document.py:670`](file:///tmp/pypdfium2-compare/src/pypdfium2/_helpers/document.py), `get_index`, `get_view`) | Represent a `/Dest` action target as its own object with `get_index()` / `get_view()` accessors | rpdfium does not have a separate `pdfium_dest` class. Instead, every reader that surfaces destinations (`pdf_doc_bookmarks()`, `pdf_doc_named_dests()`, `pdf_page_links()`, `pdf_link_at_point()`, `pdf_page_actions()`) returns `dest_view` / `dest_x` / `dest_y` / `dest_zoom` columns directly. | **Skip — tibble-first design is the deliberate R idiom.** The shape difference is the right call for R. Keep the rationale documented somewhere (it's implicit in the `v0.2.0-plan.md` reader-writer contract); pypdfium2's class is the right call for an iterator-based Python API but would be friction in R. |
 | `PdfUnspHandler` ([`_helpers/unsupported.py:15`](file:///tmp/pypdfium2-compare/src/pypdfium2/_helpers/unsupported.py)) | Register a callback that fires when PDFium hits an unsupported feature (XFA forms, encryption type, unimplemented annotation subtype, etc.); calls `FSDK_SetUnSpObjProcessHandler`. Lets the library *warn* about deficiencies before failing silently. | Not in the audit document. rpdfium today emits no diagnostics for unsupported-feature events. | **Add (small, optional) — diagnostic value for users debugging "why does my PDF not render right?"** Suggested R surface: `pdf_set_unsupported_handler(callback = warn)` plus a default `warning()`-based callback. The PDFium symbol involved (`FSDK_SetUnSpObjProcessHandler`) is process-global, not per-document, so it sits as a top-level utility. Defer to v0.2.0; document the gap in the audit. |
 
@@ -121,7 +121,7 @@ pypdfium2 modules surveyed (all of `_helpers/`):
    `pdf_with(path, function(doc) { ... })` higher-order function
    would mirror the pattern. Already trivially expressible with
    `withr::defer(pdf_doc_close(doc))`; arguably out of scope for
-   CRAN 0.1.0 but worth mentioning in the architecture vignette.
+   0.1.0 but worth mentioning in the architecture vignette.
 
 3. **`PdfBitmap.to_pil()` / `from_pil()` / `to_numpy()`**
    ([`_helpers/bitmap.py:221-306`](file:///tmp/pypdfium2-compare/src/pypdfium2/_helpers/bitmap.py))
@@ -131,7 +131,7 @@ pypdfium2 modules surveyed (all of `_helpers/`):
    `plot.pdfium_bitmap`. The missing analogue is `magick::image_read`
    adapter — for users wanting to apply `magick` filters after
    render. Single-method `as_magick(bitmap)` would close the gap.
-   Not a PDFium binding, so possibly out of CRAN scope; defer.
+   Not a PDFium binding, so possibly out of the package's scope; defer.
 
 4. **`PdfTextPage._get_active_text_range` (skip inserted/excluded
    chars when extracting text by range)**

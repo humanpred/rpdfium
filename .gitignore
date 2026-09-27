@@ -20,6 +20,7 @@ src-i386/
 # Downloaded binaries (configure populates these; never commit)
 inst/include/
 inst/lib/
+inst/pdfium-licenses/
 
 # pkgdown build output. pkgdown writes to `docs/`; hand-written
 # developer content lives under `dev/` (tracked) so the two never

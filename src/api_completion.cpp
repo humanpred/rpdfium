@@ -2,7 +2,7 @@
 //
 // This file collects single-call wrappers that pair with already-shipped
 // readers / writers and were the last remaining wrapping gaps before
-// CRAN submission. Functions live here rather than in their topical
+// the 0.1.0 release. Functions live here rather than in their topical
 // neighbours so the v0.1.0-completion diff stays bisectable.
 //
 // Phase A — simple readers + getters (text low-level geometry, page

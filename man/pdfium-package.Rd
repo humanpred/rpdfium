@@ -41,6 +41,18 @@ Set \code{PDFIUM_OFFLINE=1} and stage the tarball under
 }
 }
 
+\section{Licences}{
+
+
+PDFium is licensed under the BSD-3-Clause licence, and \code{libpdfium}
+also contains third-party code under its own licences. When
+\code{libpdfium} comes from the download (step 4 above), the installed
+package carries all of these notices:
+\code{list.files(system.file("pdfium-licenses", package = "pdfium"))}.
+When it comes from an existing installation (steps 1 to 3), the
+licence terms of that installation apply.
+}
+
 \seealso{
 Useful links:
 \itemize{
