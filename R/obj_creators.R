@@ -119,7 +119,8 @@ pdf_text_new <- function(page, text,
     }
     if (!identical(font$doc$ptr, ph$doc$ptr)) {
       stop("`font` and `page` must belong to the same document.",
-           call. = FALSE)
+        call. = FALSE
+      )
     }
     ptr <- cpp_text_new_with_font(
       ph$doc$ptr, ph$page$ptr, font$ptr,

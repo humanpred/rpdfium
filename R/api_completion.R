@@ -1161,7 +1161,8 @@ pdf_obj_form_from_xobject <- function(page, xobject) {
   assert_readwrite(ph$doc)
   if (!identical(xobject$doc$ptr, ph$doc$ptr)) {
     stop("`xobject` and `page` must belong to the same document.",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
   obj_ptr <- cpp_form_obj_from_xobject(xobject$ptr, ph$page$ptr)
   idx <- cpp_page_object_count(ph$page$ptr)
