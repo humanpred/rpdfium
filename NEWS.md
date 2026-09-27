@@ -64,6 +64,15 @@
   pointed at a file that was never installed; it also misnamed
   bblanchon/pdfium-binaries' licence as Apache-2.0. Installation now
   stops if a PDFium archive lacks PDFium's own notice.
+* Installing from source no longer reuses an incomplete PDFium download.
+  Every archive, whether downloaded, cached or vendored, must now match
+  the SHA-256 pinned for it in `tools/pdfium-checksums.txt` (on R < 4.5,
+  which cannot compute SHA-256, it must at least be complete). A download
+  is moved into the cache only once it passes, and a cached archive that
+  fails is downloaded again. Before, an interrupted download stayed in
+  the cache and broke every later install, and a truncated archive was
+  unpacked without an error, leaving a truncated `libpdfium` for the
+  link step to fail on (ADR-027).
 * `pdf_annot_objects()` reports each embedded object's own type
   (`"path"`, `"text"`, `"image"`, `"shading"` or `"form"`) instead of
   `"unknown"`, so the type-specific readers and setters such as

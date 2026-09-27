@@ -121,7 +121,10 @@ package load (every R session)
 When updating `tools/pdfium-version.txt`:
 
 1. Update the file to the new release tag exactly as bblanchon ships
-   it (e.g. `chromium/7210`).
+   it (e.g. `chromium/7210`), then run
+   `Rscript tools/update-pdfium-checksums.R` to regenerate
+   `tools/pdfium-checksums.txt`. Installs refuse to run until that
+   file's `release:` line matches the pin (ADR-027).
 2. Rebuild fixtures via `Rscript tools/build-fixtures.R`.
 3. Run the full test suite locally: `devtools::test()`.
 4. Run `devtools::check()` and confirm no new warnings or notes.

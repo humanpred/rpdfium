@@ -10,7 +10,7 @@ Markdown ADR following the
 |---|----------|---|
 | [001](ADR-001-language-stack.md) | Accepted | Language and framework: R ≥ 4.2 + Rcpp + C++17 + S3 |
 | [002](ADR-002-license.md)        | Accepted | License: MIT for the R package, BSD-3-Clause for the bundled PDFium |
-| [003](ADR-003-binary-distribution.md) | Accepted (CRAN-submission wording superseded by ADR-026) | Binary distribution: bblanchon pdfium-binaries downloaded at install |
+| [003](ADR-003-binary-distribution.md) | Accepted (CRAN-submission wording superseded by ADR-026; download-integrity consequence superseded by ADR-027) | Binary distribution: bblanchon pdfium-binaries downloaded at install |
 | [004](ADR-004-api-style.md)      | Accepted | API style: snake_case `pdf_*`, S3 classes, tibble outputs |
 | [005](ADR-005-memory-model.md)   | Accepted | Memory model: `externalptr` + finalizers + idempotent explicit close |
 | [006](ADR-006-pdfium-pin.md)     | Accepted | PDFium version pinning policy |
@@ -34,6 +34,7 @@ Markdown ADR following the
 | [024](ADR-024-annotation-handles-close-with-document.md) | Supersedes ADR-023 decision 3 | Annotation handles close with their document: a per-document registry of live annotation handles, released before every `FPDF_CloseDocument`, so no annotation context outlives its document |
 | [025](ADR-025-document-handles-close-with-document.md) | Accepted (extends ADR-024) | Pages, fonts and XObjects close with their document: the ADR-024 registry holds every handle PDFium closes for a document, released annotations first, then pages, then fonts and XObjects; form-field pages pin their document, and fonts and XObjects are refused on another document's pages |
 | [026](ADR-026-no-cran-release.md) | Supersedes ADR-008's release targeting and ADR-003's CRAN-submission wording | No CRAN release: keep ADR-008's CRAN-quality bar, ship binaries through r-universe and source through GitHub |
+| [027](ADR-027-verified-pdfium-downloads.md) | Supersedes ADR-003's download-integrity consequence and ADR-006's rejection of hash pinning | PDFium archives are verified before use: SHA-256 pinned per archive in `tools/pdfium-checksums.txt` and tied to the release pin, atomic downloads into the cache, and bad cache entries replaced |
 | [028](ADR-028-library-destroy-closes-every-handle.md) | Accepted (extends ADR-025) | Destroying the library closes every handle first: documents, standalone clip paths, bitmaps and memory-document buffers are registered under the library and released before `FPDF_DestroyLibrary`; every finalizer is attached in one place |
 | [029](ADR-029-handles-follow-their-owners.md) | Accepted (extends ADR-020 §4 and ADR-025) | A handle is refused once any of its owners is closed: clip paths pin their page-object and nested objects their form, and `validate_handle()` and `is_open()` walk the whole ownership chain |
 | [030](ADR-030-rhub-v2-cran-flavour-checks.md) | Supersedes ADR-007's `cran-check.yaml` row | Weekly CRAN-flavour checks with rhub v2 (`rhub.yaml`): windows and macos-arm64 on R-devel, gcc-asan, clang-asan, rchk, nosuggests; replaces the defunct `rhub::check_for_cran()` job |

@@ -35,7 +35,9 @@ Windows).
 \verb{/opt/homebrew}, \verb{/opt/local} (POSIX only).
 \item Download from
 \href{https://github.com/bblanchon/pdfium-binaries}{bblanchon/pdfium-binaries}.
-The pinned release lives in \code{tools/pdfium-version.txt}.
+The pinned release lives in \code{tools/pdfium-version.txt}, and
+each archive must match the SHA-256 pinned for it in
+\code{tools/pdfium-checksums.txt}.
 Set \code{PDFIUM_OFFLINE=1} and stage the tarball under
 \verb{inst/pdfium-binaries/} for offline installs.
 }
