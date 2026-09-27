@@ -48,6 +48,23 @@
 
 ## Bug fixes
 
+* `pdf_render_page()`, `pdf_image_bitmap()`, `pdf_image_rendered()` and
+  `pdf_text_obj_rendered_bitmap()` now return a **conformant**
+  `nativeRaster`: the backing integer buffer is laid out row-major, so
+  the bitmap can be passed straight to `png::writePNG()`,
+  `grid::grid.raster()` and R's graphics engine with no reshape. Prior
+  versions stored the buffer column-major, which sheared every row
+  sideways when a consumer trusted the `nativeRaster` class ("stride
+  streak" garble). `as.array()` / `as.raster()` are updated to match
+  and remain correct. Output now matches `png::readPNG()` /
+  `magick::image_read()` in dims, RGBA channel order and 0..1 range.
+* `pdf_render_page()` and `pdf_render_page_with_matrix()` no longer
+  modify the document. Every render used to rewrite the bounding box of
+  annotation appearance streams, which drew some annotations at the
+  wrong size and carried into later `pdf_save()` output.
+* `pdf_form_field_set_value()`'s documentation no longer claims that
+  the field's appearance is regenerated; PDFium's API has no way to do
+  that outside its interactive form-fill layer.
 * `pdf_annot_append_object()` no longer frees its object twice. PDFium's
   `FPDFAnnot_AppendObject` takes ownership of the object, but the object
   was still on its page as well, so closing the page or collecting the
@@ -67,23 +84,6 @@
 * Annotation handles collected after their page was closed now release
   PDFium's annotation context while the document is still open; before,
   the context leaked.
-* `pdf_render_page()`, `pdf_image_bitmap()`, `pdf_image_rendered()` and
-  `pdf_text_obj_rendered_bitmap()` now return a **conformant**
-  `nativeRaster`: the backing integer buffer is laid out row-major, so
-  the bitmap can be passed straight to `png::writePNG()`,
-  `grid::grid.raster()` and R's graphics engine with no reshape. Prior
-  versions stored the buffer column-major, which sheared every row
-  sideways when a consumer trusted the `nativeRaster` class ("stride
-  streak" garble). `as.array()` / `as.raster()` are updated to match
-  and remain correct. Output now matches `png::readPNG()` /
-  `magick::image_read()` in dims, RGBA channel order and 0..1 range.
-* `pdf_render_page()` and `pdf_render_page_with_matrix()` no longer
-  modify the document. Every render used to rewrite the bounding box of
-  annotation appearance streams, which drew some annotations at the
-  wrong size and carried into later `pdf_save()` output.
-* `pdf_form_field_set_value()`'s documentation no longer claims that
-  the field's appearance is regenerated; PDFium's API has no way to do
-  that outside its interactive form-fill layer.
 
 # pdfium 0.1.0
 
