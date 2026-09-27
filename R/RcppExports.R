@@ -421,8 +421,8 @@ cpp_bookmark_action_handle <- function(bm_ptr, doc_ptr) {
     .Call(`_pdfium_cpp_bookmark_action_handle`, bm_ptr, doc_ptr)
 }
 
-cpp_obj_get_clip_path <- function(obj_ptr, page_ptr) {
-    .Call(`_pdfium_cpp_obj_get_clip_path`, obj_ptr, page_ptr)
+cpp_obj_get_clip_path <- function(obj_ptr) {
+    .Call(`_pdfium_cpp_obj_get_clip_path`, obj_ptr)
 }
 
 cpp_clip_path_count_paths <- function(clip_ptr) {
@@ -589,8 +589,8 @@ cpp_form_object_count <- function(form_ptr) {
     .Call(`_pdfium_cpp_form_object_count`, form_ptr)
 }
 
-cpp_form_get_object <- function(form_ptr, owner_ptr, index_zero_based) {
-    .Call(`_pdfium_cpp_form_get_object`, form_ptr, owner_ptr, index_zero_based)
+cpp_form_get_object <- function(form_ptr, index_zero_based) {
+    .Call(`_pdfium_cpp_form_get_object`, form_ptr, index_zero_based)
 }
 
 cpp_text_obj_glyph_path <- function(obj_ptr, glyph_code, font_size) {

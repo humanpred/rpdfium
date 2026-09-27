@@ -12,8 +12,67 @@
 \item{...}{Unused (S3 generic compatibility).}
 }
 \value{
-A tibble matching the previous \code{pdf_form_fields()}
-shape plus \code{handle} + \code{source} columns.
+A tibble with one row per field and columns:
+\itemize{
+\item \code{field_index} integer - 1-based, document-wide ordering
+(page-major, then in-page annotation order).
+\item \code{page_num} integer - 1-based page the widget lives on.
+\item \code{field_type} character - one of \code{"pushbutton"},
+\code{"checkbox"}, \code{"radiobutton"}, \code{"combobox"},
+\code{"listbox"}, \code{"textfield"}, \code{"signature"}, or one of the
+XFA variants (\code{"xfa_*"}); \code{"unknown"} for non-AcroForm
+widgets PDFium can't classify.
+\item \code{field_flags} integer - raw PDF form-field flags bitmask
+(bit 1 = ReadOnly, bit 2 = Required, bit 3 = NoExport,
+bit 13 = Password for textfields, bit 16 = MultiLine for
+textfields, etc.; see PDF spec Table 226).
+\item \code{is_readonly}, \code{is_required}, \code{is_no_export} logical -
+decoded universal flag bits (bits 1, 2, 3) for convenience.
+\item \code{is_checked} logical - current state of the widget;
+\code{TRUE} / \code{FALSE} for \code{checkbox} / \code{radiobutton} fields,
+\code{NA} for every other field type.
+\item \code{control_count} integer - total number of widgets in this
+field's control group (\verb{>= 1}; \verb{> 1} for radio button groups
+with multiple physical widgets). \code{NA} if PDFium reports
+failure.
+\item \code{control_index} integer - 0-based position of this row's
+widget within its control group. For a checkbox or a
+standalone widget this is \code{0}. \code{NA} if PDFium reports
+failure.
+\item \code{name} character - fully qualified field name, the
+period-joined dotted path PDFium reports (e.g.
+\code{"address.city"}).
+\item \code{alternate_name} character - the field's user-facing
+label (the \verb{/TU} entry), shown by viewers as a tooltip.
+\item \code{value} character - the field's current display value.
+For text fields this is the entered text. For combo /
+listbox fields this is the \emph{label} of the selected
+option (use \code{export_value} for the underlying export
+name). For checkbox / radio fields this is the
+appearance-state name ("Off" or the on-state name).
+\item \code{export_value} character - the field's export value
+(\verb{/V}). Same as \code{value} for text fields. For buttons,
+the value that gets submitted in form data (e.g. "Yes"
+for a checkbox, or the radio's on-state name).
+\item \code{bounds_left}, \code{bounds_bottom}, \code{bounds_right},
+\code{bounds_top} - widget rectangle in PDF user space.
+\item \code{options} list-column of character vectors - the choice
+labels for \code{combobox} and \code{listbox} fields; empty
+character vector for other types.
+\item \code{is_option_selected} list-column of logical vectors,
+one element per option (matches \code{options}). \code{TRUE} when
+the option is currently selected. Empty for non-choice
+fields.
+\item \code{additional_actions_js} list-column of length-4 character
+vectors named \code{c("key_stroke", "format", "validate", "calculate")}. Each element is the JavaScript source
+string PDFium reports for the corresponding trigger
+event, or \code{""} when the trigger has no JS handler.
+Surfaced read-only here; v0.2.0 may expose a writer.
+\item \code{handle} list-column - the row's \code{pdfium_form_field}.
+\item \code{source} list-column - the parent \code{pdfium_doc}.
+}
+
+A 0-row tibble of the same schema when the list is empty.
 }
 \description{
 Walks the list of field handles and reads every documented

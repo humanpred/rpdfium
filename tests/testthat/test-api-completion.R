@@ -1204,6 +1204,24 @@ test_that("pdf_form_obj_remove_object validates child class", {
                "Must inherit from class")
 })
 
+test_that("object mutators refuse a closed object with the closed-handle message", {
+  doc <- pdf_doc_open(fixture_path("form_xobject"), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  form_obj <- pdf_page_objects(page)[[1L]]
+  child <- pdf_form_objects(form_obj)[[1L]]
+  pdf_form_obj_remove_object(form_obj, child)
+  closed <- paste0(
+    "^Parent page has been closed; object handle is no longer valid ",
+    "\\(or the object was deleted via pdf_obj_delete\\(\\) or ",
+    "pdf_form_obj_remove_object\\(\\), or moved into an annotation by ",
+    "pdf_annot_append_object\\(\\)\\)\\.$"
+  )
+  expect_error(pdf_form_obj_remove_object(form_obj, child), closed)
+  a <- pdf_annot_new(page, "stamp", bounds = c(0, 0, 100, 100))
+  expect_error(pdf_annot_update_object(a, child), closed)
+})
+
 test_that("pdf_bitmap_* reject closed bitmaps", {
   bm <- pdf_bitmap_new(8L, 8L)
   pdf_bitmap_close(bm)

@@ -46,12 +46,11 @@ form_field_flag_decode <- function(flags, bit) {
 
 #' Enumerate AcroForm fields across the whole document
 #'
-#' Returns one tibble row per form widget across every page of
-#' the document. Walks each page's annotations, filters to those
-#' of subtype `widget`, and reads PDFium's form-field metadata
-#' through a transient `FPDF_FORMHANDLE` (init / enumerate /
-#' teardown happens inside one call - the handle is not exposed
-#' to R).
+#' Returns a handle for every form widget across every page of the
+#' document. Walks each page's annotations, filters to those of
+#' subtype `widget`, and reads PDFium's form-field metadata through a
+#' transient `FPDF_FORMHANDLE` (init / enumerate / teardown happens
+#' inside one call - the handle is not exposed to R).
 #'
 #' Wraps `FPDFDOC_InitFormFillEnvironment`,
 #' `FPDFDOC_ExitFormFillEnvironment`, the
@@ -61,7 +60,63 @@ form_field_flag_decode <- function(flags, bit) {
 #'
 #' @param doc A `pdfium_doc` from [pdf_doc_open()], or a character
 #'   path.
-#' @return A tibble with columns:
+#' @return A `pdfium_form_field_list`: a list of `pdfium_form_field`
+#'   handles, one per widget, in document order (page-major, then
+#'   in-page annotation order). A `pdfium_form_field` is also a
+#'   `pdfium_annot`, so the `pdf_form_field_*` readers and setters and
+#'   the `pdf_annot_*` readers take it. [tibble::as_tibble()] (or
+#'   [summary()]) turns the list into a tibble with one row per
+#'   field; see [as_tibble.pdfium_form_field_list()] for its columns.
+#'   The list is empty when the document has no AcroForm dictionary.
+#'
+#' @seealso [pdf_annotations()] for the page-level annotation
+#'   surface that includes widget annotations alongside text,
+#'   highlights, ink, etc.
+#' @export
+pdf_form_fields <- function(doc) {
+  # Don't defer-close the transient doc — the returned form-field
+  # list pins the doc on its `source` attribute. R's GC handles
+  # the close when the list itself is collected.
+  doc <- as_open_doc(doc, defer_close = FALSE)
+  raw <- cpp_form_field_handles(doc$ptr)
+  # Build pdfium_page wrappers for every kept page; the externalptrs
+  # have their own finalizers so each page closes via R's GC when
+  # the form-field list is reclaimed.
+  page_handles <- raw$page_handles
+  page_nums <- as.integer(raw$page_nums)
+  pages_used <- lapply(seq_along(page_handles), function(i) {
+    new_pdfium_page(page_handles[[i]], doc, page_nums[i])
+  })
+  # Build pdfium_form_field handles, one per widget annot.
+  annot_page_idx <- as.integer(raw$annot_page_idx)
+  field_types <- as.integer(raw$field_types)
+  fields <- lapply(seq_along(raw$annot_handles), function(i) {
+    new_pdfium_form_field(
+      ptr = raw$annot_handles[[i]],
+      page = pages_used[[annot_page_idx[i]]],
+      field_index = i,
+      page_num = page_nums[annot_page_idx[i]],
+      field_type_code = field_types[i]
+    )
+  })
+  new_pdfium_form_field_list(fields, doc, pages_used)
+}
+
+#' Tibble view of a `pdfium_form_field_list`
+#'
+#' Walks the list of field handles and reads every documented
+#' AcroForm property into a wide tibble. Adds two list-columns
+#' relative to a simple data extraction: `handle` (the
+#' `pdfium_form_field` per row) and `source` (the parent
+#' `pdfium_doc`).
+#'
+#' Internally calls the existing bulk reader (`cpp_form_fields_list`)
+#' for speed; per-row handles are pulled from the list itself so
+#' R-object identity survives round-trip.
+#'
+#' @param x A `pdfium_form_field_list` from [pdf_form_fields()].
+#' @param ... Unused (S3 generic compatibility).
+#' @return A tibble with one row per field and columns:
 #'   * `field_index` integer - 1-based, document-wide ordering
 #'     (page-major, then in-page annotation order).
 #'   * `page_num` integer - 1-based page the widget lives on.
@@ -117,59 +172,10 @@ form_field_flag_decode <- function(flags, bit) {
 #'     string PDFium reports for the corresponding trigger
 #'     event, or `""` when the trigger has no JS handler.
 #'     Surfaced read-only here; v0.2.0 may expose a writer.
+#'   * `handle` list-column - the row's `pdfium_form_field`.
+#'   * `source` list-column - the parent `pdfium_doc`.
 #'
-#' Returns a 0-row tibble of the same schema when the document
-#' has no AcroForm dictionary.
-#'
-#' @seealso [pdf_annotations()] for the page-level annotation
-#'   surface that includes widget annotations alongside text,
-#'   highlights, ink, etc.
-#' @export
-pdf_form_fields <- function(doc) {
-  # Don't defer-close the transient doc — the returned form-field
-  # list pins the doc on its `source` attribute. R's GC handles
-  # the close when the list itself is collected.
-  doc <- as_open_doc(doc, defer_close = FALSE)
-  raw <- cpp_form_field_handles(doc$ptr)
-  # Build pdfium_page wrappers for every kept page; the externalptrs
-  # have their own finalizers so each page closes via R's GC when
-  # the form-field list is reclaimed.
-  page_handles <- raw$page_handles
-  page_nums <- as.integer(raw$page_nums)
-  pages_used <- lapply(seq_along(page_handles), function(i) {
-    new_pdfium_page(page_handles[[i]], doc, page_nums[i])
-  })
-  # Build pdfium_form_field handles, one per widget annot.
-  annot_page_idx <- as.integer(raw$annot_page_idx)
-  field_types <- as.integer(raw$field_types)
-  fields <- lapply(seq_along(raw$annot_handles), function(i) {
-    new_pdfium_form_field(
-      ptr = raw$annot_handles[[i]],
-      page = pages_used[[annot_page_idx[i]]],
-      field_index = i,
-      page_num = page_nums[annot_page_idx[i]],
-      field_type_code = field_types[i]
-    )
-  })
-  new_pdfium_form_field_list(fields, doc, pages_used)
-}
-
-#' Tibble view of a `pdfium_form_field_list`
-#'
-#' Walks the list of field handles and reads every documented
-#' AcroForm property into a wide tibble. Adds two list-columns
-#' relative to a simple data extraction: `handle` (the
-#' `pdfium_form_field` per row) and `source` (the parent
-#' `pdfium_doc`).
-#'
-#' Internally calls the existing bulk reader (`cpp_form_fields_list`)
-#' for speed; per-row handles are pulled from the list itself so
-#' R-object identity survives round-trip.
-#'
-#' @param x A `pdfium_form_field_list` from [pdf_form_fields()].
-#' @param ... Unused (S3 generic compatibility).
-#' @return A tibble matching the previous `pdf_form_fields()`
-#'   shape plus `handle` + `source` columns.
+#' A 0-row tibble of the same schema when the list is empty.
 #' @importFrom tibble as_tibble
 #' @method as_tibble pdfium_form_field_list
 #' @export

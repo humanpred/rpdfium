@@ -24,7 +24,10 @@ the call:
 \item The C++ object is destroyed.
 \item The R \code{pdfium_obj} handle's externalptr is cleared so calling
 any other \verb{pdf_obj_*} / \verb{pdf_path_*} / \verb{pdf_text_*} function
-on it errors cleanly via the existing closed-handle path.
+on it errors cleanly via the existing closed-handle path. The
+clip paths read from it with \code{\link[=pdf_obj_clip_path]{pdf_obj_clip_path()}} and, for a
+form object, the objects read from it with \code{\link[=pdf_form_objects]{pdf_form_objects()}}
+are refused the same way.
 }
 
 Re-fetch via \code{\link[=pdf_page_objects]{pdf_page_objects()}} if you need an updated obj
