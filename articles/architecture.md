@@ -99,6 +99,18 @@ pdf_text_runs(page)
 #> Error: Page has been closed: its document was closed.
 ```
 
+The same holds further down. Deleting an annotation with
+[`pdf_annot_delete()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_delete.md)
+closes the page-objects read from its appearance stream with
+[`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md),
+and deleting a form object with
+[`pdf_obj_delete()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_delete.md)
+closes the objects read from it with
+[`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md).
+A clip path from
+[`pdf_obj_clip_path()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_clip_path.md)
+closes with its page-object.
+
 Close a document when you are done with everything read from it.
 
 ## How the binary gets loaded
@@ -111,8 +123,9 @@ happens:
 2.  The dynamic linker follows the RPATH baked in at install time and
     loads `libpdfium.{so|dylib|dll}` from the package’s `inst/lib/`.
 3.  `.onLoad` calls `FPDF_InitLibraryWithConfig()` exactly once.
-4.  When you call `library.unload("pdfium")` or quit R, `.onUnload` runs
-    `FPDF_DestroyLibrary()`.
+4.  When the package is unloaded (`unloadNamespace("pdfium")`),
+    `.onUnload` closes every document still open, with everything read
+    from it, and then runs `FPDF_DestroyLibrary()`.
 
 The `libpdfium` binary was downloaded the first time you installed
 `pdfium`. The pinned release tag lives in `tools/pdfium-version.txt`. If

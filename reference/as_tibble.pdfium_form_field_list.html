@@ -79,8 +79,63 @@ relative to a simple data extraction: <code>handle</code> (the
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A tibble matching the previous <code><a href="pdf_form_fields.html">pdf_form_fields()</a></code>
-shape plus <code>handle</code> + <code>source</code> columns.</p>
+    <p>A tibble with one row per field and columns:</p><ul><li><p><code>field_index</code> integer - 1-based, document-wide ordering
+(page-major, then in-page annotation order).</p></li>
+<li><p><code>page_num</code> integer - 1-based page the widget lives on.</p></li>
+<li><p><code>field_type</code> character - one of <code>"pushbutton"</code>,
+<code>"checkbox"</code>, <code>"radiobutton"</code>, <code>"combobox"</code>,
+<code>"listbox"</code>, <code>"textfield"</code>, <code>"signature"</code>, or one of the
+XFA variants (<code>"xfa_*"</code>); <code>"unknown"</code> for non-AcroForm
+widgets PDFium can't classify.</p></li>
+<li><p><code>field_flags</code> integer - raw PDF form-field flags bitmask
+(bit 1 = ReadOnly, bit 2 = Required, bit 3 = NoExport,
+bit 13 = Password for textfields, bit 16 = MultiLine for
+textfields, etc.; see PDF spec Table 226).</p></li>
+<li><p><code>is_readonly</code>, <code>is_required</code>, <code>is_no_export</code> logical -
+decoded universal flag bits (bits 1, 2, 3) for convenience.</p></li>
+<li><p><code>is_checked</code> logical - current state of the widget;
+<code>TRUE</code> / <code>FALSE</code> for <code>checkbox</code> / <code>radiobutton</code> fields,
+<code>NA</code> for every other field type.</p></li>
+<li><p><code>control_count</code> integer - total number of widgets in this
+field's control group (<code>&gt;= 1</code>; <code>&gt; 1</code> for radio button groups
+with multiple physical widgets). <code>NA</code> if PDFium reports
+failure.</p></li>
+<li><p><code>control_index</code> integer - 0-based position of this row's
+widget within its control group. For a checkbox or a
+standalone widget this is <code>0</code>. <code>NA</code> if PDFium reports
+failure.</p></li>
+<li><p><code>name</code> character - fully qualified field name, the
+period-joined dotted path PDFium reports (e.g.
+<code>"address.city"</code>).</p></li>
+<li><p><code>alternate_name</code> character - the field's user-facing
+label (the <code>/TU</code> entry), shown by viewers as a tooltip.</p></li>
+<li><p><code>value</code> character - the field's current display value.
+For text fields this is the entered text. For combo /
+listbox fields this is the <em>label</em> of the selected
+option (use <code>export_value</code> for the underlying export
+name). For checkbox / radio fields this is the
+appearance-state name ("Off" or the on-state name).</p></li>
+<li><p><code>export_value</code> character - the field's export value
+(<code>/V</code>). Same as <code>value</code> for text fields. For buttons,
+the value that gets submitted in form data (e.g. "Yes"
+for a checkbox, or the radio's on-state name).</p></li>
+<li><p><code>bounds_left</code>, <code>bounds_bottom</code>, <code>bounds_right</code>,
+<code>bounds_top</code> - widget rectangle in PDF user space.</p></li>
+<li><p><code>options</code> list-column of character vectors - the choice
+labels for <code>combobox</code> and <code>listbox</code> fields; empty
+character vector for other types.</p></li>
+<li><p><code>is_option_selected</code> list-column of logical vectors,
+one element per option (matches <code>options</code>). <code>TRUE</code> when
+the option is currently selected. Empty for non-choice
+fields.</p></li>
+<li><p><code>additional_actions_js</code> list-column of length-4 character
+vectors named <code>c("key_stroke", "format", "validate", "calculate")</code>. Each element is the JavaScript source
+string PDFium reports for the corresponding trigger
+event, or <code>""</code> when the trigger has no JS handler.
+Surfaced read-only here; v0.2.0 may expose a writer.</p></li>
+<li><p><code>handle</code> list-column - the row's <code>pdfium_form_field</code>.</p></li>
+<li><p><code>source</code> list-column - the parent <code>pdfium_doc</code>.</p></li>
+</ul><p>A 0-row tibble of the same schema when the list is empty.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

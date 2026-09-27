@@ -6,7 +6,8 @@ within the annotation's embedded content (one-based, matching
 PDFium destroys the object and regenerates the annotation's appearance
 stream, so handles to it from an earlier
 [`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md)
-call are stale and must not be used; call
+call, and the clip paths and nested objects read from them, are stale
+and must not be used; call
 [`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md)
 again for the remaining ones.
 

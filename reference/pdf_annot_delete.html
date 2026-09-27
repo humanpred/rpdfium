@@ -6,16 +6,18 @@ other annotations on the page were deleted. The annotation leaves
 the page's /Annots array, PDFium's annotation context is
 released together with any page-objects of its appearance stream,
 and the handle is closed: further pdf_annot_* calls on it, and
-on page-objects read from it with pdf_annot_objects(), error
-cleanly."><meta property="og:description" content="Wraps FPDFPage_GetAnnotIndex, FPDFPage_RemoveAnnot and
+on page-objects read from it with pdf_annot_objects(), on their
+clip paths (pdf_obj_clip_path()) and on the objects of forms among
+them (pdf_form_objects()), error cleanly."><meta property="og:description" content="Wraps FPDFPage_GetAnnotIndex, FPDFPage_RemoveAnnot and
 FPDFPage_CloseAnnot. The handle's annotation is located on the
 page when the call is made, so it is the one removed even after
 other annotations on the page were deleted. The annotation leaves
 the page's /Annots array, PDFium's annotation context is
 released together with any page-objects of its appearance stream,
 and the handle is closed: further pdf_annot_* calls on it, and
-on page-objects read from it with pdf_annot_objects(), error
-cleanly."></head><body>
+on page-objects read from it with pdf_annot_objects(), on their
+clip paths (pdf_obj_clip_path()) and on the objects of forms among
+them (pdf_form_objects()), error cleanly."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -67,8 +69,9 @@ other annotations on the page were deleted. The annotation leaves
 the page's <code>/Annots</code> array, PDFium's annotation context is
 released together with any page-objects of its appearance stream,
 and the handle is closed: further <code>pdf_annot_*</code> calls on it, and
-on page-objects read from it with <code><a href="pdf_annot_objects.html">pdf_annot_objects()</a></code>, error
-cleanly.</p>
+on page-objects read from it with <code><a href="pdf_annot_objects.html">pdf_annot_objects()</a></code>, on their
+clip paths (<code><a href="pdf_obj_clip_path.html">pdf_obj_clip_path()</a></code>) and on the objects of forms among
+them (<code><a href="pdf_form_objects.html">pdf_form_objects()</a></code>), error cleanly.</p>
     </div>
 
     <div class="section level2">

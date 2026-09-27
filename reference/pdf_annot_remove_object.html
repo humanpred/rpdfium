@@ -3,13 +3,15 @@
 position within the annotation's embedded content (one-based,
 matching pdf_annot_objects()). PDFium destroys the object and
 regenerates the annotation's appearance stream, so handles to it
-from an earlier pdf_annot_objects() call are stale and must not
-be used; call pdf_annot_objects() again for the remaining ones."><meta property="og:description" content="Wraps FPDFAnnot_RemoveObject. The object is identified by its
+from an earlier pdf_annot_objects() call, and the clip paths and
+nested objects read from them, are stale and must not be used; call
+pdf_annot_objects() again for the remaining ones."><meta property="og:description" content="Wraps FPDFAnnot_RemoveObject. The object is identified by its
 position within the annotation's embedded content (one-based,
 matching pdf_annot_objects()). PDFium destroys the object and
 regenerates the annotation's appearance stream, so handles to it
-from an earlier pdf_annot_objects() call are stale and must not
-be used; call pdf_annot_objects() again for the remaining ones."></head><body>
+from an earlier pdf_annot_objects() call, and the clip paths and
+nested objects read from them, are stale and must not be used; call
+pdf_annot_objects() again for the remaining ones."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -58,8 +60,9 @@ be used; call pdf_annot_objects() again for the remaining ones."></head><body>
 position within the annotation's embedded content (one-based,
 matching <code><a href="pdf_annot_objects.html">pdf_annot_objects()</a></code>). PDFium destroys the object and
 regenerates the annotation's appearance stream, so handles to it
-from an earlier <code><a href="pdf_annot_objects.html">pdf_annot_objects()</a></code> call are stale and must not
-be used; call <code><a href="pdf_annot_objects.html">pdf_annot_objects()</a></code> again for the remaining ones.</p>
+from an earlier <code><a href="pdf_annot_objects.html">pdf_annot_objects()</a></code> call, and the clip paths and
+nested objects read from them, are stale and must not be used; call
+<code><a href="pdf_annot_objects.html">pdf_annot_objects()</a></code> again for the remaining ones.</p>
     </div>
 
     <div class="section level2">

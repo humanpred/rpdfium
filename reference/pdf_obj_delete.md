@@ -34,7 +34,12 @@ Invisibly returns the parent `pdfium_doc`.
 
 - The R `pdfium_obj` handle's externalptr is cleared so calling any
   other `pdf_obj_*` / `pdf_path_*` / `pdf_text_*` function on it errors
-  cleanly via the existing closed-handle path.
+  cleanly via the existing closed-handle path. The clip paths read from
+  it with
+  [`pdf_obj_clip_path()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_clip_path.md)
+  and, for a form object, the objects read from it with
+  [`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md)
+  are refused the same way.
 
 Re-fetch via
 [`pdf_page_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_page_objects.md)

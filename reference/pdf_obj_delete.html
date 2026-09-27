@@ -76,7 +76,10 @@ the creators (<code><a href="pdf_path_new.html">pdf_path_new()</a></code> / <cod
 <li><p>The C++ object is destroyed.</p></li>
 <li><p>The R <code>pdfium_obj</code> handle's externalptr is cleared so calling
 any other <code>pdf_obj_*</code> / <code>pdf_path_*</code> / <code>pdf_text_*</code> function
-on it errors cleanly via the existing closed-handle path.</p></li>
+on it errors cleanly via the existing closed-handle path. The
+clip paths read from it with <code><a href="pdf_obj_clip_path.html">pdf_obj_clip_path()</a></code> and, for a
+form object, the objects read from it with <code><a href="pdf_form_objects.html">pdf_form_objects()</a></code>
+are refused the same way.</p></li>
 </ul><p>Re-fetch via <code><a href="pdf_page_objects.html">pdf_page_objects()</a></code> if you need an updated obj
 list after deletions (the page-scoped indices shift).</p>
     </div>

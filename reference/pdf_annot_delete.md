@@ -8,6 +8,10 @@ annotations on the page were deleted. The annotation leaves the page's
 any page-objects of its appearance stream, and the handle is closed:
 further `pdf_annot_*` calls on it, and on page-objects read from it with
 [`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md),
+on their clip paths
+([`pdf_obj_clip_path()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_clip_path.md))
+and on the objects of forms among them
+([`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md)),
 error cleanly.
 
 ## Usage

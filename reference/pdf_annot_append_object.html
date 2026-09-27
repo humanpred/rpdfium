@@ -92,9 +92,12 @@ function therefore <em>moves</em> the object: it takes <code>obj</code> off the
 annotation's page (<code>FPDFPage_RemoveObject</code>) and then appends it to
 <code>annot</code>, so exactly one of them owns the object at any time.</p>
 <p>After the call <code>obj</code> is no longer on the page and its handle is
-closed; reach the object through <code><a href="pdf_annot_objects.html">pdf_annot_objects()</a></code> instead.
-Other handles to the same object (for example from an earlier
-<code><a href="pdf_page_objects.html">pdf_page_objects()</a></code> call) are stale and must not be used, and the
+closed, as are the clip paths read from it with
+<code><a href="pdf_obj_clip_path.html">pdf_obj_clip_path()</a></code> and, for a form object, the objects read from
+it with <code><a href="pdf_form_objects.html">pdf_form_objects()</a></code>; reach the object through
+<code><a href="pdf_annot_objects.html">pdf_annot_objects()</a></code> instead. Other handles to the same object
+(for example from an earlier <code><a href="pdf_page_objects.html">pdf_page_objects()</a></code> call) are stale
+and must not be used, and the
 page-scoped indices of the remaining page-objects shift down by
 one. The move only succeeds as a whole: when <code>annot</code> cannot hold
 page-objects, or <code>obj</code> is not a top-level object of the

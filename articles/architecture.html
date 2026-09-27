@@ -157,6 +157,12 @@ instead of reading freed memory:</p>
 <span><span class="fu"><a href="../reference/pdf_doc_close.html">pdf_doc_close</a></span><span class="op">(</span><span class="va">doc</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/pdf_text_runs.html">pdf_text_runs</a></span><span class="op">(</span><span class="va">page</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Error: Page has been closed: its document was closed.</span></span></code></pre></div>
+<p>The same holds further down. Deleting an annotation with
+<code><a href="../reference/pdf_annot_delete.html">pdf_annot_delete()</a></code> closes the page-objects read from its
+appearance stream with <code><a href="../reference/pdf_annot_objects.html">pdf_annot_objects()</a></code>, and deleting a
+form object with <code><a href="../reference/pdf_obj_delete.html">pdf_obj_delete()</a></code> closes the objects read
+from it with <code><a href="../reference/pdf_form_objects.html">pdf_form_objects()</a></code>. A clip path from
+<code><a href="../reference/pdf_obj_clip_path.html">pdf_obj_clip_path()</a></code> closes with its page-object.</p>
 <p>Close a document when you are done with everything read from it.</p>
 </div>
 <div class="section level2">
@@ -172,8 +178,10 @@ loads <code>libpdfium.{so|dylib|dll}</code> from the package’s
 <li>
 <code>.onLoad</code> calls <code>FPDF_InitLibraryWithConfig()</code>
 exactly once.</li>
-<li>When you call <code>library.unload("pdfium")</code> or quit R,
-<code>.onUnload</code> runs <code>FPDF_DestroyLibrary()</code>.</li>
+<li>When the package is unloaded
+(<code>unloadNamespace("pdfium")</code>), <code>.onUnload</code> closes
+every document still open, with everything read from it, and then runs
+<code>FPDF_DestroyLibrary()</code>.</li>
 </ol>
 <p>The <code>libpdfium</code> binary was downloaded the first time you
 installed <code>pdfium</code>. The pinned release tag lives in

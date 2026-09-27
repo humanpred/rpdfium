@@ -47,7 +47,11 @@ object: it takes `obj` off the annotation's page
 (`FPDFPage_RemoveObject`) and then appends it to `annot`, so exactly one
 of them owns the object at any time.
 
-After the call `obj` is no longer on the page and its handle is closed;
+After the call `obj` is no longer on the page and its handle is closed,
+as are the clip paths read from it with
+[`pdf_obj_clip_path()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_clip_path.md)
+and, for a form object, the objects read from it with
+[`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md);
 reach the object through
 [`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md)
 instead. Other handles to the same object (for example from an earlier

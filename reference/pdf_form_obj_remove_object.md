@@ -3,9 +3,14 @@
 Wraps `FPDFFormObj_RemoveObject` + `FPDFPageObj_Destroy`. The child must
 currently belong to the form-xobject. PDFium hands the removed child
 back to the caller, so it is destroyed straight away and the `child`
-handle is closed: further calls on it error cleanly. Other handles to
-the child (and, when the child is itself a form, to its own children)
-are stale and must not be used; call
+handle is closed: further calls on it, on the clip paths read from it
+with
+[`pdf_obj_clip_path()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_clip_path.md)
+and, when it is itself a form, on the objects read from it with
+[`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md),
+error cleanly. Other handles to the child, from separate
+[`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md)
+calls, are stale and must not be used; call
 [`pdf_form_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_form_objects.md)
 again for the remaining children.
 

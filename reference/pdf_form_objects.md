@@ -39,12 +39,20 @@ form has no children.
 
 Each returned object carries a `parent_form` slot pointing back at
 `form`, used by the print/format methods to show the containment path
-(`"obj 2 of form 1 on page 1"`). Lifetime is bound to the parent page,
-not to the form: as long as the page is open, the form and its nested
-objects remain valid. For a form in an annotation's appearance stream
+(`"obj 2 of form 1 on page 1"`). Its lifetime is bound to the `form`
+handle: the nested objects are refused, like `form` itself, once
+`form`'s page or document is closed, once the annotation whose
+appearance stream holds `form`
 ([`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md))
-it is bound to the annotation instead: once the annotation is deleted,
-the nested objects are refused like the form itself.
+is deleted, and once `form` is deleted with
+[`pdf_obj_delete()`](https://humanpred.github.io/rpdfium/reference/pdf_obj_delete.md),
+removed from its own form with
+[`pdf_form_obj_remove_object()`](https://humanpred.github.io/rpdfium/reference/pdf_form_obj_remove_object.md)
+or moved into an annotation with
+[`pdf_annot_append_object()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_append_object.md).
+After such a move, read the objects again through
+[`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md)
+and then `pdf_form_objects()`.
 
 ## See also
 

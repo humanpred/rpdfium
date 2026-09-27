@@ -66,8 +66,8 @@ those.</p>
 
 
 <dl><dt id="arg-obj">obj<a class="anchor" aria-label="anchor" href="#arg-obj"></a></dt>
-<dd><p>A <code>pdfium_obj</code> (from <code><a href="pdf_page_objects.html">pdf_page_objects()</a></code> or
-<code><a href="pdf_form_objects.html">pdf_form_objects()</a></code>).</p></dd>
+<dd><p>A <code>pdfium_obj</code> (from <code><a href="pdf_page_objects.html">pdf_page_objects()</a></code>,
+<code><a href="pdf_form_objects.html">pdf_form_objects()</a></code> or <code><a href="pdf_annot_objects.html">pdf_annot_objects()</a></code>).</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -82,6 +82,13 @@ clip is "empty" (the underlying <code>CPDF_ClipPath</code> exists but has
 no sub-paths attached). This wrapper normalizes that case to
 <code>NULL</code> so callers only see clip-path objects with at least one
 real sub-path.</p>
+<p>The clip path is part of <code>obj</code> and is valid for as long as the
+<code>obj</code> handle is: <code><a href="pdf_clip_path_count.html">pdf_clip_path_count()</a></code> and
+<code><a href="pdf_clip_path_segments.html">pdf_clip_path_segments()</a></code> refuse it once <code>obj</code> is closed, whether
+by closing its page or document, by deleting the annotation or
+form object that holds it, or by <code><a href="pdf_obj_delete.html">pdf_obj_delete()</a></code>,
+<code><a href="pdf_form_obj_remove_object.html">pdf_form_obj_remove_object()</a></code> or <code><a href="pdf_annot_append_object.html">pdf_annot_append_object()</a></code> on
+<code>obj</code> itself.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
