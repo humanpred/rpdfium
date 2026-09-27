@@ -378,8 +378,14 @@ reloaded_annot_fill <- function(path) {
   on.exit(pdf_doc_close(doc), add = TRUE)
   page <- pdf_page_load(doc, 1L)
   on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
-  obj <- pdf_annot_objects(pdf_annotations(page)[[1L]])[[1L]]
-  list(type = obj$type, fill = pdf_path_fill(obj))
+  annot <- pdf_annotations(page)[[1L]]
+  obj <- pdf_annot_objects(annot)[[1L]]
+  out <- list(type = obj$type, fill = pdf_path_fill(obj))
+  # Collect the annotation while its page is open, so its finalizer
+  # closes it.
+  rm(annot, obj)
+  gc()
+  out
 }
 
 test_that("a fill set on an annotation's path is saved after an update", {
@@ -408,6 +414,35 @@ test_that("a fill set on an annotation's path is saved after an update", {
     reloaded_annot_fill(after),
     list(type = "path", fill = c(red = 0, green = 0, blue = 255, alpha = 255))
   )
+})
+
+test_that("a fill set on an appended path is saved after an update", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  rect <- pdf_rect_new(s$page, 10, 10, 50, 50)
+  # An unpainted path is written as `re n`, which PDFium does not parse
+  # back into an object.
+  pdf_path_set_draw_mode(rect, fill_mode = "winding", stroke = FALSE)
+  pdf_path_set_fill(rect, c(255, 0, 0))
+  pdf_annot_append_object(a, rect)
+  # The append moves the rectangle into the annotation and closes
+  # `rect`; the annotation hands it back with its real type.
+  obj <- pdf_annot_objects(a)[[1L]]
+  expect_identical(obj$type, "path")
+  expect_identical(pdf_path_fill(obj),
+                   c(red = 255, green = 0, blue = 0, alpha = 255))
+  pdf_path_set_fill(obj, c(0, 0, 255))
+  expect_identical(pdf_annot_update_object(a, obj), s$doc)
+  out <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(s$doc, out)
+  expect_identical(
+    reloaded_annot_fill(out),
+    list(type = "path", fill = c(red = 0, green = 0, blue = 255, alpha = 255))
+  )
+  # Collect the annotation before the deferred page close, so its
+  # finalizer closes it while the page is open.
+  rm(a, obj)
+  gc()
 })
 
 test_that("pdf_annot_set_uri sets the URI on a link annotation", {
