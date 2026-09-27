@@ -12,7 +12,7 @@ pdf_obj_form_from_xobject(page, xobject)
 
 \item{xobject}{A \code{pdfium_xobject} from \code{\link[=pdf_xobject_from_page]{pdf_xobject_from_page()}}.
 The XObject must have been created against the same \code{dest_doc}
-that owns \code{page}.}
+that owns \code{page}; one from another document is an error.}
 }
 \value{
 The new \code{pdfium_obj} (type \code{"form"}).

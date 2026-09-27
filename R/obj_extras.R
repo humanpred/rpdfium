@@ -11,18 +11,7 @@
 check_pdfium_obj <- function(obj, allowed_types = NULL, arg = "obj") {
   checkmate::assert_class(obj, "pdfium_obj", .var.name = arg)
   if (!is_open(obj)) {
-    # Trips when the parent page is closed (most common) or when a
-    # mutator cleared the handle: pdf_obj_delete() and
-    # pdf_form_obj_remove_object() destroy the object, and
-    # pdf_annot_append_object() hands it to an annotation. The message
-    # leads with the page-closed framing for back-compatibility with
-    # existing tests; the parenthetical covers the cleared handles.
-    stop("Parent page has been closed; object handle is no longer ",
-         "valid (or the object was deleted via pdf_obj_delete() or ",
-         "pdf_form_obj_remove_object(), or moved into an annotation ",
-         "by pdf_annot_append_object()).",
-      call. = FALSE
-    )
+    stop(obj_closed_message(obj), call. = FALSE)
   }
   if (!is.null(allowed_types)) {
     checkmate::assert_choice(
@@ -31,6 +20,93 @@ check_pdfium_obj <- function(obj, allowed_types = NULL, arg = "obj") {
     )
   }
   invisible(obj)
+}
+
+# Internal: why the closed `pdfium_obj` `obj` reads as closed, naming
+# the outermost owner that is closed (ADR-029): "document" when its
+# document was closed, which closes its pages (ADR-025); "annotation"
+# when the annotation whose appearance stream holds it was deleted
+# with pdf_annot_delete(); "form" when a form object it is nested in
+# was closed by a mutator; otherwise "page" (its page was closed, or a
+# mutator cleared the handle itself).
+obj_closed_cause <- function(obj) {
+  if (!is_open(obj$page$doc)) {
+    return("document")
+  }
+  if (!is_open(obj$page)) {
+    return("page")
+  }
+  annot <- obj_parent_annot(obj)
+  if (!is.null(annot) && !cpp_handle_is_valid(annot$ptr)) {
+    return("annotation")
+  }
+  form <- obj$parent_form
+  while (!is.null(form)) {
+    if (!cpp_handle_is_valid(form$ptr)) {
+      return("form")
+    }
+    form <- form$parent_form
+  }
+  "page"
+}
+
+# Internal: the reasons obj_closed_cause() names, completed by what is
+# no longer valid.
+closed_cause_message <- function(cause, what) {
+  switch(cause,
+    document = paste0(
+      "Parent page has been closed: its document was closed. The ",
+      what, " is no longer valid."
+    ),
+    annotation = paste0(
+      "Parent annotation has been closed: it was deleted with ",
+      "pdf_annot_delete(). The ", what, " is no longer valid."
+    ),
+    form = paste0(
+      "Parent form object has been closed: it was deleted, removed ",
+      "from its form or moved into an annotation. The ", what,
+      " is no longer valid."
+    )
+  )
+}
+
+# Internal: the error message for a closed `pdfium_obj`. The handle
+# reads as closed when an owner is closed (obj_closed_cause()), or when
+# a mutator cleared it: pdf_obj_delete() and
+# pdf_form_obj_remove_object() destroy the object, and
+# pdf_annot_append_object() hands it to an annotation. The page-closed
+# framing leads for back-compatibility with existing tests; the
+# parenthetical covers the cleared handles.
+obj_closed_message <- function(obj) {
+  cause <- obj_closed_cause(obj)
+  if (cause != "page") {
+    return(closed_cause_message(cause, "object handle"))
+  }
+  paste0(
+    "Parent page has been closed; object handle is no longer ",
+    "valid (or the object was deleted via pdf_obj_delete() or ",
+    "pdf_form_obj_remove_object(), or moved into an annotation ",
+    "by pdf_annot_append_object())."
+  )
+}
+
+# Internal: the error message for a closed `pdfium_clip_path`, which
+# reads as closed once the page-object it was read from does.
+clip_path_closed_message <- function(clip_path) {
+  obj <- clip_path$obj
+  cause <- obj_closed_cause(obj)
+  if (cause != "page") {
+    return(closed_cause_message(cause, "clip path"))
+  }
+  if (is_open(obj$page)) {
+    return(paste0(
+      "The clip path's page-object has been closed: it was deleted ",
+      "via pdf_obj_delete() or pdf_form_obj_remove_object(), or moved ",
+      "into an annotation by pdf_annot_append_object(). The clip path ",
+      "is no longer valid."
+    ))
+  }
+  "Parent page has been closed; the clip path is no longer valid."
 }
 
 #' Stroke line-cap style of a path page-object

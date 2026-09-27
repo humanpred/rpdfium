@@ -20,9 +20,11 @@ Invisibly returns the parent \code{pdfium_doc}.
 Wraps \code{FPDFFormObj_RemoveObject} + \code{FPDFPageObj_Destroy}. The child
 must currently belong to the form-xobject. PDFium hands the removed
 child back to the caller, so it is destroyed straight away and the
-\code{child} handle is closed: further calls on it error cleanly. Other
-handles to the child (and, when the child is itself a form, to its
-own children) are stale and must not be used; call
+\code{child} handle is closed: further calls on it, on the clip paths
+read from it with \code{\link[=pdf_obj_clip_path]{pdf_obj_clip_path()}} and, when it is itself a
+form, on the objects read from it with \code{\link[=pdf_form_objects]{pdf_form_objects()}}, error
+cleanly. Other handles to the child, from separate
+\code{\link[=pdf_form_objects]{pdf_form_objects()}} calls, are stale and must not be used; call
 \code{\link[=pdf_form_objects]{pdf_form_objects()}} again for the remaining children.
 }
 \details{

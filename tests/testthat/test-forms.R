@@ -197,7 +197,7 @@ test_that("cpp_form_get_object rejects an out-of-range index", {
   )
   skip_if(length(forms) == 0L, "no form objects")
   expect_error(
-    pdfium:::cpp_form_get_object(forms[[1L]]$ptr, page$ptr, 999L),
+    pdfium:::cpp_form_get_object(forms[[1L]]$ptr, 999L),
     "returned NULL"
   )
 })
@@ -215,6 +215,128 @@ test_that("objects of a form in an annotation follow the annotation", {
   # annotation's handle refuses the child as it does the form, before
   # anything reaches into memory the annotation may have freed.
   pdf_annot_delete(a)
-  expect_error(pdf_obj_bounds(form), "parent has been closed")
-  expect_error(pdf_text_font_size(child), "parent has been closed")
+  deleted <- paste0(
+    "^Parent annotation has been closed: it was deleted with ",
+    "pdf_annot_delete\\(\\)\\. The object handle is no longer valid\\.$"
+  )
+  expect_false(is_open(form))
+  expect_false(is_open(child))
+  expect_identical(
+    format(child), "<pdfium_obj [closed] text, obj 1 of form 5 on page 1>"
+  )
+  expect_error(pdf_obj_bounds(form), deleted)
+  expect_error(pdf_form_objects(form), deleted)
+  expect_error(pdf_text_font_size(child), deleted)
+  expect_error(pdf_text_content(child), deleted)
+  for (ptr in list(form$ptr, child$ptr)) {
+    expect_error(
+      pdfium:::cpp_obj_bounds(ptr),
+      "^Page-object handle's parent has been closed"
+    )
+  }
+})
+
+# Nested objects close with their form (ADR-029) ---------------------
+#
+# The objects pdf_form_objects() returns pin the form handle they were
+# read through, so they are refused once that handle is closed, even
+# when the form still exists elsewhere, as after a move.
+
+form_closed_obj_msg <- paste0(
+  "^Parent form object has been closed: it was deleted, removed from ",
+  "its form or moved into an annotation\\. The object handle is no ",
+  "longer valid\\.$"
+)
+
+test_that("pdf_obj_delete() on a form closes the objects read from it", {
+  doc <- pdf_doc_open(source = inline_annot_objects_pdf(), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  form <- pdf_page_objects(page)[[1L]]
+  child <- pdf_form_objects(form)[[1L]]
+  expect_identical(pdf_text_font_size(child), 10)
+  pdf_obj_delete(form)
+  expect_false(is_open(child))
+  expect_identical(
+    format(child), "<pdfium_obj [closed] text, obj 1 of form 1 on page 1>"
+  )
+  expect_error(pdf_text_font_size(child), form_closed_obj_msg)
+  expect_error(pdf_obj_bounds(child), form_closed_obj_msg)
+  expect_error(
+    pdfium:::cpp_text_font_size(child$ptr),
+    "^Page-object handle's parent has been closed"
+  )
+})
+
+test_that("objects read from a form moved into an annotation are re-read", {
+  doc <- pdf_doc_open(source = inline_annot_objects_pdf(), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  form <- pdf_page_objects(page)[[1L]]
+  child <- pdf_form_objects(form)[[1L]]
+  a <- pdf_annot_new(page, "stamp", bounds = c(0, 0, 100, 100))
+  pdf_annot_append_object(a, form)
+  # The move closes the form's handle, and with it the objects read
+  # through it, although the form and its objects still exist.
+  expect_false(is_open(child))
+  expect_error(pdf_text_font_size(child), form_closed_obj_msg)
+  # Read again through the annotation, they are usable until it is
+  # deleted.
+  moved <- pdf_form_objects(pdf_annot_objects(a)[[1L]])[[1L]]
+  expect_identical(pdf_text_font_size(moved), 10)
+  pdf_annot_delete(a)
+  expect_false(is_open(moved))
+  expect_error(
+    pdf_text_font_size(moved),
+    paste0(
+      "^Parent annotation has been closed: it was deleted with ",
+      "pdf_annot_delete\\(\\)\\. The object handle is no longer valid\\.$"
+    )
+  )
+  expect_error(pdf_text_font_size(child), form_closed_obj_msg)
+})
+
+test_that("removing a nested form closes the objects read from it", {
+  doc <- pdf_doc_open(source = inline_nested_forms_pdf(3L), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  outer <- pdf_page_objects(page)[[1L]]
+  middle <- pdf_form_objects(outer)[[1L]]
+  inner <- pdf_form_objects(middle)[[1L]]
+  path <- pdf_form_objects(inner)[[1L]]
+  expect_identical(path$type, "path")
+  pdf_form_obj_remove_object(outer, middle)
+  for (obj in list(inner, path)) {
+    expect_false(is_open(obj))
+    expect_error(pdf_obj_bounds(obj), form_closed_obj_msg)
+  }
+  expect_true(is_open(outer))
+  expect_length(pdf_form_objects(outer), 0L)
+})
+
+test_that("the deepest objects PDFium parses follow their outermost form", {
+  # PDFium parses Form XObjects nested 40 deep; deeper ones read as
+  # empty. The chain from the innermost clip path up to the document is
+  # then 44 externalptrs long, within validate_handle()'s cap.
+  doc <- pdf_doc_open(source = inline_nested_forms_pdf(40L), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  outer <- pdf_page_objects(page)[[1L]]
+  obj <- outer
+  levels <- 0L
+  while (identical(obj$type, "form")) {
+    obj <- pdf_form_objects(obj)[[1L]]
+    levels <- levels + 1L
+  }
+  expect_identical(levels, 40L)
+  expect_identical(obj$type, "path")
+  clip <- pdf_obj_clip_path(obj)
+  expect_identical(pdfium:::cpp_clip_path_count_paths(clip$ptr), 1L)
+  expect_identical(pdf_clip_path_count(clip), 1L)
+  pdf_obj_delete(outer)
+  expect_error(pdf_obj_bounds(obj), form_closed_obj_msg)
+  expect_error(
+    pdfium:::cpp_clip_path_count_paths(clip$ptr),
+    "^Clip-path handle's parent has been closed"
+  )
 })

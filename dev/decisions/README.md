@@ -13,8 +13,8 @@ Markdown ADR following the
 | [003](ADR-003-binary-distribution.md) | Accepted (CRAN-submission wording superseded by ADR-026; download-integrity consequence superseded by ADR-027) | Binary distribution: bblanchon pdfium-binaries downloaded at install |
 | [004](ADR-004-api-style.md)      | Accepted | API style: snake_case `pdf_*`, S3 classes, tibble outputs |
 | [005](ADR-005-memory-model.md)   | Accepted | Memory model: `externalptr` + finalizers + idempotent explicit close |
-| [006](ADR-006-pdfium-pin.md)     | Accepted (hash-pinning alternative superseded by ADR-027) | PDFium version pinning policy |
-| [007](ADR-007-ci-and-coverage.md) | Accepted | CI: GitHub Actions matrix, 100% R coverage gate, valgrind, ASan |
+| [006](ADR-006-pdfium-pin.md)     | Accepted | PDFium version pinning policy |
+| [007](ADR-007-ci-and-coverage.md) | Accepted (`cran-check.yaml` row superseded by ADR-030) | CI: GitHub Actions matrix, 100% R coverage gate, valgrind, ASan |
 | [008](ADR-008-cran-targeting.md) | Accepted (release targeting superseded by ADR-026; quality constraints in force) | CRAN-from-v0.1.0 hardening |
 | [009](ADR-009-defer-bezier-controls.md) | Superseded by ADR-021 | Defer Bezier control points to a post-0.1.0 release (no public PDFium API) |
 | [010](ADR-010-checkmate-for-argument-validation.md) | Accepted | Use `checkmate` for argument validation throughout the package |
@@ -32,8 +32,12 @@ Markdown ADR following the
 | [022](ADR-022-no-annotation-refresh-on-render.md) | Supersedes ADR-020 §7 | Rendering does not touch annotations: drop the `FPDFAnnot_SetRect` "AP refresh" walk |
 | [023](ADR-023-annotation-object-ownership.md) | Accepted (decision 3 superseded by ADR-024) | Annotation page-objects: `pdf_annot_append_object()` moves a top-level object off the annotation's page, the annotation finalizer closes the context while its page or document is open, and form-XObject child removal frees the child |
 | [024](ADR-024-annotation-handles-close-with-document.md) | Supersedes ADR-023 decision 3 | Annotation handles close with their document: a per-document registry of live annotation handles, released before every `FPDF_CloseDocument`, so no annotation context outlives its document |
+| [025](ADR-025-document-handles-close-with-document.md) | Accepted (extends ADR-024) | Pages, fonts and XObjects close with their document: the ADR-024 registry holds every handle PDFium closes for a document, released annotations first, then pages, then fonts and XObjects; form-field pages pin their document, and fonts and XObjects are refused on another document's pages |
 | [026](ADR-026-no-cran-release.md) | Supersedes ADR-008's release targeting and ADR-003's CRAN-submission wording | No CRAN release: keep ADR-008's CRAN-quality bar, ship binaries through r-universe and source through GitHub |
 | [027](ADR-027-verified-pdfium-downloads.md) | Supersedes ADR-003's download-integrity consequence and ADR-006's rejection of hash pinning | PDFium archives are verified before use: SHA-256 pinned per archive in `tools/pdfium-checksums.txt` and tied to the release pin, atomic downloads into the cache, and bad cache entries replaced |
+| [028](ADR-028-library-destroy-closes-every-handle.md) | Accepted (extends ADR-025) | Destroying the library closes every handle first: documents, standalone clip paths, bitmaps and memory-document buffers are registered under the library and released before `FPDF_DestroyLibrary`; every finalizer is attached in one place |
+| [029](ADR-029-handles-follow-their-owners.md) | Accepted (extends ADR-020 §4 and ADR-025) | A handle is refused once any of its owners is closed: clip paths pin their page-object and nested objects their form, and `validate_handle()` and `is_open()` walk the whole ownership chain |
+| [030](ADR-030-rhub-v2-cran-flavour-checks.md) | Supersedes ADR-007's `cran-check.yaml` row | Weekly CRAN-flavour checks with rhub v2 (`rhub.yaml`): windows and macos-arm64 on R-devel, gcc-asan, clang-asan, rchk, nosuggests; replaces the defunct `rhub::check_for_cran()` job |
 
 ## Policy
 

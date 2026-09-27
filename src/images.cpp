@@ -172,15 +172,7 @@ Rcpp::RawVector cpp_image_data(SEXP obj_ptr, bool decoded) {
 // [[Rcpp::export(name = "cpp_image_icc_profile")]]
 Rcpp::RawVector cpp_image_icc_profile(SEXP obj_ptr, SEXP page_ptr) {
   FPDF_PAGEOBJECT obj = obj_from_ptr(obj_ptr);
-  if (TYPEOF(page_ptr) != EXTPTRSXP) {  // # nocov start
-    // The R wrapper (pdf_image_icc_profile) always passes
-    // obj$page$ptr, which is the externalptr stored on the parent
-    // pdfium_page handle — never a non-externalptr SEXP. Defensive
-    // guard kept so a direct .Call from user code gets a clear
-    // message instead of a segfault inside R_ExternalPtrAddr.
-    Rcpp::stop("Expected an external pointer for the page.");
-  }  // # nocov end
-  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
+  FPDF_PAGE page = page_from_ptr(page_ptr);
   // Two-pass byte protocol. The first call (NULL buffer) populates
   // `need` with the actual size required, returning FALSE.
   size_t need = 0;

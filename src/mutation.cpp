@@ -20,7 +20,7 @@
 #include "fpdf_catalog.h"
 #include "fpdf_ppo.h"
 #include "fpdf_transformpage.h"
-#include "document_handle.h"
+#include "handle_registry.h"
 #include "utf16.h"
 
 namespace {
@@ -48,15 +48,6 @@ FPDF_PAGE page_from_xptr(SEXP page_ptr) {
   return page;
 }
 
-void finalize_new_page(SEXP ptr) {
-  if (TYPEOF(ptr) != EXTPTRSXP) return;
-  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(ptr));
-  if (page != nullptr) {
-    FPDF_ClosePage(page);
-    R_ClearExternalPtr(ptr);
-  }
-}
-
 } // namespace
 
 // [[Rcpp::export(name = "cpp_page_new")]]
@@ -71,11 +62,7 @@ SEXP cpp_page_new(SEXP doc_ptr, int page_index, double width,
     Rcpp::stop("FPDFPage_New failed.");
   }
   // # nocov end
-  SEXP ptr = PROTECT(R_MakeExternalPtr(page, R_NilValue, doc_ptr));
-  R_RegisterCFinalizerEx(ptr, finalize_new_page,
-                         static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ptr;
+  return pdfium_r::make_page_handle(page, doc_ptr);
 }
 
 // [[Rcpp::export(name = "cpp_page_delete")]]
@@ -127,11 +114,7 @@ SEXP cpp_import_n_pages_to_one(SEXP src_doc_ptr,
     Rcpp::stop("FPDF_ImportNPagesToOne failed.");
   }
   // # nocov end
-  SEXP ptr = PROTECT(R_MakeExternalPtr(out, R_NilValue, R_NilValue));
-  R_RegisterCFinalizerEx(ptr, pdfium_r::finalize_document,
-                         static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ptr;
+  return pdfium_r::make_document_handle(out, R_NilValue);
 }
 
 // [[Rcpp::export(name = "cpp_page_set_box")]]

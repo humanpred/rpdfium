@@ -15,7 +15,8 @@
 #' only as long as the parent `pdfium_page` is open. The handle's
 #' internal parent reference keeps the page (and transitively the
 #' document) alive for as long as you hold the object, but calling
-#' [pdf_page_close()] explicitly invalidates all returned objects.
+#' [pdf_page_close()] explicitly, or closing the document with
+#' [pdf_doc_close()], invalidates all returned objects.
 #'
 #' @param page A `pdfium_page` from [pdf_page_load()], or a `pdfium_doc`
 #'   (in which case the first page is loaded and closed automatically).

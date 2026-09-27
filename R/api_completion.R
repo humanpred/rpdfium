@@ -100,7 +100,7 @@ pdf_bookmark_child_count <- function(bookmark) {
 pdf_page_has_transparency <- function(page) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   cpp_page_has_transparency(page$ptr)
 }
@@ -123,7 +123,7 @@ pdf_page_has_transparency <- function(page) {
 pdf_page_bounding_box <- function(page) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   cpp_page_bounding_box(page$ptr)
 }
@@ -206,7 +206,7 @@ pdf_device_to_page <- function(page, start_x, start_y, size_x, size_y,
                                 rotate, device_x, device_y) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   checkmate::assert_int(start_x)
   checkmate::assert_int(start_y)
@@ -237,7 +237,7 @@ pdf_page_to_device <- function(page, start_x, start_y, size_x, size_y,
                                 rotate, page_x, page_y) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   checkmate::assert_int(start_x)
   checkmate::assert_int(start_y)
@@ -276,7 +276,7 @@ pdf_page_to_device <- function(page, start_x, start_y, size_x, size_y,
 pdf_text_rects <- function(page, start_char = 1L, char_count = -1L) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   checkmate::assert_int(start_char, lower = 1L)
   checkmate::assert_int(char_count)
@@ -310,7 +310,7 @@ pdf_text_rects <- function(page, start_char = 1L, char_count = -1L) {
 pdf_text_bounded <- function(page, bounds) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   checkmate::assert_numeric(bounds, len = 4L, any.missing = FALSE,
                              finite = TRUE)
@@ -345,7 +345,7 @@ pdf_text_bounded <- function(page, bounds) {
 pdf_text_char_geometry <- function(page) {
   checkmate::assert_class(page, "pdfium_page")
   if (!is_open(page)) {
-    stop("Page has been closed.", call. = FALSE)
+    stop(page_closed_message(page), call. = FALSE)
   }
   raw <- cpp_text_char_geometry(page$ptr)
   mat <- raw$matrix
@@ -651,9 +651,12 @@ pdf_annot_objects <- function(annot) {
 #' `annot`, so exactly one of them owns the object at any time.
 #'
 #' After the call `obj` is no longer on the page and its handle is
-#' closed; reach the object through [pdf_annot_objects()] instead.
-#' Other handles to the same object (for example from an earlier
-#' [pdf_page_objects()] call) are stale and must not be used, and the
+#' closed, as are the clip paths read from it with
+#' [pdf_obj_clip_path()] and, for a form object, the objects read from
+#' it with [pdf_form_objects()]; reach the object through
+#' [pdf_annot_objects()] instead. Other handles to the same object
+#' (for example from an earlier [pdf_page_objects()] call) are stale
+#' and must not be used, and the
 #' page-scoped indices of the remaining page-objects shift down by
 #' one. The move only succeeds as a whole: when `annot` cannot hold
 #' page-objects, or `obj` is not a top-level object of the
@@ -698,8 +701,9 @@ pdf_annot_append_object <- function(annot, obj) {
 #' position within the annotation's embedded content (one-based,
 #' matching [pdf_annot_objects()]). PDFium destroys the object and
 #' regenerates the annotation's appearance stream, so handles to it
-#' from an earlier [pdf_annot_objects()] call are stale and must not
-#' be used; call [pdf_annot_objects()] again for the remaining ones.
+#' from an earlier [pdf_annot_objects()] call, and the clip paths and
+#' nested objects read from them, are stale and must not be used; call
+#' [pdf_annot_objects()] again for the remaining ones.
 #'
 #' @param annot A `pdfium_annot` of subtype `"ink"` or `"stamp"`, the
 #'   only subtypes PDFium edits embedded objects of. Parent doc must
@@ -732,7 +736,7 @@ pdf_annot_remove_object <- function(annot, index) {
 #' @seealso [pdf_annot_append_object()], [pdf_annot_objects()].
 #' @export
 pdf_annot_update_object <- function(annot, obj) {
-  checkmate::assert_class(obj, "pdfium_obj")
+  check_pdfium_obj(obj)
   ctx <- assert_annot_writable(annot)
   expect_setter_ok(cpp_annot_update_object(annot$ptr, obj$ptr),
                     "FPDFAnnot_UpdateObject")
@@ -1100,7 +1104,8 @@ print.pdfium_xobject <- function(x, ...) {
 #' @param dest_doc A `pdfium_doc` opened with `readwrite = TRUE`.
 #' @param src_doc Source `pdfium_doc`. Read-only is fine.
 #' @param src_page_num One-based page index in `src_doc`.
-#' @return A `pdfium_xobject` handle.
+#' @return A `pdfium_xobject` handle. It belongs to `dest_doc`:
+#'   [pdf_doc_close()] on `dest_doc` closes it.
 #' @seealso [pdf_obj_form_from_xobject()] to instantiate as a page
 #'   object; [pdf_xobject_close()] for deterministic release.
 #' @export
@@ -1123,7 +1128,8 @@ pdf_xobject_from_page <- function(dest_doc, src_doc, src_page_num = 1L) {
 #' Wraps `FPDF_CloseXObject`. Idempotent. Closing the XObject does
 #' NOT invalidate page-objects created from it via
 #' [pdf_obj_form_from_xobject()] — those are owned by their parent
-#' page and survive the XObject's release.
+#' page and survive the XObject's release. [pdf_doc_close()] on the
+#' destination document closes its XObjects as well.
 #'
 #' @param xobject A `pdfium_xobject` from [pdf_xobject_from_page()].
 #' @return Invisibly returns `xobject`.
@@ -1146,7 +1152,7 @@ pdf_xobject_close <- function(xobject) {
 #'   [pdf_page_load()] (parent doc must be readwrite).
 #' @param xobject A `pdfium_xobject` from [pdf_xobject_from_page()].
 #'   The XObject must have been created against the same `dest_doc`
-#'   that owns `page`.
+#'   that owns `page`; one from another document is an error.
 #' @return The new `pdfium_obj` (type `"form"`).
 #' @seealso [pdf_xobject_from_page()].
 #' @export
@@ -1157,11 +1163,12 @@ pdf_obj_form_from_xobject <- function(page, xobject) {
   }
   ph <- as_page_and_doc(page)
   assert_readwrite(ph$doc)
-  obj_ptr <- cpp_form_obj_from_xobject(xobject$ptr)
-  # cpp_form_obj_from_xobject returns a detached page-object. Insert
-  # via cpp_page_insert_object (already wrapped for the existing
-  # creators).
-  cpp_page_insert_object(ph$page$ptr, obj_ptr)
+  if (!identical(xobject$doc$ptr, ph$doc$ptr)) {
+    stop("`xobject` and `page` must belong to the same document.",
+      call. = FALSE
+    )
+  }
+  obj_ptr <- cpp_form_obj_from_xobject(xobject$ptr, ph$page$ptr)
   idx <- cpp_page_object_count(ph$page$ptr)
   mark_page_dirty(ph$doc, ph$page$index)
   new_pdfium_obj(obj_ptr, ph$page, idx, "form")
@@ -1172,9 +1179,11 @@ pdf_obj_form_from_xobject <- function(page, xobject) {
 #' Wraps `FPDFFormObj_RemoveObject` + `FPDFPageObj_Destroy`. The child
 #' must currently belong to the form-xobject. PDFium hands the removed
 #' child back to the caller, so it is destroyed straight away and the
-#' `child` handle is closed: further calls on it error cleanly. Other
-#' handles to the child (and, when the child is itself a form, to its
-#' own children) are stale and must not be used; call
+#' `child` handle is closed: further calls on it, on the clip paths
+#' read from it with [pdf_obj_clip_path()] and, when it is itself a
+#' form, on the objects read from it with [pdf_form_objects()], error
+#' cleanly. Other handles to the child, from separate
+#' [pdf_form_objects()] calls, are stale and must not be used; call
 #' [pdf_form_objects()] again for the remaining children.
 #'
 #' The removal changes the page in memory, so rendering and
@@ -1190,7 +1199,7 @@ pdf_obj_form_from_xobject <- function(page, xobject) {
 #' @return Invisibly returns the parent `pdfium_doc`.
 #' @export
 pdf_form_obj_remove_object <- function(form_obj, child) {
-  checkmate::assert_class(child, "pdfium_obj")
+  check_pdfium_obj(child, arg = "child")
   ctx <- assert_obj_writable(form_obj, allowed_types = "form",
                               arg = "form_obj")
   expect_setter_ok(

@@ -9,7 +9,8 @@
 #
 # Lifetime: the C-side externalptr carries a finalizer that calls
 # FPDFFont_Close. The `prot` slot pins the parent doc so the doc can't
-# be GC'd before the font. Calling pdf_font_close() is idempotent.
+# be GC'd before the font, and closing the doc closes the font first
+# (ADR-025). Calling pdf_font_close() is idempotent.
 #
 # To draw with a custom font, pass the `pdfium_font` handle as the
 # `font` argument of pdf_text_new(); R-side dispatch picks the
@@ -49,7 +50,7 @@
 #' @param name Character scalar — one of the 14 standard font names
 #'   listed in the **Standard fonts** section below.
 #' @return A `pdfium_font` handle. Pass it as the `font` argument
-#'   of [pdf_text_new()].
+#'   of [pdf_text_new()] for a page of `doc`.
 #'
 #' @section Standard fonts:
 #' `"Helvetica"`, `"Helvetica-Bold"`, `"Helvetica-Oblique"`,
@@ -95,7 +96,7 @@ pdf_font_load_standard <- function(doc, name) {
 #'   disk but limited to the standard PDF encodings. When in doubt,
 #'   leave this as `TRUE`.
 #' @return A `pdfium_font` handle. Pass it as the `font` argument
-#'   of [pdf_text_new()].
+#'   of [pdf_text_new()] for a page of `doc`.
 #'
 #' @seealso [pdf_font_load_standard()], [pdf_text_new()],
 #'   [pdf_font_close()].
@@ -136,6 +137,8 @@ pdf_font_load <- function(doc, font_data,
 #' Closing a font does **not** invalidate text objects that already
 #' used it — PDFium keeps an internal reference. Only the embedder's
 #' R-side handle is released.
+#'
+#' [pdf_doc_close()] closes the document's fonts as well.
 #'
 #' @param font A `pdfium_font` from [pdf_font_load_standard()] or
 #'   [pdf_font_load()].

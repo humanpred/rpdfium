@@ -20,12 +20,15 @@
 #'
 #' Each returned object carries a `parent_form` slot pointing back
 #' at `form`, used by the print/format methods to show the
-#' containment path (`"obj 2 of form 1 on page 1"`). Lifetime is
-#' bound to the parent page, not to the form: as long as the page
-#' is open, the form and its nested objects remain valid. For a form
-#' in an annotation's appearance stream ([pdf_annot_objects()]) it is
-#' bound to the annotation instead: once the annotation is deleted,
-#' the nested objects are refused like the form itself.
+#' containment path (`"obj 2 of form 1 on page 1"`). Its lifetime is
+#' bound to the `form` handle: the nested objects are refused, like
+#' `form` itself, once `form`'s page or document is closed, once the
+#' annotation whose appearance stream holds `form`
+#' ([pdf_annot_objects()]) is deleted, and once `form` is deleted with
+#' [pdf_obj_delete()], removed from its own form with
+#' [pdf_form_obj_remove_object()] or moved into an annotation with
+#' [pdf_annot_append_object()]. After such a move, read the objects
+#' again through [pdf_annot_objects()] and then `pdf_form_objects()`.
 #'
 #' @param form A `pdfium_obj` of type `"form"`, typically obtained
 #'   by filtering [pdf_page_objects()] (or another
@@ -58,12 +61,8 @@ pdf_form_objects <- function(form) {
     return(list())
   }
 
-  # The children pin what owns the form: the annotation for a form in
-  # an appearance stream, else the page.
-  annot <- obj_parent_annot(form)
-  owner_ptr <- if (is.null(annot)) form$page$ptr else annot$ptr
   lapply(seq_len(n), function(i) {
-    inner <- cpp_form_get_object(form$ptr, owner_ptr, i - 1L)
+    inner <- cpp_form_get_object(form$ptr, i - 1L)
     type_int <- cpp_obj_type(inner)
     new_pdfium_obj(
       ptr         = inner,

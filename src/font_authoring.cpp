@@ -5,18 +5,19 @@
 //   cpp_font_load_truetype   — FPDFText_LoadFont (TrueType / Type1)
 //   cpp_text_new_with_font   — FPDFPageObj_CreateTextObj
 //
-// All three return externalptrs whose `prot` slot pins the parent
-// document (so the doc outlives the font / text obj). The font
-// externalptr carries a finalizer that calls FPDFFont_Close;
-// page objects (the text obj returned by CreateTextObj) inherit
-// page lifetime so they have no finalizer, matching the existing
-// path/rect creator conventions.
+// The font loaders return externalptrs from make_font_handle()
+// (handle_registry.h): the `prot` slot pins the parent document, the
+// finalizer calls FPDFFont_Close, and closing the document closes the
+// font first (ADR-025). The text object returned by CreateTextObj
+// pins its page instead and inherits page lifetime, so it has no
+// finalizer, matching the existing path/rect creator conventions.
 
 #include <Rcpp.h>
 #include <cstdint>
 #include <vector>
 #include "fpdfview.h"
 #include "fpdf_edit.h"
+#include "handle_registry.h"
 #include "handle_validation.h"
 #include "utf16.h"
 
@@ -40,17 +41,6 @@ inline FPDF_FONT font_from_ptr(SEXP font_ptr) {
                                   /*require_prot_alive=*/true));
 }
 
-// Finalizer for pdfium_font externalptr. PDFium's FPDFFont_Close
-// releases the font (it stays referenced by any text objects that
-// already used it; this just drops the embedder's hold).
-void font_finalizer(SEXP font_ptr) {
-  if (TYPEOF(font_ptr) != EXTPTRSXP) return;
-  FPDF_FONT font = static_cast<FPDF_FONT>(R_ExternalPtrAddr(font_ptr));
-  if (font == nullptr) return;
-  FPDFFont_Close(font);
-  R_ClearExternalPtr(font_ptr);
-}
-
 }  // namespace
 
 // [[Rcpp::export(name = "cpp_font_load_standard")]]
@@ -64,11 +54,7 @@ SEXP cpp_font_load_standard(SEXP doc_ptr, std::string font_name) {
         "'Helvetica-Bold', 'Times-Roman', 'Courier').",
         font_name.c_str());
   }
-  SEXP ext = PROTECT(R_MakeExternalPtr(font, R_NilValue, doc_ptr));
-  R_RegisterCFinalizerEx(ext, font_finalizer,
-                         static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ext;
+  return pdfium_r::make_font_handle(font, doc_ptr);
 }
 
 // [[Rcpp::export(name = "cpp_font_load_truetype")]]
@@ -88,22 +74,16 @@ SEXP cpp_font_load_truetype(SEXP doc_ptr, Rcpp::RawVector font_data,
         "valid %s font.",
         font_type == 1 ? "Type1" : "TrueType");
   }
-  SEXP ext = PROTECT(R_MakeExternalPtr(font, R_NilValue, doc_ptr));
-  R_RegisterCFinalizerEx(ext, font_finalizer,
-                         static_cast<Rboolean>(TRUE));
-  UNPROTECT(1);
-  return ext;
+  return pdfium_r::make_font_handle(font, doc_ptr);
 }
 
+// PDFium's FPDFFont_Close releases the font (it stays referenced by
+// any text objects that already used it; this just drops the
+// embedder's hold). Idempotent — match pdf_doc_close's "second call
+// is a no-op" contract.
 // [[Rcpp::export(name = "cpp_font_close")]]
 void cpp_font_close(SEXP font_ptr) {
-  // Idempotent — finalizer-style close. Match pdf_doc_close's
-  // "second call is a no-op" contract.
-  if (TYPEOF(font_ptr) != EXTPTRSXP) return;
-  FPDF_FONT font = static_cast<FPDF_FONT>(R_ExternalPtrAddr(font_ptr));
-  if (font == nullptr) return;
-  FPDFFont_Close(font);
-  R_ClearExternalPtr(font_ptr);
+  pdfium_r::release_font_handle(font_ptr);
 }
 
 // [[Rcpp::export(name = "cpp_text_new_with_font")]]

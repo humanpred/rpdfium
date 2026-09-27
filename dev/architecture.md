@@ -35,17 +35,32 @@ shared library is loaded once per session.
 Read [ADR-005](decisions/ADR-005-memory-model.md) first. Summary:
 
 1. Every PDFium handle (`FPDF_DOCUMENT`, `FPDF_PAGE`, etc.) lives
-   behind an R `externalptr` with a C finalizer registered via
-   `R_RegisterCFinalizerEx(ptr, finalizer, TRUE)`.
-2. The finalizer is the **only** path that calls `FPDF_*Close*`.
-3. After closing, the finalizer calls `R_ClearExternalPtr` so the
+   behind an R `externalptr`. Those PDFium closes carry a C finalizer
+   registered via `R_RegisterCFinalizerEx(ptr, finalizer, TRUE)`.
+2. Each such kind has one minting and one releasing function in
+   `src/handle_registry.h`: `make_*_handle()` attaches the finalizer
+   and registers the handle, and `release_*_handle()`, which the
+   finalizer, the explicit close and the owner's release all call,
+   is the only code that closes it.
+3. After closing, the release calls `R_ClearExternalPtr` so the
    pointer reads as NULL on subsequent access. This makes
    user-visible `pdf_doc_close()` and equivalents safely idempotent.
-4. Children (pages, page objects) hold an R-level reference to their
-   parent (doc, page) through the `prot` slot of the child
-   externalptr. R's GC keeps the parent alive while a child exists.
-5. PDFium's library lifecycle (`FPDF_InitLibraryWithConfig` /
-   `FPDF_DestroyLibrary`) runs in `.onLoad` / `.onUnload`.
+4. Children hold an R-level reference to their immediate owner (a
+   page its document, a page-object its page, annotation or form, a
+   clip path its page-object) through the `prot` slot of the child
+   externalptr. R's GC keeps the owners alive while a child exists,
+   and `validate_handle()` refuses a child once any owner up the
+   chain is closed (ADR-029).
+5. Closing a document, explicitly or in its finalizer, first closes
+   the annotation, page, font and XObject handles still open on it:
+   each is registered under its document (ADR-024, ADR-025).
+   Documents, clip paths, bitmaps and memory-document buffers are
+   registered under the library, and `cpp_destroy_library()` releases
+   them, each document with its handles, before `FPDF_DestroyLibrary`
+   (ADR-028).
+6. PDFium's library lifecycle (`FPDF_InitLibraryWithConfig` /
+   `FPDF_DestroyLibrary`) runs in `.onLoad` / `.onUnload`; opening a
+   document after a destroy initialises the library again.
 
 The auto-close test in `tests/testthat/test-document.R` is
 load-bearing — don't remove it.
@@ -90,10 +105,13 @@ package load (every R session)
 - **Linux RPATH.** `$ORIGIN/../lib` is shell-expanded by `make`
   unless the dollar is escaped: `$$ORIGIN/../lib`. The `configure`
   script writes the double dollar literally.
-- **GC order.** A finalizer running while the PDFium library has been
-  destroyed crashes. We register finalizers as `onexit = TRUE` so
-  they run during R session shutdown *before* `.onUnload` destroys
-  the library.
+- **GC order.** Finalizers are registered with `onexit = TRUE`, so
+  they run at R session shutdown. A handle collected after the library
+  was destroyed is harmless, because the destroy released it first
+  (ADR-028). A handle that survives `.onUnload`'s
+  `library.dynam.unload()` is not: its finalizer then points into the
+  unloaded shared library, and R crashes at the next collection or at
+  exit (ADR-028, to be fixed by ADR-031).
 - **Parallel testthat + valgrind.** They don't compose. `valgrind.yaml`
   and `cpp-asan.yaml` set `TESTTHAT_PARALLEL=false` to force serial
   tests under instrumentation.
@@ -139,7 +157,9 @@ fixture or pin a font in the build script.
 
 See [ADR-007](decisions/ADR-007-ci-and-coverage.md). Eight workflows;
 four are gates (`R-CMD-check`, `coverage`, `lint`, `pre-commit`).
-`valgrind` and `cran-check` run weekly. `cpp-asan` is advisory.
+`valgrind` runs weekly and on pull requests that touch code, and
+`rhub` runs R-hub's CRAN-flavour platforms weekly (ADR-030).
+`cpp-asan` is advisory.
 `pkgdown` only deploys on tag pushes.
 
 ## Where decisions live

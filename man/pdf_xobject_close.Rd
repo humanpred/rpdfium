@@ -16,5 +16,6 @@ Invisibly returns \code{xobject}.
 Wraps \code{FPDF_CloseXObject}. Idempotent. Closing the XObject does
 NOT invalidate page-objects created from it via
 \code{\link[=pdf_obj_form_from_xobject]{pdf_obj_form_from_xobject()}} — those are owned by their parent
-page and survive the XObject's release.
+page and survive the XObject's release. \code{\link[=pdf_doc_close]{pdf_doc_close()}} on the
+destination document closes its XObjects as well.
 }

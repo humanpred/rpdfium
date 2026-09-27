@@ -53,7 +53,7 @@ as_open_page <- function(page, page_num = 1L, .envir = parent.frame(),
                          defer_close = TRUE) {
   checkmate::assert_multi_class(page, c("pdfium_page", "pdfium_doc"))
   if (inherits(page, "pdfium_page")) {
-    if (!is_open(page)) stop("Page has been closed.", call. = FALSE)
+    if (!is_open(page)) stop(page_closed_message(page), call. = FALSE)
     return(page)
   }
   # `page` is a pdfium_doc — load `page_num` and arrange for close.
@@ -63,6 +63,16 @@ as_open_page <- function(page, page_num = 1L, .envir = parent.frame(),
     withr::defer(pdf_page_close(p), envir = .envir)
   }
   p
+}
+
+# Internal: the error message for a closed `pdfium_page`. Closing a
+# document closes its pages too (ADR-025), so a caller who never closed
+# the page is told why it is closed.
+page_closed_message <- function(page) {
+  if (is_open(page$doc)) {
+    return("Page has been closed.")
+  }
+  "Page has been closed: its document was closed."
 }
 
 # Internal: vectorised lookup of a PDFium integer enum code to its

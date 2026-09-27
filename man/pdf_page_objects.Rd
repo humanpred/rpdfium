@@ -42,7 +42,8 @@ Page objects do not own their own lifetime — they remain valid
 only as long as the parent \code{pdfium_page} is open. The handle's
 internal parent reference keeps the page (and transitively the
 document) alive for as long as you hold the object, but calling
-\code{\link[=pdf_page_close]{pdf_page_close()}} explicitly invalidates all returned objects.
+\code{\link[=pdf_page_close]{pdf_page_close()}} explicitly, or closing the document with
+\code{\link[=pdf_doc_close]{pdf_doc_close()}}, invalidates all returned objects.
 }
 \examples{
 fixture <- system.file("extdata", "fixtures", "shapes.pdf",

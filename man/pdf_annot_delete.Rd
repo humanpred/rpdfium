@@ -23,8 +23,9 @@ other annotations on the page were deleted. The annotation leaves
 the page's \verb{/Annots} array, PDFium's annotation context is
 released together with any page-objects of its appearance stream,
 and the handle is closed: further \verb{pdf_annot_*} calls on it, and
-on page-objects read from it with \code{\link[=pdf_annot_objects]{pdf_annot_objects()}}, error
-cleanly.
+on page-objects read from it with \code{\link[=pdf_annot_objects]{pdf_annot_objects()}}, on their
+clip paths (\code{\link[=pdf_obj_clip_path]{pdf_obj_clip_path()}}) and on the objects of forms among
+them (\code{\link[=pdf_form_objects]{pdf_form_objects()}}), error cleanly.
 }
 \details{
 Later annotations on the page move down one position. Other handles
