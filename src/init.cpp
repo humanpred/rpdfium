@@ -7,7 +7,7 @@
 // plumbing here.
 
 #include <Rcpp.h>
-#include <cstring>
+#include <algorithm>
 #include "fpdfview.h"
 #include "fpdf_edit.h"
 #include "fpdf_sysfontinfo.h"
@@ -51,7 +51,7 @@ void ensure_library_initialised() { cpp_init_library(); }
 // that, nor once the library is initialised again (fpdfview.h,
 // ADR-028). Every such handle is registered under the library, so it
 // is released first: its externalptr reads as closed from then on, and
-// its finalizer only deregisters it.
+// its finalizer has nothing left to do.
 // [[Rcpp::export(name = "cpp_destroy_library")]]
 void cpp_destroy_library() {
   if (!g_library_initialised) return;
@@ -104,29 +104,22 @@ SEXP cpp_open_document_from_memory(Rcpp::RawVector bytes,
   pdfium_r::ensure_library_initialised();
   const char* pwd = password.empty() ? nullptr : password.c_str();
   // FPDF_LoadMemDocument64 takes a 64-bit size so R xlen_t values
-  // beyond INT_MAX are safe. The buffer must remain valid for the
-  // lifetime of the FPDF_DOCUMENT (PDFium does not copy it), so we
-  // copy the R RAW vector into a heap buffer whose handle the
-  // document's handle pins in its prot slot; the buffer handle's
-  // finalizer frees it once the document handle is gone. The buffer
-  // gets its handle before the document is loaded, so no failure
-  // leaves an open document reading a freed buffer.
-  size_t n = static_cast<size_t>(bytes.size());
-  unsigned char* buf = new unsigned char[n];
-  std::memcpy(buf, bytes.begin(), n);
-  SEXP buf_ptr = PROTECT(pdfium_r::make_buffer_handle(buf));
-  FPDF_DOCUMENT doc =
-      FPDF_LoadMemDocument64(buf, n, pwd);
+  // beyond INT_MAX are safe. PDFium reads the buffer until the document
+  // is closed, without copying it, so the document reads from a copy
+  // of `bytes` that its handle pins in its prot slot. R never moves a
+  // vector, nothing else can reach the copy to change it, and R frees
+  // it only after the handle, so after the document is closed. The
+  // copy needs no finalizer (ADR-031).
+  Rcpp::RawVector buf(Rcpp::no_init(bytes.size()));
+  std::copy(bytes.begin(), bytes.end(), buf.begin());
+  FPDF_DOCUMENT doc = FPDF_LoadMemDocument64(
+      buf.begin(), static_cast<size_t>(buf.size()), pwd);
   if (doc == nullptr) {
-    pdfium_r::release_buffer_handle(buf_ptr);
-    UNPROTECT(1);
     unsigned long err = FPDF_GetLastError();
     Rcpp::stop("Failed to load PDF from memory (FPDF error %lu).",
                err);
   }
-  SEXP doc_ptr = pdfium_r::make_document_handle(doc, buf_ptr);
-  UNPROTECT(1);
-  return doc_ptr;
+  return pdfium_r::make_document_handle(doc, buf);
 }
 
 // [[Rcpp::export(name = "cpp_create_new_document")]]

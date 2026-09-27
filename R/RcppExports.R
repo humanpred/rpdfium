@@ -609,6 +609,14 @@ cpp_text_char_font_info <- function(page_ptr) {
     .Call(`_pdfium_cpp_text_char_font_info`, page_ptr)
 }
 
+cpp_set_handle_finalizer <- function(fun) {
+    invisible(.Call(`_pdfium_cpp_set_handle_finalizer`, fun))
+}
+
+cpp_finalize_handle <- function(ptr) {
+    invisible(.Call(`_pdfium_cpp_finalize_handle`, ptr))
+}
+
 cpp_doc_handle_counts <- function(doc_ptr) {
     .Call(`_pdfium_cpp_doc_handle_counts`, doc_ptr)
 }
