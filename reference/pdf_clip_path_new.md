@@ -20,8 +20,10 @@ pdf_clip_path_new(bounds)
 
 ## Value
 
-A `pdfium_clip_box` handle. The handle carries an `FPDF_DestroyClipPath`
-finalizer; explicit
+A `pdfium_clip_box` handle. The handle owns the clip path, also after
+[`pdf_page_insert_clip_path()`](https://humanpred.github.io/rpdfium/reference/pdf_page_insert_clip_path.md),
+so one clip path can go into several pages. It carries an
+`FPDF_DestroyClipPath` finalizer; explicit
 [`pdf_clip_path_close()`](https://humanpred.github.io/rpdfium/reference/pdf_clip_path_close.md)
 is optional but useful for deterministic release.
 
@@ -36,9 +38,10 @@ is optional but useful for deterministic release.
 ``` r
 if (FALSE) { # \dontrun{
 doc <- pdf_doc_new()
-page <- pdf_page_new(doc, width = 612, height = 792)
+page <- pdf_page_new(doc, page_num = 1, width = 612, height = 792)
 cp <- pdf_clip_path_new(c(72, 72, 540, 720))
 pdf_page_insert_clip_path(page, cp)
+pdf_clip_path_close(cp)
 pdf_save(doc, tempfile(fileext = ".pdf"))
 } # }
 ```

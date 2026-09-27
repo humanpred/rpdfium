@@ -25,3 +25,12 @@ pdf_doc_close(doc)
 ## Value
 
 Invisibly returns `doc` with its underlying pointer marked closed.
+
+## Details
+
+Annotation handles still open on the document, including the form-field
+handles of
+[`pdf_form_fields()`](https://humanpred.github.io/rpdfium/reference/pdf_form_fields.md),
+are closed first, because PDFium releases an annotation's resources only
+while its document is open. Afterwards they print as closed, and
+`pdf_annot_*()` calls on them raise an error.

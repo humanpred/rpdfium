@@ -1,9 +1,11 @@
 # Insert a clip path into a page
 
-Wraps `FPDFPage_InsertClipPath`. After insertion the clip path is owned
-by the page; the R-side `pdfium_clip_box` handle's externalptr is
-cleared automatically so subsequent operations on it error cleanly via
-`is_open()`.
+Wraps `FPDFPage_InsertClipPath`, which inserts the clip path before the
+page's content. PDFium does not take ownership of the clip path:
+`clip_path` stays open, can be inserted into other pages, and is
+released by
+[`pdf_clip_path_close()`](https://humanpred.github.io/rpdfium/reference/pdf_clip_path_close.md)
+or when it is garbage-collected.
 
 ## Usage
 

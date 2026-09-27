@@ -76,6 +76,13 @@ subsequent operation needs to delete the source file (relevant on Windows).</p>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Invisibly returns <code>doc</code> with its underlying pointer marked closed.</p>
     </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Annotation handles still open on the document, including the form-field
+handles of <code><a href="pdf_form_fields.html">pdf_form_fields()</a></code>, are closed first, because PDFium releases
+an annotation's resources only while its document is open. Afterwards they
+print as closed, and <code>pdf_annot_*()</code> calls on them raise an error.</p>
+    </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

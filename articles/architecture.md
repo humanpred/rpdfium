@@ -163,6 +163,11 @@ full conventions.
 - **Using a closed handle.** Functions that take a `pdfium_doc` raise an
   error if the handle has already been closed. Re-open the file if you
   need it again.
+- **Annotation handles after
+  [`pdf_doc_close()`](https://humanpred.github.io/rpdfium/reference/pdf_doc_close.md).**
+  Closing a document also closes the annotation and form-field handles
+  still open on it, because PDFium releases an annotation only while its
+  document is open. `pdf_annot_*()` calls on them then raise an error.
 - **Forgetting `readwrite = TRUE`.** Setters error with
   `"doc must be readwrite"` when called on a doc opened for inspection
   only.

@@ -93,6 +93,12 @@
 <code><a href="../reference/pdf_annot_delete.html">pdf_annot_delete()</a></code> removes the handle’s own annotation. It used the position recorded when the handle was made, so after an earlier delete on the same page it removed the next annotation or failed, and for a form field it removed an unrelated annotation. Deleting an annotation that is no longer on its page, for example through a second handle to it, is now an error that changes nothing.</li>
 <li>
 <code><a href="../reference/pdf_annot_delete.html">pdf_annot_delete()</a></code> no longer leaks PDFium’s annotation context, and with it any page-objects of the annotation’s appearance stream.</li>
+<li>
+<code><a href="../reference/pdf_doc_close.html">pdf_doc_close()</a></code>, and the finalizer of a collected document, first close the annotation handles still open on the document, including form-field handles from <code><a href="../reference/pdf_form_fields.html">pdf_form_fields()</a></code>. Those handles print as closed afterwards, and <code>pdf_annot_*()</code> calls on them raise an error. An annotation handle collected after both its page and its document had been closed used to leak PDFium’s annotation context, together with the page-objects of its appearance stream (ADR-024).</li>
+<li>
+<code><a href="../reference/pdf_page_insert_clip_path.html">pdf_page_insert_clip_path()</a></code> no longer closes <code>clip_path</code>. PDFium never takes ownership of an inserted clip path, so the path was never freed. The handle now stays open, can be inserted into other pages, and is released by <code><a href="../reference/pdf_clip_path_close.html">pdf_clip_path_close()</a></code> or garbage collection.</li>
+<li>
+<code><a href="../reference/pdf_system_fonts_install_default.html">pdf_system_fonts_install_default()</a></code> installs PDFium’s default system-font provider once per library lifetime, and the package frees it when it shuts the library down. Each call used to allocate a new provider that was never completely freed.</li>
 </ul></div>
 </div>
     <div class="section level2">

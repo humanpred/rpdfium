@@ -69,16 +69,16 @@ platform-installed typefaces.</p>
 
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Invisibly returns <code>TRUE</code> if the provider was installed,
-<code>FALSE</code> if the platform has no default provider (e.g.
-stripped-down builds).</p>
+    <p>Invisibly returns <code>TRUE</code> if the provider is installed,
+including by an earlier call, and <code>FALSE</code> if the platform has no
+default provider (e.g. stripped-down builds).</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Idempotent across calls; the provider persists for the package's
-lifetime (PDFium retains the pointer; we don't call
-<code>FPDF_FreeDefaultSystemFontInfo</code> because the provider is
-library-global).</p>
+    <p>The provider is installed once per PDFium library lifetime: a
+repeat call returns <code>TRUE</code> without installing another. The package
+frees it with <code>FPDF_FreeDefaultSystemFontInfo</code> when it shuts the
+library down, on package unload.</p>
 <p>Custom providers (R-side callbacks for font enumeration) are
 deferred to a later release — they require marshalling
 <code>FPDF_SYSFONTINFO</code>'s callback table into R closures, which is
