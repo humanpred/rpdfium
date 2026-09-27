@@ -100,6 +100,21 @@
   second handle to it, is now an error that changes nothing.
 * `pdf_annot_delete()` no longer leaks PDFium's annotation context, and
   with it any page-objects of the annotation's appearance stream.
+* `pdf_doc_close()`, and the finalizer of a collected document, first
+  close the annotation handles still open on the document, including
+  form-field handles from `pdf_form_fields()`. Those handles print as
+  closed afterwards, and `pdf_annot_*()` calls on them raise an error.
+  An annotation handle collected after both its page and its document
+  had been closed used to leak PDFium's annotation context, together
+  with the page-objects of its appearance stream (ADR-024).
+* `pdf_page_insert_clip_path()` no longer closes `clip_path`. PDFium
+  never takes ownership of an inserted clip path, so the path was never
+  freed. The handle now stays open, can be inserted into other pages,
+  and is released by `pdf_clip_path_close()` or garbage collection.
+* `pdf_system_fonts_install_default()` installs PDFium's default
+  system-font provider once per library lifetime, and the package frees
+  it when it shuts the library down. Each call used to allocate a new
+  provider that was never completely freed.
 
 # pdfium 0.1.0
 

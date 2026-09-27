@@ -779,19 +779,15 @@ void cpp_clip_path_close(SEXP cp_ptr) {
   R_ClearExternalPtr(cp_ptr);
 }
 
-// Insert the clip path as a page-level clip. Ownership transfers
-// to the page (FPDFPage_InsertClipPath copies internally and the
-// page takes ownership of the inserted entry). Clear the R-side
-// externalptr so the finalizer is a no-op.
+// Insert the clip path as a page-level clip. FPDFPage_InsertClipPath
+// inserts it before the page's content and does not take ownership
+// (fpdf_transformpage.h), so the handle stays open: its finalizer or
+// cpp_clip_path_close() destroys the path.
 // [[Rcpp::export(name = "cpp_page_insert_clip_path")]]
 void cpp_page_insert_clip_path(SEXP page_ptr, SEXP cp_ptr) {
   FPDF_PAGE page = acomp_page_from_ptr(page_ptr);
   FPDF_CLIPPATH cp = acomp_clip_from_ptr(cp_ptr);
   FPDFPage_InsertClipPath(page, cp);
-  // PDFium keeps an internal reference to the clip path data; the
-  // wrapper's externalptr is no longer the unique owner. Clear it
-  // to prevent a double-destroy via the finalizer.
-  R_ClearExternalPtr(cp_ptr);
 }
 
 // Transform a page-object's clip path in-place. Returns void per
@@ -1047,16 +1043,16 @@ bool cpp_image_set_bitmap(SEXP image_obj_ptr, SEXP bitmap_ptr) {
 // What's wrapped:
 //   * cpp_default_ttf_map_size / cpp_default_ttf_map_entry — readers
 //     for the static map.
-//   * cpp_install_default_sysfont_info — calls
-//     FPDF_SetSystemFontInfo(FPDF_GetDefaultSystemFontInfo()) so
+//   * cpp_install_default_sysfont_info (in init.cpp, beside the
+//     library init / destroy that bound the provider's lifetime) —
+//     calls FPDF_SetSystemFontInfo(FPDF_GetDefaultSystemFontInfo()) so
 //     PDFium uses the platform's default fallback provider when
-//     resolving missing glyphs.
+//     resolving missing glyphs. cpp_destroy_library() frees the
+//     provider with FPDF_FreeDefaultSystemFontInfo.
 //
 // What's skipped (deferred):
 //   * FPDF_AddInstalledFont — only called from within an EnumFonts
 //     callback, requires R-side callback machinery.
-//   * FPDF_FreeDefaultSystemFontInfo — internal cleanup of the
-//     default provider; managed by the install_default call.
 //   * Custom FPDF_SetSystemFontInfo with R callbacks — needs full
 //     FPDF_SYSFONTINFO marshalling.
 
@@ -1078,23 +1074,6 @@ Rcpp::List cpp_default_ttf_map_entry(int index_zero) {
   return Rcpp::List::create(
     Rcpp::_["charset"] = entry->charset,
     Rcpp::_["fontname"] = name);
-}
-
-// Install PDFium's platform-default system font info provider.
-// One-shot; subsequent calls reinstall the same provider.
-// [[Rcpp::export(name = "cpp_install_default_sysfont_info")]]
-bool cpp_install_default_sysfont_info() {
-  FPDF_SYSFONTINFO* info = FPDF_GetDefaultSystemFontInfo();
-  if (info == nullptr) {  // # nocov start — only returns NULL on PDFium
-    return false;         // builds compiled without system-font support;
-  }                       // chromium/7202 (our bundled binary) always
-                          // returns a non-NULL provider.
-  // # nocov end
-  FPDF_SetSystemFontInfo(info);
-  // Note: we deliberately don't call FPDF_FreeDefaultSystemFontInfo
-  // here — PDFium retains the pointer for the lifetime of the
-  // library. The provider lives until package unload.
-  return true;
 }
 
 // String-range import: "1-3,5,7-10" syntax for page ranges.

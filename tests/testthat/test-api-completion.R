@@ -535,16 +535,11 @@ reload_annot_objects <- function(path) {
   page <- pdf_page_load(doc, 1L)
   on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
   annot <- pdf_annotations(page)[[1L]]
-  out <- list(
+  list(
     page_objects = length(pdf_page_objects(page)),
     bounds = lapply(pdf_annot_objects(annot),
                     function(o) unname(pdf_obj_bounds(o)))
   )
-  # Collect the annotation handle while the document is open: the
-  # finalizer leaves annotations of a closed document unclosed.
-  rm(annot)
-  gc()
-  out
 }
 
 test_that("pdf_annot_append_object moves the object into the annotation", {
@@ -593,10 +588,11 @@ test_that("an appended object is freed once when the document goes first", {
   a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
   pdf_annot_append_object(a, pdf_rect_new(s$page, 0, 0, 50, 50))
   pdf_doc_close(s$doc)
+  # pdf_doc_close() closes the annotation, and with it the object the
+  # annotation owns, before the document; the deferred page close then
+  # runs on a page that no longer lists the object.
+  expect_false(pdfium:::cpp_handle_is_valid(a$ptr))
   rm(a)
-  # The page handle is still open, so the finalizer closes the
-  # annotation; the deferred page close then runs on a page that no
-  # longer lists the object.
   expect_no_error(gc())
 })
 
@@ -719,17 +715,23 @@ test_that("pdf_clip_path_close is idempotent", {
   expect_silent(pdf_clip_path_close(cp))
 })
 
-test_that("pdf_page_insert_clip_path transfers ownership", {
+test_that("pdf_page_insert_clip_path leaves the clip path with its handle", {
   doc <- pdf_doc_new()
   on.exit(pdf_doc_close(doc), add = TRUE)
-  page <- pdf_page_new(doc, page_num = 1L, width = 612, height = 792)
-  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  page1 <- pdf_page_new(doc, page_num = 1L, width = 612, height = 792)
+  on.exit(pdf_page_close(page1), add = TRUE, after = FALSE)
+  page2 <- pdf_page_new(doc, page_num = 2L, width = 612, height = 792)
+  on.exit(pdf_page_close(page2), add = TRUE, after = FALSE)
   cp <- pdf_clip_path_new(c(72, 72, 540, 720))
+  expect_identical(pdf_page_insert_clip_path(page1, cp), doc)
+  # FPDFPage_InsertClipPath does not take ownership: the handle stays
+  # open, so one clip path can go into several pages.
   expect_true(pdfium:::cpp_handle_is_valid(cp$ptr))
-  ret <- pdf_page_insert_clip_path(page, cp)
-  expect_identical(ret, doc)
-  # After insert, the externalptr is cleared (page owns the path).
+  expect_identical(pdf_page_insert_clip_path(page2, cp), doc)
+  expect_true(pdfium:::cpp_handle_is_valid(cp$ptr))
+  pdf_clip_path_close(cp)
   expect_false(pdfium:::cpp_handle_is_valid(cp$ptr))
+  expect_match(format(cp), "[closed]", fixed = TRUE)
 })
 
 test_that("pdf_page_insert_clip_path refuses a closed clip box", {
@@ -786,8 +788,10 @@ test_that("pdf_system_fonts_default_ttf_map returns a tibble", {
 })
 
 test_that("pdf_system_fonts_install_default returns TRUE on supported platforms", {
-  ok <- pdf_system_fonts_install_default()
-  expect_true(isTRUE(ok))
+  expect_identical(pdf_system_fonts_install_default(), TRUE)
+  # The provider is installed once per library lifetime; a repeat call
+  # reports it as installed rather than allocating another.
+  expect_identical(pdf_system_fonts_install_default(), TRUE)
 })
 
 # =========================================================================

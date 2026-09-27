@@ -1,4 +1,6 @@
-# valgrind.yaml — weekly leak / memory-error check on Linux.
+# valgrind.yaml — leak / memory-error check on Linux: weekly, and on
+# every pull request into main that touches code, tests or the pinned
+# PDFium, so a leak fails its PR instead of the next weekly run.
 #
 # Reminder: testthat parallelism does NOT compose with valgrind. We run
 # tests serially here by overriding Config/testthat/parallel via the
@@ -10,6 +12,15 @@ on:
   schedule:
     - cron: '23 5 * * 1'
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'R/**'
+      - 'tests/**'
+      - 'tools/**'
+      - 'DESCRIPTION'
+      - '.github/workflows/valgrind.yaml'
 
 permissions:
   contents: read
@@ -47,17 +58,19 @@ jobs:
         # adjacent `testthat/` directory (mirrors R CMD check).
         #
         # `--error-exitcode=0` lets the R process complete even when
-        # valgrind reports memory-access errors; the next step gates
-        # the job on the leak summary instead. Rationale: the bundled
-        # bblanchon PDFium binary triggers ~150k Memcheck `Cond` /
-        # `Value` errors from its compiled SIMD / fastpaths (reads
-        # well-defined at the hardware level but with uninitialized
-        # lanes that Memcheck flags). Those are neither leaks nor
-        # code we control. CRAN's own valgrind check focuses on
-        # leaks; we follow the same policy.
+        # valgrind reports errors; the next step gates the job on the
+        # leak summary instead. Rationale: the bundled bblanchon PDFium
+        # binary frees some of its own allocations with a mismatched
+        # deallocator (`Mismatched free()`: ByteString storage that
+        # PDFium mallocs and releases with operator delete). Those are
+        # neither leaks nor code we control. CRAN's own valgrind check
+        # focuses on leaks; we follow the same policy.
+        #
+        # `--num-callers=40`: the default of 12 frames often stops
+        # inside PDFium, before the package frame that made the call.
         working-directory: tests
         run: |
-          R -d "valgrind --tool=memcheck --leak-check=full --error-exitcode=0 --log-file=$RUNNER_TEMP/valgrind.log" \
+          R -d "valgrind --tool=memcheck --leak-check=full --num-callers=40 --error-exitcode=0 --log-file=$RUNNER_TEMP/valgrind.log" \
             --no-echo --vanilla -f testthat.R
 
       - name: Fail on definite or indirect leaks
