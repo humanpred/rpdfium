@@ -16,7 +16,6 @@
 ^CONTRIBUTING\.md$
 ^CLAUDE\.md$
 ^AGENTS\.md$
-^cran-comments\.md$
 ^README\.Rmd$
 ^LICENSE\.md$
 ^tools/upstream$
@@ -26,4 +25,3 @@
 ^pkgdown$
 ^doc$
 ^Meta$
-^CRAN-SUBMISSION$
