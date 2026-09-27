@@ -26,7 +26,21 @@ bool g_library_initialised = false;
 // (fpdf_sysfontinfo.h); cpp_destroy_library() frees it.
 FPDF_SYSFONTINFO* g_default_sysfont_info = nullptr;
 
+// How many times R has loaded this image of the shared library: R runs
+// R_init_pdfium() on every dyn.load(). A fresh image counts 1. An image
+// that dyn.unload() left mapped counts on, statics and all: glibc keeps
+// a library with a GNU-unique symbol loaded, and -O0 builds such as
+// covr's emit one for std::piecewise_construct.
+int g_load_generation = 0;
+
 } // namespace
+
+// [[Rcpp::init]]
+void count_load_generation(DllInfo* /*dll*/) { ++g_load_generation; }
+
+// Test hook: this image's load generation.
+// [[Rcpp::export(name = "cpp_load_generation")]]
+int cpp_load_generation() { return g_load_generation; }
 
 // [[Rcpp::export(name = "cpp_init_library")]]
 void cpp_init_library() {

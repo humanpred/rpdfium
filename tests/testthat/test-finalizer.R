@@ -153,14 +153,30 @@ test_that("handles outlive the shared library unloaded without .onUnload", {
 test_that("a shared library loaded again leaves the unreleased handles alone", {
   out <- unload_scenario("dll_reload")
   expect_null(attr(out, "status"))
+  # dyn.unload() leaves a build with a GNU-unique symbol mapped, as
+  # covr's -O0 builds are. Loading it again returns the same image,
+  # registry and all, which releases the handles when they are
+  # collected.
+  kept <- "load generation: 2" %in% out
   expect_identical(
     as.character(out),
     c(
       scenario_setup_lines,
-      "registered in the new copy: document=0 clip_path=0 bitmap=0",
+      if (kept) "load generation: 2" else "load generation: 1",
+      if (kept) {
+        "registered in the new copy: document=6 clip_path=2 bitmap=2"
+      } else {
+        "registered in the new copy: document=0 clip_path=0 bitmap=0"
+      },
       "unreleased document still set: TRUE",
-      "shared library loaded: TRUE", "survived"
+      "shared library loaded: TRUE",
+      "registered after collection: document=0 clip_path=0 bitmap=0",
+      "survived"
     )
+  )
+  skip_if(
+    kept,
+    "dyn.unload() left the shared library mapped, so the same image came back"
   )
 })
 

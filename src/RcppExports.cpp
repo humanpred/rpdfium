@@ -1991,6 +1991,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_load_generation
+int cpp_load_generation();
+RcppExport SEXP _pdfium_cpp_load_generation() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(cpp_load_generation());
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_init_library
 void cpp_init_library();
 RcppExport SEXP _pdfium_cpp_init_library() {
@@ -3501,6 +3511,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_pdfium_cpp_image_data", (DL_FUNC) &_pdfium_cpp_image_data, 2},
     {"_pdfium_cpp_image_icc_profile", (DL_FUNC) &_pdfium_cpp_image_icc_profile, 2},
     {"_pdfium_cpp_image_filters", (DL_FUNC) &_pdfium_cpp_image_filters, 1},
+    {"_pdfium_cpp_load_generation", (DL_FUNC) &_pdfium_cpp_load_generation, 0},
     {"_pdfium_cpp_init_library", (DL_FUNC) &_pdfium_cpp_init_library, 0},
     {"_pdfium_cpp_destroy_library", (DL_FUNC) &_pdfium_cpp_destroy_library, 0},
     {"_pdfium_cpp_install_default_sysfont_info", (DL_FUNC) &_pdfium_cpp_install_default_sysfont_info, 0},
@@ -3615,7 +3626,9 @@ static const R_CallMethodDef CallEntries[] = {
     {NULL, NULL, 0}
 };
 
+void count_load_generation(DllInfo* /*dll*/);
 RcppExport void R_init_pdfium(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
+    count_load_generation(dll);
 }

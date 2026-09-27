@@ -661,6 +661,10 @@ cpp_image_filters <- function(obj_ptr) {
     .Call(`_pdfium_cpp_image_filters`, obj_ptr)
 }
 
+cpp_load_generation <- function() {
+    .Call(`_pdfium_cpp_load_generation`)
+}
+
 cpp_init_library <- function() {
     invisible(.Call(`_pdfium_cpp_init_library`))
 }
