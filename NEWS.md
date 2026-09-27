@@ -165,6 +165,10 @@
   Closing, using or collecting one of them after the shutdown, or after
   PDFium was initialised again by opening a document or by
   `pdf_system_fonts_install_default()`, crashed R (ADR-028).
+* `pdf_form_fields()`'s documentation says what it returns, a
+  `pdfium_form_field_list` of form-field handles, instead of describing
+  a tibble; the tibble's columns are now documented on
+  `as_tibble.pdfium_form_field_list()`, which builds it.
 
 # pdfium 0.1.0
 
