@@ -1,5 +1,13 @@
 # pdfium (development version)
 
+## Distribution
+
+* No CRAN release is planned (ADR-026). Binary packages for Windows and
+  macOS will be published through r-universe:
+  `install.packages("pdfium", repos = c("https://humanpred.r-universe.dev", "https://cloud.r-project.org"))`.
+  The development version still installs from GitHub. The package stays
+  held to CRAN's quality bar (`R CMD check --as-cran` clean).
+
 ## PDFium update
 
 * The bundled PDFium moves from `chromium/7857` to `chromium/8066`
@@ -103,4 +111,4 @@
 
 # pdfium 0.1.0
 
-* Initial CRAN release.
+* Initial release.
