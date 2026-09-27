@@ -94,28 +94,37 @@ pdf_annot_new <- function(page, subtype, bounds = NULL) {
 
 #' Remove an annotation and invalidate the handle
 #'
-#' Wraps `FPDFPage_RemoveAnnot`. After the call, the annotation is
-#' gone from the page's `/Annots` array, the underlying
-#' `FPDF_ANNOTATION` is destroyed, and the R handle's externalptr
-#' is cleared so further `pdf_annot_*` calls on it error cleanly
-#' via the package's `is_open()` predicate.
+#' Wraps `FPDFPage_GetAnnotIndex`, `FPDFPage_RemoveAnnot` and
+#' `FPDFPage_CloseAnnot`. The handle's annotation is located on the
+#' page when the call is made, so it is the one removed even after
+#' other annotations on the page were deleted. The annotation leaves
+#' the page's `/Annots` array, PDFium's annotation context is
+#' released together with any page-objects of its appearance stream,
+#' and the handle is closed: further `pdf_annot_*` calls on it, and
+#' on page-objects read from it with [pdf_annot_objects()], error
+#' cleanly.
 #'
-#' Page-scoped indices on other annotation handles shift after a
-#' deletion; re-fetch via [pdf_annotations()] if you need fresh
-#' indices.
+#' Later annotations on the page move down one position. Other handles
+#' still print the position they had when they were made;
+#' [pdf_annot_index()] gives the current one.
 #'
 #' @param annot A `pdfium_annot` handle. Parent doc must be
 #'   readwrite.
-#' @return Invisibly returns the parent `pdfium_doc`.
-#' @seealso [pdf_annot_new()], [pdf_annotations()].
+#' @return Invisibly returns the parent `pdfium_doc`. Errors, changing
+#'   nothing, when the annotation is no longer on its page, for
+#'   example because it was deleted through another handle.
+#' @seealso [pdf_annot_new()], [pdf_annotations()],
+#'   [pdf_annot_index()].
 #' @export
 pdf_annot_delete <- function(annot) {
   ctx <- assert_annot_writable(annot)
-  expect_setter_ok(
-    cpp_annot_delete(annot$page$ptr, annot$ptr,
-                      as.integer(annot$index) - 1L),
-    "FPDFPage_RemoveAnnot"
-  )
+  if (!cpp_annot_delete(annot$page$ptr, annot$ptr)) {
+    stop(
+      "Annotation is no longer on its page; it may have been deleted ",
+      "through another handle.",
+      call. = FALSE
+    )
+  }
   finalize_annot_setter(ctx)
 }
 

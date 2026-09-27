@@ -13,6 +13,22 @@ annot_authoring_blank_page <- function(envir = parent.frame()) {
   list(doc = doc, page = page)
 }
 
+# Helper: blank page carrying a text, a square and a circle annotation,
+# in that order, with distinct bounds. `annots` holds their handles.
+annot_authoring_three_annots <- function(envir = parent.frame()) {
+  s <- annot_authoring_blank_page(envir)
+  s$annots <- list(
+    pdf_annot_new(s$page, "text", bounds = c(10, 10, 30, 30)),
+    pdf_annot_new(s$page, "square", bounds = c(100, 100, 150, 150)),
+    pdf_annot_new(s$page, "circle", bounds = c(200, 200, 260, 260))
+  )
+  s
+}
+
+annot_authoring_subtypes <- function(page) {
+  vapply(pdf_annotations(page), pdf_annot_subtype, character(1L))
+}
+
 # pdf_annot_new -------------------------------------------------------
 
 test_that("pdf_annot_new creates a handle with the requested subtype", {
@@ -66,6 +82,100 @@ test_that("pdf_annot_delete removes from page and invalidates", {
   expect_false(is_open(a))
   expect_error(pdf_annot_set_contents(a, "x"),
                "has been closed")
+})
+
+test_that("pdf_annot_delete removes the handle's annotation after an earlier delete", {
+  s <- annot_authoring_three_annots()
+  pdf_annot_delete(s$annots[[1L]])
+  # The circle was made at position 3 and now sits at position 2.
+  pdf_annot_delete(s$annots[[3L]])
+  remaining <- pdf_annotations(s$page)
+  expect_length(remaining, 1L)
+  expect_identical(pdf_annot_subtype(remaining[[1L]]), "square")
+  expect_equal(unname(pdf_annot_bounds(remaining[[1L]])),
+               c(100, 100, 150, 150))
+  expect_true(is_open(s$annots[[2L]]))
+  expect_false(is_open(s$annots[[3L]]))
+})
+
+test_that("pdf_annot_delete leaves the next annotation alone after an earlier delete", {
+  s <- annot_authoring_three_annots()
+  pdf_annot_delete(s$annots[[1L]])
+  # Position 2, where the square was made, now holds the circle.
+  pdf_annot_delete(s$annots[[2L]])
+  remaining <- pdf_annotations(s$page)
+  expect_length(remaining, 1L)
+  expect_identical(pdf_annot_subtype(remaining[[1L]]), "circle")
+  expect_equal(unname(pdf_annot_bounds(remaining[[1L]])),
+               c(200, 200, 260, 260))
+  expect_true(is_open(s$annots[[3L]]))
+})
+
+test_that("pdf_annot_delete errors and changes nothing once the annotation is gone", {
+  s <- annot_authoring_blank_page()
+  a <- pdf_annot_new(s$page, "text", bounds = c(10, 10, 30, 30))
+  pdf_annot_new(s$page, "square", bounds = c(100, 100, 150, 150))
+  a_again <- pdf_annotations(s$page)[[1L]]
+  pdf_annot_delete(a)
+  expect_error(pdf_annot_delete(a_again), "no longer on its page")
+  # The square now sits at the position `a_again` was made at; the
+  # failed call must neither remove it nor close `a_again`.
+  expect_identical(annot_authoring_subtypes(s$page), "square")
+  expect_true(is_open(a_again))
+  expect_identical(pdf_annot_subtype(a_again), "text")
+})
+
+test_that("pdf_annot_delete closes page-objects read from the annotation", {
+  s <- annot_authoring_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(10, 10, 50, 50))
+  pdf_annot_set_appearance(a, "normal", "0 0 1 rg 10 10 40 40 re f")
+  objs <- pdf_annot_objects(a)
+  expect_length(objs, 1L)
+  pdf_annot_delete(a)
+  # FPDFPage_CloseAnnot freed the appearance-stream objects along with
+  # the annotation context, so their handles must be refused.
+  expect_error(pdf_obj_bounds(objs[[1L]]), "parent has been closed")
+  # Collecting the cleared handle runs its finalizer while the page is
+  # still open; it must not close the context a second time.
+  rm(a)
+  invisible(gc())
+})
+
+test_that("pdf_annot_delete frees an appended object exactly once", {
+  s <- annot_authoring_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  pdf_annot_append_object(a, pdf_rect_new(s$page, 0, 0, 50, 50))
+  child <- pdf_annot_objects(a)[[1L]]
+  pdf_annot_delete(a)
+  expect_length(pdf_page_objects(s$page), 0L)
+  expect_error(pdf_obj_bounds(child), "parent has been closed")
+  # pdf_annot_delete() closed the annotation and with it the object;
+  # closing the page and collecting the handle must not free it again.
+  expect_no_error({
+    pdf_page_close(s$page)
+    rm(a)
+    gc()
+  })
+})
+
+test_that("pdf_annot_delete removes a form field's own widget", {
+  doc <- pdf_doc_open(fixture_path("annotated"), readwrite = TRUE)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  field <- pdf_form_fields(doc)[[1L]]
+  # A form field's `index` numbers the fields; its widget is the 4th
+  # annotation on the page.
+  expect_identical(field$index, 1L)
+  expect_identical(pdf_annot_index(field), 4L)
+  pdf_annot_delete(field)
+  expect_false(is_open(field))
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  expect_identical(annot_authoring_subtypes(page),
+                   c("text", "highlight", "link", "widget"))
+  expect_identical(
+    vapply(pdf_form_fields(doc), pdf_form_field_name, character(1L)),
+    "agree"
+  )
 })
 
 # pdf_annot_set_bounds -----------------------------------------------

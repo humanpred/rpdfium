@@ -806,7 +806,7 @@ test_that("cpp_form_field_*_handle reject a closed annot handle", {
   # in src/form_field_per_handle.cpp).  cpp_annot_delete clears the
   # annot externalptr explicitly, which trips that guard.
   page_ptr <- fields[[1L]]$page$ptr
-  ok <- pdfium:::cpp_annot_delete(page_ptr, annot_ptr, 0L)
+  ok <- pdfium:::cpp_annot_delete(page_ptr, annot_ptr)
   expect_true(ok)
   expect_error(
     pdfium:::cpp_form_field_name_handle(annot_ptr, doc$ptr),
