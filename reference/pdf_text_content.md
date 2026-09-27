@@ -31,6 +31,12 @@ objects from one page, the upcoming
 (Phase 3 slice 2) will share a single text-page across the entire page
 to avoid the per-call overhead.
 
+That context covers only the page's own content, so text objects from an
+annotation's appearance stream
+([`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md),
+directly or nested in a Form XObject there) are refused with an error:
+PDFium finds no text for them.
+
 ## See also
 
 [`pdf_text_font_size()`](https://humanpred.github.io/rpdfium/reference/pdf_text_font_size.md),

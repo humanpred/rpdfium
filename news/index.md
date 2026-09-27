@@ -64,6 +64,20 @@
 
 ### Bug fixes
 
+- [`pdf_annot_objects()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_objects.md)
+  reports each embedded object’s own type (`"path"`, `"text"`,
+  `"image"`, `"shading"` or `"form"`) instead of `"unknown"`, so the
+  type-specific readers and setters such as
+  [`pdf_path_fill()`](https://humanpred.github.io/rpdfium/reference/pdf_path_fill.md),
+  [`pdf_path_set_fill()`](https://humanpred.github.io/rpdfium/reference/pdf_path_set_fill.md)
+  and
+  [`pdf_text_set_content()`](https://humanpred.github.io/rpdfium/reference/pdf_text_set_content.md)
+  accept objects inside an annotation;
+  [`pdf_annot_update_object()`](https://humanpred.github.io/rpdfium/reference/pdf_annot_update_object.md)
+  then writes a change into the appearance stream.
+  [`pdf_text_content()`](https://humanpred.github.io/rpdfium/reference/pdf_text_content.md)
+  refuses these objects with an error, because PDFium only reads the
+  text of objects in the page’s own content.
 - [`pdf_render_page()`](https://humanpred.github.io/rpdfium/reference/pdf_render_page.md),
   [`pdf_image_bitmap()`](https://humanpred.github.io/rpdfium/reference/pdf_image_bitmap.md),
   [`pdf_image_rendered()`](https://humanpred.github.io/rpdfium/reference/pdf_image_rendered.md)
