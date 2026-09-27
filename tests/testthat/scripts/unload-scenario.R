@@ -44,10 +44,8 @@ say <- function(...) writeLines(paste(...))
 load_pdfium()
 ns <- asNamespace("pdfium")
 pdf <- function(name) get(name, envir = ns)
-registered <- function() {
-  n <- pdf("cpp_library_handle_counts")()
-  paste(names(n), n, sep = "=", collapse = " ")
-}
+counts_line <- function(n) paste(names(n), n, sep = "=", collapse = " ")
+registered <- function() counts_line(pdf("cpp_library_handle_counts")())
 
 # Older than every handle, so R's exit finalizers run it last.
 if (mode == "exit") {
@@ -115,7 +113,23 @@ if (mode %in% c("unloadNamespace", "reload")) {
 } else if (mode %in% c("dll_unload", "dll_reload")) {
   dll <- getLoadedDLLs()[["pdfium"]][["path"]]
   dyn.unload(dll)
-  if (mode == "dll_reload") dyn.load(dll)
+  if (mode == "dll_reload") {
+    # Windows finds libpdfium.dll beside the package's DLL only through
+    # DLLpath, which library.dynam() passes too; elsewhere it is ignored.
+    dyn.load(dll, DLLpath = dirname(dll))
+    # The namespace's own routines went with the unload, so call the new
+    # copy by name: it registered none of the handles, which still point
+    # into the unloaded copy's PDFium.
+    new_copy <- function(name, ...) .Call(name, ..., PACKAGE = "pdfium")
+    say(
+      "registered in the new copy:",
+      counts_line(new_copy("_pdfium_cpp_library_handle_counts"))
+    )
+    say(
+      "unreleased document still set:",
+      new_copy("_pdfium_cpp_handle_is_valid", open$doc$ptr)
+    )
+  }
 }
 say("shared library loaded:", "pdfium" %in% names(getLoadedDLLs()))
 

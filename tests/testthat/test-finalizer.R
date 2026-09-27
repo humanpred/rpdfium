@@ -155,7 +155,12 @@ test_that("a shared library loaded again leaves the unreleased handles alone", {
   expect_null(attr(out, "status"))
   expect_identical(
     as.character(out),
-    c(scenario_setup_lines, "shared library loaded: TRUE", "survived")
+    c(
+      scenario_setup_lines,
+      "registered in the new copy: document=0 clip_path=0 bitmap=0",
+      "unreleased document still set: TRUE",
+      "shared library loaded: TRUE", "survived"
+    )
   )
 })
 
