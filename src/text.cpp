@@ -77,14 +77,13 @@ std::string read_font_name(
 
 }  // namespace
 
+// The page comes in as its own argument rather than from `obj_ptr`'s
+// prot slot: objects inside an annotation pin the annotation there,
+// not the page.
 // [[Rcpp::export(name = "cpp_text_content")]]
-SEXP cpp_text_content(SEXP obj_ptr) {
+SEXP cpp_text_content(SEXP obj_ptr, SEXP page_ptr) {
   FPDF_PAGEOBJECT obj = text_obj_from_ptr(obj_ptr);
-  // text_obj_from_ptr already verified the parent page externalptr
-  // is alive via require_prot_alive=true; recover the raw page
-  // handle from the prot slot now that we know it's safe.
-  SEXP page_ptr = R_ExternalPtrProtected(obj_ptr);
-  FPDF_PAGE page = static_cast<FPDF_PAGE>(R_ExternalPtrAddr(page_ptr));
+  FPDF_PAGE page = text_page_from_ptr(page_ptr);
 
   FPDF_TEXTPAGE text_page = FPDFText_LoadPage(page);
   if (text_page == nullptr) {  // # nocov start

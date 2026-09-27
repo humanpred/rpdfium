@@ -158,31 +158,52 @@ print.pdfium_page <- function(x, ...) {
 #' unchanged; `parent_form` is informational, used by
 #' [format.pdfium_obj()] to render the containment chain.
 #'
+#' Objects inside an annotation's appearance stream (returned by
+#' [pdf_annot_objects()]) carry a `parent_annot` field pointing at the
+#' `pdfium_annot` instead. Their externalptr's `prot` slot pins the
+#' annotation, which owns them, rather than the page, as does that of
+#' the children [pdf_form_objects()] returns for a form among them;
+#' none of them are part of the page's content.
+#'
 #' @param ptr An `externalptr` to a PDFium `FPDF_PAGEOBJECT`.
 #' @param page The parent `pdfium_page`.
 #' @param index One-based index within its container (page for
-#'   top-level objects, form for nested objects).
+#'   top-level objects, form for nested objects, annotation for
+#'   objects in an appearance stream).
 #' @param type Character scalar - the object type (one of
 #'   `.pdfium_obj_type_names`).
 #' @param parent_form Optional `pdfium_obj` of type `"form"` - the
 #'   form XObject this object is nested inside. `NULL` for top-level
 #'   page objects.
+#' @param parent_annot Optional `pdfium_annot` - the annotation whose
+#'   appearance stream this object sits in. `NULL` for page objects.
 #' @return An object of class `c("pdfium_obj", "pdfium_handle")`.
 #' @keywords internal
 #' @noRd
-new_pdfium_obj <- function(ptr, page, index, type, parent_form = NULL) {
+new_pdfium_obj <- function(ptr, page, index, type, parent_form = NULL,
+                           parent_annot = NULL) {
   checkmate::assert_class(ptr, "externalptr")
   checkmate::assert_class(page, "pdfium_page")
   checkmate::assert_number(index)
   checkmate::assert_string(type)
   checkmate::assert_class(parent_form, "pdfium_obj", null.ok = TRUE)
+  checkmate::assert_class(parent_annot, "pdfium_annot", null.ok = TRUE)
   structure(
     list(
       ptr = ptr, page = page, index = as.integer(index), type = type,
-      parent_form = parent_form
+      parent_form = parent_form, parent_annot = parent_annot
     ),
     class = c("pdfium_obj", "pdfium_handle")
   )
+}
+
+# Internal: the annotation whose appearance stream holds `obj`, directly
+# or inside a Form XObject drawn there; NULL for page content.
+obj_parent_annot <- function(obj) {
+  while (!is.null(obj$parent_form)) {
+    obj <- obj$parent_form
+  }
+  obj$parent_annot
 }
 
 #' @export

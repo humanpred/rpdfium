@@ -347,6 +347,69 @@ test_that("pdf_annot_object_count is 0 for a fresh annotation", {
   expect_length(pdf_annot_objects(a), 0L)
 })
 
+test_that("pdf_annot_objects reports the type of every embedded object", {
+  doc <- pdf_doc_open(source = inline_annot_objects_pdf())
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  a <- pdf_annotations(page)[[1L]]
+  objs <- pdf_annot_objects(a)
+  types <- c("path", "text", "image", "shading", "form")
+  expect_identical(vapply(objs, function(o) o$type, ""), types)
+  expect_identical(vapply(objs, pdf_obj_type, ""), types)
+  expect_identical(vapply(objs, function(o) o$index, 0L), 1:5)
+  for (o in objs) {
+    expect_identical(o$parent_annot, a)
+  }
+  # The type-specific readers take them.
+  expect_identical(pdf_path_fill(objs[[1L]]),
+                   c(red = 255, green = 0, blue = 0, alpha = 255))
+  expect_identical(pdf_text_font_size(objs[[2L]]), 12)
+  expect_identical(pdf_image_size(objs[[3L]]), c(width = 1L, height = 1L))
+  nested <- pdf_form_objects(objs[[5L]])
+  expect_identical(vapply(nested, function(o) o$type, ""), "text")
+  expect_identical(pdf_text_font_size(nested[[1L]]), 10)
+})
+
+# Type and fill colour of the first object in the first annotation on
+# page 1 of the PDF at `path`.
+reloaded_annot_fill <- function(path) {
+  doc <- pdf_doc_open(path)
+  on.exit(pdf_doc_close(doc), add = TRUE)
+  page <- pdf_page_load(doc, 1L)
+  on.exit(pdf_page_close(page), add = TRUE, after = FALSE)
+  obj <- pdf_annot_objects(pdf_annotations(page)[[1L]])[[1L]]
+  list(type = obj$type, fill = pdf_path_fill(obj))
+}
+
+test_that("a fill set on an annotation's path is saved after an update", {
+  s <- annot_blank_page()
+  a <- pdf_annot_new(s$page, "stamp", bounds = c(0, 0, 100, 100))
+  # `f` paints the rectangle: PDFium does not parse an unpainted path
+  # back into an object.
+  pdf_annot_set_appearance(a, value = "1 0 0 rg 10 10 50 50 re f")
+  rect <- pdf_annot_objects(a)[[1L]]
+  expect_identical(rect$type, "path")
+  pdf_path_set_fill(rect, c(0, 0, 255))
+  expect_identical(pdf_path_fill(rect),
+                   c(red = 0, green = 0, blue = 255, alpha = 255))
+  before <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(s$doc, before)
+  expect_identical(pdf_annot_update_object(a, rect), s$doc)
+  after <- withr::local_tempfile(fileext = ".pdf")
+  pdf_save(s$doc, after)
+  # The setter changes the object in memory; only the update writes it
+  # into the appearance stream that pdf_save() stores.
+  expect_identical(
+    reloaded_annot_fill(before),
+    list(type = "path", fill = c(red = 255, green = 0, blue = 0, alpha = 255))
+  )
+  expect_identical(
+    reloaded_annot_fill(after),
+    list(type = "path", fill = c(red = 0, green = 0, blue = 255, alpha = 255))
+  )
+})
+
 test_that("pdf_annot_set_uri sets the URI on a link annotation", {
   s <- annot_blank_page()
   a <- pdf_annot_new(s$page, "link", bounds = c(0, 0, 100, 100))
