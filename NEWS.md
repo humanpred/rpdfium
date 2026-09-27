@@ -1,5 +1,13 @@
 # pdfium (development version)
 
+## Distribution
+
+* No CRAN release is planned (ADR-026). Binary packages for Windows and
+  macOS will be published through r-universe:
+  `install.packages("pdfium", repos = c("https://humanpred.r-universe.dev", "https://cloud.r-project.org"))`.
+  The development version still installs from GitHub. The package stays
+  held to CRAN's quality bar (`R CMD check --as-cran` clean).
+
 ## PDFium update
 
 * The bundled PDFium moves from `chromium/7857` to `chromium/8066`
@@ -48,6 +56,14 @@
 
 ## Bug fixes
 
+* Installed and binary packages now carry PDFium's licence notices in
+  `pdfium-licenses/` (`system.file("pdfium-licenses", package = "pdfium")`):
+  PDFium's BSD-3-Clause licence, the licences of the third-party code
+  compiled into `libpdfium`, and bblanchon/pdfium-binaries' MIT licence.
+  They were dropped when the PDFium archive was unpacked, and `LICENSE.md`
+  pointed at a file that was never installed; it also misnamed
+  bblanchon/pdfium-binaries' licence as Apache-2.0. Installation now
+  stops if a PDFium archive lacks PDFium's own notice.
 * `pdf_annot_objects()` reports each embedded object's own type
   (`"path"`, `"text"`, `"image"`, `"shading"` or `"form"`) instead of
   `"unknown"`, so the type-specific readers and setters such as
@@ -172,4 +188,4 @@
 
 # pdfium 0.1.0
 
-* Initial CRAN release.
+* Initial release.

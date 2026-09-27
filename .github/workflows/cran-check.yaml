@@ -1,7 +1,9 @@
-# cran-check.yaml — weekly rhub-based CRAN-policy check.
+# cran-check.yaml — weekly rhub-based check on CRAN's platforms.
 #
-# Catches CRAN-only issues (compiler matrices, valgrind notes, sanitizer
-# findings) before submission. Runs on schedule plus manual dispatch.
+# pdfium is not released to CRAN, but it is held to CRAN's quality bar
+# (ADR-008, ADR-026). This job catches issues that only CRAN-style
+# platforms show (compiler matrices, valgrind notes, sanitizer
+# findings). Runs on schedule plus manual dispatch.
 
 name: cran-check
 

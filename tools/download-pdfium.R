@@ -5,11 +5,15 @@
 #   - inst/include/    headers from the bblanchon archive
 #   - inst/lib/        libpdfium.{so,dylib} (POSIX) or pdfium.lib (Windows)
 #   - inst/bin/        pdfium.dll (Windows only)
+#   - inst/pdfium-licenses/  the archive's LICENSE and licenses/*: PDFium's
+#                      BSD-3-Clause notice and those of the third-party code
+#                      compiled into libpdfium. Installed and binary packages
+#                      carry libpdfium, so they must carry these notices too.
 #
 # Honors:
 #   - PDFIUM_OFFLINE        if set to "1", skip downloading and require
 #                           that inst/pdfium-binaries/<archive> already
-#                           exists locally (offline / CRAN-builder use).
+#                           exists locally (offline or firewalled builds).
 #   - PDFIUM_BINARY_URL     override the URL (e.g. for mirrors).
 #   - PDFIUM_CACHE_DIR      directory to cache downloaded archives across
 #                           rebuilds. Defaults to tools::R_user_dir("pdfium",
@@ -346,6 +350,11 @@ local({
   dir.create(staging, recursive = TRUE)
   on.exit(unlink(staging, recursive = TRUE), add = TRUE)
   utils::untar(cache_path, exdir = staging)
+  if (!file.exists(file.path(staging, "licenses", "pdfium.txt"))) {
+    stop("The PDFium archive ", basename(cache_path), " has no licenses/pdfium.txt; ",
+         "refusing to install libpdfium without PDFium's licence notice.",
+         call. = FALSE)
+  }
 
   copy_into <- function(subdir, target_subdir = subdir) {
     src <- file.path(staging, subdir)
@@ -363,6 +372,15 @@ local({
   copy_into("include")
   copy_into("lib")
   copy_into("bin")
+
+  # Clear notices left by an earlier build so the set matches this archive.
+  unlink(file.path(extract_root, "pdfium-licenses"), recursive = TRUE)
+  copy_into("licenses", "pdfium-licenses")
+  if (file.exists(file.path(staging, "LICENSE"))) {
+    file.copy(file.path(staging, "LICENSE"),
+              file.path(extract_root, "pdfium-licenses", "LICENSE"),
+              overwrite = TRUE)
+  }
 
   fix_macos_install_name(file.path(extract_root, "lib"))
   fix_windows_dll(extract_root)

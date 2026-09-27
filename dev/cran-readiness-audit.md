@@ -1,5 +1,13 @@
 # CRAN-readiness audit — v0.1.0
 
+> **Status note (2026-09-27).** This audit prepared a CRAN submission
+> that is no longer planned: `pdfium` will not be released to CRAN
+> ([ADR-026](decisions/ADR-026-no-cran-release.md)). Its
+> `R CMD check --as-cran` findings still describe the package's quality
+> bar. The submission-only items no longer apply: the "New submission"
+> NOTE, `cran-comments.md` (deleted), and the "before submission"
+> framing of the action list. The audit below is kept as a record.
+
 Holistic pre-submission audit of the consolidated release branch: does
 `R CMD check --as-cran` pass, are there any unfilled PDFium API gaps, and
 is the package CRAN-policy clean?
